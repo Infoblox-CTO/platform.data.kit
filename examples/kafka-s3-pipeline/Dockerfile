@@ -2,8 +2,8 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 COPY src/ ./
-RUN go build -o /pipeline .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline .
 
-FROM alpine:3.19
+FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /pipeline /pipeline
 ENTRYPOINT ["/pipeline"]

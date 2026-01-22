@@ -40,6 +40,30 @@ build-controller:
 test: test-contracts test-sdk test-cli test-controller
 	@echo "✓ All tests passed"
 
+test-unit: test-contracts test-sdk test-cli test-controller
+	@echo "✓ All unit tests passed"
+
+test-e2e:
+	@echo "Running E2E tests..."
+	@cd tests/e2e && go test -v ./...
+	@echo "✓ E2E tests passed"
+
+test-short:
+	@echo "Running short tests (skipping E2E)..."
+	@cd contracts && go test -short ./...
+	@cd sdk && go test -short ./...
+	@cd cli && go test -short ./...
+	@cd platform/controller && go test -short ./...
+	@echo "✓ Short tests passed"
+
+test-race:
+	@echo "Running tests with race detector..."
+	@cd contracts && go test -race ./...
+	@cd sdk && go test -race ./...
+	@cd cli && go test -race ./...
+	@cd platform/controller && go test -race ./...
+	@echo "✓ Race detection tests passed"
+
 test-contracts:
 	@echo "Testing contracts..."
 	@cd contracts && go test -race -cover ./...
@@ -64,6 +88,13 @@ coverage:
 	@cd cli && go test -coverprofile=../coverage/cli.out ./...
 	@cd platform/controller && go test -coverprofile=../../coverage/controller.out ./...
 	@echo "Coverage reports generated in coverage/"
+
+test-coverage: coverage
+	@echo "Coverage summary:"
+	@go tool cover -func=coverage/contracts.out | grep total || true
+	@go tool cover -func=coverage/sdk.out | grep total || true
+	@go tool cover -func=coverage/cli.out | grep total || true
+	@go tool cover -func=coverage/controller.out | grep total || true
 
 # ============================================================================
 # Lint targets
@@ -182,7 +213,12 @@ help:
 	@echo ""
 	@echo "Test targets:"
 	@echo "  test            Run all tests"
+	@echo "  test-unit       Run unit tests only"
+	@echo "  test-e2e        Run E2E tests only"
+	@echo "  test-short      Run short tests (skip E2E)"
+	@echo "  test-race       Run tests with race detector"
 	@echo "  coverage        Generate coverage reports"
+	@echo "  test-coverage   Generate and display coverage summary"
 	@echo ""
 	@echo "Lint targets:"
 	@echo "  lint            Run linting on all modules"

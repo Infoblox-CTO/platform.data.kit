@@ -1,3 +1,8 @@
+---
+title: Architecture
+description: High-level architecture of the Data Platform
+---
+
 # DP Architecture
 
 This document describes the high-level architecture of the Data Platform (DP).

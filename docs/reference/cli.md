@@ -1,6 +1,11 @@
-# DP CLI Reference
+---
+title: CLI Reference
+description: Complete reference for all dp CLI commands
+---
 
-Complete reference for all `dp` CLI commands.
+# CLI Reference
+
+Complete reference for all `dp` CLI commands with examples and flags.
 
 ## Global Flags
 
@@ -12,9 +17,28 @@ These flags apply to all commands:
 | `--help` | `-h` | Show help | - |
 | `--version` | `-v` | Show version | - |
 
-## Commands
+---
 
-### dp init
+## Commands Overview
+
+| Command | Description |
+|---------|-------------|
+| [`dp init`](#dp-init) | Create a new data package |
+| [`dp dev`](#dp-dev) | Manage local development stack |
+| [`dp lint`](#dp-lint) | Validate package manifests |
+| [`dp run`](#dp-run) | Execute pipeline locally |
+| [`dp test`](#dp-test) | Run pipeline tests |
+| [`dp build`](#dp-build) | Build OCI artifact |
+| [`dp publish`](#dp-publish) | Publish to registry |
+| [`dp promote`](#dp-promote) | Promote to environment |
+| [`dp status`](#dp-status) | Show package status |
+| [`dp logs`](#dp-logs) | Stream logs |
+| [`dp rollback`](#dp-rollback) | Rollback to previous version |
+| [`dp lineage`](#dp-lineage) | View data lineage |
+
+---
+
+## dp init
 
 Create a new data package.
 
@@ -22,30 +46,45 @@ Create a new data package.
 dp init <package-name> [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--type` | Package type (pipeline, model, dataset) | pipeline |
+| `--type` | Package type (pipeline, producer, consumer, streaming) | pipeline |
 | `--dir` | Directory to create package in | . |
 
-**Examples:**
+### Examples
 
 ```bash
 # Create a pipeline package
 dp init my-pipeline --type pipeline
+```
 
+```bash
 # Create in specific directory
 dp init kafka-processor --dir ./packages
 ```
 
+### Output
+
+Creates the following directory structure:
+
+```
+my-pipeline/
+├── dp.yaml
+├── pipeline.yaml
+├── bindings.yaml
+└── src/
+    └── main.py
+```
+
 ---
 
-### dp dev
+## dp dev
 
 Manage the local development stack.
 
-#### dp dev up
+### dp dev up
 
 Start the local development stack.
 
@@ -53,24 +92,26 @@ Start the local development stack.
 dp dev up [flags]
 ```
 
-**Flags:**
+#### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--detach` | Run in background | false |
 | `--timeout` | Startup timeout | 60s |
 
-**Examples:**
+#### Examples
 
 ```bash
 # Start local stack
 dp dev up
+```
 
+```bash
 # Start in background
 dp dev up --detach
 ```
 
-#### dp dev down
+### dp dev down
 
 Stop the local development stack.
 
@@ -78,23 +119,25 @@ Stop the local development stack.
 dp dev down [flags]
 ```
 
-**Flags:**
+#### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--volumes` | Remove volumes | false |
 
-**Examples:**
+#### Examples
 
 ```bash
 # Stop stack
 dp dev down
+```
 
+```bash
 # Stop and remove volumes
 dp dev down --volumes
 ```
 
-#### dp dev status
+### dp dev status
 
 Show status of local development stack.
 
@@ -102,19 +145,20 @@ Show status of local development stack.
 dp dev status
 ```
 
-**Output:**
+#### Output Example
 
 ```
 Service         Status    Ports
-redpanda        running   9092, 9644
-localstack      running   4566
-postgres        running   5432
+━━━━━━━━━━━━━━  ━━━━━━━   ━━━━━━━━━
+kafka           running   9092
+minio           running   9000
 marquez         running   5000
+postgres        running   5432
 ```
 
 ---
 
-### dp lint
+## dp lint
 
 Validate package manifests.
 
@@ -122,45 +166,52 @@ Validate package manifests.
 dp lint [package-dir] [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--strict` | Treat warnings as errors | false |
 | `--skip-pii` | Skip PII classification validation | false |
 
-**Validated files:**
-- `dp.yaml` - Package manifest
-- `pipeline.yaml` - Pipeline configuration
-- `bindings.yaml` - Binding configuration
-- `schemas/` - Schema files
+### Validated Files
 
-**Validation rules:**
-- E001-E003: Required fields
-- E004-E005: Schema references
-- E010-E011: Binding configuration
-- E025: PII classification required
-- E030-E031: Runtime configuration
+| File | Description |
+|------|-------------|
+| `dp.yaml` | Package manifest |
+| `pipeline.yaml` | Pipeline configuration |
+| `bindings.yaml` | Binding configuration |
+| `schemas/` | Schema files |
 
-**Examples:**
+### Validation Rules
+
+| Code | Description |
+|------|-------------|
+| E001-E003 | Required fields |
+| E004-E005 | Schema references |
+| E010-E011 | Binding configuration |
+| E025 | PII classification required |
+| E030-E031 | Runtime configuration |
+
+### Examples
 
 ```bash
 # Lint current directory
 dp lint
+```
 
+```bash
 # Lint specific package
 dp lint ./my-pipeline
+```
 
-# Strict mode
+```bash
+# Strict mode (warnings become errors)
 dp lint --strict
-
-# Skip PII validation
-dp lint --skip-pii
 ```
 
 ---
 
-### dp run
+## dp run
 
 Execute pipeline locally.
 
@@ -168,7 +219,7 @@ Execute pipeline locally.
 dp run [package-dir] [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -179,25 +230,31 @@ dp run [package-dir] [flags]
 | `--detach` | Run in background | false |
 | `--timeout` | Execution timeout | 30m |
 
-**Examples:**
+### Examples
 
 ```bash
 # Run pipeline
 dp run ./my-pipeline
+```
 
+```bash
 # With custom bindings
 dp run ./my-pipeline --bindings bindings.local.yaml
+```
 
+```bash
 # Dry run
 dp run ./my-pipeline --dry-run
+```
 
+```bash
 # With environment variables
 dp run ./my-pipeline --env API_KEY=secret --env DEBUG=true
 ```
 
 ---
 
-### dp test
+## dp test
 
 Run pipeline tests with sample data.
 
@@ -205,7 +262,7 @@ Run pipeline tests with sample data.
 dp test [package-dir] [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -213,19 +270,21 @@ dp test [package-dir] [flags]
 | `--input-file` | Custom input file | - |
 | `--timeout` | Test timeout | 5m |
 
-**Examples:**
+### Examples
 
 ```bash
 # Run tests
 dp test ./my-pipeline
+```
 
+```bash
 # With custom input
 dp test ./my-pipeline --input-file ./testdata/sample.json
 ```
 
 ---
 
-### dp build
+## dp build
 
 Build OCI artifact for package.
 
@@ -233,26 +292,41 @@ Build OCI artifact for package.
 dp build [package-dir] [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--tag` | Artifact tag | <version from dp.yaml> |
+| `--tag` | Artifact tag | `<version from dp.yaml>` |
 | `--no-cache` | Build without cache | false |
 
-**Examples:**
+### Examples
 
 ```bash
 # Build package
 dp build ./my-pipeline
+```
 
+```bash
 # With custom tag
 dp build ./my-pipeline --tag v1.0.0-rc1
 ```
 
+### Output
+
+```
+▶ Building package: my-pipeline
+  → Validating manifest...
+  → Bundling files...
+  → Creating OCI artifact...
+✓ Built: my-pipeline:v1.0.0
+
+Artifact: ghcr.io/org/my-pipeline:v1.0.0
+Size: 2.3 MB
+```
+
 ---
 
-### dp publish
+## dp publish
 
 Publish package to OCI registry.
 
@@ -260,15 +334,15 @@ Publish package to OCI registry.
 dp publish [package-dir] [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--registry` | Registry URL | $DP_REGISTRY |
+| `--registry` | Registry URL | `$DP_REGISTRY` |
 | `--tag` | Override tag | - |
 | `--dry-run` | Print what would publish | false |
 
-**Environment Variables:**
+### Environment Variables
 
 | Variable | Description |
 |----------|-------------|
@@ -276,22 +350,26 @@ dp publish [package-dir] [flags]
 | `DP_REGISTRY_USER` | Registry username |
 | `DP_REGISTRY_TOKEN` | Registry access token |
 
-**Examples:**
+### Examples
 
 ```bash
 # Publish to default registry
 dp publish ./my-pipeline
+```
 
+```bash
 # Publish to specific registry
 dp publish ./my-pipeline --registry ghcr.io/myorg
+```
 
+```bash
 # Dry run
 dp publish ./my-pipeline --dry-run
 ```
 
 ---
 
-### dp promote
+## dp promote
 
 Promote package to an environment.
 
@@ -299,27 +377,49 @@ Promote package to an environment.
 dp promote <package-name> <version> [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--to` | Target environment | required |
+| `--to` | Target environment | **required** |
 | `--dry-run` | Print what would change | false |
 | `--auto-merge` | Automatically merge PR | false |
+| `--rollback` | Mark as rollback (expedited) | false |
 
-**Examples:**
+### Examples
 
 ```bash
 # Promote to dev
 dp promote my-pipeline v1.0.0 --to dev
+```
 
+```bash
 # Promote to production with dry run
 dp promote my-pipeline v1.0.0 --to prod --dry-run
 ```
 
+```bash
+# Emergency rollback
+dp promote my-pipeline v0.9.0 --to prod --rollback
+```
+
+### Output
+
+```
+Promotion Request: my-pipeline v1.0.0 → dev
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Pre-flight Checks:
+  ✓ Package exists in registry
+  ✓ Version not already in dev
+  ✓ Passed lint validation
+
+Created PR: https://github.com/org/deploys/pull/123
+```
+
 ---
 
-### dp status
+## dp status
 
 Show package status across environments.
 
@@ -327,29 +427,46 @@ Show package status across environments.
 dp status [package-name] [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--env` | Filter by environment | all |
 | `--namespace` | Filter by namespace | all |
 
-**Examples:**
+### Examples
 
 ```bash
 # Show status of all packages
 dp status
+```
 
+```bash
 # Show specific package
 dp status my-pipeline
+```
 
+```bash
 # Filter by environment
 dp status --env prod
 ```
 
+### Output
+
+```
+Package: my-pipeline
+━━━━━━━━━━━━━━━━━━━
+
+Environment  Version   Status    Last Run
+───────────  ───────   ──────    ────────
+dev          v1.0.0    Synced    5 min ago
+int          v0.9.0    Synced    1 day ago
+prod         v0.9.0    Synced    6 hours ago
+```
+
 ---
 
-### dp logs
+## dp logs
 
 Stream logs from running pipeline.
 
@@ -357,7 +474,7 @@ Stream logs from running pipeline.
 dp logs <run-id> [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -365,22 +482,26 @@ dp logs <run-id> [flags]
 | `--tail` | Lines to show | all |
 | `--timestamps` | Show timestamps | false |
 
-**Examples:**
+### Examples
 
 ```bash
 # Get logs
-dp logs my-pipeline-20240122-120000
+dp logs my-pipeline-20250122-120000
+```
 
+```bash
 # Follow logs
-dp logs my-pipeline-20240122-120000 --follow
+dp logs my-pipeline-20250122-120000 --follow
+```
 
+```bash
 # Last 100 lines
-dp logs my-pipeline-20240122-120000 --tail 100
+dp logs my-pipeline-20250122-120000 --tail 100
 ```
 
 ---
 
-### dp rollback
+## dp rollback
 
 Rollback to a previous version.
 
@@ -388,22 +509,70 @@ Rollback to a previous version.
 dp rollback <package-name> [flags]
 ```
 
-**Flags:**
+### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--to` | Target version | previous |
-| `--env` | Environment | required |
+| `--env` | Environment | **required** |
 | `--dry-run` | Print what would change | false |
 
-**Examples:**
+### Examples
 
 ```bash
 # Rollback to previous version
 dp rollback my-pipeline --env prod
+```
 
+```bash
 # Rollback to specific version
 dp rollback my-pipeline --to v1.0.0 --env prod
+```
+
+---
+
+## dp lineage
+
+View data lineage for a package.
+
+```bash
+dp lineage <package-name> [flags]
+```
+
+### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--upstream` | Show upstream sources | true |
+| `--downstream` | Show downstream consumers | true |
+| `--depth` | Maximum depth to traverse | 3 |
+| `--refresh` | Force refresh from backend | false |
+
+### Examples
+
+```bash
+# View lineage
+dp lineage my-pipeline
+```
+
+```bash
+# Only downstream impact
+dp lineage my-pipeline --upstream=false
+```
+
+### Output
+
+```
+Lineage for: my-pipeline
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Upstream:
+  ├─ kafka://production/user-events
+  └─ postgres://users-db/users
+
+Downstream:
+  ├─ s3://analytics-bucket/processed/
+  └─ dashboard/user-metrics
 ```
 
 ---
@@ -418,44 +587,10 @@ dp rollback my-pipeline --to v1.0.0 --env prod
 | 3 | Network/connectivity error |
 | 4 | Authentication error |
 
-## Configuration
+---
 
-### Config File
+## See Also
 
-DP looks for configuration in:
-1. `$XDG_CONFIG_HOME/dp/config.yaml`
-2. `~/.config/dp/config.yaml`
-3. `~/.dp/config.yaml`
-
-```yaml
-# config.yaml
-registry:
-  default: ghcr.io/myorg
-  credentials:
-    - registry: ghcr.io
-      username: ${DP_REGISTRY_USER}
-      token: ${DP_REGISTRY_TOKEN}
-
-environments:
-  dev:
-    gitops: https://github.com/myorg/gitops.git
-    path: environments/dev
-  prod:
-    gitops: https://github.com/myorg/gitops.git
-    path: environments/prod
-
-defaults:
-  output: table
-  timeout: 30m
-```
-
-### Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `DP_REGISTRY` | Default OCI registry |
-| `DP_REGISTRY_USER` | Registry username |
-| `DP_REGISTRY_TOKEN` | Registry token |
-| `DP_NAMESPACE` | Default namespace |
-| `DP_CONFIG` | Config file path |
-| `DP_DEBUG` | Enable debug logging |
+- [Configuration Reference](configuration.md) - Configuration file and environment variables
+- [Manifest Schema](manifest-schema.md) - Package manifest reference
+- [Quickstart](../getting-started/quickstart.md) - Get started with dp CLI

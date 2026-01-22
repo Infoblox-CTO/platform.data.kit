@@ -1,0 +1,17 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: basic-dataset
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: dataset
+  description: A basic dataset package for testing
+  owner: data-team
+  outputs:
+    - name: customer-data
+      type: s3-prefix
+      binding: customer-data-bucket
+      classification:
+        sensitivity: public
+        pii: false

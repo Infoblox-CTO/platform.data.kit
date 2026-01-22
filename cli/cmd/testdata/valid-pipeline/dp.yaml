@@ -1,0 +1,19 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pipeline
+  labels:
+    team: platform
+spec:
+  type: pipeline
+  version: v1.0.0
+  description: A test pipeline for CLI testing
+  inputs:
+    - name: kafka-events
+      type: kafka-topic
+  outputs:
+    - name: s3-data
+      type: s3-prefix
+      classification:
+        sensitivity: internal
+        pii: false

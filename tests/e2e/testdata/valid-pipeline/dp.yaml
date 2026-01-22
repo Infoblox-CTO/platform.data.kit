@@ -1,0 +1,20 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: valid-pipeline
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: A valid pipeline package for E2E testing
+  owner: data-team
+  inputs:
+    - name: source-events
+      type: kafka-topic
+  outputs:
+    - name: processed-data
+      type: s3-prefix
+      binding: output-bucket
+      classification:
+        sensitivity: internal
+        pii: false

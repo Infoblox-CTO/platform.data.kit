@@ -1,0 +1,16 @@
+apiVersion: dp.io/v1alpha1
+kind: DataPackage
+metadata:
+  name: valid-manifest
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: Valid manifest for parsing tests
+  owner: data-team
+  outputs:
+    - name: output-data
+      type: s3-prefix
+      classification:
+        sensitivity: internal
+        pii: false

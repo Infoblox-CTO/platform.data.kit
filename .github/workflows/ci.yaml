@@ -53,17 +53,50 @@ jobs:
           go-version: "1.25"
           cache: true
 
+      - name: Create coverage directory
+        run: mkdir -p coverage
+
       - name: Test contracts
-        run: cd contracts && go test -race -coverprofile=coverage.out ./...
+        run: cd contracts && go test -race -coverprofile=../coverage/contracts.out ./...
 
       - name: Test sdk
-        run: cd sdk && go test -race -coverprofile=coverage.out ./...
+        run: cd sdk && go test -race -coverprofile=../coverage/sdk.out ./...
 
       - name: Test cli
-        run: cd cli && go test -race -coverprofile=coverage.out ./...
+        run: cd cli && go test -race -coverprofile=../coverage/cli.out ./...
 
       - name: Test controller
-        run: cd platform/controller && go test -race -coverprofile=coverage.out ./...
+        run: cd platform/controller && go test -race -coverprofile=../../coverage/controller.out ./...
+
+      - name: Aggregate coverage
+        run: |
+          echo "mode: atomic" > coverage/combined.out
+          for f in coverage/*.out; do
+            if [ "$f" != "coverage/combined.out" ]; then
+              tail -n +2 "$f" >> coverage/combined.out
+            fi
+          done
+
+      - name: Calculate coverage percentage
+        id: coverage
+        run: |
+          COVERAGE=$(go tool cover -func=coverage/combined.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Total coverage: ${COVERAGE}%"
+          
+          # Check if coverage meets threshold (70%)
+          if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+            echo "::warning::Coverage ${COVERAGE}% is below 70% threshold"
+          else
+            echo "::notice::Coverage ${COVERAGE}% meets the 70% threshold"
+          fi
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
 
   build:
     name: Build

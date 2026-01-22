@@ -1,0 +1,29 @@
+apiVersion: dp.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: sample-pipeline
+  labels:
+    team: analytics
+spec:
+  image: docker.io/myorg/pipeline:latest
+  command:
+    - python
+    - main.py
+  args:
+    - --input
+    - /data/input
+    - --output
+    - /data/output
+  env:
+    - name: LOG_LEVEL
+      value: INFO
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: db-credentials
+          key: url
+  bindings:
+    - name: input-data
+    - name: output-data
+  replicas: 1
+  serviceAccountName: pipeline-runner

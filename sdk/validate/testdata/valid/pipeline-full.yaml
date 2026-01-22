@@ -1,0 +1,37 @@
+apiVersion: dp.io/v1alpha1
+kind: DataPackage
+metadata:
+  name: sample-pipeline
+  namespace: data-team
+  version: 1.0.0
+  labels:
+    team: analytics
+    tier: gold
+  annotations:
+    description: Sample pipeline for testing
+spec:
+  type: pipeline
+  description: A sample data processing pipeline for testing validation
+  owner: data-team
+  inputs:
+    - name: raw-events
+      type: s3-prefix
+      schema:
+        type: avro
+        path: schemas/events.avsc
+  outputs:
+    - name: processed-events
+      type: s3-prefix
+      schema:
+        type: parquet
+        path: schemas/output.parquet
+      classification:
+        sensitivity: internal
+        pii: false
+        retention: 90d
+  schedule:
+    cron: "0 */6 * * *"
+    timezone: UTC
+  resources:
+    cpu: "2"
+    memory: 4Gi

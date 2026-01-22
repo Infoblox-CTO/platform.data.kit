@@ -1,0 +1,10 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Pipeline
+metadata:
+  name: test-pipeline
+spec:
+  image: test-image:latest
+  command: ["python", "-m", "pipeline.main"]
+  env:
+    - name: LOG_LEVEL
+      value: info

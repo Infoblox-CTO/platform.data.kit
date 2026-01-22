@@ -1,0 +1,15 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Bindings
+metadata:
+  name: valid-pipeline-bindings
+spec:
+  bindings:
+    - name: source-events
+      kafkaTopic:
+        bootstrapServers: kafka:9092
+        topic: events
+        groupId: valid-pipeline
+    - name: output-bucket
+      s3Prefix:
+        bucket: data-bucket
+        prefix: processed/

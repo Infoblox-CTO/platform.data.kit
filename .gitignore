@@ -16,6 +16,7 @@ vendor/
 *.coverprofile
 coverage.out
 coverage.html
+coverage/
 
 # IDE and editor files
 .idea/
@@ -39,6 +40,7 @@ Thumbs.db
 hack/compose/.data/
 tmp/
 *.tmp
+.venv/
 
 # Logs
 *.log
@@ -49,6 +51,9 @@ kubeconfig*
 *.key
 *.crt
 *.pem
+
+# MkDocs build output
+site/
 
 # Test artifacts
 testdata/output/

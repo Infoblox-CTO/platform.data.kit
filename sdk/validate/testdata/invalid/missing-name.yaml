@@ -1,0 +1,10 @@
+apiVersion: dp.io/v1alpha1
+kind: DataPackage
+metadata:
+  # name is missing - this should fail validation
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: A package with missing required name field
+  owner: data-team

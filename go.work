@@ -5,4 +5,5 @@ use (
 	./contracts
 	./platform/controller
 	./sdk
+	./tests/e2e
 )

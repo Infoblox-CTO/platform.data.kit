@@ -1,0 +1,6 @@
+apiVersion: dp.io/v1alpha1
+kind: DataPackage
+# metadata is completely missing - should fail parsing
+spec:
+  type: pipeline
+  description: Missing metadata section

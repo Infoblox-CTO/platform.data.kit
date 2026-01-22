@@ -1,289 +1,285 @@
-package auth
 // Package auth provides authentication handling for DP CLI.
 package auth
 
 import (
 	"encoding/base64"
 	"encoding/json"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}	return os.WriteFile(r.configPath, data, 0600)	}		return err	if err := os.MkdirAll(configDir, 0700); err != nil {	configDir := filepath.Dir(r.configPath)	// Ensure directory exists	}		return err	if err != nil {	data, err := json.MarshalIndent(r.config, "", "  ")func (r *RegistryAuth) saveConfig() error {// saveConfig saves the docker config to disk.}	return r.saveConfig()	delete(r.config.Auths, "https://"+registry)	delete(r.config.Auths, registry)	}		return nil	if r.config == nil || r.config.Auths == nil {func (r *RegistryAuth) Logout(registry string) error {// Logout removes credentials for a registry.}	return r.saveConfig()	// Write config	}		Auth: auth,	r.config.Auths[registry] = AuthEntry{	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))	// Encode credentials	}		}			Auths: make(map[string]AuthEntry),		r.config = &DockerConfig{	if r.config == nil {func (r *RegistryAuth) Login(registry, username, password string) error {// Login stores credentials for a registry.}	return &config, nil	}		return nil, err	if err := json.Unmarshal(data, &config); err != nil {	var config DockerConfig	}		return nil, err	if err != nil {	data, err := os.ReadFile(path)func loadDockerConfig(path string) (*DockerConfig, error) {// loadDockerConfig loads and parses docker config.json.}	return filepath.Join(home, ".docker", "config.json")	}		return ""	if err != nil {	home, err := os.UserHomeDir()	// Default to ~/.docker/config.json	}		}			return path		if _, err := os.Stat(path); err == nil {		path := filepath.Join(xdgConfig, "containers", "auth.json")	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {	// Check XDG config	}		return filepath.Join(configDir, "config.json")	if configDir := os.Getenv("DOCKER_CONFIG"); configDir != "" {	// Check DOCKER_CONFIG environment variablefunc getDockerConfigPath() string {// getDockerConfigPath returns the path to docker config.json.}	return nil	}		}			}				return creds				creds.Password = parts[1]				creds.Username = parts[0]			if len(parts) == 2 {			parts := strings.SplitN(string(decoded), ":", 2)		if err == nil {		decoded, err := base64.StdEncoding.DecodeString(entry.Auth)	if entry.Auth != "" {	// Parse auth field (base64 encoded username:password)	}		return creds		creds.Password = entry.Password		creds.Username = entry.Username	if entry.Username != "" {	// Check for username/password	}		return creds		creds.Token = entry.RegistryToken	if entry.RegistryToken != "" {	}		return creds		creds.Token = entry.IdentityToken	if entry.IdentityToken != "" {	// Check for token-based auth	creds := &Credentials{}func (r *RegistryAuth) parseAuthEntry(entry AuthEntry) *Credentials {// parseAuthEntry parses a docker config auth entry.}	return nil	}		}			return r.parseAuthEntry(entry)		if strings.Contains(key, registry) {	for key, entry := range r.config.Auths {	// Try to match partial hostname	}		return r.parseAuthEntry(entry)	if entry, ok := r.config.Auths["https://"+registry+"/v2/"]; ok {	// Try with https:// and /v2/	}		return r.parseAuthEntry(entry)	if entry, ok := r.config.Auths["https://"+registry]; ok {	// Try with https://	}		return r.parseAuthEntry(entry)	if entry, ok := r.config.Auths[registry]; ok {	// Look for exact match first	}		return nil	if r.config == nil || r.config.Auths == nil {func (r *RegistryAuth) getCredentialsFromConfig(registry string) *Credentials {// getCredentialsFromConfig gets credentials from docker config.}	return nil	}		// For now, rely on docker config		// ECR uses AWS credentials - would need AWS SDK	case strings.Contains(registry, "ecr.aws") || strings.Contains(registry, "amazonaws.com"):		}			}				}					Password: string(data),					Username: "_json_key",				return &Credentials{			if err == nil {			data, err := os.ReadFile(token)			// Read service account JSON		if token := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); token != "" {	case strings.Contains(registry, "gcr.io") || strings.Contains(registry, "pkg.dev"):		}			}				Password: os.Getenv("DOCKER_PASSWORD"),				Username: username,			return &Credentials{		if username := os.Getenv("DOCKER_USERNAME"); username != "" {	case strings.Contains(registry, "docker.io") || strings.Contains(registry, "hub.docker.com"):		}			}				Token:    token,				Username: "oauth2",			return &Credentials{		if token := os.Getenv("GITHUB_TOKEN"); token != "" {	case strings.Contains(registry, "ghcr.io"):	switch {	// Check for well-known registry environment variables	}		}			Token:    token,			Password: password,			Username: username,		return &Credentials{	if username != "" || token != "" {	token := os.Getenv(envPrefix + "_TOKEN")	password := os.Getenv(envPrefix + "_PASSWORD")	username := os.Getenv(envPrefix + "_USERNAME")	// Try generic first	envPrefix := "DP_REGISTRY"	// or generic: DP_REGISTRY_USERNAME	// Format: DP_REGISTRY_<HOSTNAME>_USERNAME	// Check for registry-specific environment variablesfunc (r *RegistryAuth) getCredentialsFromEnv(registry string) *Credentials {// getCredentialsFromEnv gets credentials from environment variables.}	return nil, nil // No credentials found	}		}			return creds, nil		if creds := r.getCredentialsFromConfig(registry); creds != nil {	if r.config != nil {	// Then check docker config	}		return creds, nil	if creds := r.getCredentialsFromEnv(registry); creds != nil {	// First, check environment variablesfunc (r *RegistryAuth) GetCredentials(registry string) (*Credentials, error) {// GetCredentials retrieves credentials for a registry.}	return auth, nil	}		auth.config = config		}			return nil, fmt.Errorf("failed to load docker config: %w", err)		if err != nil {		config, err := loadDockerConfig(configPath)	if _, err := os.Stat(configPath); err == nil {	}		configPath: configPath,	auth := &RegistryAuth{	configPath := getDockerConfigPath()func NewRegistryAuth() (*RegistryAuth, error) {// NewRegistryAuth creates a new registry auth handler.}	configPath string	config     *DockerConfigtype RegistryAuth struct {// RegistryAuth provides authentication for OCI registries.}	Token    string	Password string	Username stringtype Credentials struct {// Credentials represents parsed registry credentials.}	RegistryToken string `json:"registrytoken,omitempty"`	IdentityToken string `json:"identitytoken,omitempty"`	ServerAddress string `json:"serveraddress,omitempty"`	Email         string `json:"email,omitempty"`	Password      string `json:"password,omitempty"`	Username      string `json:"username,omitempty"`	Auth          string `json:"auth,omitempty"`type AuthEntry struct {// AuthEntry represents an auth entry in Docker config.}	CredHelpers map[string]string    `json:"credHelpers,omitempty"`	Auths       map[string]AuthEntry `json:"auths,omitempty"`type DockerConfig struct {// DockerConfig represents the Docker config.json structure.)	"strings"	"path/filepath"	"os"	"fmt"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+// DockerConfig represents the Docker config.json structure.
+type DockerConfig struct {
+	Auths       map[string]AuthEntry `json:"auths,omitempty"`
+	CredHelpers map[string]string    `json:"credHelpers,omitempty"`
+}
+
+// AuthEntry represents an auth entry in Docker config.
+type AuthEntry struct {
+	Auth          string `json:"auth,omitempty"`
+	Username      string `json:"username,omitempty"`
+	Password      string `json:"password,omitempty"`
+	Email         string `json:"email,omitempty"`
+	ServerAddress string `json:"serveraddress,omitempty"`
+	IdentityToken string `json:"identitytoken,omitempty"`
+	RegistryToken string `json:"registrytoken,omitempty"`
+}
+
+// Credentials represents parsed registry credentials.
+type Credentials struct {
+	Username string
+	Password string
+	Token    string
+}
+
+// RegistryAuth provides authentication for OCI registries.
+type RegistryAuth struct {
+	config     *DockerConfig
+	configPath string
+}
+
+// NewRegistryAuth creates a new registry auth handler.
+func NewRegistryAuth() (*RegistryAuth, error) {
+	configPath := getDockerConfigPath()
+	auth := &RegistryAuth{
+		configPath: configPath,
+	}
+
+	if _, err := os.Stat(configPath); err == nil {
+		config, err := loadDockerConfig(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load docker config: %w", err)
+		}
+		auth.config = config
+	}
+
+	return auth, nil
+}
+
+// GetCredentials retrieves credentials for a registry.
+func (r *RegistryAuth) GetCredentials(registry string) (*Credentials, error) {
+	// First, check environment variables
+	if creds := r.getCredentialsFromEnv(registry); creds != nil {
+		return creds, nil
+	}
+
+	// Then check docker config
+	if r.config != nil {
+		if creds := r.getCredentialsFromConfig(registry); creds != nil {
+			return creds, nil
+		}
+	}
+
+	return nil, nil // No credentials found
+}
+
+// getCredentialsFromEnv gets credentials from environment variables.
+func (r *RegistryAuth) getCredentialsFromEnv(registry string) *Credentials {
+	// Check for registry-specific environment variables
+	// Format: DP_REGISTRY_<HOSTNAME>_USERNAME
+	// or generic: DP_REGISTRY_USERNAME
+	envPrefix := "DP_REGISTRY"
+
+	// Try generic first
+	username := os.Getenv(envPrefix + "_USERNAME")
+	password := os.Getenv(envPrefix + "_PASSWORD")
+	token := os.Getenv(envPrefix + "_TOKEN")
+
+	if username != "" || token != "" {
+		return &Credentials{
+			Username: username,
+			Password: password,
+			Token:    token,
+		}
+	}
+
+	// Check for well-known registry environment variables
+	switch {
+	case strings.Contains(registry, "ghcr.io"):
+		if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+			return &Credentials{
+				Username: "oauth2",
+				Token:    token,
+			}
+		}
+	case strings.Contains(registry, "docker.io") || strings.Contains(registry, "hub.docker.com"):
+		if username := os.Getenv("DOCKER_USERNAME"); username != "" {
+			return &Credentials{
+				Username: username,
+				Password: os.Getenv("DOCKER_PASSWORD"),
+			}
+		}
+	case strings.Contains(registry, "gcr.io") || strings.Contains(registry, "pkg.dev"):
+		if token := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); token != "" {
+			// Read service account JSON
+			data, err := os.ReadFile(token)
+			if err == nil {
+				return &Credentials{
+					Username: "_json_key",
+					Password: string(data),
+				}
+			}
+		}
+	case strings.Contains(registry, "ecr.aws") || strings.Contains(registry, "amazonaws.com"):
+		// ECR uses AWS credentials - would need AWS SDK
+		// For now, rely on docker config
+		return nil
+	}
+
+	return nil
+}
+
+// getCredentialsFromConfig gets credentials from docker config.
+func (r *RegistryAuth) getCredentialsFromConfig(registry string) *Credentials {
+	if r.config == nil || r.config.Auths == nil {
+		return nil
+	}
+
+	// Look for exact match first
+	if entry, ok := r.config.Auths[registry]; ok {
+		return r.parseAuthEntry(entry)
+	}
+
+	// Try with https://
+	if entry, ok := r.config.Auths["https://"+registry]; ok {
+		return r.parseAuthEntry(entry)
+	}
+
+	// Try with https:// and /v2/
+	if entry, ok := r.config.Auths["https://"+registry+"/v2/"]; ok {
+		return r.parseAuthEntry(entry)
+	}
+
+	// Try to match partial hostname
+	for key, entry := range r.config.Auths {
+		if strings.Contains(key, registry) {
+			return r.parseAuthEntry(entry)
+		}
+	}
+
+	return nil
+}
+
+// parseAuthEntry parses a docker config auth entry.
+func (r *RegistryAuth) parseAuthEntry(entry AuthEntry) *Credentials {
+	creds := &Credentials{}
+
+	// Check for token-based auth
+	if entry.IdentityToken != "" {
+		creds.Token = entry.IdentityToken
+		return creds
+	}
+
+	if entry.RegistryToken != "" {
+		creds.Token = entry.RegistryToken
+		return creds
+	}
+
+	// Check for username/password
+	if entry.Username != "" {
+		creds.Username = entry.Username
+		creds.Password = entry.Password
+		return creds
+	}
+
+	// Parse auth field (base64 encoded username:password)
+	if entry.Auth != "" {
+		decoded, err := base64.StdEncoding.DecodeString(entry.Auth)
+		if err == nil {
+			parts := strings.SplitN(string(decoded), ":", 2)
+			if len(parts) == 2 {
+				creds.Username = parts[0]
+				creds.Password = parts[1]
+				return creds
+			}
+		}
+	}
+
+	return creds
+}
+
+// getDockerConfigPath returns the path to docker config.json.
+func getDockerConfigPath() string {
+	// Check DOCKER_CONFIG environment variable
+	if configDir := os.Getenv("DOCKER_CONFIG"); configDir != "" {
+		return filepath.Join(configDir, "config.json")
+	}
+
+	// Check XDG config
+	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
+		path := filepath.Join(xdgConfig, "containers", "auth.json")
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	// Default to ~/.docker/config.json
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".docker", "config.json")
+}
+
+// loadDockerConfig loads and parses docker config.json.
+func loadDockerConfig(path string) (*DockerConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var config DockerConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// Login stores credentials for a registry.
+func (r *RegistryAuth) Login(registry, username, password string) error {
+	if r.config == nil {
+		r.config = &DockerConfig{
+			Auths: make(map[string]AuthEntry),
+		}
+	}
+
+	// Encode credentials
+	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+
+	r.config.Auths[registry] = AuthEntry{
+		Auth: auth,
+	}
+
+	return r.saveConfig()
+}
+
+// Logout removes credentials for a registry.
+func (r *RegistryAuth) Logout(registry string) error {
+	if r.config == nil || r.config.Auths == nil {
+		return nil
+	}
+
+	delete(r.config.Auths, registry)
+	delete(r.config.Auths, "https://"+registry)
+
+	return r.saveConfig()
+}
+
+// saveConfig saves the docker config to disk.
+func (r *RegistryAuth) saveConfig() error {
+	data, err := json.MarshalIndent(r.config, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Ensure directory exists
+	configDir := filepath.Dir(r.configPath)
+	if err := os.MkdirAll(configDir, 0700); err != nil {
+		return err
+	}
+
+	return os.WriteFile(r.configPath, data, 0600)
+}

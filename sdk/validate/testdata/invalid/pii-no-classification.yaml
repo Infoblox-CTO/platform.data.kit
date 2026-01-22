@@ -1,0 +1,17 @@
+apiVersion: dp.io/v1alpha1
+kind: DataPackage
+metadata:
+  name: pii-violation-pkg
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: A package with PII outputs but no classification
+  owner: data-team
+  outputs:
+    - name: customer-emails
+      type: s3-prefix
+      # classification is missing - this should fail PII validation
+    - name: user-addresses
+      type: s3-prefix
+      # classification is missing - this should also fail

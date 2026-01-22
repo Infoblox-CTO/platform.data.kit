@@ -1,0 +1,142 @@
+# DP Documentation Site Configuration
+# https://www.mkdocs.org/user-guide/configuration/
+
+site_name: Data Platform Documentation
+site_description: Documentation for the DP CLI and Data Platform
+site_url: https://infoblox-cto.github.io/data-platform/
+repo_url: https://github.com/Infoblox-CTO/data-platform
+repo_name: Infoblox-CTO/data-platform
+edit_uri: edit/main/docs/
+
+# Theme configuration
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+
+# Markdown extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: Infoblox-CTO
+      repo: data-platform
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Extra CSS
+extra_css:
+  - stylesheets/extra.css
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Prerequisites: getting-started/prerequisites.md
+    - Installation: getting-started/installation.md
+    - Quickstart: getting-started/quickstart.md
+  - Concepts:
+    - concepts/index.md
+    - Overview: concepts/overview.md
+    - Data Packages: concepts/data-packages.md
+    - Manifests: concepts/manifests.md
+    - Lineage: concepts/lineage.md
+    - Governance: concepts/governance.md
+    - Environments: concepts/environments.md
+  - Tutorials:
+    - tutorials/index.md
+    - Kafka to S3: tutorials/kafka-to-s3.md
+    - Local Development: tutorials/local-development.md
+    - Promoting Packages: tutorials/promoting-packages.md
+  - Reference:
+    - reference/index.md
+    - CLI Commands: reference/cli.md
+    - Manifest Schema: reference/manifest-schema.md
+    - Configuration: reference/configuration.md
+  - Troubleshooting:
+    - troubleshooting/index.md
+    - Common Issues: troubleshooting/common-issues.md
+    - FAQ: troubleshooting/faq.md
+  - Architecture: architecture.md
+  - Testing: testing.md
+  - Contributing: contributing.md
+
+# Extra configuration
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Infoblox-CTO/data-platform
+  generator: false

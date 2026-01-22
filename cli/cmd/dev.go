@@ -245,7 +245,7 @@ func runDevStatus(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Println("Local development stack status:\n")
+	fmt.Println("Local development stack status:")
 
 	formatter := GetFormatter()
 	data := formatServiceStatus(status)

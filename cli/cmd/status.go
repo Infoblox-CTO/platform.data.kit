@@ -87,7 +87,7 @@ func showPackageStatus(packageName string) error {
 }
 
 func showAllPackagesStatus() error {
-	fmt.Println("All Packages Status\n")
+	fmt.Println("All Packages Status")
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "PACKAGE\tDEV\tINT\tPROD\tHEALTH")

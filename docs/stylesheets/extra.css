@@ -1,0 +1,85 @@
+/* DP Documentation Custom Styles */
+
+/* Code block enhancements */
+.md-typeset code {
+  font-size: 0.85em;
+}
+
+/* Admonition customizations */
+.md-typeset .admonition.tip {
+  border-color: #00bfa5;
+}
+
+.md-typeset .admonition.tip > .admonition-title {
+  background-color: rgba(0, 191, 165, 0.1);
+}
+
+/* Navigation improvements */
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Table of contents */
+.md-sidebar--secondary .md-nav__link {
+  font-size: 0.75rem;
+}
+
+/* Hero section on homepage */
+.md-typeset .hero {
+  text-align: center;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.md-typeset .hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.md-typeset .hero p {
+  font-size: 1.2rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Quick links grid on homepage */
+.md-typeset .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.md-typeset .grid .card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.md-typeset .grid .card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.md-typeset .grid .card h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.md-typeset .grid .card p {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Terminal output styling */
+.md-typeset pre > code {
+  border-radius: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 76.1875em) {
+  .md-typeset .hero h1 {
+    font-size: 2rem;
+  }
+}

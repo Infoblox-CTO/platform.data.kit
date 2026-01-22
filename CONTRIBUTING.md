@@ -75,8 +75,42 @@ git checkout -b fix/issue-number-description
 Follow these guidelines:
 
 - **Code Style**: Follow Go conventions and run `make lint`
-- **Testing**: Add tests for new functionality
+- **Testing**: Add tests for new functionality (see [Testing Requirements](#testing-requirements))
 - **Documentation**: Update relevant docs
+
+### Testing Requirements
+
+All code contributions must include appropriate tests:
+
+1. **Unit Tests Required**
+   - Every new function/method needs corresponding tests
+   - Test file must be named `*_test.go` in the same package
+   - Use table-driven tests for multiple input scenarios
+   - Mock external dependencies (HTTP, Docker, filesystem)
+
+2. **Coverage Targets**
+   - `contracts/` and `sdk/validate/`: 80%+ coverage
+   - All other packages: 70%+ coverage
+   - CI will warn if coverage drops below threshold
+
+3. **Running Tests**
+   ```bash
+   # Run all tests
+   make test
+   
+   # Run with race detection
+   go test -race ./...
+   
+   # Run with coverage
+   make coverage
+   ```
+
+4. **Test Organization**
+   - Place test fixtures in `testdata/` directories
+   - Use `t.Helper()` in helper functions
+   - Use `t.TempDir()` for file operations
+
+See [docs/testing.md](docs/testing.md) for detailed testing guidelines.
 
 ### 4. Test Locally
 
