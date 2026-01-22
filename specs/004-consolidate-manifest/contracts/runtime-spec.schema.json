@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dp.io/schemas/runtime-spec.json",
+  "title": "RuntimeSpec",
+  "description": "Container runtime configuration for DataPackage execution",
+  "type": "object",
+  "required": ["image"],
+  "properties": {
+    "image": {
+      "type": "string",
+      "description": "Container image reference with optional ${VAR} substitution",
+      "pattern": "^[a-zA-Z0-9._/${}:-]+$",
+      "examples": [
+        "my-registry/my-pipeline:v1.0.0",
+        "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
+      ]
+    },
+    "command": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Override container entrypoint"
+    },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Arguments to pass to entrypoint"
+    },
+    "env": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/EnvVar" },
+      "description": "Custom environment variables"
+    },
+    "envFrom": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/EnvFromSource" },
+      "description": "Reference to secrets or configmaps for env vars"
+    },
+    "timeout": {
+      "type": "string",
+      "pattern": "^[0-9]+(s|m|h)$",
+      "default": "1h",
+      "description": "Maximum execution time (e.g., 30m, 2h)",
+      "examples": ["30m", "1h", "2h"]
+    },
+    "retries": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 3,
+      "description": "Number of retry attempts on failure"
+    },
+    "replicas": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Number of parallel instances"
+    },
+    "serviceAccountName": {
+      "type": "string",
+      "description": "Kubernetes service account to use"
+    },
+    "successfulJobsHistoryLimit": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 3,
+      "description": "Number of successful jobs to retain"
+    },
+    "failedJobsHistoryLimit": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 5,
+      "description": "Number of failed jobs to retain"
+    }
+  },
+  "definitions": {
+    "EnvVar": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "Environment variable name"
+        },
+        "value": {
+          "type": "string",
+          "description": "Static value"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/EnvVarSource",
+          "description": "Dynamic value source"
+        }
+      },
+      "oneOf": [
+        { "required": ["value"] },
+        { "required": ["valueFrom"] }
+      ]
+    },
+    "EnvVarSource": {
+      "type": "object",
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/SecretKeySelector"
+        },
+        "configMapKeyRef": {
+          "$ref": "#/definitions/ConfigMapKeySelector"
+        }
+      }
+    },
+    "SecretKeySelector": {
+      "type": "object",
+      "required": ["name", "key"],
+      "properties": {
+        "name": { "type": "string" },
+        "key": { "type": "string" }
+      }
+    },
+    "ConfigMapKeySelector": {
+      "type": "object",
+      "required": ["name", "key"],
+      "properties": {
+        "name": { "type": "string" },
+        "key": { "type": "string" }
+      }
+    },
+    "EnvFromSource": {
+      "type": "object",
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "description": "Prefix to add to all variable names"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/SecretRef"
+        },
+        "configMapRef": {
+          "$ref": "#/definitions/ConfigMapRef"
+        }
+      }
+    },
+    "SecretRef": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" }
+      }
+    },
+    "ConfigMapRef": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" }
+      }
+    }
+  }
+}

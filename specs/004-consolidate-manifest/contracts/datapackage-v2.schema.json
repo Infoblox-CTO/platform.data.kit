@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dp.io/schemas/datapackage-v2.json",
+  "title": "DataPackage",
+  "description": "Complete DataPackage manifest with runtime configuration",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "dp.io/v1alpha1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "DataPackage"
+    },
+    "metadata": {
+      "$ref": "#/definitions/PackageMetadata"
+    },
+    "spec": {
+      "$ref": "#/definitions/DataPackageSpec"
+    }
+  },
+  "definitions": {
+    "PackageMetadata": {
+      "type": "object",
+      "required": ["name", "namespace"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "description": "Package name (DNS-safe, lowercase)"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Team/org namespace"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?$",
+          "description": "Semantic version"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "DataPackageSpec": {
+      "type": "object",
+      "required": ["type", "description", "owner", "runtime"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["pipeline", "model", "dataset"],
+          "description": "Package type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable purpose"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Team or individual owner"
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ArtifactContract" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ArtifactContract" }
+        },
+        "schedule": {
+          "$ref": "#/definitions/ScheduleSpec"
+        },
+        "resources": {
+          "$ref": "#/definitions/ResourceSpec"
+        },
+        "lineage": {
+          "$ref": "#/definitions/LineageSpec"
+        },
+        "runtime": {
+          "$ref": "runtime-spec.schema.json",
+          "description": "Container runtime configuration"
+        }
+      }
+    },
+    "ArtifactContract": {
+      "type": "object",
+      "required": ["name", "type", "binding"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { 
+          "type": "string",
+          "enum": ["kafka-topic", "s3-prefix", "s3-object", "postgres-table", "file"]
+        },
+        "binding": { 
+          "type": "string",
+          "description": "Binding reference (e.g., input.events)"
+        },
+        "schema": { "$ref": "#/definitions/SchemaRef" },
+        "classification": { "$ref": "#/definitions/Classification" },
+        "lineage": { "$ref": "#/definitions/ArtifactLineage" }
+      }
+    },
+    "ScheduleSpec": {
+      "type": "object",
+      "properties": {
+        "cron": {
+          "type": "string",
+          "description": "Cron expression"
+        },
+        "timezone": {
+          "type": "string",
+          "default": "UTC"
+        },
+        "suspend": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "ResourceSpec": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string",
+          "pattern": "^[0-9]+m?$",
+          "description": "CPU request/limit (e.g., 2, 500m)"
+        },
+        "memory": {
+          "type": "string",
+          "pattern": "^[0-9]+(Mi|Gi)$",
+          "description": "Memory request/limit (e.g., 4Gi)"
+        },
+        "ephemeralStorage": {
+          "type": "string"
+        }
+      }
+    },
+    "LineageSpec": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "emitter": { "type": "string", "enum": ["marquez", "openlineage"] },
+        "namespace": { "type": "string" }
+      }
+    },
+    "SchemaRef": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["avro", "parquet", "json"] },
+        "schemaRef": { "type": "string" }
+      }
+    },
+    "Classification": {
+      "type": "object",
+      "properties": {
+        "pii": { "type": "boolean" },
+        "sensitivity": { "type": "string", "enum": ["public", "internal", "confidential", "restricted"] },
+        "dataCategory": { "type": "string" },
+        "retentionDays": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "ArtifactLineage": {
+      "type": "object",
+      "properties": {
+        "source": { "type": "string" },
+        "namespace": { "type": "string" },
+        "transformationType": { "type": "string" },
+        "transformationDescription": { "type": "string" }
+      }
+    }
+  }
+}
