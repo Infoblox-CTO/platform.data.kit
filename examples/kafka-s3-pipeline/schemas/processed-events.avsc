@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ProcessedEvent",
+  "namespace": "com.example.events",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "user_id", "type": "string", "doc": "PII field"},
+    {"name": "timestamp", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "event_type", "type": "string"},
+    {"name": "payload", "type": ["null", "string"], "default": null},
+    {"name": "processed_at", "type": {"type": "long", "logicalType": "timestamp-millis"}}
+  ]
+}

@@ -1,0 +1,53 @@
+apiVersion: dp.io/v1alpha1
+kind: DataPackage
+metadata:
+  name: kafka-s3-pipeline
+  namespace: analytics
+  labels:
+    team: data-platform
+    domain: events
+spec:
+  type: pipeline
+  description: Consumes events from Kafka, transforms, writes to S3
+  owner: data-platform-team
+  
+  inputs:
+    - name: events
+      type: kafka-topic
+      binding: input.events
+      # Lineage source information
+      lineage:
+        source: kafka-cluster
+        namespace: analytics
+      
+  outputs:
+    - name: processed-events
+      type: s3-prefix
+      binding: output.lake
+      schema:
+        type: parquet
+        schemaRef: ./schemas/processed-events.avsc
+      classification:
+        pii: true
+        sensitivity: confidential
+        dataCategory: customer-behavior
+        retentionDays: 365
+      # Lineage destination and transformation info
+      lineage:
+        source: s3-lake
+        namespace: analytics
+        transformationType: TRANSFORMATION
+        transformationDescription: "Filters, enriches and aggregates raw events into processed format"
+        
+  schedule:
+    cron: "0 */6 * * *"  # Every 6 hours
+    
+  resources:
+    cpu: "2"
+    memory: "4Gi"
+
+  # Lineage configuration for the data package
+  lineage:
+    enabled: true
+    emitter: marquez
+    namespace: analytics

@@ -1,0 +1,63 @@
+# Go build artifacts
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go dependencies (vendored)
+vendor/
+
+# Go coverage
+*.coverprofile
+coverage.out
+coverage.html
+
+# IDE and editor files
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.vscode/settings.json
+.vscode/launch.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local development
+hack/compose/.data/
+tmp/
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Kubernetes local configs (sensitive)
+kubeconfig*
+*.key
+*.crt
+*.pem
+
+# Test artifacts
+testdata/output/
+
+# Build cache
+.cache/
+
+# Goreleaser
+dist/
+
+# Controller-gen output (regenerated)
+platform/controller/config/crd/bases/*.gen.yaml

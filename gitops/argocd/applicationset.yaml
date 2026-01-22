@@ -1,0 +1,117 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: dp-environments
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - environment: dev
+            cluster: in-cluster
+            namespace: dp-dev
+            autoSync: true
+            selfHeal: true
+          - environment: int
+            cluster: in-cluster
+            namespace: dp-int
+            autoSync: true
+            selfHeal: true
+          - environment: prod
+            cluster: in-cluster
+            namespace: dp-prod
+            autoSync: false
+            selfHeal: false
+  template:
+    metadata:
+      name: dp-{{environment}}
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: dp
+        app.kubernetes.io/component: platform
+        app.kubernetes.io/part-of: dp
+        dp.io/environment: "{{environment}}"
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: dp-alerts
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: dp-alerts
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: dp-alerts
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Infoblox-CTO/data-platform.git
+        targetRevision: main
+        path: gitops/environments/{{environment}}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: "{{autoSync}}"
+          selfHeal: "{{selfHeal}}"
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      revisionHistoryLimit: 10
+      ignoreDifferences:
+        - group: ""
+          kind: Secret
+          jsonPointers:
+            - /data
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dp
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Cloud Data Platform Project
+  sourceRepos:
+    - https://github.com/Infoblox-CTO/data-platform.git
+    - ghcr.io/infoblox-cto/*
+  destinations:
+    - namespace: dp-*
+      server: https://kubernetes.default.svc
+    - namespace: dp-system
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: batch
+      kind: "*"
+    - group: dp.io
+      kind: "*"
+  roles:
+    - name: admin
+      description: DP admin role
+      policies:
+        - p, proj:dp:admin, applications, *, dp/*, allow
+      groups:
+        - dp-admins
+    - name: readonly
+      description: DP read-only role
+      policies:
+        - p, proj:dp:readonly, applications, get, dp/*, allow
+      groups:
+        - dp-viewers

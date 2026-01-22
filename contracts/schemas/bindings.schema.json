@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdpp.io/schemas/v1alpha1/bindings.schema.json",
+  "title": "Environment Bindings",
+  "description": "Schema for bindings.yaml - environment-specific mappings from abstract references to concrete resources",
+  "type": "object",
+  "required": ["apiVersion", "kind", "bindings"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "cdpp.io/v1alpha1",
+      "description": "Schema version"
+    },
+    "kind": {
+      "type": "string",
+      "const": "Bindings",
+      "description": "Resource kind"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["dev", "integration", "staging", "prod"],
+          "description": "Target environment"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace"
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/binding" },
+      "minItems": 1,
+      "description": "List of bindings"
+    }
+  },
+  "$defs": {
+    "binding": {
+      "type": "object",
+      "required": ["name", "type", "properties"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{0,126}$",
+          "description": "Binding name (matches package reference)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["s3-prefix", "kafka-topic", "postgres-table", "spark-job"],
+          "description": "Resource type"
+        },
+        "properties": {
+          "oneOf": [
+            { "$ref": "#/$defs/s3Properties" },
+            { "$ref": "#/$defs/kafkaProperties" },
+            { "$ref": "#/$defs/postgresProperties" },
+            { "$ref": "#/$defs/sparkProperties" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "s3-prefix" } } },
+          "then": { "properties": { "properties": { "$ref": "#/$defs/s3Properties" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "kafka-topic" } } },
+          "then": { "properties": { "properties": { "$ref": "#/$defs/kafkaProperties" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "postgres-table" } } },
+          "then": { "properties": { "properties": { "$ref": "#/$defs/postgresProperties" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "spark-job" } } },
+          "then": { "properties": { "properties": { "$ref": "#/$defs/sparkProperties" } } }
+        }
+      ]
+    },
+    "s3Properties": {
+      "type": "object",
+      "required": ["bucket"],
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+          "description": "S3 bucket name"
+        },
+        "prefix": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9/_-]+/?$",
+          "description": "S3 key prefix"
+        },
+        "region": {
+          "type": "string",
+          "pattern": "^[a-z]{2}-[a-z]+-[0-9]$",
+          "description": "AWS region"
+        },
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "Custom S3 endpoint (for LocalStack, MinIO)"
+        }
+      }
+    },
+    "kafkaProperties": {
+      "type": "object",
+      "required": ["brokers", "topic"],
+      "properties": {
+        "brokers": {
+          "type": "string",
+          "description": "Comma-separated broker addresses"
+        },
+        "topic": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "description": "Kafka topic name"
+        },
+        "consumerGroup": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "description": "Consumer group ID"
+        },
+        "schemaRegistryUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Schema Registry URL"
+        },
+        "securityProtocol": {
+          "type": "string",
+          "enum": ["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"],
+          "default": "PLAINTEXT",
+          "description": "Security protocol"
+        },
+        "credentialsSecretRef": {
+          "type": "string",
+          "description": "Reference to Kubernetes Secret with credentials"
+        }
+      }
+    },
+    "postgresProperties": {
+      "type": "object",
+      "required": ["host", "database", "table"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "PostgreSQL host"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 5432,
+          "description": "PostgreSQL port"
+        },
+        "database": {
+          "type": "string",
+          "description": "Database name"
+        },
+        "schema": {
+          "type": "string",
+          "default": "public",
+          "description": "Database schema"
+        },
+        "table": {
+          "type": "string",
+          "description": "Table name"
+        },
+        "credentialsSecretRef": {
+          "type": "string",
+          "description": "Reference to Kubernetes Secret with username/password"
+        },
+        "sslMode": {
+          "type": "string",
+          "enum": ["disable", "require", "verify-ca", "verify-full"],
+          "default": "require",
+          "description": "SSL mode"
+        }
+      }
+    },
+    "sparkProperties": {
+      "type": "object",
+      "required": ["namespace"],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace for Spark jobs"
+        },
+        "serviceAccount": {
+          "type": "string",
+          "description": "Service account for Spark driver/executor"
+        },
+        "image": {
+          "type": "string",
+          "description": "Spark image to use"
+        },
+        "sparkConf": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Spark configuration properties"
+        }
+      }
+    }
+  }
+}

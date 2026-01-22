@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base resources for all environments
+resources:
+  - crds/packagedeployment.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/part-of: dp
+  app.kubernetes.io/managed-by: kustomize
+
+# Namespace will be overridden per environment
+namespace: dp-system
+
+# ConfigMap generator for shared configuration
+configMapGenerator:
+  - name: dp-config
+    literals:
+      - DP_LOG_LEVEL=info
+      - DP_METRICS_ENABLED=true
+
+# Common annotations
+commonAnnotations:
+  dp.io/managed-by: kustomize

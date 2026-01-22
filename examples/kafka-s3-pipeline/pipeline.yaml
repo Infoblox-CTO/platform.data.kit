@@ -1,0 +1,29 @@
+apiVersion: dp.io/v1alpha1
+kind: Pipeline
+spec:
+  image: "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
+  
+  env:
+    - name: LOG_LEVEL
+      value: info
+    - name: KAFKA_BROKERS
+      valueFrom:
+        bindingRef: input.events.brokers
+    - name: KAFKA_TOPIC
+      valueFrom:
+        bindingRef: input.events.topic
+    - name: S3_BUCKET
+      valueFrom:
+        bindingRef: output.lake.bucket
+    - name: S3_PREFIX
+      valueFrom:
+        bindingRef: output.lake.prefix
+        
+  envFrom:
+    - secretRef:
+        name: pipeline-credentials
+        
+  timeout: 2h
+  retries: 2
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5

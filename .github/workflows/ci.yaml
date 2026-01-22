@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: contracts
+
+      - name: Lint contracts
+        run: cd contracts && golangci-lint run ./...
+
+      - name: Lint sdk
+        run: cd sdk && golangci-lint run ./...
+
+      - name: Lint cli
+        run: cd cli && golangci-lint run ./...
+
+      - name: Lint controller
+        run: cd platform/controller && golangci-lint run ./...
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Test contracts
+        run: cd contracts && go test -race -coverprofile=coverage.out ./...
+
+      - name: Test sdk
+        run: cd sdk && go test -race -coverprofile=coverage.out ./...
+
+      - name: Test cli
+        run: cd cli && go test -race -coverprofile=coverage.out ./...
+
+      - name: Test controller
+        run: cd platform/controller && go test -race -coverprofile=coverage.out ./...
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Build contracts
+        run: cd contracts && go build ./...
+
+      - name: Build sdk
+        run: cd sdk && go build ./...
+
+      - name: Build cli
+        run: |
+          cd cli
+          go build -o ../bin/cdpp .
+          ../bin/cdpp --help
+
+      - name: Build controller
+        run: |
+          cd platform/controller
+          go build -o ../../bin/controller ./cmd/
+
+      - name: Upload CLI binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdpp-linux-amd64
+          path: bin/cdpp
+          retention-days: 7
+
+  validate-schemas:
+    name: Validate JSON Schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON Schema syntax
+        run: |
+          for schema in specs/001-cdpp-mvp/contracts/*.schema.json; do
+            echo "Validating $schema..."
+            python3 -c "import json; json.load(open('$schema'))"
+          done
+          echo "✓ All schemas are valid JSON"

@@ -1,0 +1,101 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dp-controller
+  namespace: dp-system
+  labels:
+    app.kubernetes.io/name: dp
+    app.kubernetes.io/component: controller
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dp-controller
+  namespaceSelector:
+    matchNames:
+      - dp-system
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+      scheme: http
+      scrapeTimeout: 10s
+      honorLabels: true
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dp-controller-alerts
+  namespace: dp-system
+  labels:
+    app.kubernetes.io/name: dp
+    app.kubernetes.io/component: controller
+spec:
+  groups:
+    - name: dp.controller
+      rules:
+        - alert: DPControllerHighErrorRate
+          expr: |
+            sum(rate(dp_reconcile_total{result="error"}[5m])) 
+            / sum(rate(dp_reconcile_total[5m])) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: DP controller has high error rate
+            description: >-
+              DP controller error rate is {{ $value | humanizePercentage }}
+              which is above the 10% threshold.
+        
+        - alert: DPControllerReconciliationSlow
+          expr: |
+            histogram_quantile(0.99, 
+              rate(dp_reconcile_duration_seconds_bucket[5m])
+            ) > 30
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: DP controller reconciliation is slow
+            description: >-
+              DP controller p99 reconciliation latency is {{ $value | humanizeDuration }}
+              which is above the 30s threshold.
+        
+        - alert: DPControllerDown
+          expr: up{job="dp-controller"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: DP controller is down
+            description: >-
+              DP controller has been down for more than 5 minutes.
+        
+        - alert: DPPipelineFailures
+          expr: |
+            sum(rate(dp_runs_total{status="error"}[1h])) 
+            / sum(rate(dp_runs_total[1h])) > 0.2
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: High pipeline failure rate
+            description: >-
+              Pipeline failure rate is {{ $value | humanizePercentage }}
+              which is above the 20% threshold.
+        
+        - alert: DPPackageDeploymentStuck
+          expr: |
+            time() - dp_packagedeployment_last_success_time > 3600
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: PackageDeployment is stuck
+            description: >-
+              PackageDeployment {{ $labels.name }} in namespace {{ $labels.namespace }}
+              has not had a successful reconciliation in over an hour.

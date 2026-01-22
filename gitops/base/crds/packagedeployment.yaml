@@ -1,0 +1,171 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: packagedeployments.dp.io
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+spec:
+  group: dp.io
+  names:
+    kind: PackageDeployment
+    listKind: PackageDeploymentList
+    plural: packagedeployments
+    singular: packagedeployment
+    shortNames:
+      - pkgd
+      - pd
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Package
+          type: string
+          jsonPath: .spec.package.name
+        - name: Version
+          type: string
+          jsonPath: .spec.package.version
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - package
+              properties:
+                package:
+                  type: object
+                  required:
+                    - name
+                    - version
+                    - registry
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the data package
+                    namespace:
+                      type: string
+                      description: Namespace/team of the package
+                    version:
+                      type: string
+                      description: Semantic version of the package
+                    registry:
+                      type: string
+                      description: OCI registry URL
+                    digest:
+                      type: string
+                      description: Content digest for verification
+                schedule:
+                  type: object
+                  properties:
+                    cron:
+                      type: string
+                      description: Cron expression for scheduled runs
+                    timezone:
+                      type: string
+                      description: Timezone for cron schedule
+                      default: UTC
+                    suspend:
+                      type: boolean
+                      description: Suspend scheduled runs
+                      default: false
+                resources:
+                  type: object
+                  properties:
+                    requests:
+                      type: object
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                    limits:
+                      type: object
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                bindings:
+                  type: string
+                  description: Reference to binding configuration
+                serviceAccountName:
+                  type: string
+                  description: ServiceAccount to use for runs
+                  default: default
+                imagePullSecrets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: Current phase of the deployment
+                  enum:
+                    - Pending
+                    - Pulling
+                    - Ready
+                    - Running
+                    - Failed
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                lastRun:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    startTime:
+                      type: string
+                      format: date-time
+                    completionTime:
+                      type: string
+                      format: date-time
+                    status:
+                      type: string
+                    recordsProcessed:
+                      type: integer
+                      format: int64
+                observedGeneration:
+                  type: integer
+                  format: int64

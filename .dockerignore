@@ -1,0 +1,52 @@
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Specs and design docs
+specs/
+.specify/
+
+# Test files
+*_test.go
+testdata/
+coverage.*
+
+# Local development
+hack/
+examples/
+dashboards/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Build artifacts (use multi-stage builds)
+bin/
+dist/
+vendor/
+
+# GitHub configs
+.github/
+
+# Kubernetes manifests (built separately)
+gitops/
+platform/operator/

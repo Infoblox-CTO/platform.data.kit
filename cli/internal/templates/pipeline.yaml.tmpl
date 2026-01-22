@@ -1,0 +1,13 @@
+apiVersion: cdpp.io/v1alpha1
+kind: Pipeline
+spec:
+  image: "${REGISTRY}/{{ .Name }}:${VERSION}"
+  
+  env:
+    - name: LOG_LEVEL
+      value: info
+      
+  timeout: 1h
+  retries: 2
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5

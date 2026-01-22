@@ -1,0 +1,103 @@
+# bindings.local.yaml - Local development bindings for DP
+# These bindings map logical data sources to local infrastructure
+apiVersion: data.infoblox.com/v1alpha1
+kind: Binding
+metadata:
+  name: local-dev-bindings
+  environment: local
+spec:
+  # S3 bindings (via LocalStack)
+  s3:
+    # Raw data landing zone
+    - name: raw-bucket
+      bucket: dp-raw
+      endpoint: http://localhost:4566
+      region: us-east-1
+      pathStyle: true
+      credentials:
+        accessKeyId: test
+        secretAccessKey: test
+
+    # Staging/intermediate processing
+    - name: staging-bucket
+      bucket: dp-staging
+      endpoint: http://localhost:4566
+      region: us-east-1
+      pathStyle: true
+      credentials:
+        accessKeyId: test
+        secretAccessKey: test
+
+    # Curated output
+    - name: curated-bucket
+      bucket: dp-curated
+      endpoint: http://localhost:4566
+      region: us-east-1
+      pathStyle: true
+      credentials:
+        accessKeyId: test
+        secretAccessKey: test
+
+    # Test data
+    - name: test-bucket
+      bucket: dp-test
+      endpoint: http://localhost:4566
+      region: us-east-1
+      pathStyle: true
+      credentials:
+        accessKeyId: test
+        secretAccessKey: test
+
+  # Kafka bindings (via Redpanda)
+  kafka:
+    # Raw events input
+    - name: raw-events
+      topic: dp.raw.events
+      brokers:
+        - localhost:19092
+      schemaRegistry: http://localhost:18081
+      consumerGroup: dp-local-dev
+
+    # Processed events output
+    - name: processed-events
+      topic: dp.processed.events
+      brokers:
+        - localhost:19092
+      schemaRegistry: http://localhost:18081
+
+    # Dead letter queue
+    - name: error-dlq
+      topic: dp.errors.dlq
+      brokers:
+        - localhost:19092
+
+    # Test topics
+    - name: test-input
+      topic: dp.test.input
+      brokers:
+        - localhost:19092
+
+    - name: test-output
+      topic: dp.test.output
+      brokers:
+        - localhost:19092
+
+  # PostgreSQL bindings
+  postgres:
+    - name: main-db
+      host: localhost
+      port: 5432
+      database: dp
+      schema: public
+      credentials:
+        username: dp
+        password: dp_local_dev
+
+    - name: test-db
+      host: localhost
+      port: 5432
+      database: dp
+      schema: test
+      credentials:
+        username: dp
+        password: dp_local_dev

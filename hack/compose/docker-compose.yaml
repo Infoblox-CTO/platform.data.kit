@@ -1,0 +1,201 @@
+# docker-compose.yaml - DP Local Development Stack
+# Provides Redpanda (Kafka-compatible), LocalStack (AWS S3), and PostgreSQL
+# Usage: dp dev up / dp dev down
+
+version: "3.9"
+
+services:
+  # Redpanda - Kafka-compatible streaming platform
+  # Lighter than Kafka, perfect for local development
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    container_name: dp-redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --mode dev-container
+      - --smp 1
+      - --default-log-level=warn
+    ports:
+      - "19092:19092"  # Kafka external
+      - "18081:18081"  # Schema Registry external
+      - "18082:18082"  # Pandaproxy external
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dp-network
+
+  # Redpanda Console - Web UI for Kafka management
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.7.0
+    container_name: dp-redpanda-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_SCHEMAREGISTRY_ENABLED: "true"
+      KAFKA_SCHEMAREGISTRY_URLS: http://redpanda:8081
+    networks:
+      - dp-network
+
+  # LocalStack - AWS S3 emulation for object storage
+  localstack:
+    image: localstack/localstack:3.7.2
+    container_name: dp-localstack
+    ports:
+      - "4566:4566"  # LocalStack Gateway
+      - "4510-4559:4510-4559"  # External services
+    environment:
+      SERVICES: s3
+      DEBUG: 0
+      PERSISTENCE: 1
+      LOCALSTACK_HOST: localhost
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./localstack-init.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dp-network
+
+  # PostgreSQL - Relational database for structured data
+  postgres:
+    image: postgres:16-alpine
+    container_name: dp-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: dp
+      POSTGRES_PASSWORD: dp_local_dev
+      POSTGRES_DB: dp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dp -d dp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dp-network
+
+  # Marquez - Data lineage and metadata service
+  marquez:
+    image: marquezproject/marquez:0.47.0
+    container_name: dp-marquez
+    depends_on:
+      marquez-db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"  # API
+      - "5001:5001"  # Admin
+    environment:
+      MARQUEZ_PORT: 5000
+      MARQUEZ_ADMIN_PORT: 5001
+      MARQUEZ_CONFIG: /opt/marquez/config/marquez.yml
+      POSTGRES_HOST: marquez-db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: marquez
+      POSTGRES_USER: marquez
+      POSTGRES_PASSWORD: marquez
+    volumes:
+      - ./marquez-config.yml:/opt/marquez/config/marquez.yml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/namespaces"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dp-network
+
+  # Marquez database
+  marquez-db:
+    image: postgres:14-alpine
+    container_name: dp-marquez-db
+    environment:
+      POSTGRES_USER: marquez
+      POSTGRES_PASSWORD: marquez
+      POSTGRES_DB: marquez
+    volumes:
+      - marquez_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marquez -d marquez"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - dp-network
+
+  # Marquez Web UI
+  marquez-web:
+    image: marquezproject/marquez-web:0.47.0
+    container_name: dp-marquez-web
+    depends_on:
+      marquez:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      MARQUEZ_HOST: marquez
+      MARQUEZ_PORT: 5000
+    networks:
+      - dp-network
+
+  # Marquez init container - creates namespace on startup
+  marquez-init:
+    image: curlimages/curl:8.5.0
+    container_name: dp-marquez-init
+    depends_on:
+      marquez:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/init/marquez-init.sh"]
+    volumes:
+      - ./marquez-init.sh:/init/marquez-init.sh:ro
+    networks:
+      - dp-network
+    restart: "no"
+
+  # Redpanda init container - creates topics on startup
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    container_name: dp-redpanda-init
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/init/redpanda-init.sh"]
+    volumes:
+      - ./redpanda-init.sh:/init/redpanda-init.sh:ro
+    networks:
+      - dp-network
+    restart: "no"
+
+networks:
+  dp-network:
+    name: dp-network
+    driver: bridge
+
+volumes:
+  redpanda_data:
+    name: dp-redpanda-data
+  localstack_data:
+    name: dp-localstack-data
+  postgres_data:
+    name: dp-postgres-data

@@ -1,0 +1,34 @@
+apiVersion: cdpp.io/v1alpha1
+kind: DataPackage
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    team: {{ .Team }}
+spec:
+  type: pipeline
+  description: {{ .Description }}
+  owner: {{ .Owner }}
+  
+  inputs:
+    - name: input-events
+      type: kafka-topic
+      binding: input.events
+      
+  outputs:
+    - name: processed-data
+      type: s3-prefix
+      binding: output.lake
+      schema:
+        type: parquet
+      classification:
+        pii: false
+        sensitivity: internal
+        dataCategory: analytics
+        
+  schedule:
+    cron: "0 0 * * *"  # Daily at midnight
+    
+  resources:
+    cpu: "1"
+    memory: "2Gi"

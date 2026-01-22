@@ -1,0 +1,75 @@
+name: Promote Package
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - 'gitops/environments/**'
+
+jobs:
+  notify-promotion:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect promoted packages
+        id: detect
+        run: |
+          # Get changed files from the PR
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} || echo "")
+          
+          # Extract environment and package info
+          env=""
+          packages=""
+          for file in $changed_files; do
+            if [[ $file =~ gitops/environments/([^/]+)/packages/([^/]+)/ ]]; then
+              env="${BASH_REMATCH[1]}"
+              pkg="${BASH_REMATCH[2]}"
+              packages="${packages} ${pkg}"
+            fi
+          done
+          
+          echo "environment=${env}" >> $GITHUB_OUTPUT
+          echo "packages=${packages}" >> $GITHUB_OUTPUT
+
+      - name: Post notification
+        if: steps.detect.outputs.environment != ''
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Package promotion merged",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Package Promotion Merged*\n\nEnvironment: `${{ steps.detect.outputs.environment }}`\nPackages: `${{ steps.detect.outputs.packages }}`\nPR: ${{ github.event.pull_request.html_url }}\n\nArgoCD will sync automatically."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true
+
+  verify-sync:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: notify-promotion
+    steps:
+      - name: Wait for ArgoCD sync
+        run: |
+          echo "Waiting for ArgoCD to sync..."
+          # In production, this would use the ArgoCD API to check sync status
+          # For MVP, we just wait a bit
+          sleep 30
+
+      - name: Log sync completion
+        run: |
+          echo "ArgoCD sync expected to complete"
+          echo "Environment: ${{ needs.notify-promotion.outputs.environment }}"
+          echo "Check ArgoCD UI for sync status"

@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdpp.io/schemas/v1alpha1/lineage-event.schema.json",
+  "title": "Lineage Event",
+  "description": "Schema for OpenLineage-compatible lineage events emitted by CDPP pipelines",
+  "type": "object",
+  "required": ["eventType", "eventTime", "run", "job", "producer"],
+  "properties": {
+    "eventType": {
+      "type": "string",
+      "enum": ["START", "RUNNING", "COMPLETE", "FAIL", "ABORT"],
+      "description": "Type of run event"
+    },
+    "eventTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the event"
+    },
+    "run": {
+      "$ref": "#/$defs/run",
+      "description": "Run information"
+    },
+    "job": {
+      "$ref": "#/$defs/job",
+      "description": "Job information"
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dataset" },
+      "description": "Input datasets"
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dataset" },
+      "description": "Output datasets"
+    },
+    "producer": {
+      "type": "string",
+      "format": "uri",
+      "description": "URI identifying the producer of this event"
+    },
+    "schemaURL": {
+      "type": "string",
+      "format": "uri",
+      "default": "https://openlineage.io/spec/1-0-5/OpenLineage.json",
+      "description": "OpenLineage schema URL"
+    }
+  },
+  "$defs": {
+    "run": {
+      "type": "object",
+      "required": ["runId"],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this run"
+        },
+        "facets": {
+          "type": "object",
+          "properties": {
+            "nominalTime": {
+              "type": "object",
+              "properties": {
+                "nominalStartTime": { "type": "string", "format": "date-time" },
+                "nominalEndTime": { "type": "string", "format": "date-time" }
+              }
+            },
+            "parent": {
+              "type": "object",
+              "properties": {
+                "run": {
+                  "type": "object",
+                  "properties": {
+                    "runId": { "type": "string", "format": "uuid" }
+                  }
+                },
+                "job": {
+                  "type": "object",
+                  "properties": {
+                    "namespace": { "type": "string" },
+                    "name": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "errorMessage": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string" },
+                "programmingLanguage": { "type": "string" },
+                "stackTrace": { "type": "string" }
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "job": {
+      "type": "object",
+      "required": ["namespace", "name"],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "Job namespace (typically team/org)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Job name (typically package name)"
+        },
+        "facets": {
+          "type": "object",
+          "properties": {
+            "sourceCode": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "enum": ["git", "svn", "mercurial"] },
+                "url": { "type": "string", "format": "uri" },
+                "version": { "type": "string" }
+              }
+            },
+            "sourceCodeLocation": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "url": { "type": "string", "format": "uri" },
+                "repoUrl": { "type": "string", "format": "uri" },
+                "path": { "type": "string" },
+                "version": { "type": "string" },
+                "tag": { "type": "string" },
+                "branch": { "type": "string" }
+              }
+            },
+            "documentation": {
+              "type": "object",
+              "properties": {
+                "description": { "type": "string" }
+              }
+            },
+            "ownership": {
+              "type": "object",
+              "properties": {
+                "owners": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string", "enum": ["MAINTAINER", "TECHNICAL_OWNER", "BUSINESS_OWNER"] }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "required": ["namespace", "name"],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "Dataset namespace (e.g., 'kafka', 's3', 'postgres')"
+        },
+        "name": {
+          "type": "string",
+          "description": "Dataset name (e.g., topic name, bucket/prefix, table name)"
+        },
+        "facets": {
+          "type": "object",
+          "properties": {
+            "dataSource": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "uri": { "type": "string", "format": "uri" }
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "type"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string" },
+                      "description": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "dataQuality": {
+              "type": "object",
+              "properties": {
+                "rowCount": { "type": "integer" },
+                "bytes": { "type": "integer" },
+                "fileCount": { "type": "integer" }
+              }
+            },
+            "columnLineage": {
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "inputFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "namespace": { "type": "string" },
+                            "name": { "type": "string" },
+                            "field": { "type": "string" }
+                          }
+                        }
+                      },
+                      "transformationDescription": { "type": "string" },
+                      "transformationType": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "dataClassification": {
+              "type": "object",
+              "description": "CDPP-specific: Data classification metadata",
+              "properties": {
+                "pii": { "type": "boolean" },
+                "sensitivity": {
+                  "type": "string",
+                  "enum": ["public", "internal", "confidential", "restricted"]
+                },
+                "dataCategory": { "type": "string" },
+                "retentionDays": { "type": "integer" }
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}
