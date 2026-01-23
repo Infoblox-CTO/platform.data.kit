@@ -185,6 +185,11 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 		errs.AddError(contracts.ErrCodeOutputsRequired, "spec.outputs", "outputs are required for pipeline type packages")
 	}
 
+	// For pipeline type, runtime is required
+	if spec.Type == contracts.PackageTypePipeline {
+		v.validateRuntime(errs)
+	}
+
 	// Validate schedule if present
 	if spec.Schedule != nil {
 		v.validateSchedule(errs, spec.Schedule)
@@ -198,6 +203,63 @@ func (v *DataPackageValidator) validateSchedule(errs *contracts.ValidationErrors
 	if schedule.Cron == "" && !schedule.Suspend {
 		// This is okay - schedule may be event-driven
 	}
+}
+
+// validateRuntime validates the runtime section for pipeline packages.
+func (v *DataPackageValidator) validateRuntime(errs *contracts.ValidationErrors) {
+	runtime := v.pkg.Spec.Runtime
+
+	// Runtime is required for pipeline packages
+	if runtime == nil {
+		errs.AddError(contracts.ErrCodeRuntimeRequired, "spec.runtime", "spec.runtime is required for pipeline type packages")
+		return
+	}
+
+	// Image is required
+	if runtime.Image == "" {
+		errs.AddError(contracts.ErrCodeRuntimeImageRequired, "spec.runtime.image", "spec.runtime.image is required")
+	}
+
+	// Validate timeout format if specified
+	if runtime.Timeout != "" {
+		if !isValidDuration(runtime.Timeout) {
+			errs.AddError(contracts.ErrCodeInvalidTimeout, "spec.runtime.timeout", "spec.runtime.timeout must be a valid duration (e.g., 1h, 30m)")
+		}
+	}
+
+	// Validate retries is non-negative
+	if runtime.Retries < 0 {
+		errs.AddError(ErrInvalidFormat, "spec.runtime.retries", "spec.runtime.retries must be non-negative")
+	}
+
+	// Validate replicas is positive
+	if runtime.Replicas < 0 {
+		errs.AddError(ErrInvalidFormat, "spec.runtime.replicas", "spec.runtime.replicas must be non-negative")
+	}
+}
+
+// isValidDuration checks if a string is a valid Go duration.
+func isValidDuration(s string) bool {
+	// Check for common duration patterns: 1h, 30m, 2h30m, etc.
+	// A simple check - valid durations have digits followed by unit
+	if s == "" {
+		return false
+	}
+	// Try to match a basic pattern: digits + unit (s, m, h)
+	for i, c := range s {
+		if c >= '0' && c <= '9' {
+			continue
+		}
+		if c == 'h' || c == 'm' || c == 's' {
+			if i == 0 {
+				return false // No digits before unit
+			}
+			// Continue checking rest of string
+			continue
+		}
+		return false // Invalid character
+	}
+	return true
 }
 
 // validateArtifacts validates input or output artifacts.

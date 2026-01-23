@@ -48,11 +48,12 @@ A data package is a self-contained unit containing:
 
 ```
 my-package/
-├── dp.yaml          # Package manifest (metadata, inputs, outputs)
-├── pipeline.yaml    # Pipeline-specific configuration
+├── dp.yaml          # Package manifest (metadata, inputs, outputs, runtime)
 ├── bindings.yaml    # Infrastructure binding references
 └── src/             # Implementation code
 ```
+
+The `dp.yaml` manifest consolidates all configuration in a single file, including runtime configuration for pipeline packages.
 
 !!! info "Learn More"
     See [Data Packages](data-packages.md) for detailed structure and fields.

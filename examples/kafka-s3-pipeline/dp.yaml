@@ -11,6 +11,21 @@ spec:
   description: Consumes events from Kafka, transforms, writes to S3
   owner: data-platform-team
   
+  # Runtime configuration
+  runtime:
+    image: "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
+    timeout: 2h
+    retries: 2
+    replicas: 1
+    env:
+      - name: LOG_LEVEL
+        value: info
+    envFrom:
+      - secretRef:
+          name: pipeline-credentials
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 5
+  
   inputs:
     - name: events
       type: kafka-topic

@@ -97,6 +97,10 @@ const (
 	// PipelineManifest validation errors (E030-E031)
 	ErrCodeInvalidImageRef = "E030"
 	ErrCodeInvalidTimeout  = "E031"
+
+	// RuntimeSpec validation errors (E040-E041)
+	ErrCodeRuntimeRequired      = "E040"
+	ErrCodeRuntimeImageRequired = "E041"
 )
 
 // Error message templates.
@@ -112,6 +116,8 @@ var errorMessages = map[string]string{
 	ErrCodeVersionAlreadyExists:   "version already exists and cannot be overwritten",
 	ErrCodeInvalidImageRef:        "image must be a valid container image reference",
 	ErrCodeInvalidTimeout:         "timeout must be a positive duration",
+	ErrCodeRuntimeRequired:        "spec.runtime is required for pipeline type packages",
+	ErrCodeRuntimeImageRequired:   "spec.runtime.image is required",
 }
 
 // NewValidationError creates a new validation error with the standard message.

@@ -132,13 +132,14 @@ dp dev down --volumes
 
 ## Package Questions
 
-### What's the difference between dp.yaml, pipeline.yaml, and bindings.yaml?
+### What files are in a data package?
 
 | File | Purpose | Required |
 |------|---------|----------|
-| `dp.yaml` | Package metadata, inputs/outputs | Yes |
-| `pipeline.yaml` | Runtime, schedule, resources | No |
+| `dp.yaml` | Package metadata, inputs/outputs, runtime config | Yes |
 | `bindings.yaml` | Infrastructure references | No |
+
+The `dp.yaml` file is a consolidated manifest that includes all configuration, including the `spec.runtime` section for pipeline execution settings (image, timeout, retries, env vars).
 
 ### What package types are available?
 

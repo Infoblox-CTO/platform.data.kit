@@ -29,8 +29,7 @@ This creates the following structure:
 
 ```
 my-first-pipeline/
-├── dp.yaml           # Package manifest
-├── pipeline.yaml     # Pipeline configuration
+├── dp.yaml           # Package manifest (includes runtime config)
 ├── bindings.yaml     # Infrastructure bindings
 └── src/
     └── main.py       # Your pipeline code
@@ -39,15 +38,22 @@ my-first-pipeline/
 Let's look at the generated manifest:
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: my-first-pipeline
   namespace: default
+  version: 1.0.0
 spec:
   type: pipeline
   description: A sample data pipeline
   owner: my-team
+  
+  # Runtime configuration (all in one file!)
+  runtime:
+    image: myorg/my-first-pipeline:v1.0.0
+    timeout: 30m
+    retries: 3
   
   inputs:
     - name: events
@@ -106,7 +112,6 @@ Expected output:
 
 ```
 ✓ dp.yaml: valid
-✓ pipeline.yaml: valid
 ✓ bindings.yaml: valid
 
 All validations passed!

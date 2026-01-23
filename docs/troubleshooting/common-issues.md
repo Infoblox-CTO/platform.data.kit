@@ -398,10 +398,10 @@ dp logs my-pipeline --env dev --sync
 
 1. **Increase resources**
    ```yaml
-   # pipeline.yaml
+   # dp.yaml
    spec:
-     resources:
-       limits:
+     runtime:
+       resources:
          memory: "4Gi"
          cpu: "4"
    ```

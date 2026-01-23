@@ -17,9 +17,9 @@
 
 **Purpose**: Project structure and foundational types
 
-- [ ] T001 Add RuntimeSpec struct with all fields to contracts/datapackage.go
-- [ ] T002 [P] Add RuntimeSpec unit tests to contracts/datapackage_test.go
-- [ ] T003 [P] Mark PipelineManifest as deprecated in contracts/pipeline.go with doc comment
+- [X] T001 Add RuntimeSpec struct with all fields to contracts/datapackage.go
+- [X] T002 [P] Add RuntimeSpec unit tests to contracts/datapackage_test.go
+- [X] T003 [P] Mark PipelineManifest as deprecated in contracts/pipeline.go with doc comment
 
 ---
 
@@ -29,15 +29,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create binding-to-envvar mapper in sdk/runner/envmapper.go
-- [ ] T005 [P] Add unit tests for envmapper in sdk/runner/envmapper_test.go
-- [ ] T006 Create override merge logic in sdk/manifest/merge.go
-- [ ] T007 [P] Add unit tests for merge logic in sdk/manifest/merge_test.go
-- [ ] T008 Update sdk/manifest/datapackage.go to parse runtime section
-- [ ] T009 [P] Add runtime parsing tests to sdk/manifest/datapackage_test.go
-- [ ] T010 Add pipeline.yaml deprecation detection in sdk/manifest/parser.go
+- [X] T004 Create binding-to-envvar mapper in sdk/runner/envmapper.go
+- [X] T005 [P] Add unit tests for envmapper in sdk/runner/envmapper_test.go
+- [X] T006 Create override merge logic in sdk/manifest/merge.go
+- [X] T007 [P] Add unit tests for merge logic in sdk/manifest/merge_test.go
+- [X] T008 Update sdk/manifest/datapackage.go to parse runtime section
+- [X] T009 [P] Add runtime parsing tests to sdk/manifest/datapackage_test.go
+- [X] T010 Add pipeline.yaml deprecation detection in sdk/manifest/parser.go
 
-**Checkpoint**: Foundation ready - user story implementation can now begin
+**Checkpoint**: Foundation ready - user story implementation can now begin ✅
 
 ---
 
@@ -49,19 +49,19 @@
 
 ### Unit Tests for User Story 1
 
-- [ ] T011 [P] [US1] Add runtime validation tests to sdk/validate/validate_test.go
-- [ ] T012 [P] [US1] Add docker runner binding-mapping tests to sdk/runner/docker_test.go
+- [X] T011 [P] [US1] Add runtime validation tests to sdk/validate/datapackage_test.go
+- [X] T012 [P] [US1] Add docker runner binding-mapping tests to sdk/runner/docker_test.go
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Update sdk/validate/validate.go to require spec.runtime section
-- [ ] T014 [US1] Update sdk/runner/docker.go to use runtime from dp.yaml
-- [ ] T015 [US1] Update sdk/runner/docker.go to auto-map bindings to env vars
-- [ ] T016 [US1] Add deprecation warning when pipeline.yaml detected in cli/cmd/run.go
-- [ ] T017 [US1] Update examples/kafka-s3-pipeline/dp.yaml with runtime section
-- [ ] T018 [US1] Delete examples/kafka-s3-pipeline/pipeline.yaml
+- [X] T013 [US1] Update sdk/validate/datapackage.go to require spec.runtime section
+- [X] T014 [US1] Update sdk/runner/docker.go to use runtime from dp.yaml
+- [X] T015 [US1] Update sdk/runner/docker.go to auto-map bindings to env vars
+- [X] T016 [US1] Add deprecation warning when pipeline.yaml detected in sdk/runner/docker.go
+- [X] T017 [US1] Update examples/kafka-s3-pipeline/dp.yaml with runtime section
+- [X] T018 [US1] Delete examples/kafka-s3-pipeline/pipeline.yaml
 
-**Checkpoint**: User Story 1 complete - `dp run` works with single dp.yaml
+**Checkpoint**: User Story 1 complete - `dp run` works with single dp.yaml ✅
 
 ---
 
@@ -73,18 +73,18 @@
 
 ### Unit Tests for User Story 2
 
-- [ ] T019 [P] [US2] Add --set flag parsing tests to cli/cmd/run_test.go
-- [ ] T020 [P] [US2] Add -f override file tests to cli/cmd/run_test.go
+- [X] T019 [P] [US2] Add --set flag parsing tests to cli/cmd/run_test.go
+- [X] T020 [P] [US2] Add -f override file tests to cli/cmd/run_test.go
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Add --set flag (repeatable) to cli/cmd/run.go
-- [ ] T022 [US2] Add -f flag (repeatable) to cli/cmd/run.go
-- [ ] T023 [US2] Integrate merge logic in cli/cmd/run.go to apply overrides before running
-- [ ] T024 [US2] Add override precedence handling (dp.yaml < -f files < --set)
-- [ ] T025 [US2] Add validation error for invalid override paths in cli/cmd/run.go
+- [X] T021 [US2] Add --set flag (repeatable) to cli/cmd/run.go
+- [X] T022 [US2] Add -f flag (repeatable) to cli/cmd/run.go
+- [X] T023 [US2] Integrate merge logic in cli/cmd/run.go to apply overrides before running
+- [X] T024 [US2] Add override precedence handling (dp.yaml < -f files < --set)
+- [X] T025 [US2] Add validation error for invalid override paths in cli/cmd/run.go
 
-**Checkpoint**: User Story 2 complete - overrides work via CLI flags
+**Checkpoint**: User Story 2 complete - overrides work via CLI flags ✅
 
 ---
 
@@ -96,16 +96,16 @@
 
 ### Unit Tests for User Story 3
 
-- [ ] T026 [P] [US3] Add dp show command tests to cli/cmd/show_test.go
+- [X] T026 [P] [US3] Add dp show command tests to cli/cmd/show_test.go
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Create cli/cmd/show.go with dp show command
-- [ ] T028 [US3] Add -f and --set flags to dp show command
-- [ ] T029 [US3] Add --output flag for json/yaml format selection
-- [ ] T030 [US3] Register show command in cli/cmd/root.go
+- [X] T027 [US3] Create cli/cmd/show.go with dp show command
+- [X] T028 [US3] Add -f and --set flags to dp show command
+- [X] T029 [US3] Add --output flag for json/yaml format selection
+- [X] T030 [US3] Register show command in cli/cmd/root.go
 
-**Checkpoint**: User Story 3 complete - `dp show` displays merged manifest
+**Checkpoint**: User Story 3 complete - `dp show` displays merged manifest ✅
 
 ---
 
@@ -117,15 +117,15 @@
 
 ### Unit Tests for User Story 4
 
-- [ ] T031 [P] [US4] Add dp validate override tests to cli/cmd/lint_test.go
+- [X] T031 [P] [US4] Add dp validate override tests to cli/cmd/lint_test.go
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Add -f and --set flags to cli/cmd/lint.go (dp validate)
-- [ ] T033 [US4] Apply merge logic before validation in cli/cmd/lint.go
-- [ ] T034 [US4] Add descriptive error messages for invalid merged config
+- [X] T032 [US4] Add -f and --set flags to cli/cmd/lint.go (dp validate)
+- [X] T033 [US4] Apply merge logic before validation in cli/cmd/lint.go
+- [X] T034 [US4] Add descriptive error messages for invalid merged config
 
-**Checkpoint**: User Story 4 complete - `dp validate` works with overrides
+**Checkpoint**: User Story 4 complete - `dp validate` works with overrides ✅
 
 ---
 
@@ -133,18 +133,33 @@
 
 **Purpose**: Update all documentation to reflect single-file approach
 
-- [ ] T035 [P] Update docs/concepts/data-packages.md - remove pipeline.yaml references
-- [ ] T036 [P] Update docs/concepts/overview.md - remove pipeline.yaml from structure
-- [ ] T037 [P] Update docs/concepts/index.md - remove pipeline.yaml mention
-- [ ] T038 [P] Update docs/getting-started/quickstart.md - single dp.yaml workflow
-- [ ] T039 [P] Update docs/reference/cli.md - add --set and -f flags, add dp show
-- [ ] T040 [P] Update docs/reference/index.md - remove pipeline.yaml from manifest list
-- [ ] T041 [P] Update docs/reference/manifest-schema.md - add runtime section, remove pipeline.yaml schema
-- [ ] T042 [P] Update docs/tutorials/kafka-to-s3.md - consolidated dp.yaml example
-- [ ] T043 [P] Update docs/tutorials/promoting-packages.md - update YAML examples
-- [ ] T044 [P] Update docs/troubleshooting/common-issues.md - update examples
-- [ ] T045 [P] Update docs/troubleshooting/faq.md - update manifest comparison table
-- [ ] T046 Run quickstart.md validation from specs/004-consolidate-manifest/quickstart.md
+- [X] T035 [P] Update docs/concepts/data-packages.md - remove pipeline.yaml references
+- [X] T036 [P] Update docs/concepts/overview.md - remove pipeline.yaml from structure
+- [X] T037 [P] Update docs/concepts/index.md - remove pipeline.yaml mention
+- [X] T038 [P] Update docs/getting-started/quickstart.md - single dp.yaml workflow
+- [X] T039 [P] Update docs/reference/cli.md - add --set and -f flags, add dp show
+- [X] T040 [P] Update docs/reference/index.md - remove pipeline.yaml from manifest list
+- [X] T041 [P] Update docs/reference/manifest-schema.md - add runtime section, remove pipeline.yaml schema
+- [X] T042 [P] Update docs/tutorials/kafka-to-s3.md - consolidated dp.yaml example
+- [X] T043 [P] Update docs/tutorials/promoting-packages.md - update YAML examples
+- [X] T044 [P] Update docs/troubleshooting/common-issues.md - update examples
+- [X] T045 [P] Update docs/troubleshooting/faq.md - update manifest comparison table
+- [X] T046 Run quickstart.md validation from specs/004-consolidate-manifest/quickstart.md
+
+**Checkpoint**: Phase 7 complete - Documentation updated ✅
+
+---
+
+## Summary
+
+All phases completed successfully:
+- ✅ Phase 1: Setup - RuntimeSpec struct, tests, deprecation markers
+- ✅ Phase 2: Foundational - envmapper, merge logic, runtime parsing
+- ✅ Phase 3: User Story 1 - Single dp.yaml with runtime section (MVP)
+- ✅ Phase 4: User Story 2 - Override configuration with --set and -f flags
+- ✅ Phase 5: User Story 3 - dp show command for effective configuration
+- ✅ Phase 6: User Story 4 - Validate with overrides
+- ✅ Phase 7: Documentation updates
 
 ---
 

@@ -24,8 +24,7 @@ Every data package follows this structure:
 
 ```
 my-package/
-├── dp.yaml           # Package manifest (required)
-├── pipeline.yaml     # Pipeline configuration (optional)
+├── dp.yaml           # Package manifest with runtime config (required)
 ├── bindings.yaml     # Infrastructure bindings (optional)
 ├── src/              # Source code
 │   └── main.py
@@ -35,14 +34,15 @@ my-package/
 
 ### dp.yaml (Manifest)
 
-The manifest is the heart of every package:
+The manifest is the heart of every package. It includes all configuration in a single file:
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: my-kafka-pipeline
   namespace: analytics
+  version: 1.0.0
   labels:
     team: data-engineering
     domain: events
@@ -50,6 +50,18 @@ spec:
   type: pipeline
   description: Processes event data from Kafka to S3
   owner: data-engineering@example.com
+  
+  # Runtime configuration (required for pipeline type)
+  runtime:
+    image: myorg/my-pipeline:v1.0.0
+    timeout: 30m
+    retries: 3
+    env:
+      - name: LOG_LEVEL
+        value: info
+    resources:
+      cpu: "500m"
+      memory: "1Gi"
   
   # What this package consumes
   inputs:
@@ -70,30 +82,43 @@ spec:
 !!! tip "See Also"
     Full manifest schema in [Manifests Reference](manifests.md).
 
-### pipeline.yaml
+### Runtime Configuration
 
-Pipeline-specific configuration:
+For pipeline packages, the `spec.runtime` section defines how the container runs:
 
-```yaml title="pipeline.yaml"
-apiVersion: dp.io/v1alpha1
-kind: PipelineConfig
+```yaml title="dp.yaml (runtime section)"
 spec:
-  runtime: python:3.11
-  
-  schedule:
-    cron: "0 */6 * * *"  # Every 6 hours
-    
-  resources:
-    requests:
-      memory: "512Mi"
-      cpu: "500m"
-    limits:
+  runtime:
+    image: myorg/my-pipeline:v1.0.0     # Required: container image
+    timeout: 30m                         # Max execution time
+    retries: 3                           # Max retry attempts
+    env:                                 # Environment variables
+      - name: LOG_LEVEL
+        value: info
+    envFrom:                             # Environment from secrets/configmaps
+      - secretRef:
+          name: db-credentials
+    resources:                           # Resource limits
+      cpu: "1"
       memory: "2Gi"
-      cpu: "2"
-      
-  retries:
-    maxAttempts: 3
-    backoffMultiplier: 2
+```
+
+#### Overriding at Runtime
+
+You can override configuration values without modifying dp.yaml:
+
+```bash
+# Override image for local testing
+dp run ./my-pipeline --set spec.runtime.image=local:dev
+
+# Apply environment-specific overrides
+dp run ./my-pipeline -f production.yaml
+
+# Combine both (--set takes precedence)
+dp run ./my-pipeline -f production.yaml --set spec.runtime.timeout=1h
+
+# Preview merged configuration
+dp show ./my-pipeline -f production.yaml --set spec.runtime.image=new:v2
 ```
 
 ### bindings.yaml

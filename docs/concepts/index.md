@@ -27,7 +27,7 @@ Self-contained units of data processing with metadata and code.
 
 <div class="card" markdown>
 ### :page_facing_up: Manifests
-Configuration files that define your package: dp.yaml, pipeline.yaml, bindings.yaml.
+Configuration files that define your package: dp.yaml (with runtime config), bindings.yaml.
 
 [Understand Manifests →](manifests.md)
 </div>

@@ -20,7 +20,7 @@ Complete reference for all `dp` commands with examples.
 
 <div class="card" markdown>
 ### :page_facing_up: Manifest Schema
-Full schema reference for dp.yaml, pipeline.yaml, and bindings.yaml.
+Full schema reference for dp.yaml (includes runtime configuration) and bindings.yaml.
 
 [Manifest Schema →](manifest-schema.md)
 </div>
@@ -67,8 +67,7 @@ dp logs <package>
 
 | File | Purpose |
 |------|---------|
-| `dp.yaml` | Package metadata, inputs, outputs, classification |
-| `pipeline.yaml` | Runtime configuration and execution details |
+| `dp.yaml` | Package metadata, inputs, outputs, classification, runtime |
 | `bindings.yaml` | Environment-specific infrastructure mappings |
 
 ### Environment Variables

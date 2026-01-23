@@ -214,3 +214,140 @@ func TestResourceSpec(t *testing.T) {
 		})
 	}
 }
+
+func TestRuntimeSpec(t *testing.T) {
+	tests := []struct {
+		name        string
+		runtime     *RuntimeSpec
+		wantImage   string
+		wantTimeout string
+		wantRetries int
+	}{
+		{
+			name: "complete runtime config",
+			runtime: &RuntimeSpec{
+				Image:   "${REGISTRY}/my-pipeline:${VERSION}",
+				Timeout: "2h",
+				Retries: 5,
+				Env: []EnvVar{
+					{Name: "LOG_LEVEL", Value: "info"},
+				},
+				EnvFrom: []EnvFromSource{
+					{SecretRef: &SecretRef{Name: "pipeline-creds"}},
+				},
+				Replicas:                   2,
+				ServiceAccountName:         "pipeline-sa",
+				SuccessfulJobsHistoryLimit: 3,
+				FailedJobsHistoryLimit:     5,
+			},
+			wantImage:   "${REGISTRY}/my-pipeline:${VERSION}",
+			wantTimeout: "2h",
+			wantRetries: 5,
+		},
+		{
+			name: "minimal runtime config",
+			runtime: &RuntimeSpec{
+				Image: "my-image:latest",
+			},
+			wantImage:   "my-image:latest",
+			wantTimeout: "",
+			wantRetries: 0,
+		},
+		{
+			name: "with command and args",
+			runtime: &RuntimeSpec{
+				Image:   "python:3.11",
+				Command: []string{"/bin/bash"},
+				Args:    []string{"-c", "echo hello"},
+				Timeout: "30m",
+			},
+			wantImage:   "python:3.11",
+			wantTimeout: "30m",
+			wantRetries: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.runtime.Image; got != tt.wantImage {
+				t.Errorf("Image = %v, want %v", got, tt.wantImage)
+			}
+			if got := tt.runtime.Timeout; got != tt.wantTimeout {
+				t.Errorf("Timeout = %v, want %v", got, tt.wantTimeout)
+			}
+			if got := tt.runtime.Retries; got != tt.wantRetries {
+				t.Errorf("Retries = %v, want %v", got, tt.wantRetries)
+			}
+		})
+	}
+}
+
+func TestLineageSpec(t *testing.T) {
+	tests := []struct {
+		name        string
+		lineage     *LineageSpec
+		wantEnabled bool
+		wantEmitter string
+	}{
+		{
+			name: "enabled with marquez",
+			lineage: &LineageSpec{
+				Enabled:   true,
+				Emitter:   "marquez",
+				Namespace: "analytics",
+			},
+			wantEnabled: true,
+			wantEmitter: "marquez",
+		},
+		{
+			name: "disabled",
+			lineage: &LineageSpec{
+				Enabled: false,
+			},
+			wantEnabled: false,
+			wantEmitter: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lineage.Enabled; got != tt.wantEnabled {
+				t.Errorf("Enabled = %v, want %v", got, tt.wantEnabled)
+			}
+			if got := tt.lineage.Emitter; got != tt.wantEmitter {
+				t.Errorf("Emitter = %v, want %v", got, tt.wantEmitter)
+			}
+		})
+	}
+}
+
+func TestDataPackageSpec_WithRuntime(t *testing.T) {
+	spec := DataPackageSpec{
+		Type:        PackageTypePipeline,
+		Description: "Test pipeline with runtime",
+		Owner:       "data-team",
+		Runtime: &RuntimeSpec{
+			Image:   "my-image:v1",
+			Timeout: "1h",
+			Retries: 3,
+		},
+		Lineage: &LineageSpec{
+			Enabled:   true,
+			Emitter:   "marquez",
+			Namespace: "analytics",
+		},
+	}
+
+	if spec.Runtime == nil {
+		t.Error("Runtime should not be nil")
+	}
+	if spec.Runtime.Image != "my-image:v1" {
+		t.Errorf("Runtime.Image = %v, want %v", spec.Runtime.Image, "my-image:v1")
+	}
+	if spec.Lineage == nil {
+		t.Error("Lineage should not be nil")
+	}
+	if !spec.Lineage.Enabled {
+		t.Error("Lineage.Enabled should be true")
+	}
+}

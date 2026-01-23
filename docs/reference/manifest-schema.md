@@ -31,6 +31,27 @@ spec:                               # Required: Package specification
   description: string               # Optional: Human-readable description
   owner: string                     # Required: Owner email or team identifier
   
+  runtime:                          # Required for pipeline type
+    image: string                   # Required: Container image to run
+    timeout: string                 # Optional: Execution timeout (e.g., "30m")
+    retries: integer                # Optional: Max retry attempts (default: 3)
+    env:                            # Optional: Environment variables
+      - name: string
+        value: string
+      - name: string
+        valueFrom:
+          secretRef:
+            name: string
+            key: string
+    envFrom:                        # Optional: Environment from secrets/configmaps
+      - secretRef:
+          name: string
+      - configMapRef:
+          name: string
+    resources:                      # Optional: Resource limits
+      cpu: string                   # e.g., "500m", "1", "2"
+      memory: string                # e.g., "512Mi", "2Gi"
+  
   inputs:                           # Optional: Input declarations
     - name: string                  # Required: Unique input name
       type: string                  # Required: kafka-topic | s3-prefix | database-table | http-endpoint
@@ -109,74 +130,77 @@ spec:                               # Required: Package specification
 
 ---
 
-## pipeline.yaml Schema
+## spec.runtime (Pipeline Configuration)
 
-Pipeline-specific configuration.
+For packages with `type: pipeline`, the `spec.runtime` section configures container execution.
+
+### Full Schema
 
 ```yaml
-# pipeline.yaml
-apiVersion: dp.io/v1alpha1
-kind: PipelineConfig
-
 spec:
-  runtime: string                   # Required: Runtime image (e.g., python:3.11)
-  
-  schedule:                         # Optional: Scheduling configuration
-    cron: string                    # Cron expression
-    timezone: string                # Optional: Timezone (default: UTC)
+  runtime:
+    image: string                   # Required: Container image to run
+    timeout: string                 # Optional: Execution timeout (e.g., "30m", "1h")
+    retries: integer                # Optional: Max retry attempts (default: 3)
     
-  resources:                        # Optional: Resource requirements
-    requests:
-      memory: string                # e.g., "512Mi"
-      cpu: string                   # e.g., "500m"
-    limits:
-      memory: string                # e.g., "2Gi"
-      cpu: string                   # e.g., "2"
-      
-  retries:                          # Optional: Retry configuration
-    maxAttempts: integer            # Default: 3
-    backoffMultiplier: number       # Default: 2
-    initialDelaySeconds: integer    # Default: 10
-    
-  timeout: string                   # Optional: Execution timeout (e.g., "30m")
-  
-  env:                              # Optional: Environment variables
-    - name: string
-      value: string
-    - name: string
-      valueFrom:
-        secretRef:
+    env:                            # Optional: Environment variables
+      - name: string
+        value: string
+      - name: string
+        valueFrom:
+          secretRef:
+            name: string
+            key: string
+            
+    envFrom:                        # Optional: Environment from secrets/configmaps
+      - secretRef:
           name: string
-          key: string
+      - configMapRef:
+          name: string
+          
+    resources:                      # Optional: Resource limits
+      cpu: string                   # e.g., "500m", "1", "2"
+      memory: string                # e.g., "512Mi", "2Gi"
 ```
 
 ### Field Reference
 
-#### spec.runtime
+#### spec.runtime.image
 
 | Property | Value |
 |----------|-------|
 | Type | string |
-| Required | Yes |
-| Examples | `python:3.11`, `python:3.10-slim`, `node:20` |
-| Description | Base container image for pipeline execution |
+| Required | Yes (for pipeline type) |
+| Examples | `myorg/my-pipeline:v1.0.0`, `python:3.11` |
+| Description | Container image to execute |
 
-#### spec.schedule.cron
+#### spec.runtime.timeout
 
 | Property | Value |
 |----------|-------|
 | Type | string |
-| Required | When schedule is defined |
-| Pattern | Standard cron expression (5 fields) |
-| Examples | `0 0 * * *` (daily), `0 */6 * * *` (every 6 hours) |
+| Required | No |
+| Default | `30m` |
+| Pattern | Go duration format (e.g., `30m`, `1h30m`, `2h`) |
+| Description | Maximum execution time before timeout |
 
-#### spec.resources
+#### spec.runtime.retries
+
+| Property | Value |
+|----------|-------|
+| Type | integer |
+| Required | No |
+| Default | 3 |
+| Range | 0-10 |
+| Description | Maximum number of retry attempts on failure |
+
+#### spec.runtime.resources
 
 | Property | Value |
 |----------|-------|
 | Type | object |
 | Required | No |
-| Description | Kubernetes-style resource requirements |
+| Description | Kubernetes-style resource limits |
 
 ---
 
@@ -304,27 +328,6 @@ spec:
       classification:
         pii: false
         sensitivity: internal
-```
-
-### pipeline.yaml
-
-```yaml
-apiVersion: dp.io/v1alpha1
-kind: PipelineConfig
-spec:
-  runtime: python:3.11
-  schedule:
-    cron: "0 */4 * * *"
-  resources:
-    requests:
-      memory: "512Mi"
-      cpu: "500m"
-    limits:
-      memory: "2Gi"
-      cpu: "2"
-  retries:
-    maxAttempts: 3
-  timeout: "30m"
 ```
 
 ### bindings.yaml

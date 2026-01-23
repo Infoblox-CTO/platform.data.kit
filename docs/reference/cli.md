@@ -27,6 +27,7 @@ These flags apply to all commands:
 | [`dp dev`](#dp-dev) | Manage local development stack |
 | [`dp lint`](#dp-lint) | Validate package manifests |
 | [`dp run`](#dp-run) | Execute pipeline locally |
+| [`dp show`](#dp-show) | Show effective manifest |
 | [`dp test`](#dp-test) | Run pipeline tests |
 | [`dp build`](#dp-build) | Build OCI artifact |
 | [`dp publish`](#dp-publish) | Publish to registry |
@@ -72,11 +73,12 @@ Creates the following directory structure:
 ```
 my-pipeline/
 ├── dp.yaml
-├── pipeline.yaml
 ├── bindings.yaml
 └── src/
     └── main.py
 ```
+
+The generated `dp.yaml` includes a `spec.runtime` section for pipeline packages.
 
 ---
 
@@ -168,17 +170,18 @@ dp lint [package-dir] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--strict` | Treat warnings as errors | false |
-| `--skip-pii` | Skip PII classification validation | false |
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--strict` | - | Treat warnings as errors | false |
+| `--skip-pii` | - | Skip PII classification validation | false |
+| `--set` | - | Override values (key=value, repeatable) | - |
+| `--values` | `-f` | Override files (repeatable) | - |
 
 ### Validated Files
 
 | File | Description |
 |------|-------------|
-| `dp.yaml` | Package manifest |
-| `pipeline.yaml` | Pipeline configuration |
+| `dp.yaml` | Package manifest (includes runtime config) |
 | `bindings.yaml` | Binding configuration |
 | `schemas/` | Schema files |
 
@@ -191,6 +194,7 @@ dp lint [package-dir] [flags]
 | E010-E011 | Binding configuration |
 | E025 | PII classification required |
 | E030-E031 | Runtime configuration |
+| E040-E041 | Runtime required for pipeline type |
 
 ### Examples
 
@@ -202,6 +206,14 @@ dp lint
 ```bash
 # Lint specific package
 dp lint ./my-pipeline
+```
+
+```bash
+# Lint with overrides applied
+dp lint ./my-pipeline -f production.yaml
+
+# Lint with inline override
+dp lint ./my-pipeline --set spec.runtime.image=myimage:v2
 ```
 
 ```bash
@@ -221,14 +233,29 @@ dp run [package-dir] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--network` | Docker network | dp-network |
-| `--env` | Environment variables (KEY=VALUE) | - |
-| `--bindings` | Bindings file path | bindings.yaml |
-| `--dry-run` | Print what would run | false |
-| `--detach` | Run in background | false |
-| `--timeout` | Execution timeout | 30m |
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--network` | - | Docker network | dp-network |
+| `--env` | - | Environment variables (KEY=VALUE) | - |
+| `--bindings` | - | Bindings file path | bindings.yaml |
+| `--dry-run` | - | Print what would run | false |
+| `--detach` | - | Run in background | false |
+| `--timeout` | - | Execution timeout | 30m |
+| `--set` | - | Override values (key=value, repeatable) | - |
+| `--values` | `-f` | Override files (repeatable) | - |
+
+### Runtime Configuration
+
+The pipeline runs using the container image and configuration specified in `spec.runtime` of dp.yaml.
+Environment variables are automatically mapped from bindings (e.g., `input.events.brokers` → `INPUT_EVENTS_BROKERS`).
+
+### Override Precedence
+
+When using `-f` and `--set` flags:
+
+1. **Base**: dp.yaml values
+2. **Files**: Values from `-f` files (applied in order)
+3. **Set flags**: `--set` values (applied in order, highest precedence)
 
 ### Examples
 
@@ -243,13 +270,73 @@ dp run ./my-pipeline --bindings bindings.local.yaml
 ```
 
 ```bash
-# Dry run
-dp run ./my-pipeline --dry-run
+# Override image for testing
+dp run ./my-pipeline --set spec.runtime.image=local:dev
+```
+
+```bash
+# Apply environment-specific overrides
+dp run ./my-pipeline -f production.yaml
+```
+
+```bash
+# Combine overrides (--set wins over -f)
+dp run ./my-pipeline -f production.yaml --set spec.runtime.timeout=1h
 ```
 
 ```bash
 # With environment variables
 dp run ./my-pipeline --env API_KEY=secret --env DEBUG=true
+```
+
+---
+
+## dp show
+
+Show the effective manifest after applying overrides.
+
+```bash
+dp show [package-dir] [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--set` | - | Override values (key=value, repeatable) | - |
+| `--values` | `-f` | Override files (repeatable) | - |
+| `--output` | `-o` | Output format (yaml, json) | yaml |
+
+### Description
+
+The `dp show` command displays the merged manifest that would be used when running the pipeline.
+This is useful for previewing the effect of override files and `--set` flags before executing.
+
+### Examples
+
+```bash
+# Show manifest as-is
+dp show ./my-pipeline
+```
+
+```bash
+# Show with override file applied
+dp show ./my-pipeline -f production.yaml
+```
+
+```bash
+# Show with inline overrides
+dp show ./my-pipeline --set spec.runtime.image=myimage:v2
+```
+
+```bash
+# Show combined overrides (--set wins over -f)
+dp show ./my-pipeline -f base.yaml --set spec.runtime.timeout=1h
+```
+
+```bash
+# Output as JSON
+dp show ./my-pipeline -o json
 ```
 
 ---

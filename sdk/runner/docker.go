@@ -57,23 +57,13 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
 
-	pipelinePath := filepath.Join(opts.PackageDir, "pipeline.yaml")
 	var image string
-	var pipelineEnv []contracts.EnvVar
+	var runtimeEnv []contracts.EnvVar
 
-	if _, err := os.Stat(pipelinePath); err == nil {
-		pipelineData, err := os.ReadFile(pipelinePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read pipeline.yaml: %w", err)
-		}
-
-		pipeline, err := parser.ParsePipeline(pipelineData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse pipeline.yaml: %w", err)
-		}
-
-		image = pipeline.Spec.Image
-		pipelineEnv = pipeline.Spec.Env
+	// Get runtime configuration from dp.yaml
+	if pkg.Spec.Runtime != nil && pkg.Spec.Runtime.Image != "" {
+		image = pkg.Spec.Runtime.Image
+		runtimeEnv = pkg.Spec.Runtime.Env
 	}
 
 	runID := GenerateRunID(pkg.Metadata.Name)
@@ -150,12 +140,23 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		args = append(args, "--network", opts.Network)
 	}
 
-	for _, env := range pipelineEnv {
+	// Add binding-derived env vars
+	bindingEnvs, err := r.buildEnvVarsFromPackage(opts.PackageDir)
+	if err != nil && opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Warning: failed to map bindings to env vars: %v\n", err)
+	}
+	for k, v := range bindingEnvs {
+		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	// Add runtime env vars (override bindings)
+	for _, env := range runtimeEnv {
 		if env.Value != "" {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", env.Name, env.Value))
 		}
 	}
 
+	// Add opts env vars (override all)
 	for k, v := range opts.Env {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
@@ -312,4 +313,39 @@ func (r *DockerRunner) buildImage(ctx context.Context, dir, imageName string, ou
 	}
 
 	return cmd.Run()
+}
+
+// buildEnvVarsFromPackage reads the package and bindings, then maps binding properties
+// to environment variables automatically.
+func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]string, error) {
+	dpPath := filepath.Join(packageDir, "dp.yaml")
+	dpData, err := os.ReadFile(dpPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
+	}
+
+	parser := manifest.NewParser()
+	pkg, err := parser.ParseDataPackage(dpData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
+	}
+
+	// Read bindings if they exist
+	bindingsPath := filepath.Join(packageDir, "bindings.yaml")
+	var bindings []contracts.Binding
+	if _, err := os.Stat(bindingsPath); err == nil {
+		bindings, err = manifest.ParseBindingsFile(bindingsPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse bindings.yaml: %w", err)
+		}
+	}
+
+	// Map bindings to env vars
+	bindingProps, _ := MapBindingsToEnvVars(pkg, bindings)
+
+	// Get explicit env vars from runtime
+	explicitEnvs := EnvVarsFromRuntime(pkg.Spec.Runtime)
+
+	// Merge: explicit env vars override binding-derived ones
+	return MergeEnvVars(bindingProps, explicitEnvs), nil
 }

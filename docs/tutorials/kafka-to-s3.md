@@ -33,11 +33,12 @@ cd kafka-to-s3-pipeline
 Edit `dp.yaml` with your pipeline configuration:
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: kafka-to-s3-pipeline
   namespace: tutorials
+  version: 1.0.0
   labels:
     team: data-engineering
     domain: events
@@ -48,6 +49,18 @@ spec:
     Reads user events from Kafka, applies transformations,
     and writes to S3 in Parquet format with date partitioning.
   owner: tutorials@example.com
+  
+  # Runtime configuration (all in one file!)
+  runtime:
+    image: myorg/kafka-to-s3-pipeline:v1.0.0
+    timeout: 1h
+    retries: 3
+    env:
+      - name: LOG_LEVEL
+        value: info
+    resources:
+      cpu: "500m"
+      memory: "2Gi"
   
   inputs:
     - name: user-events
@@ -72,44 +85,7 @@ spec:
         compression: snappy
 ```
 
-## Step 3: Configure Pipeline Settings
-
-Set up scheduling and resources in `pipeline.yaml`:
-
-```yaml title="pipeline.yaml"
-apiVersion: dp.io/v1alpha1
-kind: PipelineConfig
-
-spec:
-  runtime: python:3.11
-  
-  schedule:
-    cron: "0 */1 * * *"  # Every hour
-    timezone: UTC
-    
-  resources:
-    requests:
-      memory: "512Mi"
-      cpu: "500m"
-    limits:
-      memory: "2Gi"
-      cpu: "2"
-      
-  retries:
-    maxAttempts: 3
-    backoffMultiplier: 2
-    initialDelaySeconds: 30
-    
-  timeout: "30m"
-  
-  env:
-    - name: BATCH_SIZE
-      value: "1000"
-    - name: LOG_LEVEL
-      value: "INFO"
-```
-
-## Step 4: Set Up Bindings
+## Step 3: Set Up Bindings
 
 Configure your infrastructure bindings:
 
@@ -136,7 +112,7 @@ spec:
         secret-key: minioadmin
 ```
 
-## Step 5: Write the Pipeline Code
+## Step 4: Write the Pipeline Code
 
 Create the transformation logic in `src/main.py`:
 
@@ -256,7 +232,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## Step 6: Add Dependencies
+## Step 5: Add Dependencies
 
 Create `requirements.txt` for Python dependencies:
 
@@ -266,7 +242,7 @@ boto3>=1.26.0
 pyarrow>=14.0.0
 ```
 
-## Step 7: Start Local Development
+## Step 6: Start Local Development
 
 Start the local development stack:
 
@@ -280,7 +256,7 @@ Verify all services are running:
 dp dev status
 ```
 
-## Step 8: Produce Test Data
+## Step 7: Produce Test Data
 
 Create a test data producer script:
 
@@ -322,7 +298,7 @@ Run it:
 python scripts/produce_test_data.py
 ```
 
-## Step 9: Validate and Run
+## Step 8: Validate and Run
 
 Validate your package:
 
@@ -336,7 +312,7 @@ Run the pipeline:
 dp run
 ```
 
-## Step 10: Check Results
+## Step 9: Check Results
 
 ### View Lineage
 
@@ -357,7 +333,7 @@ Or open the MinIO console at http://localhost:9001.
 
 Open http://localhost:5000 to see the lineage graph.
 
-## Step 11: Build and Publish
+## Step 10: Build and Publish
 
 When ready for deployment:
 
@@ -369,7 +345,7 @@ dp build --tag v1.0.0
 dp publish
 ```
 
-## Step 12: Promote to Environment
+## Step 11: Promote to Environment
 
 Deploy to the development environment:
 

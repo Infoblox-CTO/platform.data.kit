@@ -185,3 +185,131 @@ func TestDataPackageValidator_ValidateFromFile(t *testing.T) {
 		})
 	}
 }
+
+func TestDataPackageValidator_RuntimeValidation(t *testing.T) {
+	tests := []struct {
+		name         string
+		pkg          *contracts.DataPackage
+		wantValid    bool
+		wantErrCode  string
+		wantErrField string
+	}{
+		{
+			name: "pipeline without runtime is invalid",
+			pkg: &contracts.DataPackage{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       "DataPackage",
+				Metadata: contracts.PackageMetadata{
+					Name:      "test-pipeline",
+					Namespace: "data-team",
+					Version:   "1.0.0",
+				},
+				Spec: contracts.DataPackageSpec{
+					Type:        contracts.PackageTypePipeline,
+					Description: "A test pipeline",
+					Owner:       "data-team",
+					Outputs: []contracts.ArtifactContract{
+						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data", Classification: &contracts.Classification{}},
+					},
+				},
+			},
+			wantValid:    false,
+			wantErrCode:  contracts.ErrCodeRuntimeRequired,
+			wantErrField: "spec.runtime",
+		},
+		{
+			name: "pipeline with runtime but no image is invalid",
+			pkg: &contracts.DataPackage{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       "DataPackage",
+				Metadata: contracts.PackageMetadata{
+					Name:      "test-pipeline",
+					Namespace: "data-team",
+					Version:   "1.0.0",
+				},
+				Spec: contracts.DataPackageSpec{
+					Type:        contracts.PackageTypePipeline,
+					Description: "A test pipeline",
+					Owner:       "data-team",
+					Runtime:     &contracts.RuntimeSpec{},
+					Outputs: []contracts.ArtifactContract{
+						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data", Classification: &contracts.Classification{}},
+					},
+				},
+			},
+			wantValid:    false,
+			wantErrCode:  contracts.ErrCodeRuntimeImageRequired,
+			wantErrField: "spec.runtime.image",
+		},
+		{
+			name: "pipeline with valid runtime is valid",
+			pkg: &contracts.DataPackage{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       "DataPackage",
+				Metadata: contracts.PackageMetadata{
+					Name:      "test-pipeline",
+					Namespace: "data-team",
+					Version:   "1.0.0",
+				},
+				Spec: contracts.DataPackageSpec{
+					Type:        contracts.PackageTypePipeline,
+					Description: "A test pipeline",
+					Owner:       "data-team",
+					Runtime: &contracts.RuntimeSpec{
+						Image: "myimage:v1",
+					},
+					Outputs: []contracts.ArtifactContract{
+						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data", Classification: &contracts.Classification{}},
+					},
+				},
+			},
+			wantValid: true,
+		},
+		{
+			name: "dataset without runtime is valid",
+			pkg: &contracts.DataPackage{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       "DataPackage",
+				Metadata: contracts.PackageMetadata{
+					Name:      "test-dataset",
+					Namespace: "data-team",
+					Version:   "1.0.0",
+				},
+				Spec: contracts.DataPackageSpec{
+					Type:        contracts.PackageTypeDataset,
+					Description: "A test dataset",
+					Owner:       "data-team",
+				},
+			},
+			wantValid: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := NewDataPackageValidator(tt.pkg, "/path/to/pkg")
+			errs := v.Validate(context.Background())
+
+			if tt.wantValid {
+				if errs.HasErrors() {
+					t.Errorf("expected valid, got errors: %v", errs)
+				}
+			} else {
+				if !errs.HasErrors() {
+					t.Error("expected errors, got valid")
+				}
+				// Check for specific error
+				found := false
+				for _, e := range errs {
+					if e.Code == tt.wantErrCode && e.Field == tt.wantErrField {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error code %s at field %s, got: %v", tt.wantErrCode, tt.wantErrField, errs)
+				}
+			}
+		})
+	}
+}

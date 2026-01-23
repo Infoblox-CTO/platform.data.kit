@@ -50,12 +50,6 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		result.Merge(dpResult)
 	}
 
-	pipelinePath := filepath.Join(v.packageDir, "pipeline.yaml")
-	if _, err := os.Stat(pipelinePath); err == nil {
-		pipelineResult := v.validatePipeline(ctx, pipelinePath)
-		result.Merge(pipelineResult)
-	}
-
 	bindingsPath := filepath.Join(v.packageDir, "bindings.yaml")
 	if _, err := os.Stat(bindingsPath); err == nil {
 		bindingsResult := v.validateBindings(ctx, bindingsPath)
@@ -93,27 +87,6 @@ func (v *AggregateValidator) validateDataPackage(ctx context.Context, path strin
 	if v.vctx != nil && v.vctx.ValidatePII {
 		piiResult := v.validatePII(ctx, validator.Package())
 		result.Merge(piiResult)
-	}
-
-	return result
-}
-
-// validatePipeline validates the pipeline.yaml file.
-func (v *AggregateValidator) validatePipeline(ctx context.Context, path string) *ValidationResult {
-	result := NewValidationResult()
-
-	validator, err := NewPipelineValidatorFromFile(path)
-	if err != nil {
-		result.AddError(ErrParseError, "pipeline.yaml", "failed to parse pipeline.yaml: "+err.Error())
-		return result
-	}
-
-	errs := validator.Validate(ctx)
-	if errs.HasErrors() {
-		result.Valid = false
-		for _, e := range errs {
-			result.Errors.Add(e)
-		}
 	}
 
 	return result

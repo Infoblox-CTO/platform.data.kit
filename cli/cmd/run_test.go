@@ -127,6 +127,11 @@ spec:
   type: pipeline
   description: Test pipeline
   owner: data-team
+  runtime:
+    image: python:3.11
+    command:
+      - python
+      - main.py
   outputs:
     - name: output
       type: s3-prefix
@@ -135,21 +140,8 @@ spec:
         sensitivity: public
         pii: false
 `
-	pipelineContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
-metadata:
-  name: test-pipeline
-spec:
-  image: python:3.11
-  command:
-    - python
-    - main.py
-`
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "pipeline.yaml"), []byte(pipelineContent), 0644); err != nil {
-		t.Fatalf("failed to write pipeline.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -278,4 +270,284 @@ spec:
 	// Running a dataset (not pipeline) should fail or handle gracefully
 	// The exact behavior depends on implementation
 	_ = err
+}
+
+func TestRunCmd_SetFlag(t *testing.T) {
+	// Verify the --set flag is registered correctly
+	flag := runCmd.Flags().Lookup("set")
+	if flag == nil {
+		t.Fatal("--set flag not found")
+	}
+
+	// Default should be empty array
+	if flag.DefValue != "[]" {
+		t.Errorf("--set default = %v, want []", flag.DefValue)
+	}
+}
+
+func TestRunCmd_ValuesFlag(t *testing.T) {
+	// Verify the -f/--values flag is registered correctly
+	flag := runCmd.Flags().Lookup("values")
+	if flag == nil {
+		t.Fatal("--values flag not found")
+	}
+
+	// Check shorthand
+	if flag.Shorthand != "f" {
+		t.Errorf("--values shorthand = %q, want \"f\"", flag.Shorthand)
+	}
+
+	// Default should be empty array
+	if flag.DefValue != "[]" {
+		t.Errorf("--values default = %v, want []", flag.DefValue)
+	}
+}
+
+func TestApplyOverrides_SetValues(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a base dp.yaml
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pipeline
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: Test pipeline
+  owner: data-team
+  runtime:
+    image: original:v1
+    timeout: 30m
+  outputs:
+    - name: output
+      type: s3-prefix
+      binding: output-bucket
+      classification:
+        sensitivity: public
+        pii: false
+`
+	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldSet := runSet
+	oldFiles := runValueFiles
+	defer func() {
+		runSet = oldSet
+		runValueFiles = oldFiles
+	}()
+
+	// Set override values
+	runSet = []string{
+		"spec.runtime.image=overridden:v2",
+		"spec.runtime.timeout=1h",
+	}
+	runValueFiles = []string{}
+
+	// Apply overrides
+	if err := applyOverrides(dpPath); err != nil {
+		t.Fatalf("applyOverrides() error = %v", err)
+	}
+
+	// Verify the file was modified
+	data, err := os.ReadFile(dpPath)
+	if err != nil {
+		t.Fatalf("failed to read modified dp.yaml: %v", err)
+	}
+
+	content := string(data)
+
+	if !contains(content, "overridden:v2") {
+		t.Error("expected image to be overridden")
+	}
+	if !contains(content, "1h") {
+		t.Error("expected timeout to be overridden")
+	}
+
+	// Verify backup was created
+	backupPath := dpPath + ".bak"
+	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+		t.Error("expected backup file to be created")
+	}
+}
+
+func TestApplyOverrides_InvalidPath(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pipeline
+spec:
+  type: pipeline
+  runtime:
+    image: test:v1
+`
+	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldSet := runSet
+	oldFiles := runValueFiles
+	defer func() {
+		runSet = oldSet
+		runValueFiles = oldFiles
+	}()
+
+	// Set an invalid path
+	runSet = []string{"invalid.path.here=value"}
+	runValueFiles = []string{}
+
+	// Apply overrides should fail
+	err := applyOverrides(dpPath)
+	if err == nil {
+		t.Fatal("expected error for invalid path")
+	}
+
+	if !contains(err.Error(), "invalid override path") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestApplyOverrides_ValueFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create base dp.yaml
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pipeline
+spec:
+  type: pipeline
+  runtime:
+    image: original:v1
+    timeout: 30m
+`
+	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Create override file
+	overrideContent := `spec:
+  runtime:
+    image: from-file:v3
+    retries: 5
+`
+	overridePath := filepath.Join(tmpDir, "overrides.yaml")
+	if err := os.WriteFile(overridePath, []byte(overrideContent), 0644); err != nil {
+		t.Fatalf("failed to write overrides.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldSet := runSet
+	oldFiles := runValueFiles
+	defer func() {
+		runSet = oldSet
+		runValueFiles = oldFiles
+	}()
+
+	runSet = []string{}
+	runValueFiles = []string{overridePath}
+
+	// Apply overrides
+	if err := applyOverrides(dpPath); err != nil {
+		t.Fatalf("applyOverrides() error = %v", err)
+	}
+
+	// Verify the file was modified
+	data, err := os.ReadFile(dpPath)
+	if err != nil {
+		t.Fatalf("failed to read modified dp.yaml: %v", err)
+	}
+
+	content := string(data)
+
+	if !contains(content, "from-file:v3") {
+		t.Error("expected image to be overridden from file")
+	}
+	if !contains(content, "retries: 5") {
+		t.Error("expected retries to be added from file")
+	}
+	// timeout should be preserved from original
+	if !contains(content, "30m") {
+		t.Error("expected timeout to be preserved")
+	}
+}
+
+func TestApplyOverrides_Precedence(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create base dp.yaml
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pipeline
+spec:
+  type: pipeline
+  runtime:
+    image: base:v1
+`
+	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Create override file
+	overrideContent := `spec:
+  runtime:
+    image: from-file:v2
+`
+	overridePath := filepath.Join(tmpDir, "overrides.yaml")
+	if err := os.WriteFile(overridePath, []byte(overrideContent), 0644); err != nil {
+		t.Fatalf("failed to write overrides.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldSet := runSet
+	oldFiles := runValueFiles
+	defer func() {
+		runSet = oldSet
+		runValueFiles = oldFiles
+	}()
+
+	// Set both file and --set flag - --set should win
+	runValueFiles = []string{overridePath}
+	runSet = []string{"spec.runtime.image=from-set:v3"}
+
+	// Apply overrides
+	if err := applyOverrides(dpPath); err != nil {
+		t.Fatalf("applyOverrides() error = %v", err)
+	}
+
+	// Verify --set won (highest precedence)
+	data, err := os.ReadFile(dpPath)
+	if err != nil {
+		t.Fatalf("failed to read modified dp.yaml: %v", err)
+	}
+
+	content := string(data)
+	if !contains(content, "from-set:v3") {
+		t.Error("expected --set to override file override")
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

@@ -75,7 +75,7 @@ The command-line interface for interacting with the platform.
 Core libraries used by the CLI and controller.
 
 #### 2.1 Validate (`sdk/validate/`)
-- Manifest validation (dp.yaml, pipeline.yaml, bindings.yaml)
+- Manifest validation (dp.yaml, bindings.yaml)
 - PII classification validation
 - Schema validation
 
@@ -160,7 +160,7 @@ gitops/
 ### Local Development
 
 ```
-Developer → dp init → Creates dp.yaml, pipeline.yaml
+Developer → dp init → Creates dp.yaml
          → dp dev up → Starts Docker Compose (Kafka, S3, Postgres, Marquez)
          → dp run → Builds container, runs locally
          → Lineage events → Marquez

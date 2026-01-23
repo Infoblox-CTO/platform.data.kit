@@ -329,3 +329,218 @@ spec:
 		t.Errorf("input[0].name = %v, want source-data", pkg.Spec.Inputs[0].Name)
 	}
 }
+
+func TestDataPackageFromBytes_WithRuntime(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-with-runtime
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: Test with runtime
+  owner: data-team
+  runtime:
+    image: myregistry.io/myapp:v1.2.3
+    timeout: 2h
+    retries: 3
+    replicas: 2
+    env:
+      - name: LOG_LEVEL
+        value: debug
+      - name: DEBUG
+        value: "true"
+`)
+
+	pkg, err := DataPackageFromBytes(data)
+	if err != nil {
+		t.Fatalf("DataPackageFromBytes() error = %v", err)
+	}
+
+	if pkg.Spec.Runtime == nil {
+		t.Fatal("runtime should not be nil")
+	}
+
+	if pkg.Spec.Runtime.Image != "myregistry.io/myapp:v1.2.3" {
+		t.Errorf("runtime.image = %v, want myregistry.io/myapp:v1.2.3", pkg.Spec.Runtime.Image)
+	}
+
+	if pkg.Spec.Runtime.Timeout != "2h" {
+		t.Errorf("runtime.timeout = %v, want 2h", pkg.Spec.Runtime.Timeout)
+	}
+
+	if pkg.Spec.Runtime.Retries != 3 {
+		t.Errorf("runtime.retries = %v, want 3", pkg.Spec.Runtime.Retries)
+	}
+
+	if pkg.Spec.Runtime.Replicas != 2 {
+		t.Errorf("runtime.replicas = %v, want 2", pkg.Spec.Runtime.Replicas)
+	}
+
+	if len(pkg.Spec.Runtime.Env) != 2 {
+		t.Errorf("runtime.env count = %v, want 2", len(pkg.Spec.Runtime.Env))
+	}
+
+	// Check env var values
+	if pkg.Spec.Runtime.Env[0].Name != "LOG_LEVEL" {
+		t.Errorf("runtime.env[0].name = %v, want LOG_LEVEL", pkg.Spec.Runtime.Env[0].Name)
+	}
+	if pkg.Spec.Runtime.Env[0].Value != "debug" {
+		t.Errorf("runtime.env[0].value = %v, want debug", pkg.Spec.Runtime.Env[0].Value)
+	}
+}
+
+func TestValidateDataPackageRuntime(t *testing.T) {
+	tests := []struct {
+		name    string
+		pkg     *contracts.DataPackage
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "nil package",
+			pkg:     nil,
+			wantErr: true,
+			errMsg:  "DataPackage is nil",
+		},
+		{
+			name: "missing runtime",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{
+					Type: contracts.PackageTypePipeline,
+				},
+			},
+			wantErr: true,
+			errMsg:  "spec.runtime is required",
+		},
+		{
+			name: "missing image",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{
+					Type:    contracts.PackageTypePipeline,
+					Runtime: &contracts.RuntimeSpec{},
+				},
+			},
+			wantErr: true,
+			errMsg:  "spec.runtime.image is required",
+		},
+		{
+			name: "valid runtime",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{
+					Type: contracts.PackageTypePipeline,
+					Runtime: &contracts.RuntimeSpec{
+						Image: "myimage:v1",
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateDataPackageRuntime(tt.pkg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateDataPackageRuntime() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil && tt.errMsg != "" {
+				if !contains(err.Error(), tt.errMsg) {
+					t.Errorf("error message = %v, want to contain %v", err.Error(), tt.errMsg)
+				}
+			}
+		})
+	}
+}
+
+func TestHasRuntimeSection(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  *contracts.DataPackage
+		want bool
+	}{
+		{
+			name: "nil package",
+			pkg:  nil,
+			want: false,
+		},
+		{
+			name: "no runtime",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{},
+			},
+			want: false,
+		},
+		{
+			name: "with runtime",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{
+					Runtime: &contracts.RuntimeSpec{Image: "test"},
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := HasRuntimeSection(tt.pkg); got != tt.want {
+				t.Errorf("HasRuntimeSection() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetRuntimeImage(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  *contracts.DataPackage
+		want string
+	}{
+		{
+			name: "nil package",
+			pkg:  nil,
+			want: "",
+		},
+		{
+			name: "no runtime",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{},
+			},
+			want: "",
+		},
+		{
+			name: "with image",
+			pkg: &contracts.DataPackage{
+				Spec: contracts.DataPackageSpec{
+					Runtime: &contracts.RuntimeSpec{Image: "myimage:v1"},
+				},
+			},
+			want: "myimage:v1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetRuntimeImage(tt.pkg); got != tt.want {
+				t.Errorf("GetRuntimeImage() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// contains checks if s contains substr.
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsAt(s, substr))
+}
+
+func containsAt(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

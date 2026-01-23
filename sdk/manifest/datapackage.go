@@ -35,3 +35,34 @@ func ValidateDataPackageVersion(version string) error {
 		return fmt.Errorf("unsupported API version: %s", version)
 	}
 }
+
+// ValidateDataPackageRuntime validates that the DataPackage has a valid runtime section.
+// Returns an error if runtime is missing or has required fields missing.
+func ValidateDataPackageRuntime(pkg *contracts.DataPackage) error {
+	if pkg == nil {
+		return fmt.Errorf("DataPackage is nil")
+	}
+
+	if pkg.Spec.Runtime == nil {
+		return fmt.Errorf("spec.runtime is required: DataPackage must include runtime configuration")
+	}
+
+	if pkg.Spec.Runtime.Image == "" {
+		return fmt.Errorf("spec.runtime.image is required: container image must be specified")
+	}
+
+	return nil
+}
+
+// HasRuntimeSection returns true if the DataPackage has a runtime section defined.
+func HasRuntimeSection(pkg *contracts.DataPackage) bool {
+	return pkg != nil && pkg.Spec.Runtime != nil
+}
+
+// GetRuntimeImage returns the runtime image or empty string if not set.
+func GetRuntimeImage(pkg *contracts.DataPackage) string {
+	if pkg == nil || pkg.Spec.Runtime == nil {
+		return ""
+	}
+	return pkg.Spec.Runtime.Image
+}
