@@ -1,6 +1,6 @@
 module github.com/Infoblox-CTO/platform.data.kit/sdk
 
-go 1.25
+go 1.24
 
 require (
 	github.com/Infoblox-CTO/platform.data.kit/contracts v0.0.0
