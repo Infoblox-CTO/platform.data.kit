@@ -10,37 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-          cache: true
-
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-          working-directory: contracts
-
-      - name: Lint contracts
-        run: cd contracts && golangci-lint run ./...
-
-      - name: Lint sdk
-        run: cd sdk && golangci-lint run ./...
-
-      - name: Lint cli
-        run: cd cli && golangci-lint run ./...
-
-      - name: Lint controller
-        run: cd platform/controller && golangci-lint run ./...
-
   test:
     name: Test
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 module github.com/Infoblox-CTO/platform.data.kit/cli
 
-go 1.24
+go 1.25
 
 replace (
 	github.com/Infoblox-CTO/platform.data.kit/contracts => ../contracts

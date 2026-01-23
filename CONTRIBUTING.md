@@ -6,10 +6,9 @@ Thank you for your interest in contributing to the Data Platform! This document 
 
 ### Prerequisites
 
-- **Go 1.22+**: [Installation guide](https://go.dev/doc/install)
+- **Go 1.25+**: [Installation guide](https://go.dev/doc/install)
 - **Docker Desktop**: [Installation guide](https://docs.docker.com/desktop/)
 - **Make**: Usually pre-installed on macOS/Linux
-- **golangci-lint**: `brew install golangci-lint` or [other methods](https://golangci-lint.run/usage/install/)
 
 ### Clone and Build
 
@@ -143,7 +142,7 @@ git push origin feature/your-feature-name
 ### Go Style
 
 - Follow [Effective Go](https://go.dev/doc/effective_go)
-- Use `gofmt` (automatic via golangci-lint)
+- Use `gofmt` or `go fmt ./...`
 - Exported functions must have doc comments
 - Error messages should be lowercase, no punctuation
 

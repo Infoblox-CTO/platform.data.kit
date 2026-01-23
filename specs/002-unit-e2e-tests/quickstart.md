@@ -7,7 +7,6 @@
 
 - Go 1.25 or later
 - Docker (for E2E tests only)
-- golangci-lint (for linting)
 
 ## Quick Commands
 

@@ -1,6 +1,6 @@
 module github.com/Infoblox-CTO/platform.data.kit/platform/controller
 
-go 1.24
+go 1.25
 
 require (
 	github.com/prometheus/client_golang v1.23.2

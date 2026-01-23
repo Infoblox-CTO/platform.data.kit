@@ -243,7 +243,6 @@ err := os.WriteFile(path, data, 0644)
 
 Tests run automatically on every PR:
 
-- **Lint**: golangci-lint on all modules
 - **Test**: go test with race detection and coverage
 - **Build**: Verify all modules build successfully
 
