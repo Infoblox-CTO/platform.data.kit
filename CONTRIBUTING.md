@@ -15,7 +15,7 @@ Thank you for your interest in contributing to the Data Platform! This document 
 
 ```bash
 # Clone repository
-git clone https://github.com/Infoblox-CTO/data-platform.git
+git clone https://github.com/Infoblox-CTO/data.platform.kit.git
 cd data-platform
 
 # Install dependencies
@@ -59,7 +59,7 @@ contracts ← platform/controller
 
 ### 1. Pick or Create an Issue
 
-- Check [existing issues](https://github.com/Infoblox-CTO/data-platform/issues)
+- Check [existing issues](https://github.com/Infoblox-CTO/data.platform.kit/issues)
 - For new features, create a discussion first
 
 ### 2. Create a Branch

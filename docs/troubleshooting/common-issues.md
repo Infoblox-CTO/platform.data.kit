@@ -477,7 +477,7 @@ If you can't resolve your issue:
    ```
 
 2. **Search existing issues**
-   - [GitHub Issues](https://github.com/Infoblox-CTO/data-platform/issues)
+   - [GitHub Issues](https://github.com/Infoblox-CTO/data.platform.kit/issues)
 
 3. **Open a new issue**
    - Include: command, error message, environment details

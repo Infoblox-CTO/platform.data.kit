@@ -38,7 +38,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/Infoblox-CTO/data-platform.git
+        repoURL: https://github.com/Infoblox-CTO/data.platform.kit.git
         targetRevision: main
         path: gitops/environments/{{environment}}
       destination:
@@ -81,7 +81,7 @@ metadata:
 spec:
   description: Cloud Data Platform Project
   sourceRepos:
-    - https://github.com/Infoblox-CTO/data-platform.git
+    - https://github.com/Infoblox-CTO/data.platform.kit.git
     - ghcr.io/infoblox-cto/*
   destinations:
     - namespace: dp-*

@@ -4,7 +4,7 @@ package registry
 import (
 	"context"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
 )
 
 // Client defines the interface for OCI registry operations.

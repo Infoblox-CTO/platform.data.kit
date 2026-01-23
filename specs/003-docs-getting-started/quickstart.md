@@ -17,7 +17,7 @@ This guide helps contributors get started with the documentation system quickly.
 
 ```bash
 # Clone the repository (if not already done)
-git clone https://github.com/Infoblox-CTO/data-platform.git
+git clone https://github.com/Infoblox-CTO/data.platform.kit.git
 cd data-platform
 
 # Install documentation dependencies

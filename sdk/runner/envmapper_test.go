@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
 )
 
 func TestBindingToEnvVar(t *testing.T) {

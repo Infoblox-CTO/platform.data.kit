@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
 )
 
 // PIIValidator validates PII classification on data package outputs.

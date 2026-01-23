@@ -67,4 +67,4 @@ Each tutorial follows a consistent structure:
 
 ## Suggest a Tutorial
 
-Have an idea for a tutorial? [Open an issue](https://github.com/Infoblox-CTO/data-platform/issues/new) with the `documentation` label.
+Have an idea for a tutorial? [Open an issue](https://github.com/Infoblox-CTO/data.platform.kit/issues/new) with the `documentation` label.

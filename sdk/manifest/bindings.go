@@ -3,7 +3,7 @@ package manifest
 import (
 	"fmt"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
 	"gopkg.in/yaml.v3"
 )
 

@@ -15,7 +15,7 @@ A Kubernetes-native data pipeline platform enabling teams to contribute reusable
 **bootstrap → local run → validate → publish → promote**
 
 [Get Started](getting-started/index.md){ .md-button .md-button--primary }
-[View on GitHub](https://github.com/Infoblox-CTO/data-platform){ .md-button }
+[View on GitHub](https://github.com/Infoblox-CTO/data.platform.kit){ .md-button }
 
 </div>
 
@@ -134,4 +134,4 @@ dp promote my-pipeline v0.1.0 --to dev
 - **[Troubleshooting](troubleshooting/index.md)** - Common issues and solutions
 - **[FAQ](troubleshooting/faq.md)** - Frequently asked questions
 - **[Contributing](contributing.md)** - How to contribute to DP
-- **[GitHub Issues](https://github.com/Infoblox-CTO/data-platform/issues)** - Report bugs or request features
+- **[GitHub Issues](https://github.com/Infoblox-CTO/data.platform.kit/issues)** - Report bugs or request features

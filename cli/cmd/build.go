@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Infoblox-CTO/data-platform/sdk/registry"
-	"github.com/Infoblox-CTO/data-platform/sdk/validate"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/registry"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/validate"
 	"github.com/spf13/cobra"
 )
 

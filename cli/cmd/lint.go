@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Infoblox-CTO/data-platform/sdk/manifest"
-	"github.com/Infoblox-CTO/data-platform/sdk/validate"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/validate"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

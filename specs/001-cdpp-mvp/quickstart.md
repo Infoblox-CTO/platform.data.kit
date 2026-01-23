@@ -15,7 +15,7 @@
 
 ```bash
 # Install dp CLI
-go install github.com/Infoblox-CTO/data-platform/cli@latest
+go install github.com/Infoblox-CTO/data.platform.kit/cli@latest
 
 # Verify installation
 dp version

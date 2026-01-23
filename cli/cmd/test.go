@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Infoblox-CTO/data-platform/sdk/runner"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/runner"
 	"github.com/spf13/cobra"
 )
 

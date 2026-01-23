@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/Infoblox-CTO/data-platform/sdk/lineage"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/lineage"
 )
 
 // MockEmitter is a mock implementation of lineage.Emitter for testing.

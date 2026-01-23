@@ -7,8 +7,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
-	"github.com/Infoblox-CTO/data-platform/sdk/lineage"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/lineage"
 )
 
 // Runner defines the interface for executing pipelines locally.

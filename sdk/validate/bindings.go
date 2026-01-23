@@ -5,8 +5,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
-	"github.com/Infoblox-CTO/data-platform/sdk/manifest"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/sdk/manifest"
 )
 
 // BindingsValidator validates bindings.yaml files.

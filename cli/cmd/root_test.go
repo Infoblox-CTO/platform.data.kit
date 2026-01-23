@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Infoblox-CTO/data-platform/cli/internal/output"
+	"github.com/Infoblox-CTO/data.platform.kit/cli/internal/output"
 )
 
 func TestRootCmd_OutputFlag(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/Infoblox-CTO/data-platform/cli/internal/output"
-	"github.com/Infoblox-CTO/data-platform/cli/internal/templates"
+	"github.com/Infoblox-CTO/data.platform.kit/cli/internal/output"
+	"github.com/Infoblox-CTO/data.platform.kit/cli/internal/templates"
 	"github.com/spf13/cobra"
 )
 

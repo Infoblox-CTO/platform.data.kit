@@ -18,8 +18,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	dpv1alpha1 "github.com/Infoblox-CTO/data-platform/platform/controller/api/v1alpha1"
-	"github.com/Infoblox-CTO/data-platform/platform/controller/internal/controller"
+	dpv1alpha1 "github.com/Infoblox-CTO/data.platform.kit/platform/controller/api/v1alpha1"
+	"github.com/Infoblox-CTO/data.platform.kit/platform/controller/internal/controller"
 )
 
 var (

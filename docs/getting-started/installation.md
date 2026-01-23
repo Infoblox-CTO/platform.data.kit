@@ -15,7 +15,7 @@ Build the latest version from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Infoblox-CTO/data-platform.git
+git clone https://github.com/Infoblox-CTO/data.platform.kit.git
 cd data-platform
 
 # Build the CLI

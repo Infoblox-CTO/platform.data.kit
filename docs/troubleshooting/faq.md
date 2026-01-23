@@ -361,7 +361,7 @@ export PATH=$PATH:/path/to/data-platform/bin
 If your question isn't answered here:
 
 1. Check [Common Issues](common-issues.md)
-2. Search [GitHub Issues](https://github.com/Infoblox-CTO/data-platform/issues)
+2. Search [GitHub Issues](https://github.com/Infoblox-CTO/data.platform.kit/issues)
 3. Ask in #data-platform-support on Slack
 4. Open a new issue on GitHub
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Infoblox-CTO/data-platform/contracts"
+	"github.com/Infoblox-CTO/data.platform.kit/contracts"
 )
 
 func TestNewArtifactValidator(t *testing.T) {
