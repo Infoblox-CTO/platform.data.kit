@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: RepoMeta
+metadata:
+  description: Repo metadata
+  name: repo-info
+spec:
+  jira_project: POSEIDON
+  owner:
+  - architecture
+  - poseidon-admin
+  protected_branches:
+  - main
