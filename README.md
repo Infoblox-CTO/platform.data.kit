@@ -1,8 +1,8 @@
 # DP - Data Platform CLI
 
-[![Build Status](https://github.com/Infoblox-CTO/data.platform.kit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Infoblox-CTO/data.platform.kit/actions)
+[![Build Status](https://github.com/Infoblox-CTO/platform.data.kit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Infoblox-CTO/platform.data.kit/actions)
 [![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8?logo=go)](https://go.dev)
-[![Coverage](https://img.shields.io/badge/coverage-70%25+-green)](https://github.com/Infoblox-CTO/data.platform.kit/actions)
+[![Coverage](https://img.shields.io/badge/coverage-70%25+-green)](https://github.com/Infoblox-CTO/platform.data.kit/actions)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://infoblox-cto.github.io/data-platform/)
 
@@ -22,7 +22,7 @@ A Kubernetes-native data pipeline platform enabling teams to contribute reusable
 
 ```bash
 # Clone the repository
-git clone https://github.com/Infoblox-CTO/data.platform.kit.git
+git clone https://github.com/Infoblox-CTO/platform.data.kit.git
 cd data-platform
 
 # Build the CLI

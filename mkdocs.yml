@@ -138,5 +138,5 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Infoblox-CTO/data.platform.kit
+      link: https://github.com/Infoblox-CTO/platform.data.kit
   generator: false

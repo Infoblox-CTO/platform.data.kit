@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
 func TestNewDataPackageValidator(t *testing.T) {

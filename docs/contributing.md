@@ -11,7 +11,7 @@ Thank you for your interest in improving the Data Platform documentation! This g
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Infoblox-CTO/data.platform.kit.git
+   git clone https://github.com/Infoblox-CTO/platform.data.kit.git
    cd data-platform
    ```
 

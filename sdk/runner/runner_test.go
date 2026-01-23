@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
 func TestDefaultRunOptions(t *testing.T) {

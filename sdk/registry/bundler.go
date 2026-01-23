@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
 // Bundler creates OCI artifacts from package directories.

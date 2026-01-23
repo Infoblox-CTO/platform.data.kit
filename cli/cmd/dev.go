@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/localdev"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev"
 	"github.com/spf13/cobra"
 )
 

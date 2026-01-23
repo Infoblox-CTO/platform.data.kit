@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
 // Parser is the interface for parsing manifest files.

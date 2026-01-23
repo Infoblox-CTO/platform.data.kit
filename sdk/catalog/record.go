@@ -4,7 +4,7 @@ package catalog
 import (
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
 // RecordType represents the type of catalog record.

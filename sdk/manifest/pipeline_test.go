@@ -3,7 +3,7 @@ package manifest
 import (
 	"testing"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
 func TestPipelineFromBytes(t *testing.T) {

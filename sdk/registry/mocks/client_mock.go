@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/registry"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/registry"
 )
 
 // MockRegistryClient is a mock implementation of registry.Client for testing.

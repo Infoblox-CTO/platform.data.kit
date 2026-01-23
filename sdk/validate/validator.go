@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
 // Error codes used by validators.

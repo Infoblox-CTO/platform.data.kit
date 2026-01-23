@@ -1,9 +1,9 @@
-module github.com/Infoblox-CTO/data.platform.kit/sdk
+module github.com/Infoblox-CTO/platform.data.kit/sdk
 
 go 1.25
 
 require (
-	github.com/Infoblox-CTO/data.platform.kit/contracts v0.0.0
+	github.com/Infoblox-CTO/platform.data.kit/contracts v0.0.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/prometheus/client_golang v1.23.2
@@ -28,4 +28,4 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 )
 
-replace github.com/Infoblox-CTO/data.platform.kit/contracts => ../contracts
+replace github.com/Infoblox-CTO/platform.data.kit/contracts => ../contracts

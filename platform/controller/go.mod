@@ -1,4 +1,4 @@
-module github.com/Infoblox-CTO/data.platform.kit/platform/controller
+module github.com/Infoblox-CTO/platform.data.kit/platform/controller
 
 go 1.25
 
@@ -66,4 +66,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/Infoblox-CTO/data.platform.kit/contracts => ../../contracts
+replace github.com/Infoblox-CTO/platform.data.kit/contracts => ../../contracts

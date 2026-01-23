@@ -1,8 +1,8 @@
-module github.com/Infoblox-CTO/data.platform.kit/tests/e2e
+module github.com/Infoblox-CTO/platform.data.kit/tests/e2e
 
 go 1.25
 
 replace (
-	github.com/Infoblox-CTO/data.platform.kit/contracts => ../../contracts
-	github.com/Infoblox-CTO/data.platform.kit/sdk => ../../sdk
+	github.com/Infoblox-CTO/platform.data.kit/contracts => ../../contracts
+	github.com/Infoblox-CTO/platform.data.kit/sdk => ../../sdk
 )

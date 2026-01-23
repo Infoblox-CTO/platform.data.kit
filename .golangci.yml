@@ -66,7 +66,7 @@ linters-settings:
     locale: US
   
   goimports:
-    local-prefixes: github.com/Infoblox-CTO/data.platform.kit
+    local-prefixes: github.com/Infoblox-CTO/platform.data.kit
   
   revive:
     rules:

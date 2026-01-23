@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/contracts"
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/lineage"
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/lineage"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
 func init() {

@@ -31,7 +31,7 @@ Answers to frequently asked questions.
 
 If you can't find a solution here:
 
-1. **Search existing issues**: [GitHub Issues](https://github.com/Infoblox-CTO/data.platform.kit/issues)
+1. **Search existing issues**: [GitHub Issues](https://github.com/Infoblox-CTO/platform.data.kit/issues)
 2. **Check the logs**: Run commands with `--log-level debug`
 3. **Validate your setup**: Run `dp version` and `dp dev status`
 4. **Open a new issue**: Include error messages and environment details

@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/promotion"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/promotion"
 	"github.com/spf13/cobra"
 )
 

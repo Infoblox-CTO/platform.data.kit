@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/manifest"
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/runner"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/runner"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

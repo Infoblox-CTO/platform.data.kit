@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/runner"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/runner"
 )
 
 // MockRunner is a mock implementation of runner.Runner for testing.

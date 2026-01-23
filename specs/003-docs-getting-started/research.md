@@ -157,7 +157,7 @@ Key Material theme features to enable:
 # mkdocs.yml
 site_name: Data Platform Documentation
 site_url: https://infoblox-cto.github.io/data-platform/
-repo_url: https://github.com/Infoblox-CTO/data.platform.kit
+repo_url: https://github.com/Infoblox-CTO/platform.data.kit
 repo_name: Infoblox-CTO/data-platform
 
 theme:

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/manifest"
-	"github.com/Infoblox-CTO/data.platform.kit/sdk/registry"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/registry"
 	"github.com/spf13/cobra"
 )
 

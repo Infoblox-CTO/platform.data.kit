@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	dpv1alpha1 "github.com/Infoblox-CTO/data.platform.kit/platform/controller/api/v1alpha1"
+	dpv1alpha1 "github.com/Infoblox-CTO/platform.data.kit/platform/controller/api/v1alpha1"
 )
 
 func TestPackageDeploymentReconciler_Reconcile(t *testing.T) {

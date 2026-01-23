@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	dpv1alpha1 "github.com/Infoblox-CTO/data.platform.kit/platform/controller/api/v1alpha1"
+	dpv1alpha1 "github.com/Infoblox-CTO/platform.data.kit/platform/controller/api/v1alpha1"
 )
 
 // PackageDeploymentReconciler reconciles a PackageDeployment object.

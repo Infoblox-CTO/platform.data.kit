@@ -23,10 +23,10 @@
 
 - [x] T001 Create project directory structure per plan.md (contracts/, sdk/, cli/, platform/controller/, gitops/, examples/, hack/, dashboards/)
 - [x] T002 Initialize root go.work file for Go workspace mode
-- [x] T003 [P] Initialize contracts/ Go module with go.mod (github.com/Infoblox-CTO/data.platform.kit/contracts)
-- [x] T004 [P] Initialize sdk/ Go module with go.mod (github.com/Infoblox-CTO/data.platform.kit/sdk)
-- [x] T005 [P] Initialize cli/ Go module with go.mod (github.com/Infoblox-CTO/data.platform.kit/cli)
-- [x] T006 [P] Initialize platform/controller/ Go module with go.mod (github.com/Infoblox-CTO/data.platform.kit/platform/controller)
+- [x] T003 [P] Initialize contracts/ Go module with go.mod (github.com/Infoblox-CTO/platform.data.kit/contracts)
+- [x] T004 [P] Initialize sdk/ Go module with go.mod (github.com/Infoblox-CTO/platform.data.kit/sdk)
+- [x] T005 [P] Initialize cli/ Go module with go.mod (github.com/Infoblox-CTO/platform.data.kit/cli)
+- [x] T006 [P] Initialize platform/controller/ Go module with go.mod (github.com/Infoblox-CTO/platform.data.kit/platform/controller)
 - [x] T007 [P] Create .golangci.yml linting configuration at repository root
 - [x] T008 [P] Create Makefile with build/lint/test targets at repository root
 - [x] T009 [P] Create .github/workflows/ci.yaml for PR validation (lint, test, build)
