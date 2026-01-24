@@ -170,8 +170,8 @@ func (p *Promoter) generateVersionFile(req *PromotionRequest) (string, error) {
 			Name: req.Package,
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by": "dp",
-				"dp.io/package":              req.Package,
-				"dp.io/environment":          req.TargetEnv.String(),
+				"dp.io/package":                req.Package,
+				"dp.io/environment":            req.TargetEnv.String(),
 			},
 		},
 		Spec: VersionSpec{

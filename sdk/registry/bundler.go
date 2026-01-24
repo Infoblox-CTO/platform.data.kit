@@ -113,8 +113,8 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		"org.opencontainers.image.version":     pkg.Metadata.Version,
 		"org.opencontainers.image.title":       pkg.Metadata.Name,
 		"org.opencontainers.image.description": pkg.Spec.Description,
-		"io.infoblox.dp.namespace":           pkg.Metadata.Namespace,
-		"io.infoblox.dp.type":                string(pkg.Spec.Type),
+		"io.infoblox.dp.namespace":             pkg.Metadata.Namespace,
+		"io.infoblox.dp.type":                  string(pkg.Spec.Type),
 	}
 
 	if opts.GitCommit != "" {

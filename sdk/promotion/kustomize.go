@@ -156,7 +156,7 @@ func (u *FileKustomizeUpdater) newVersionFile(pkg, version, digest string) *Vers
 			Name: pkg,
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by": "dp",
-				"dp.io/package":              pkg,
+				"dp.io/package":                pkg,
 			},
 		},
 		Spec: VersionSpec{
