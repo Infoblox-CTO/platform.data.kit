@@ -142,6 +142,10 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 			return nil, fmt.Errorf("failed to write Dockerfile: %w", err)
 		}
 
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Generated Dockerfile: %s\n", dockerfilePath)
+		}
+
 		imageName := fmt.Sprintf("dp/%s:%s", pkg.Metadata.Name, pkg.Metadata.Version)
 		if err := r.buildImageWithDockerfile(ctx, opts.PackageDir, dockerfilePath, imageName, opts.Output); err != nil {
 			result.Status = contracts.RunStatusFailed
@@ -456,12 +460,12 @@ ENTRYPOINT ["python", "/app/src/main.py"]
 `
 	default: // go
 		return `# DP Pipeline Image (auto-generated)
-ARG DP_BASE_IMAGE=alpine:3.19
+ARG DP_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
 
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /build
 COPY src/ ./
-RUN go build -ldflags="-s -w" -o /pipeline .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline .
 
 FROM ${DP_BASE_IMAGE}
 WORKDIR /app
