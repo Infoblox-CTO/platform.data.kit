@@ -1,8 +1,9 @@
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: {{ .Name }}
   namespace: {{ .Namespace }}
+  version: 0.1.0
   labels:
     team: {{ .Team }}
 spec:

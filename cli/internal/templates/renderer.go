@@ -20,6 +20,7 @@ type PackageConfig struct {
 	Team        string
 	Description string
 	Owner       string
+	Language    string // go, python
 }
 
 // Renderer renders package templates.

@@ -1,0 +1,28 @@
+# PostgreSQL values for dp local development
+replicaCount: 1
+
+image:
+  repository: postgres
+  pullPolicy: IfNotPresent
+  tag: "16-alpine"
+
+service:
+  type: ClusterIP
+  port: 5432
+
+# Database credentials (local dev only)
+auth:
+  database: postgres
+  username: postgres
+  password: postgres
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+persistence:
+  enabled: false

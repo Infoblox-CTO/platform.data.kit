@@ -77,6 +77,19 @@ Start the local development stack (Kafka, S3, Marquez):
 dp dev up
 ```
 
+!!! tip "Alternative: Use k3d Runtime"
+    You can also run the local development stack using k3d (Kubernetes):
+    
+    ```bash
+    dp dev up --runtime=k3d
+    ```
+    
+    This creates a k3d cluster with the same services. Useful when:
+    
+    - You want to test Kubernetes-native deployments
+    - You're running from a directory without docker-compose.yaml
+    - You need to simulate production K8s environments locally
+
 Check the status:
 
 ```bash

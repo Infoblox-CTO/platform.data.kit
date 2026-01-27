@@ -1,5 +1,8 @@
-# CDPP Makefile
+# dp Makefile
 # Multi-module Go workspace build system
+
+# Install location for binaries
+GOPATH := $(HOME)/go
 
 .PHONY: all build test lint clean help
 .PHONY: build-contracts build-sdk build-cli build-controller
@@ -27,7 +30,7 @@ build-sdk:
 
 build-cli:
 	@echo "Building cli..."
-	@cd cli && go build -o ../bin/cdpp .
+	@cd cli && go build -o ../bin/dp .
 
 build-controller:
 	@echo "Building controller..."
@@ -131,9 +134,9 @@ tidy:
 	@cd platform/controller && go mod tidy
 
 install: build-cli
-	@echo "Installing cdpp to GOPATH/bin..."
-	@cp bin/cdpp $(GOPATH)/bin/cdpp
-	@echo "✓ Installed cdpp"
+	@echo "Installing dp to GOPATH/bin..."
+	@cp bin/dp $(GOPATH)/bin/dp
+	@echo "✓ Installed dp"
 
 run-local:
 	@echo "Starting local development stack..."
@@ -166,10 +169,10 @@ LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 
 release-cli:
 	@echo "Building release CLI $(VERSION)..."
-	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o ../bin/cdpp-linux-amd64 .
-	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o ../bin/cdpp-linux-arm64 .
-	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o ../bin/cdpp-darwin-amd64 .
-	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o ../bin/cdpp-darwin-arm64 .
+	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dp-linux-amd64 .
+	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dp-linux-arm64 .
+	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dp-darwin-amd64 .
+	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dp-darwin-arm64 .
 	@echo "✓ Release binaries in bin/"
 
 release-controller:
@@ -219,7 +222,7 @@ help:
 	@echo ""
 	@echo "Development targets:"
 	@echo "  tidy            Tidy all go.mod files"
-	@echo "  install         Install cdpp to GOPATH/bin"
+	@echo "  install         Install dp to GOPATH/bin"
 	@echo "  run-local       Start local dev stack"
 	@echo "  stop-local      Stop local dev stack"
 	@echo ""

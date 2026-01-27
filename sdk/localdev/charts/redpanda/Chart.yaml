@@ -1,0 +1,6 @@
+apiVersion: v2
+name: redpanda
+description: Redpanda single-node for dp local development
+type: application
+version: 0.1.0
+appVersion: "v24.2.4"

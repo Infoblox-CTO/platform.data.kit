@@ -1,0 +1,29 @@
+# Redpanda values for dp local development
+replicaCount: 1
+
+image:
+  repository: docker.redpanda.com/redpandadata/redpanda
+  pullPolicy: IfNotPresent
+  tag: "v24.2.4"
+
+service:
+  type: ClusterIP
+  kafka:
+    port: 9092
+  schemaRegistry:
+    port: 8081
+  httpProxy:
+    port: 8082
+  adminApi:
+    port: 9644
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+persistence:
+  enabled: false

@@ -18,6 +18,10 @@ A Kubernetes-native data pipeline platform enabling teams to contribute reusable
 - Docker Desktop or Docker Engine
 - kubectl (for Kubernetes operations)
 
+**For k3d runtime (optional, for Kubernetes-native local development):**
+
+- k3d (v5.0+) - Install with `brew install k3d` (macOS) or [install script](https://k3d.io/v5.6.0/#installation)
+
 ### Installation
 
 ```bash

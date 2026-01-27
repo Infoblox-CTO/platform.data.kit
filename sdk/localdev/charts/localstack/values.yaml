@@ -1,0 +1,25 @@
+# LocalStack values for dp local development
+replicaCount: 1
+
+image:
+  repository: localstack/localstack
+  pullPolicy: IfNotPresent
+  tag: "3.0"
+
+service:
+  type: ClusterIP
+  port: 4566
+
+# AWS services to enable
+services: "s3"
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+persistence:
+  enabled: false

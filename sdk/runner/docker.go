@@ -66,6 +66,21 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		runtimeEnv = pkg.Spec.Runtime.Env
 	}
 
+	// Expand environment variables in image name
+	image = os.ExpandEnv(image)
+
+	// If image still contains unexpanded variables (e.g., ${REGISTRY}), treat as empty
+	// This allows local development to fall back to building from Dockerfile
+	if strings.Contains(image, "${") || strings.Contains(image, "$") {
+		image = ""
+	}
+
+	// Validate the expanded image reference is usable
+	// An image like "/foo1:" or empty segments means env vars weren't set
+	if image != "" && !isValidImageReference(image) {
+		image = ""
+	}
+
 	runID := GenerateRunID(pkg.Metadata.Name)
 	jobNamespace := pkg.Metadata.Namespace
 	jobName := pkg.Metadata.Name
@@ -110,19 +125,31 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	}
 
 	if image == "" {
-		dockerfile := filepath.Join(opts.PackageDir, "Dockerfile")
-		if _, err := os.Stat(dockerfile); err == nil {
-			imageName := fmt.Sprintf("dp/%s:%s", pkg.Metadata.Name, pkg.Metadata.Version)
-			if err := r.buildImage(ctx, opts.PackageDir, imageName, opts.Output); err != nil {
-				result.Status = contracts.RunStatusFailed
-				result.Error = fmt.Sprintf("failed to build image: %v", err)
-				emitLineage(lineage.EventTypeFail, err)
-				return result, err
-			}
-			image = imageName
-		} else {
-			return nil, fmt.Errorf("no image specified and no Dockerfile found")
+		// Detect language and generate Dockerfile internally
+		lang := detectPipelineLanguage(opts.PackageDir)
+		dockerfileContent := generateDockerfile(lang)
+
+		// Create temp directory for build context
+		tempDir, err := os.MkdirTemp("", "dp-build-*")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create temp build directory: %w", err)
 		}
+		defer os.RemoveAll(tempDir)
+
+		// Write Dockerfile to temp location
+		dockerfilePath := filepath.Join(tempDir, "Dockerfile")
+		if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644); err != nil {
+			return nil, fmt.Errorf("failed to write Dockerfile: %w", err)
+		}
+
+		imageName := fmt.Sprintf("dp/%s:%s", pkg.Metadata.Name, pkg.Metadata.Version)
+		if err := r.buildImageWithDockerfile(ctx, opts.PackageDir, dockerfilePath, imageName, opts.Output); err != nil {
+			result.Status = contracts.RunStatusFailed
+			result.Error = fmt.Sprintf("failed to build image: %v", err)
+			emitLineage(lineage.EventTypeFail, err)
+			return result, err
+		}
+		image = imageName
 	}
 
 	if opts.DryRun {
@@ -348,4 +375,114 @@ func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]st
 
 	// Merge: explicit env vars override binding-derived ones
 	return MergeEnvVars(bindingProps, explicitEnvs), nil
+}
+
+// isValidImageReference checks if an image reference is valid for docker run.
+// Returns false if the image has empty components (e.g., "/foo:" from unexpanded vars).
+func isValidImageReference(image string) bool {
+	if image == "" {
+		return false
+	}
+
+	// Check for leading slash (invalid: /foo:tag)
+	if strings.HasPrefix(image, "/") {
+		return false
+	}
+
+	// Check for empty tag (invalid: foo:)
+	if strings.HasSuffix(image, ":") {
+		return false
+	}
+
+	// Check for double slashes (invalid: registry//image)
+	if strings.Contains(image, "//") {
+		return false
+	}
+
+	// Check for empty segments between colons/slashes
+	parts := strings.Split(image, "/")
+	for _, part := range parts {
+		if part == "" {
+			return false
+		}
+	}
+
+	return true
+}
+
+// detectPipelineLanguage detects the programming language of a pipeline package.
+func detectPipelineLanguage(packageDir string) string {
+	srcDir := filepath.Join(packageDir, "src")
+
+	// Check for Python
+	if _, err := os.Stat(filepath.Join(srcDir, "main.py")); err == nil {
+		return "python"
+	}
+	if _, err := os.Stat(filepath.Join(srcDir, "requirements.txt")); err == nil {
+		return "python"
+	}
+
+	// Check for Go
+	if _, err := os.Stat(filepath.Join(srcDir, "main.go")); err == nil {
+		return "go"
+	}
+	if _, err := os.Stat(filepath.Join(srcDir, "go.mod")); err == nil {
+		return "go"
+	}
+
+	// Default to Go
+	return "go"
+}
+
+// generateDockerfile generates a Dockerfile for the given language.
+func generateDockerfile(lang string) string {
+	switch lang {
+	case "python":
+		return `# DP Pipeline Image (auto-generated)
+ARG DP_BASE_IMAGE=python:3.11-slim
+
+FROM python:3.11-slim AS builder
+WORKDIR /build
+COPY src/requirements.txt ./
+RUN pip install --no-cache-dir --target=/deps -r requirements.txt || true
+
+FROM ${DP_BASE_IMAGE}
+WORKDIR /app
+COPY --from=builder /deps /app/deps
+ENV PYTHONPATH=/app/deps
+COPY src/ /app/src/
+COPY dp.yaml /app/
+ENTRYPOINT ["python", "/app/src/main.py"]
+`
+	default: // go
+		return `# DP Pipeline Image (auto-generated)
+ARG DP_BASE_IMAGE=alpine:3.19
+
+FROM golang:1.21-alpine AS builder
+WORKDIR /build
+COPY src/ ./
+RUN go build -ldflags="-s -w" -o /pipeline .
+
+FROM ${DP_BASE_IMAGE}
+WORKDIR /app
+COPY --from=builder /pipeline /app/pipeline
+COPY dp.yaml /app/
+ENTRYPOINT ["/app/pipeline"]
+`
+	}
+}
+
+// buildImageWithDockerfile builds a Docker image using an external Dockerfile path.
+func (r *DockerRunner) buildImageWithDockerfile(ctx context.Context, contextDir, dockerfilePath, imageName string, output io.Writer) error {
+	args := []string{"build", "-t", imageName, "-f", dockerfilePath, "."}
+
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Dir = contextDir
+
+	if output != nil {
+		cmd.Stdout = output
+		cmd.Stderr = output
+	}
+
+	return cmd.Run()
 }

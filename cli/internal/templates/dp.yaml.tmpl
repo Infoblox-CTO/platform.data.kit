@@ -1,14 +1,20 @@
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: {{ .Name }}
   namespace: {{ .Namespace }}
+  version: 0.1.0
   labels:
     team: {{ .Team }}
 spec:
   type: pipeline
   description: {{ .Description }}
   owner: {{ .Owner }}
+  
+  runtime:
+    image: "${REGISTRY}/{{ .Name }}:${VERSION}"
+    timeout: 1h
+    retries: 2
   
   inputs:
     - name: input-events

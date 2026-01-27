@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev"
@@ -14,6 +15,7 @@ import (
 var (
 	devComposePath   string
 	devRemoveVolumes bool
+	devRuntime       string
 )
 
 // devCmd represents the dev command group
@@ -81,24 +83,57 @@ func init() {
 
 	// Flags for dev commands
 	devCmd.PersistentFlags().StringVar(&devComposePath, "compose", "", "Path to docker-compose.yaml (auto-detected if not specified)")
+	devCmd.PersistentFlags().StringVar(&devRuntime, "runtime", "k3d", "Runtime to use: 'k3d' (default) or 'compose'")
 	devDownCmd.Flags().BoolVar(&devRemoveVolumes, "volumes", false, "Remove data volumes when stopping")
+}
+
+// getWorkspacePath returns the DP workspace path from environment or config.
+func getWorkspacePath() string {
+	// Check DP_WORKSPACE_PATH environment variable first
+	if envPath := os.Getenv("DP_WORKSPACE_PATH"); envPath != "" {
+		return envPath
+	}
+
+	// Check config file
+	config, err := localdev.LoadConfig()
+	if err == nil && config != nil && config.Dev.Workspace != "" {
+		return config.Dev.Workspace
+	}
+
+	return ""
 }
 
 // findComposeFile searches for the docker-compose file in standard locations
 func findComposeFile() (string, error) {
-	// First check if we're in a DP workspace
+	// First check DP_WORKSPACE_PATH environment variable
+	workspacePath := getWorkspacePath()
+
+	// Get current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
+	// Build search paths
+	var searchPaths []string
+
+	// If workspace path is set, search there first
+	if workspacePath != "" {
+		searchPaths = append(searchPaths,
+			filepath.Join(workspacePath, "hack", "compose", "docker-compose.yaml"),
+			filepath.Join(workspacePath, "hack", "compose", "docker-compose.yml"),
+			filepath.Join(workspacePath, "docker-compose.yaml"),
+			filepath.Join(workspacePath, "docker-compose.yml"),
+		)
+	}
+
 	// Search paths relative to current directory
-	searchPaths := []string{
+	searchPaths = append(searchPaths,
 		filepath.Join(cwd, "hack", "compose", "docker-compose.yaml"),
 		filepath.Join(cwd, "hack", "compose", "docker-compose.yml"),
 		filepath.Join(cwd, "docker-compose.yaml"),
 		filepath.Join(cwd, "docker-compose.yml"),
-	}
+	)
 
 	// Also search in parent directories (up to 3 levels)
 	for i := 0; i < 3; i++ {
@@ -117,29 +152,97 @@ func findComposeFile() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("docker-compose.yaml not found; specify path with --compose or run from DP workspace")
+	return "", fmt.Errorf("docker-compose.yaml not found; specify path with --compose, set DP_WORKSPACE_PATH, or run from DP workspace")
+}
+
+// getRuntime returns the selected runtime type based on the --runtime flag or config.
+func getRuntime() (localdev.RuntimeType, error) {
+	runtime := strings.ToLower(devRuntime)
+
+	// If flag is empty, check config for default
+	if runtime == "" {
+		config, err := localdev.LoadConfig()
+		if err == nil && config != nil {
+			return config.GetDefaultRuntime(), nil
+		}
+		// No config, default to k3d
+		return localdev.RuntimeK3d, nil
+	}
+
+	// Handle explicit runtime selection
+	switch runtime {
+	case "k3d", "kubernetes", "k8s":
+		return localdev.RuntimeK3d, nil
+	case "compose", "docker-compose":
+		return localdev.RuntimeCompose, nil
+	default:
+		return "", fmt.Errorf("unsupported runtime %q; use 'k3d' or 'compose'", devRuntime)
+	}
+}
+
+// getRuntimeManager creates the appropriate runtime manager based on the selected runtime.
+func getRuntimeManager(runtime localdev.RuntimeType) (localdev.RuntimeManager, error) {
+	switch runtime {
+	case localdev.RuntimeCompose:
+		composePath := devComposePath
+		var err error
+
+		if composePath == "" {
+			composePath, err = findComposeFile()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return localdev.NewComposeManager(composePath)
+
+	case localdev.RuntimeK3d:
+		return localdev.NewK3dManager("dp-local")
+
+	default:
+		return nil, fmt.Errorf("unsupported runtime: %s", runtime)
+	}
 }
 
 func runDevUp(cmd *cobra.Command, args []string) error {
-	composePath := devComposePath
-	var err error
+	runtime, err := getRuntime()
+	if err != nil {
+		return err
+	}
 
-	if composePath == "" {
-		composePath, err = findComposeFile()
-		if err != nil {
+	// Check prerequisites
+	checker := localdev.NewPrerequisiteChecker(runtime)
+	ctx := context.Background()
+	if err := checker.CheckAll(ctx); err != nil {
+		return fmt.Errorf("prerequisites check failed: %w", err)
+	}
+
+	manager, err := getRuntimeManager(runtime)
+	if err != nil {
+		return fmt.Errorf("failed to initialize runtime manager: %w", err)
+	}
+
+	// Check if already running - if so, just report status
+	status, err := manager.Status(ctx)
+	if err == nil && status.Running {
+		fmt.Printf("Local development stack is already running (runtime: %s)\n\n", runtime)
+		fmt.Println("Services:")
+		formatter := GetFormatter()
+		data := formatServiceStatus(status)
+		if err := formatter.Format(os.Stdout, data); err != nil {
 			return err
 		}
+		fmt.Println("\nUse 'dp dev down' to stop the stack")
+		return nil
 	}
 
-	fmt.Printf("Starting local development stack...\n")
-	fmt.Printf("Using compose file: %s\n\n", composePath)
-
-	manager, err := localdev.NewComposeManager(composePath)
-	if err != nil {
-		return fmt.Errorf("failed to initialize compose manager: %w", err)
+	// Check port availability only if not already running
+	portChecker := localdev.NewPortChecker(1 * time.Second)
+	if err := portChecker.CheckAllAvailable([]int{19092, 4566, 5432}); err != nil {
+		return fmt.Errorf("port availability check failed: %w", err)
 	}
 
-	ctx := context.Background()
+	fmt.Printf("Starting local development stack (runtime: %s)...\n\n", runtime)
 
 	// Start the stack
 	if err := manager.Up(ctx, true, os.Stdout); err != nil {
@@ -155,7 +258,7 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// Show status
-	status, err := manager.Status(ctx)
+	status, err = manager.Status(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get status: %w", err)
 	}
@@ -181,25 +284,19 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 }
 
 func runDevDown(cmd *cobra.Command, args []string) error {
-	composePath := devComposePath
-	var err error
-
-	if composePath == "" {
-		composePath, err = findComposeFile()
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Printf("Stopping local development stack...\n")
-
-	manager, err := localdev.NewComposeManager(composePath)
+	runtime, err := getRuntime()
 	if err != nil {
-		return fmt.Errorf("failed to initialize compose manager: %w", err)
+		return err
 	}
+
+	manager, err := getRuntimeManager(runtime)
+	if err != nil {
+		return fmt.Errorf("failed to initialize runtime manager: %w", err)
+	}
+
+	fmt.Printf("Stopping local development stack (runtime: %s)...\n", runtime)
 
 	ctx := context.Background()
-
 	if err := manager.Down(ctx, devRemoveVolumes, os.Stdout); err != nil {
 		return fmt.Errorf("failed to stop stack: %w", err)
 	}
@@ -215,22 +312,17 @@ func runDevDown(cmd *cobra.Command, args []string) error {
 }
 
 func runDevStatus(cmd *cobra.Command, args []string) error {
-	composePath := devComposePath
-	var err error
-
-	if composePath == "" {
-		composePath, err = findComposeFile()
-		if err != nil {
-			// Not an error for status - just means stack isn't set up
-			fmt.Println("Local development stack is not configured")
-			fmt.Println("Run 'dp dev up' to start the stack")
-			return nil
-		}
+	runtime, err := getRuntime()
+	if err != nil {
+		return err
 	}
 
-	manager, err := localdev.NewComposeManager(composePath)
+	manager, err := getRuntimeManager(runtime)
 	if err != nil {
-		return fmt.Errorf("failed to initialize compose manager: %w", err)
+		// Not an error for status - just means stack isn't set up
+		fmt.Println("Local development stack is not configured")
+		fmt.Println("Run 'dp dev up' to start the stack")
+		return nil
 	}
 
 	ctx := context.Background()
@@ -245,7 +337,7 @@ func runDevStatus(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Println("Local development stack status:")
+	fmt.Printf("Local development stack status (runtime: %s):\n", runtime)
 
 	formatter := GetFormatter()
 	data := formatServiceStatus(status)

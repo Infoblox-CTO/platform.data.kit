@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -42,6 +43,20 @@ func init() {
 	testCmd.Flags().StringVar(&testData, "data", "", "Path to test data file")
 	testCmd.Flags().DurationVar(&testTimeout, "timeout", 5*time.Minute, "Timeout for test execution")
 	testCmd.Flags().StringVarP(&testBindings, "bindings", "b", "", "Path to test bindings file")
+}
+
+// ensureNetworkExists creates the Docker network if it doesn't exist.
+func ensureNetworkExists(networkName string) error {
+	// Check if network exists
+	checkCmd := exec.Command("docker", "network", "inspect", networkName)
+	if err := checkCmd.Run(); err == nil {
+		// Network exists
+		return nil
+	}
+
+	// Create the network
+	createCmd := exec.Command("docker", "network", "create", networkName)
+	return createCmd.Run()
 }
 
 func runTest(cmd *cobra.Command, args []string) error {
@@ -136,6 +151,11 @@ func runTest(cmd *cobra.Command, args []string) error {
 	fmt.Println("Test Execution")
 	fmt.Println(strings.Repeat("-", 60))
 	fmt.Println()
+
+	// Ensure the Docker network exists
+	if err := ensureNetworkExists("dp-network"); err != nil {
+		fmt.Printf("Warning: Could not create network: %v\n", err)
+	}
 
 	// Run the pipeline in test mode
 	opts := runner.RunOptions{

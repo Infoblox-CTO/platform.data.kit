@@ -31,6 +31,7 @@ type ServiceStatus struct {
 // StackStatus represents the overall status of the local dev stack.
 type StackStatus struct {
 	Running  bool
+	Runtime  RuntimeType
 	Services []ServiceStatus
 	Errors   []string
 }
@@ -246,4 +247,9 @@ func (m *ComposeManager) GetComposePath() string {
 // GetProjectName returns the project name.
 func (m *ComposeManager) GetProjectName() string {
 	return m.projectName
+}
+
+// Type returns the runtime type for this manager.
+func (m *ComposeManager) Type() RuntimeType {
+	return RuntimeCompose
 }

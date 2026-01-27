@@ -1,0 +1,6 @@
+apiVersion: v2
+name: localstack
+description: LocalStack for dp local development (AWS S3 emulation)
+type: application
+version: 0.1.0
+appVersion: "3.0"

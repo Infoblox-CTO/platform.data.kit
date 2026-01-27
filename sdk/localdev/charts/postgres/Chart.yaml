@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgres
+description: PostgreSQL for dp local development
+type: application
+version: 0.1.0
+appVersion: "16"

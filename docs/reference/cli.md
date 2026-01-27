@@ -98,14 +98,21 @@ dp dev up [flags]
 
 | Flag | Description | Default |
 |------|-------------|---------|
+| `--runtime` | Runtime to use (k3d, compose) | k3d |
+| `--compose` | Path to docker-compose.yaml | auto-detected |
 | `--detach` | Run in background | false |
 | `--timeout` | Startup timeout | 60s |
 
 #### Examples
 
 ```bash
-# Start local stack
+# Start local stack with k3d (default)
 dp dev up
+```
+
+```bash
+# Start local stack with Docker Compose
+dp dev up --runtime=compose
 ```
 
 ```bash
@@ -125,6 +132,7 @@ dp dev down [flags]
 
 | Flag | Description | Default |
 |------|-------------|---------|
+| `--runtime` | Runtime to use (k3d, compose) | k3d |
 | `--volumes` | Remove volumes | false |
 
 #### Examples
@@ -135,8 +143,8 @@ dp dev down
 ```
 
 ```bash
-# Stop and remove volumes
-dp dev down --volumes
+# Stop compose stack and remove volumes
+dp dev down --runtime=compose --volumes
 ```
 
 ### dp dev status
@@ -144,17 +152,22 @@ dp dev down --volumes
 Show status of local development stack.
 
 ```bash
-dp dev status
+dp dev status [flags]
 ```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--runtime` | Runtime to use (k3d, compose) | k3d |
 
 #### Output Example
 
 ```
 Service         Status    Ports
 ━━━━━━━━━━━━━━  ━━━━━━━   ━━━━━━━━━
-kafka           running   9092
-minio           running   9000
-marquez         running   5000
+redpanda        running   19092
+localstack      running   4566
 postgres        running   5432
 ```
 

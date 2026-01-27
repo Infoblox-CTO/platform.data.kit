@@ -16,6 +16,7 @@ var (
 	initNamespace string
 	initTeam      string
 	initOwner     string
+	initLanguage  string
 )
 
 // initCmd represents the init command
@@ -56,6 +57,8 @@ func init() {
 		"Team label")
 	initCmd.Flags().StringVar(&initOwner, "owner", "",
 		"Package owner (defaults to current user)")
+	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "go",
+		"Pipeline language: go, python")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -92,6 +95,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid package type %q: must be pipeline, model, or dataset", initType)
 	}
 
+	// Validate language
+	if !isValidLanguage(initLanguage) {
+		return fmt.Errorf("invalid language %q: must be go or python", initLanguage)
+	}
+
 	// Set default owner
 	if initOwner == "" {
 		initOwner = fmt.Sprintf("%s-team", initNamespace)
@@ -109,6 +117,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Team:        initTeam,
 		Description: fmt.Sprintf("A %s package", initType),
 		Owner:       initOwner,
+		Language:    initLanguage,
 	}
 
 	// Create dp.yaml
@@ -135,9 +144,47 @@ func runInit(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create src directory: %w", err)
 		}
 
-		// Create placeholder main.go
-		mainPath := filepath.Join(srcDir, "main.go")
-		mainContent := fmt.Sprintf(`package main
+		// Create language-specific files
+		switch initLanguage {
+		case "python":
+			// Create requirements.txt
+			reqPath := filepath.Join(srcDir, "requirements.txt")
+			reqContent := "# Add your dependencies here\n"
+			if err := os.WriteFile(reqPath, []byte(reqContent), 0644); err != nil {
+				return fmt.Errorf("failed to create requirements.txt: %w", err)
+			}
+			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", reqPath))
+
+			// Create main.py
+			mainPath := filepath.Join(srcDir, "main.py")
+			mainContent := fmt.Sprintf(`#!/usr/bin/env python3
+"""
+%s pipeline
+"""
+
+def main():
+    print("Hello from %s pipeline!")
+
+if __name__ == "__main__":
+    main()
+`, name, name)
+			if err := os.WriteFile(mainPath, []byte(mainContent), 0644); err != nil {
+				return fmt.Errorf("failed to create main.py: %w", err)
+			}
+			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", mainPath))
+
+		default: // go
+			// Create go.mod
+			goModPath := filepath.Join(srcDir, "go.mod")
+			goModContent := fmt.Sprintf("module %s\n\ngo 1.21\n", name)
+			if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
+				return fmt.Errorf("failed to create go.mod: %w", err)
+			}
+			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", goModPath))
+
+			// Create main.go
+			mainPath := filepath.Join(srcDir, "main.go")
+			mainContent := fmt.Sprintf(`package main
 
 import "fmt"
 
@@ -145,10 +192,11 @@ func main() {
 	fmt.Println("Hello from %s pipeline!")
 }
 `, name)
-		if err := os.WriteFile(mainPath, []byte(mainContent), 0644); err != nil {
-			return fmt.Errorf("failed to create main.go: %w", err)
+			if err := os.WriteFile(mainPath, []byte(mainContent), 0644); err != nil {
+				return fmt.Errorf("failed to create main.go: %w", err)
+			}
+			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", mainPath))
 		}
-		output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", mainPath))
 	}
 
 	cmd.Printf("\nPackage %q initialized successfully!\n", name)
@@ -177,6 +225,16 @@ func isValidPackageName(name string) bool {
 func isValidPackageType(t string) bool {
 	switch t {
 	case "pipeline", "model", "dataset":
+		return true
+	default:
+		return false
+	}
+}
+
+// isValidLanguage checks if a language is valid
+func isValidLanguage(lang string) bool {
+	switch lang {
+	case "go", "python":
 		return true
 	default:
 		return false
