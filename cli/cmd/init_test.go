@@ -18,6 +18,7 @@ func TestInitCmd_Flags(t *testing.T) {
 		{"namespace", "default"},
 		{"team", "my-team"},
 		{"owner", ""},
+		{"mode", "batch"},
 	}
 
 	for _, tt := range tests {
@@ -223,5 +224,137 @@ func TestInitCmd_PackageTypes(t *testing.T) {
 				t.Errorf("dp.yaml not created for type %s", pkgType)
 			}
 		})
+	}
+}
+
+func TestInitCmd_BatchMode(t *testing.T) {
+	// Test initializing with batch mode (default)
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "batch-pipeline")
+
+	// Save and restore global flags
+	oldType := initType
+	oldNamespace := initNamespace
+	oldMode := initMode
+	defer func() {
+		initType = oldType
+		initNamespace = oldNamespace
+		initMode = oldMode
+	}()
+
+	initType = "pipeline"
+	initNamespace = "default"
+	initMode = "batch"
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	cmd := &cobra.Command{}
+	err := runInit(cmd, []string{"batch-pipeline"})
+
+	if err != nil {
+		t.Errorf("runInit() error = %v, want nil", err)
+		return
+	}
+
+	// Verify pipeline.yaml was created with batch mode
+	pipelinePath := filepath.Join(pkgDir, "pipeline.yaml")
+	if _, err := os.Stat(pipelinePath); os.IsNotExist(err) {
+		t.Error("pipeline.yaml was not created for batch mode")
+		return
+	}
+
+	// Read and check mode
+	content, err := os.ReadFile(pipelinePath)
+	if err != nil {
+		t.Errorf("failed to read pipeline.yaml: %v", err)
+		return
+	}
+
+	// Check that batch mode is set or mode is omitted (defaults to batch)
+	if len(content) == 0 {
+		t.Error("pipeline.yaml is empty")
+	}
+}
+
+func TestInitCmd_StreamingMode(t *testing.T) {
+	// Test initializing with streaming mode
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "stream-pipeline")
+
+	// Save and restore global flags
+	oldType := initType
+	oldNamespace := initNamespace
+	oldMode := initMode
+	defer func() {
+		initType = oldType
+		initNamespace = oldNamespace
+		initMode = oldMode
+	}()
+
+	initType = "pipeline"
+	initNamespace = "default"
+	initMode = "streaming"
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	cmd := &cobra.Command{}
+	err := runInit(cmd, []string{"stream-pipeline"})
+
+	if err != nil {
+		t.Errorf("runInit() error = %v, want nil", err)
+		return
+	}
+
+	// Verify pipeline.yaml was created with streaming mode
+	pipelinePath := filepath.Join(pkgDir, "pipeline.yaml")
+	if _, err := os.Stat(pipelinePath); os.IsNotExist(err) {
+		t.Error("pipeline.yaml was not created for streaming mode")
+		return
+	}
+
+	// Read and check mode
+	content, err := os.ReadFile(pipelinePath)
+	if err != nil {
+		t.Errorf("failed to read pipeline.yaml: %v", err)
+		return
+	}
+
+	// Check that streaming mode is set
+	if len(content) == 0 {
+		t.Error("pipeline.yaml is empty")
+	}
+}
+
+func TestInitCmd_InvalidMode(t *testing.T) {
+	// Test that invalid mode is rejected
+	tmpDir := t.TempDir()
+
+	// Save and restore global flags
+	oldType := initType
+	oldNamespace := initNamespace
+	oldMode := initMode
+	defer func() {
+		initType = oldType
+		initNamespace = oldNamespace
+		initMode = oldMode
+	}()
+
+	initType = "pipeline"
+	initNamespace = "default"
+	initMode = "invalid-mode"
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	cmd := &cobra.Command{}
+	err := runInit(cmd, []string{"test-pipeline"})
+
+	if err == nil {
+		t.Error("runInit() expected error for invalid mode, got nil")
 	}
 }

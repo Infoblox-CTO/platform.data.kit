@@ -196,3 +196,99 @@ func TestRunRecord_Duration(t *testing.T) {
 		t.Errorf("Duration = %v, want 5m", duration)
 	}
 }
+
+func TestPipelineMode_Constants(t *testing.T) {
+	tests := []struct {
+		name     string
+		mode     PipelineMode
+		wantMode string
+	}{
+		{
+			name:     "batch",
+			mode:     PipelineModeBatch,
+			wantMode: "batch",
+		},
+		{
+			name:     "streaming",
+			mode:     PipelineModeStreaming,
+			wantMode: "streaming",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := string(tt.mode); got != tt.wantMode {
+				t.Errorf("PipelineMode = %v, want %v", got, tt.wantMode)
+			}
+		})
+	}
+}
+
+func TestPipelineMode_IsValid(t *testing.T) {
+	tests := []struct {
+		name  string
+		mode  PipelineMode
+		valid bool
+	}{
+		{
+			name:  "batch is valid",
+			mode:  PipelineModeBatch,
+			valid: true,
+		},
+		{
+			name:  "streaming is valid",
+			mode:  PipelineModeStreaming,
+			valid: true,
+		},
+		{
+			name:  "empty is valid (defaults to batch)",
+			mode:  "",
+			valid: true,
+		},
+		{
+			name:  "invalid mode",
+			mode:  PipelineMode("invalid"),
+			valid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.mode.IsValid(); got != tt.valid {
+				t.Errorf("PipelineMode.IsValid() = %v, want %v", got, tt.valid)
+			}
+		})
+	}
+}
+
+func TestPipelineMode_Default(t *testing.T) {
+	tests := []struct {
+		name     string
+		mode     PipelineMode
+		wantMode PipelineMode
+	}{
+		{
+			name:     "empty defaults to batch",
+			mode:     "",
+			wantMode: PipelineModeBatch,
+		},
+		{
+			name:     "batch stays batch",
+			mode:     PipelineModeBatch,
+			wantMode: PipelineModeBatch,
+		},
+		{
+			name:     "streaming stays streaming",
+			mode:     PipelineModeStreaming,
+			wantMode: PipelineModeStreaming,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.mode.Default(); got != tt.wantMode {
+				t.Errorf("PipelineMode.Default() = %v, want %v", got, tt.wantMode)
+			}
+		})
+	}
+}

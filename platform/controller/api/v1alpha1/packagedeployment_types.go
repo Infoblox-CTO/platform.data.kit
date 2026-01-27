@@ -10,9 +10,37 @@ type PackageDeploymentSpec struct {
 	// Package contains the package reference information.
 	Package PackageRef `json:"package"`
 
-	// Schedule defines when the package should run.
+	// Mode specifies the execution mode: batch or streaming.
+	// +kubebuilder:validation:Enum=batch;streaming
+	// +kubebuilder:default=batch
+	// +optional
+	Mode PipelineMode `json:"mode,omitempty"`
+
+	// Schedule defines when the package should run (batch mode only).
 	// +optional
 	Schedule *ScheduleSpec `json:"schedule,omitempty"`
+
+	// Replicas is the number of replicas (streaming mode only).
+	// +kubebuilder:default=1
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Timeout is the maximum run duration (batch mode only).
+	// +optional
+	Timeout string `json:"timeout,omitempty"`
+
+	// LivenessProbe configures the liveness probe (streaming mode only).
+	// +optional
+	LivenessProbe *Probe `json:"livenessProbe,omitempty"`
+
+	// ReadinessProbe configures the readiness probe (streaming mode only).
+	// +optional
+	ReadinessProbe *Probe `json:"readinessProbe,omitempty"`
+
+	// TerminationGracePeriodSeconds is the grace period for shutdown (streaming mode only).
+	// +kubebuilder:default=30
+	// +optional
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 
 	// Resources defines resource requirements for the package run.
 	// +optional
@@ -30,6 +58,82 @@ type PackageDeploymentSpec struct {
 	// ImagePullSecrets are the secrets to use for pulling images.
 	// +optional
 	ImagePullSecrets []ImagePullSecret `json:"imagePullSecrets,omitempty"`
+}
+
+// PipelineMode defines the execution mode for a pipeline.
+type PipelineMode string
+
+const (
+	// PipelineModeBatch runs the pipeline to completion.
+	PipelineModeBatch PipelineMode = "batch"
+	// PipelineModeStreaming runs the pipeline indefinitely.
+	PipelineModeStreaming PipelineMode = "streaming"
+)
+
+// Probe describes a health check probe.
+type Probe struct {
+	// HTTPGet specifies an HTTP GET probe.
+	// +optional
+	HTTPGet *HTTPGetAction `json:"httpGet,omitempty"`
+
+	// Exec specifies a command execution probe.
+	// +optional
+	Exec *ExecAction `json:"exec,omitempty"`
+
+	// TCPSocket specifies a TCP socket probe.
+	// +optional
+	TCPSocket *TCPSocketAction `json:"tcpSocket,omitempty"`
+
+	// InitialDelaySeconds is the delay before the first probe.
+	// +kubebuilder:default=0
+	// +optional
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty"`
+
+	// PeriodSeconds is the probe interval.
+	// +kubebuilder:default=10
+	// +optional
+	PeriodSeconds int32 `json:"periodSeconds,omitempty"`
+
+	// TimeoutSeconds is the probe timeout.
+	// +kubebuilder:default=1
+	// +optional
+	TimeoutSeconds int32 `json:"timeoutSeconds,omitempty"`
+
+	// SuccessThreshold is the consecutive successes required.
+	// +kubebuilder:default=1
+	// +optional
+	SuccessThreshold int32 `json:"successThreshold,omitempty"`
+
+	// FailureThreshold is the consecutive failures required.
+	// +kubebuilder:default=3
+	// +optional
+	FailureThreshold int32 `json:"failureThreshold,omitempty"`
+}
+
+// HTTPGetAction describes an HTTP GET probe.
+type HTTPGetAction struct {
+	// Path is the HTTP path to probe.
+	Path string `json:"path"`
+
+	// Port is the port to probe.
+	Port int32 `json:"port"`
+
+	// Scheme is HTTP or HTTPS.
+	// +kubebuilder:default=HTTP
+	// +optional
+	Scheme string `json:"scheme,omitempty"`
+}
+
+// ExecAction describes a command execution probe.
+type ExecAction struct {
+	// Command is the command to execute.
+	Command []string `json:"command"`
+}
+
+// TCPSocketAction describes a TCP socket probe.
+type TCPSocketAction struct {
+	// Port is the port to probe.
+	Port int32 `json:"port"`
 }
 
 // PackageRef contains the package reference.

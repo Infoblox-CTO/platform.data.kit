@@ -29,7 +29,8 @@ type RunOptions struct {
 	DryRun         bool
 	Detach         bool
 	Output         io.Writer
-	LineageEmitter lineage.Emitter // Optional lineage emitter for tracking
+	LineageEmitter lineage.Emitter        // Optional lineage emitter for tracking
+	Mode           contracts.PipelineMode // Pipeline execution mode (batch/streaming)
 }
 
 // RunResult contains the result of a pipeline run.

@@ -204,6 +204,142 @@ spec:
 
 ---
 
+## Pipeline Mode Configuration
+
+Pipelines support two execution modes: `batch` (default) and `streaming`. The mode determines how the pipeline is deployed and executed.
+
+### Mode Field
+
+```yaml
+spec:
+  mode: string                      # Optional: batch | streaming (default: batch)
+```
+
+### Batch Mode Fields
+
+For `mode: batch` pipelines (the default):
+
+```yaml
+spec:
+  mode: batch
+  timeout: string                   # Required: Max execution time (e.g., "30m", "1h")
+  retries: integer                  # Optional: Retry count on failure (default: 3)
+  backoffLimit: integer             # Optional: Kubernetes backoff limit (default: 3)
+  schedule:                         # Optional: Cron scheduling
+    cron: string                    # Cron expression (e.g., "0 2 * * *")
+    timezone: string                # Timezone (default: UTC)
+```
+
+### Streaming Mode Fields
+
+For `mode: streaming` pipelines:
+
+```yaml
+spec:
+  mode: streaming
+  replicas: integer                 # Optional: Number of replicas (default: 1)
+  terminationGracePeriodSeconds: integer  # Optional: Shutdown grace period (default: 30)
+  
+  livenessProbe:                    # Optional: Liveness health check
+    httpGet:
+      path: string                  # Health endpoint path (e.g., "/healthz")
+      port: integer                 # Port number
+      scheme: string                # HTTP or HTTPS (default: HTTP)
+    initialDelaySeconds: integer    # Delay before first probe (default: 0)
+    periodSeconds: integer          # Probe interval (default: 10)
+    timeoutSeconds: integer         # Probe timeout (default: 1)
+    successThreshold: integer       # Successes for healthy (default: 1)
+    failureThreshold: integer       # Failures for unhealthy (default: 3)
+    
+  readinessProbe:                   # Optional: Readiness health check
+    httpGet:
+      path: string
+      port: integer
+      scheme: string
+    # Same timing fields as livenessProbe
+    
+  lineage:                          # Optional: Lineage configuration
+    enabled: boolean                # Enable OpenLineage events (default: false)
+    heartbeatInterval: string       # Heartbeat frequency (default: 30s)
+```
+
+### Probe Types
+
+Three types of probes are supported:
+
+#### HTTP Probe
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+    scheme: HTTP
+```
+
+#### Exec Probe
+
+```yaml
+livenessProbe:
+  exec:
+    command:
+      - /bin/sh
+      - -c
+      - "exit 0"
+```
+
+#### TCP Probe
+
+```yaml
+livenessProbe:
+  tcpSocket:
+    port: 8080
+```
+
+### Field Reference
+
+#### spec.mode
+
+| Property | Value |
+|----------|-------|
+| Type | enum |
+| Required | No |
+| Values | `batch`, `streaming` |
+| Default | `batch` |
+| Description | Pipeline execution mode |
+
+#### spec.replicas (streaming)
+
+| Property | Value |
+|----------|-------|
+| Type | integer |
+| Required | No |
+| Default | 1 |
+| Range | 1-100 |
+| Description | Number of concurrent replicas |
+
+#### spec.terminationGracePeriodSeconds (streaming)
+
+| Property | Value |
+|----------|-------|
+| Type | integer |
+| Required | No |
+| Default | 30 |
+| Range | 0-3600 |
+| Description | Seconds to wait for graceful shutdown |
+
+#### spec.lineage.heartbeatInterval (streaming)
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Default | 30s |
+| Pattern | Go duration format |
+| Description | Interval for RUNNING lineage events |
+
+---
+
 ## bindings.yaml Schema
 
 Infrastructure binding references.

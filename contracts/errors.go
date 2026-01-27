@@ -5,6 +5,16 @@ import (
 	"strings"
 )
 
+// ValidationSeverity represents the severity of a validation issue.
+type ValidationSeverity string
+
+const (
+	// SeverityError indicates a validation error that must be fixed.
+	SeverityError ValidationSeverity = "error"
+	// SeverityWarning indicates a validation warning that should be reviewed.
+	SeverityWarning ValidationSeverity = "warning"
+)
+
 // ValidationError represents a manifest validation error.
 type ValidationError struct {
 	// Code is the error code (e.g., "E001")
@@ -18,6 +28,9 @@ type ValidationError struct {
 
 	// Value is the invalid value (if applicable)
 	Value any `json:"value,omitempty"`
+
+	// Severity indicates if this is an error or warning
+	Severity ValidationSeverity `json:"severity,omitempty"`
 }
 
 // Error implements the error interface.
@@ -46,9 +59,14 @@ func (e ValidationErrors) Error() string {
 	return fmt.Sprintf("%d validation errors:\n  - %s", len(e), strings.Join(msgs, "\n  - "))
 }
 
-// HasErrors returns true if there are any validation errors.
+// HasErrors returns true if there are any validation errors (not warnings).
 func (e ValidationErrors) HasErrors() bool {
-	return len(e) > 0
+	return len(e.Errors()) > 0
+}
+
+// HasWarnings returns true if there are any validation warnings.
+func (e ValidationErrors) HasWarnings() bool {
+	return len(e.Warnings()) > 0
 }
 
 // Add adds a validation error to the collection.
@@ -68,11 +86,44 @@ func (e *ValidationErrors) AddError(code, field, message string) {
 // AddErrorWithValue creates and adds a validation error with the invalid value.
 func (e *ValidationErrors) AddErrorWithValue(code, field, message string, value any) {
 	e.Add(&ValidationError{
-		Code:    code,
-		Field:   field,
-		Message: message,
-		Value:   value,
+		Code:     code,
+		Field:    field,
+		Message:  message,
+		Value:    value,
+		Severity: SeverityError,
 	})
+}
+
+// AddWarning creates and adds a validation warning.
+func (e *ValidationErrors) AddWarning(code, field, message string) {
+	e.Add(&ValidationError{
+		Code:     code,
+		Field:    field,
+		Message:  message,
+		Severity: SeverityWarning,
+	})
+}
+
+// Errors returns only the validation errors (not warnings).
+func (e ValidationErrors) Errors() ValidationErrors {
+	var errs ValidationErrors
+	for _, err := range e {
+		if err.Severity != SeverityWarning {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+// Warnings returns only the validation warnings.
+func (e ValidationErrors) Warnings() ValidationErrors {
+	var warnings ValidationErrors
+	for _, err := range e {
+		if err.Severity == SeverityWarning {
+			warnings = append(warnings, err)
+		}
+	}
+	return warnings
 }
 
 // Error code constants per data-model.md validation rules.

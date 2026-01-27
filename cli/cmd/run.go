@@ -21,6 +21,7 @@ var (
 	runTimeout    time.Duration
 	runDryRun     bool
 	runDetach     bool
+	runAttach     bool     // Explicitly attach to logs (for streaming)
 	runSet        []string // --set flags for inline overrides
 	runValueFiles []string // -f flags for override files
 )
@@ -88,6 +89,7 @@ func init() {
 	runCmd.Flags().DurationVar(&runTimeout, "timeout", 30*time.Minute, "Timeout for pipeline execution")
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Validate and build only, don't execute")
 	runCmd.Flags().BoolVarP(&runDetach, "detach", "d", false, "Run in background")
+	runCmd.Flags().BoolVar(&runAttach, "attach", true, "Attach to container logs (default for streaming)")
 	runCmd.Flags().StringArrayVar(&runSet, "set", []string{}, "Override values (key=value, can be repeated)")
 	runCmd.Flags().StringArrayVarP(&runValueFiles, "values", "f", []string{}, "Override files (can be repeated)")
 }
@@ -109,6 +111,15 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 	dpPath := filepath.Join(absDir, "dp.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
 		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
+	}
+
+	// Read pipeline mode from pipeline.yaml (if exists)
+	pipelineMode := "batch" // Default
+	pipelinePath := filepath.Join(absDir, "pipeline.yaml")
+	if pipeline, err := manifest.ParsePipelineFile(pipelinePath); err == nil {
+		if pipeline.Spec.Mode != "" {
+			pipelineMode = string(pipeline.Spec.Mode)
+		}
 	}
 
 	// Apply overrides if specified
@@ -147,6 +158,7 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Running pipeline from: %s\n", packageDir)
+	fmt.Printf("Pipeline mode: %s\n", pipelineMode)
 
 	if runDryRun {
 		fmt.Println("Dry run mode - will validate and build only")
@@ -168,13 +180,18 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		fmt.Printf("✓ Pipeline started in background\n")
 		fmt.Printf("  Run ID: %s\n", result.RunID)
 		fmt.Printf("  Container: %s\n", result.ContainerID)
+		fmt.Printf("  Mode: %s\n", pipelineMode)
 		fmt.Println("\nUse these commands to manage the run:")
-		fmt.Printf("  View logs: docker logs -f %s\n", result.RunID)
-		fmt.Printf("  Stop:      docker stop %s\n", result.RunID)
+		fmt.Printf("  View logs: dp logs %s\n", result.RunID)
+		fmt.Printf("  Stop:      dp stop %s\n", result.RunID)
 	} else {
 		switch result.Status {
 		case "completed":
-			fmt.Printf("✓ Pipeline completed successfully\n")
+			if pipelineMode == "streaming" {
+				fmt.Printf("✓ Streaming pipeline stopped gracefully\n")
+			} else {
+				fmt.Printf("✓ Pipeline completed successfully\n")
+			}
 			fmt.Printf("  Duration: %s\n", result.Duration.Round(time.Millisecond))
 			if result.RecordsProcessed > 0 {
 				fmt.Printf("  Records processed: %d\n", result.RecordsProcessed)

@@ -1,5 +1,7 @@
 package contracts
 
+import "fmt"
+
 // PipelineManifest defines the runtime configuration for a pipeline.
 type PipelineManifest struct {
 	// APIVersion is the API version.
@@ -52,6 +54,30 @@ type PipelineSpec struct {
 
 	// ServiceAccountName is the Kubernetes service account to use.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
+
+	// Mode is the pipeline execution mode: batch or streaming.
+	Mode PipelineMode `json:"mode,omitempty" yaml:"mode,omitempty"`
+
+	// Timeout is the maximum execution time for batch pipelines (e.g., "30m", "1h").
+	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+
+	// Retries is the maximum retry attempts for batch pipelines.
+	Retries int `json:"retries,omitempty" yaml:"retries,omitempty"`
+
+	// BackoffLimit is the Kubernetes Job backoff limit.
+	BackoffLimit int `json:"backoffLimit,omitempty" yaml:"backoffLimit,omitempty"`
+
+	// LivenessProbe defines the liveness health check for streaming pipelines.
+	LivenessProbe *Probe `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
+
+	// ReadinessProbe defines the readiness health check for streaming pipelines.
+	ReadinessProbe *Probe `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
+
+	// TerminationGracePeriodSeconds is the grace period for streaming pipeline shutdown.
+	TerminationGracePeriodSeconds int `json:"terminationGracePeriodSeconds,omitempty" yaml:"terminationGracePeriodSeconds,omitempty"`
+
+	// Lineage configures lineage tracking for the pipeline.
+	Lineage *PipelineLineage `json:"lineage,omitempty" yaml:"lineage,omitempty"`
 }
 
 // EnvVar represents an environment variable.
@@ -122,4 +148,138 @@ type ConfigMapRef struct {
 type BindingRef struct {
 	Name string `json:"name" yaml:"name"`
 	Ref  string `json:"ref" yaml:"ref"`
+}
+
+// Probe defines a health check probe configuration (Kubernetes-compatible).
+type Probe struct {
+	// HTTPGet specifies an HTTP probe.
+	HTTPGet *HTTPGetAction `json:"httpGet,omitempty" yaml:"httpGet,omitempty"`
+
+	// Exec specifies a command-based probe.
+	Exec *ExecAction `json:"exec,omitempty" yaml:"exec,omitempty"`
+
+	// TCPSocket specifies a TCP port probe.
+	TCPSocket *TCPSocketAction `json:"tcpSocket,omitempty" yaml:"tcpSocket,omitempty"`
+
+	// InitialDelaySeconds is the delay before starting probes.
+	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty" yaml:"initialDelaySeconds,omitempty"`
+
+	// PeriodSeconds is the interval between probes.
+	PeriodSeconds int `json:"periodSeconds,omitempty" yaml:"periodSeconds,omitempty"`
+
+	// TimeoutSeconds is the probe timeout.
+	TimeoutSeconds int `json:"timeoutSeconds,omitempty" yaml:"timeoutSeconds,omitempty"`
+
+	// SuccessThreshold is the consecutive successes required.
+	SuccessThreshold int `json:"successThreshold,omitempty" yaml:"successThreshold,omitempty"`
+
+	// FailureThreshold is the consecutive failures before unhealthy.
+	FailureThreshold int `json:"failureThreshold,omitempty" yaml:"failureThreshold,omitempty"`
+}
+
+// HTTPGetAction describes an HTTP probe action.
+type HTTPGetAction struct {
+	// Path is the HTTP path to probe.
+	Path string `json:"path" yaml:"path"`
+
+	// Port is the port to probe.
+	Port int `json:"port" yaml:"port"`
+
+	// Scheme is the protocol scheme (HTTP or HTTPS).
+	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+
+	// Host is the hostname (defaults to pod IP).
+	Host string `json:"host,omitempty" yaml:"host,omitempty"`
+}
+
+// ExecAction describes a command-based probe action.
+type ExecAction struct {
+	// Command is the command to execute.
+	Command []string `json:"command" yaml:"command"`
+}
+
+// TCPSocketAction describes a TCP port probe action.
+type TCPSocketAction struct {
+	// Port is the TCP port to probe.
+	Port int `json:"port" yaml:"port"`
+
+	// Host is the hostname (defaults to pod IP).
+	Host string `json:"host,omitempty" yaml:"host,omitempty"`
+}
+
+// PipelineLineage configures lineage tracking for a pipeline.
+type PipelineLineage struct {
+	// Enabled indicates whether lineage tracking is enabled.
+	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+
+	// HeartbeatInterval is the interval for emitting heartbeat events (streaming only).
+	HeartbeatInterval string `json:"heartbeatInterval,omitempty" yaml:"heartbeatInterval,omitempty"`
+}
+
+// Validate validates the probe configuration.
+func (p *Probe) Validate() error {
+	// Count how many probe types are specified
+	count := 0
+	if p.HTTPGet != nil {
+		count++
+	}
+	if p.Exec != nil {
+		count++
+	}
+	if p.TCPSocket != nil {
+		count++
+	}
+
+	if count == 0 {
+		return fmt.Errorf("probe must specify exactly one of httpGet, exec, or tcpSocket")
+	}
+	if count > 1 {
+		return fmt.Errorf("probe must specify exactly one of httpGet, exec, or tcpSocket, got %d", count)
+	}
+
+	// Validate the specific probe type
+	if p.HTTPGet != nil {
+		if err := p.HTTPGet.Validate(); err != nil {
+			return fmt.Errorf("httpGet: %w", err)
+		}
+	}
+	if p.Exec != nil {
+		if err := p.Exec.Validate(); err != nil {
+			return fmt.Errorf("exec: %w", err)
+		}
+	}
+	if p.TCPSocket != nil {
+		if err := p.TCPSocket.Validate(); err != nil {
+			return fmt.Errorf("tcpSocket: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Validate validates the HTTP GET action.
+func (h *HTTPGetAction) Validate() error {
+	if h.Path == "" {
+		return fmt.Errorf("path is required")
+	}
+	if h.Port <= 0 || h.Port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", h.Port)
+	}
+	return nil
+}
+
+// Validate validates the exec action.
+func (e *ExecAction) Validate() error {
+	if len(e.Command) == 0 {
+		return fmt.Errorf("command is required")
+	}
+	return nil
+}
+
+// Validate validates the TCP socket action.
+func (t *TCPSocketAction) Validate() error {
+	if t.Port <= 0 || t.Port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", t.Port)
+	}
+	return nil
 }
