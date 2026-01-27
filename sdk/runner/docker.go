@@ -146,7 +146,9 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 			fmt.Fprintf(opts.Output, "Generated Dockerfile: %s\n", dockerfilePath)
 		}
 
-		imageName := fmt.Sprintf("dp/%s:%s", pkg.Metadata.Name, pkg.Metadata.Version)
+		// Build version tag with git revision
+		versionTag := buildVersionTag(pkg.Metadata.Version, opts.PackageDir)
+		imageName := fmt.Sprintf("dp/%s:%s", pkg.Metadata.Name, versionTag)
 		if err := r.buildImageWithDockerfile(ctx, opts.PackageDir, dockerfilePath, imageName, opts.Output); err != nil {
 			result.Status = contracts.RunStatusFailed
 			result.Error = fmt.Sprintf("failed to build image: %v", err)
@@ -412,6 +414,42 @@ func isValidImageReference(image string) bool {
 	}
 
 	return true
+}
+
+// buildVersionTag creates a version tag that includes git revision information.
+// Format: <version>-<short-sha>[-dirty]
+func buildVersionTag(baseVersion, packageDir string) string {
+	gitVersion := getGitVersion(packageDir)
+	if gitVersion == "" {
+		return baseVersion
+	}
+	return fmt.Sprintf("%s-%s", baseVersion, gitVersion)
+}
+
+// getGitVersion returns the git short SHA and dirty status.
+// Returns empty string if not in a git repository.
+func getGitVersion(dir string) string {
+	// Get short commit hash
+	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	sha := strings.TrimSpace(string(output))
+
+	// Check if working directory is dirty
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = dir
+	output, err = cmd.Output()
+	if err != nil {
+		return sha
+	}
+
+	if len(strings.TrimSpace(string(output))) > 0 {
+		return sha + "-dirty"
+	}
+	return sha
 }
 
 // detectPipelineLanguage detects the programming language of a pipeline package.
