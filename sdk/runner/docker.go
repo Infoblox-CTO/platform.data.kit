@@ -158,6 +158,23 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		image = imageName
 	}
 
+	// Read pipeline.yaml to determine mode (if it exists)
+	pipelineMode := contracts.PipelineModeBatch // Default to batch for backward compatibility
+	pipelinePath := filepath.Join(opts.PackageDir, "pipeline.yaml")
+	if pipelineData, err := os.ReadFile(pipelinePath); err == nil {
+		if pipelineManifest, err := manifest.PipelineFromBytes(pipelineData); err == nil {
+			if pipelineManifest.Spec.Mode.IsValid() {
+				pipelineMode = pipelineManifest.Spec.Mode.Default()
+			}
+			// Apply timeout from pipeline spec if not set in opts
+			if opts.Timeout == 0 && pipelineManifest.Spec.Timeout != "" {
+				if d, err := time.ParseDuration(pipelineManifest.Spec.Timeout); err == nil {
+					opts.Timeout = d
+				}
+			}
+		}
+	}
+
 	if opts.DryRun {
 		result.Status = contracts.RunStatusCompleted
 		if opts.Output != nil {
@@ -197,59 +214,33 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	absPackageDir, _ := filepath.Abs(opts.PackageDir)
 	args = append(args, "-v", fmt.Sprintf("%s:/app/package:ro", absPackageDir))
 
-	if opts.Detach {
-		args = append(args, "-d")
-	}
-
 	args = append(args, image)
 
 	// Emit START lineage event
 	emitLineage(lineage.EventTypeStart, nil)
 
-	result.Status = contracts.RunStatusRunning
-
-	cmd := exec.CommandContext(ctx, "docker", args...)
-
-	if !opts.Detach && opts.Output != nil {
-		cmd.Stdout = opts.Output
-		cmd.Stderr = opts.Output
-	}
-
-	if opts.Output != nil {
-		fmt.Fprintf(opts.Output, "Running: docker %s\n\n", strings.Join(args, " "))
-	}
-
-	if err := cmd.Start(); err != nil {
-		result.Status = contracts.RunStatusFailed
-		result.Error = err.Error()
-		emitLineage(lineage.EventTypeFail, err)
-		return result, err
-	}
-
-	if opts.Detach {
-		result.ContainerID = runID
-		result.Status = contracts.RunStatusRunning
-		return result, nil
-	}
-
-	if err := cmd.Wait(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			result.ExitCode = exitErr.ExitCode()
+	// Dispatch based on pipeline mode
+	var runErr error
+	if IsStreamingMode(pipelineMode) {
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Running streaming pipeline (mode: streaming)\n")
 		}
-		result.Status = contracts.RunStatusFailed
-		result.Error = err.Error()
-		emitLineage(lineage.EventTypeFail, err)
+		runErr = r.RunStreaming(ctx, opts, image, result, args)
 	} else {
-		result.Status = contracts.RunStatusCompleted
-		result.ExitCode = 0
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Running batch pipeline (mode: batch)\n")
+		}
+		runErr = r.RunBatch(ctx, opts, image, result, args)
+	}
+
+	// Emit completion lineage event
+	if runErr != nil {
+		emitLineage(lineage.EventTypeFail, runErr)
+	} else if result.Status == contracts.RunStatusCompleted {
 		emitLineage(lineage.EventTypeComplete, nil)
 	}
 
-	endTime := time.Now()
-	result.EndTime = &endTime
-	result.Duration = endTime.Sub(result.StartTime)
-
-	return result, nil
+	return result, runErr
 }
 
 // Stop stops a running pipeline.

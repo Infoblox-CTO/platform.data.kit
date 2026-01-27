@@ -267,3 +267,238 @@ func TestPipelineSpec_Bindings(t *testing.T) {
 		})
 	}
 }
+
+func TestProbe_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		probe   Probe
+		wantErr bool
+	}{
+		{
+			name: "valid http probe",
+			probe: Probe{
+				HTTPGet: &HTTPGetAction{
+					Path: "/healthz",
+					Port: 8080,
+				},
+				PeriodSeconds:  10,
+				TimeoutSeconds: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid exec probe",
+			probe: Probe{
+				Exec: &ExecAction{
+					Command: []string{"/bin/sh", "-c", "exit 0"},
+				},
+				PeriodSeconds: 10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid tcp probe",
+			probe: Probe{
+				TCPSocket: &TCPSocketAction{
+					Port: 8080,
+				},
+				PeriodSeconds: 10,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "empty probe - no action",
+			probe:   Probe{},
+			wantErr: true,
+		},
+		{
+			name: "multiple actions",
+			probe: Probe{
+				HTTPGet: &HTTPGetAction{Path: "/healthz", Port: 8080},
+				Exec:    &ExecAction{Command: []string{"exit", "0"}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "http probe invalid port",
+			probe: Probe{
+				HTTPGet: &HTTPGetAction{
+					Path: "/healthz",
+					Port: 0,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "http probe port too high",
+			probe: Probe{
+				HTTPGet: &HTTPGetAction{
+					Path: "/healthz",
+					Port: 70000,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "exec probe empty command",
+			probe: Probe{
+				Exec: &ExecAction{
+					Command: []string{},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "tcp probe invalid port",
+			probe: Probe{
+				TCPSocket: &TCPSocketAction{
+					Port: -1,
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.probe.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Probe.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestHTTPGetAction_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		action  HTTPGetAction
+		wantErr bool
+	}{
+		{
+			name:    "valid minimal",
+			action:  HTTPGetAction{Path: "/health", Port: 8080},
+			wantErr: false,
+		},
+		{
+			name:    "valid with scheme",
+			action:  HTTPGetAction{Path: "/health", Port: 443, Scheme: "HTTPS"},
+			wantErr: false,
+		},
+		{
+			name:    "missing path",
+			action:  HTTPGetAction{Port: 8080},
+			wantErr: true,
+		},
+		{
+			name:    "invalid port zero",
+			action:  HTTPGetAction{Path: "/health", Port: 0},
+			wantErr: true,
+		},
+		{
+			name:    "invalid port negative",
+			action:  HTTPGetAction{Path: "/health", Port: -1},
+			wantErr: true,
+		},
+		{
+			name:    "invalid port too high",
+			action:  HTTPGetAction{Path: "/health", Port: 65536},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.action.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HTTPGetAction.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExecAction_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		action  ExecAction
+		wantErr bool
+	}{
+		{
+			name:    "valid command",
+			action:  ExecAction{Command: []string{"/bin/sh", "-c", "exit 0"}},
+			wantErr: false,
+		},
+		{
+			name:    "single command",
+			action:  ExecAction{Command: []string{"healthcheck"}},
+			wantErr: false,
+		},
+		{
+			name:    "empty command",
+			action:  ExecAction{Command: []string{}},
+			wantErr: true,
+		},
+		{
+			name:    "nil command",
+			action:  ExecAction{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.action.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ExecAction.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestTCPSocketAction_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		action  TCPSocketAction
+		wantErr bool
+	}{
+		{
+			name:    "valid port",
+			action:  TCPSocketAction{Port: 8080},
+			wantErr: false,
+		},
+		{
+			name:    "port 1",
+			action:  TCPSocketAction{Port: 1},
+			wantErr: false,
+		},
+		{
+			name:    "port 65535",
+			action:  TCPSocketAction{Port: 65535},
+			wantErr: false,
+		},
+		{
+			name:    "port zero",
+			action:  TCPSocketAction{Port: 0},
+			wantErr: true,
+		},
+		{
+			name:    "port negative",
+			action:  TCPSocketAction{Port: -1},
+			wantErr: true,
+		},
+		{
+			name:    "port too high",
+			action:  TCPSocketAction{Port: 65536},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.action.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TCPSocketAction.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

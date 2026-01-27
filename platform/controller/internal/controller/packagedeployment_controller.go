@@ -19,7 +19,9 @@ import (
 // PackageDeploymentReconciler reconciles a PackageDeployment object.
 type PackageDeploymentReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme              *runtime.Scheme
+	JobGenerator        *JobGenerator
+	DeploymentGenerator *DeploymentGenerator
 }
 
 // +kubebuilder:rbac:groups=dp.io,resources=packagedeployments,verbs=get;list;watch;create;update;patch;delete
@@ -134,7 +136,65 @@ func (r *PackageDeploymentReconciler) handlePulling(ctx context.Context, deploym
 // handleReady handles a ready deployment.
 func (r *PackageDeploymentReconciler) handleReady(ctx context.Context, deployment *dpv1alpha1.PackageDeployment) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Handling ready deployment")
+	logger.Info("Handling ready deployment", "mode", deployment.Spec.Mode)
+
+	// Dispatch based on mode
+	mode := deployment.Spec.Mode
+	if mode == "" {
+		mode = dpv1alpha1.PipelineModeBatch
+	}
+
+	switch mode {
+	case dpv1alpha1.PipelineModeStreaming:
+		return r.handleStreamingDeployment(ctx, deployment)
+	default:
+		return r.handleBatchDeployment(ctx, deployment)
+	}
+}
+
+// handleStreamingDeployment handles streaming pipeline deployment.
+func (r *PackageDeploymentReconciler) handleStreamingDeployment(ctx context.Context, deployment *dpv1alpha1.PackageDeployment) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("Handling streaming deployment")
+
+	if r.DeploymentGenerator == nil {
+		r.DeploymentGenerator = NewDeploymentGenerator()
+	}
+
+	// Generate Kubernetes Deployment
+	k8sDeployment, err := r.DeploymentGenerator.Generate(deployment)
+	if err != nil {
+		r.setCondition(deployment, "Ready", metav1.ConditionFalse, "GenerationFailed", err.Error())
+		deployment.Status.Phase = dpv1alpha1.PhaseFailed
+		if err := r.Status().Update(ctx, deployment); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Create or update the deployment
+	// TODO: Implement proper create/update logic with comparison
+	_ = k8sDeployment
+
+	deployment.Status.Phase = dpv1alpha1.PhaseRunning
+	r.setCondition(deployment, "Ready", metav1.ConditionTrue, "DeploymentRunning", "Streaming deployment is running")
+
+	if err := r.Status().Update(ctx, deployment); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Requeue to monitor status
+	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+}
+
+// handleBatchDeployment handles batch pipeline deployment.
+func (r *PackageDeploymentReconciler) handleBatchDeployment(ctx context.Context, deployment *dpv1alpha1.PackageDeployment) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("Handling batch deployment")
+
+	if r.JobGenerator == nil {
+		r.JobGenerator = NewJobGenerator()
+	}
 
 	// Check if we should run
 	if deployment.Spec.Schedule != nil && deployment.Spec.Schedule.Cron != "" {
@@ -143,11 +203,48 @@ func (r *PackageDeploymentReconciler) handleReady(ctx context.Context, deploymen
 			return ctrl.Result{}, nil
 		}
 
-		// Check if it's time to run
-		// TODO: Implement cron parsing and scheduling
+		// Generate CronJob for scheduled batch
+		cronJob, err := r.JobGenerator.GenerateCronJob(deployment)
+		if err != nil {
+			r.setCondition(deployment, "Ready", metav1.ConditionFalse, "GenerationFailed", err.Error())
+			deployment.Status.Phase = dpv1alpha1.PhaseFailed
+			if err := r.Status().Update(ctx, deployment); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+		// Create or update the CronJob
+		// TODO: Implement proper create/update logic with comparison
+		_ = cronJob
+
+		return ctrl.Result{}, nil
 	}
 
-	return ctrl.Result{}, nil
+	// Generate one-time Job
+	job, err := r.JobGenerator.Generate(deployment)
+	if err != nil {
+		r.setCondition(deployment, "Ready", metav1.ConditionFalse, "GenerationFailed", err.Error())
+		deployment.Status.Phase = dpv1alpha1.PhaseFailed
+		if err := r.Status().Update(ctx, deployment); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Create the job
+	// TODO: Implement proper creation logic
+	_ = job
+
+	deployment.Status.Phase = dpv1alpha1.PhaseRunning
+	r.setCondition(deployment, "Ready", metav1.ConditionTrue, "JobRunning", "Batch job is running")
+
+	if err := r.Status().Update(ctx, deployment); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Requeue to monitor job status
+	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 }
 
 // handleRunning handles a running deployment.

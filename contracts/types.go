@@ -85,3 +85,31 @@ type RunRecord struct {
 	// Metadata contains additional run metadata.
 	Metadata map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
+
+// PipelineMode represents the execution mode for a pipeline.
+type PipelineMode string
+
+const (
+	// PipelineModeBatch is a batch pipeline that runs to completion.
+	PipelineModeBatch PipelineMode = "batch"
+
+	// PipelineModeStreaming is a long-running streaming pipeline.
+	PipelineModeStreaming PipelineMode = "streaming"
+)
+
+// IsValid checks if the pipeline mode is a valid value.
+func (m PipelineMode) IsValid() bool {
+	switch m {
+	case PipelineModeBatch, PipelineModeStreaming, "":
+		return true
+	}
+	return false
+}
+
+// Default returns the default pipeline mode if empty.
+func (m PipelineMode) Default() PipelineMode {
+	if m == "" {
+		return PipelineModeBatch
+	}
+	return m
+}

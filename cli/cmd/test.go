@@ -9,14 +9,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/runner"
 	"github.com/spf13/cobra"
 )
 
 var (
-	testData     string
-	testTimeout  time.Duration
-	testBindings string
+	testData           string
+	testTimeout        time.Duration
+	testBindings       string
+	testDuration       time.Duration // For streaming: how long to run the test
+	testStartupTimeout time.Duration // For streaming: how long to wait for healthy
 )
 
 var testCmd = &cobra.Command{
@@ -41,8 +45,10 @@ the local development environment (Docker Compose).`,
 func init() {
 	rootCmd.AddCommand(testCmd)
 	testCmd.Flags().StringVar(&testData, "data", "", "Path to test data file")
-	testCmd.Flags().DurationVar(&testTimeout, "timeout", 5*time.Minute, "Timeout for test execution")
+	testCmd.Flags().DurationVar(&testTimeout, "timeout", 5*time.Minute, "Timeout for test execution (batch pipelines)")
 	testCmd.Flags().StringVarP(&testBindings, "bindings", "b", "", "Path to test bindings file")
+	testCmd.Flags().DurationVar(&testDuration, "duration", 30*time.Second, "How long to run streaming test before shutdown")
+	testCmd.Flags().DurationVar(&testStartupTimeout, "startup-timeout", 60*time.Second, "How long to wait for streaming pipeline to become healthy")
 }
 
 // ensureNetworkExists creates the Docker network if it doesn't exist.
@@ -78,7 +84,18 @@ func runTest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
 	}
 
-	fmt.Printf("Running tests for: %s\n\n", packageDir)
+	// Detect pipeline mode from pipeline.yaml
+	pipelineMode := contracts.PipelineModeBatch // default
+	pipelinePath := filepath.Join(absDir, "pipeline.yaml")
+	if _, err := os.Stat(pipelinePath); err == nil {
+		pipeline, err := manifest.ParsePipelineFile(pipelinePath)
+		if err == nil && pipeline.Spec.Mode != "" {
+			pipelineMode = pipeline.Spec.Mode
+		}
+	}
+
+	fmt.Printf("Running tests for: %s\n", packageDir)
+	fmt.Printf("Pipeline mode: %s\n\n", pipelineMode.Default())
 
 	// Find test data
 	testDataPath := testData
@@ -157,20 +174,40 @@ func runTest(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Warning: Could not create network: %v\n", err)
 	}
 
-	// Run the pipeline in test mode
+	// Run the pipeline in test mode - behavior depends on pipeline mode
+	timeout := testTimeout
+	if pipelineMode == contracts.PipelineModeStreaming {
+		// For streaming, use the duration instead of timeout
+		timeout = testDuration
+		fmt.Printf("Streaming test: will run for %s\n", testDuration)
+		if testStartupTimeout > 0 {
+			fmt.Printf("Startup timeout: %s\n", testStartupTimeout)
+		}
+		fmt.Println()
+	}
+
 	opts := runner.RunOptions{
 		PackageDir:   absDir,
 		Env:          env,
 		BindingsFile: bindingsPath,
 		Network:      "dp-network",
-		Timeout:      testTimeout,
+		Timeout:      timeout,
 		DryRun:       false,
 		Detach:       false,
 		Output:       os.Stdout,
+		Mode:         pipelineMode,
 	}
 
 	ctx := context.Background()
-	result, err := dockerRunner.Run(ctx, opts)
+
+	var result *runner.RunResult
+	if pipelineMode == contracts.PipelineModeStreaming {
+		// For streaming: start, wait for duration, then stop
+		result, err = runStreamingTest(ctx, dockerRunner, opts)
+	} else {
+		// For batch: run to completion
+		result, err = dockerRunner.Run(ctx, opts)
+	}
 
 	fmt.Println()
 	fmt.Println(strings.Repeat("-", 60))
@@ -203,4 +240,55 @@ func runTest(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// runStreamingTest runs a streaming pipeline test.
+// It starts the pipeline, waits for the specified duration, then stops it gracefully.
+func runStreamingTest(ctx context.Context, r runner.Runner, opts runner.RunOptions) (*runner.RunResult, error) {
+	// For streaming tests, we run detached and then stop after duration
+	streamingOpts := opts
+	streamingOpts.Detach = true
+
+	// Start the pipeline
+	result, err := r.Run(ctx, streamingOpts)
+	if err != nil {
+		return result, err
+	}
+
+	fmt.Printf("Started streaming pipeline (container: %s)\n", result.ContainerID)
+	fmt.Printf("Running for %s...\n\n", opts.Timeout)
+
+	// Stream logs in background while waiting
+	logCtx, logCancel := context.WithCancel(ctx)
+	defer logCancel()
+
+	go func() {
+		if err := r.Logs(logCtx, result.RunID, true, opts.Output); err != nil {
+			if logCtx.Err() == nil {
+				fmt.Fprintf(opts.Output, "Log streaming error: %v\n", err)
+			}
+		}
+	}()
+
+	// Wait for the specified duration
+	select {
+	case <-time.After(opts.Timeout):
+		fmt.Println("\nTest duration reached, stopping pipeline...")
+	case <-ctx.Done():
+		fmt.Println("\nTest cancelled, stopping pipeline...")
+	}
+
+	// Stop the pipeline gracefully
+	logCancel() // Stop log streaming
+	if err := r.Stop(ctx, result.RunID); err != nil {
+		fmt.Printf("Warning: failed to stop pipeline: %v\n", err)
+	}
+
+	// Update result
+	result.Status = contracts.RunStatusCompleted
+	endTime := time.Now()
+	result.EndTime = &endTime
+	result.Duration = endTime.Sub(result.StartTime)
+
+	return result, nil
 }

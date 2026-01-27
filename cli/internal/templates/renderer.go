@@ -21,6 +21,7 @@ type PackageConfig struct {
 	Description string
 	Owner       string
 	Language    string // go, python
+	Mode        string // batch, streaming
 }
 
 // Renderer renders package templates.
@@ -82,4 +83,14 @@ func GetDPTemplate(packageType string) string {
 // GetPipelineTemplate returns the pipeline template name.
 func GetPipelineTemplate() string {
 	return "pipeline.yaml.tmpl"
+}
+
+// GetPipelineTemplateForMode returns the pipeline template for the given mode.
+func GetPipelineTemplateForMode(mode string) string {
+	switch mode {
+	case "streaming":
+		return "pipeline.streaming.yaml.tmpl"
+	default:
+		return "pipeline.batch.yaml.tmpl"
+	}
 }

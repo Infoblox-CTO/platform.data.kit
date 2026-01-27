@@ -49,16 +49,28 @@ dp init <package-name> [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--type` | Package type (pipeline, producer, consumer, streaming) | pipeline |
-| `--dir` | Directory to create package in | . |
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--type` | `-t` | Package type (pipeline, producer, consumer, streaming) | pipeline |
+| `--mode` | `-m` | Pipeline execution mode (batch, streaming) | batch |
+| `--dir` | `-d` | Directory to create package in | . |
+| `--lang` | `-l` | Programming language (go, python) | go |
 
 ### Examples
 
 ```bash
-# Create a pipeline package
-dp init my-pipeline --type pipeline
+# Create a batch pipeline package
+dp init my-pipeline --type pipeline --mode batch
+```
+
+```bash
+# Create a streaming pipeline
+dp init kafka-processor --mode streaming
+```
+
+```bash
+# Create a Python pipeline
+dp init etl-job --lang python
 ```
 
 ```bash
@@ -73,12 +85,15 @@ Creates the following directory structure:
 ```
 my-pipeline/
 ├── dp.yaml
+├── pipeline.yaml
 ├── bindings.yaml
 └── src/
-    └── main.py
+    └── main.go (or main.py for Python)
 ```
 
-The generated `dp.yaml` includes a `spec.runtime` section for pipeline packages.
+The generated `pipeline.yaml` includes mode-specific fields:
+- **Batch**: timeout, retries, backoffLimit
+- **Streaming**: replicas, livenessProbe, readinessProbe, terminationGracePeriodSeconds
 
 ---
 
@@ -253,9 +268,26 @@ dp run [package-dir] [flags]
 | `--bindings` | - | Bindings file path | bindings.yaml |
 | `--dry-run` | - | Print what would run | false |
 | `--detach` | - | Run in background | false |
+| `--attach` | - | Attach to logs (streaming mode) | true |
 | `--timeout` | - | Execution timeout | 30m |
 | `--set` | - | Override values (key=value, repeatable) | - |
 | `--values` | `-f` | Override files (repeatable) | - |
+
+### Mode-aware Behavior
+
+The run command behaves differently based on the pipeline mode:
+
+**Batch Mode (default)**:
+- Runs to completion
+- Streams logs until exit
+- Returns exit code
+
+**Streaming Mode**:
+- Runs indefinitely
+- `--attach`: Stream logs (Ctrl+C sends SIGTERM)
+- `--detach`: Returns immediately with container ID
+- Use `dp logs` to view detached output
+- Use `dp stop` to stop
 
 ### Runtime Configuration
 
@@ -273,8 +305,16 @@ When using `-f` and `--set` flags:
 ### Examples
 
 ```bash
-# Run pipeline
+# Run batch pipeline
 dp run ./my-pipeline
+```
+
+```bash
+# Run streaming pipeline (attached by default)
+dp run ./my-streaming-pipeline
+
+# Run streaming pipeline detached
+dp run ./my-streaming-pipeline --detach
 ```
 
 ```bash
@@ -366,20 +406,44 @@ dp test [package-dir] [flags]
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--input-type` | Input data type | auto |
-| `--input-file` | Custom input file | - |
+| `--data` | Test data directory | testdata/ |
 | `--timeout` | Test timeout | 5m |
+| `--bindings` | Bindings file path | bindings.yaml |
+| `--duration` | Test duration (streaming mode) | 30s |
+| `--startup-timeout` | Wait for healthy (streaming mode) | 60s |
+
+### Mode-aware Testing
+
+**Batch Mode**:
+- Runs pipeline with test data
+- Waits for completion
+- Reports success/failure based on exit code
+
+**Streaming Mode**:
+- Starts pipeline container
+- Waits for health check (up to `--startup-timeout`)
+- Runs for `--duration`
+- Sends SIGTERM for graceful shutdown
+- Reports success if no errors during run
 
 ### Examples
 
 ```bash
-# Run tests
+# Run batch test
 dp test ./my-pipeline
 ```
 
 ```bash
-# With custom input
-dp test ./my-pipeline --input-file ./testdata/sample.json
+# With custom test data
+dp test ./my-pipeline --data ./test/fixtures
+```
+
+```bash
+# Test streaming pipeline for 60 seconds
+dp test ./my-streaming-pipeline --duration 60s
+
+# Test with longer startup wait
+dp test ./my-streaming-pipeline --startup-timeout 120s
 ```
 
 ---
@@ -568,7 +632,7 @@ prod         v0.9.0    Synced    6 hours ago
 
 ## dp logs
 
-Stream logs from running pipeline.
+Stream logs from a running or completed pipeline.
 
 ```bash
 dp logs <run-id> [flags]
@@ -576,27 +640,33 @@ dp logs <run-id> [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--follow` | Follow log output | false |
-| `--tail` | Lines to show | all |
-| `--timestamps` | Show timestamps | false |
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--follow` | `-f` | Follow log output | true |
+| `--tail` | `-n` | Lines to show | all |
+| `--since` | - | Show logs since (e.g., "1h", "2024-01-01") | - |
+| `--timestamps` | `-t` | Show timestamps | false |
 
 ### Examples
 
 ```bash
-# Get logs
+# Get logs (follows by default)
 dp logs my-pipeline-20250122-120000
 ```
 
 ```bash
-# Follow logs
-dp logs my-pipeline-20250122-120000 --follow
+# Get last 100 lines without following
+dp logs my-pipeline-20250122-120000 --tail 100 --follow=false
 ```
 
 ```bash
-# Last 100 lines
-dp logs my-pipeline-20250122-120000 --tail 100
+# Show logs from last hour
+dp logs my-pipeline-20250122-120000 --since 1h
+```
+
+```bash
+# Show timestamps
+dp logs my-pipeline-20250122-120000 --timestamps
 ```
 
 ---

@@ -17,6 +17,7 @@ var (
 	initTeam      string
 	initOwner     string
 	initLanguage  string
+	initMode      string
 )
 
 // initCmd represents the init command
@@ -59,6 +60,8 @@ func init() {
 		"Package owner (defaults to current user)")
 	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "go",
 		"Pipeline language: go, python")
+	initCmd.Flags().StringVarP(&initMode, "mode", "m", "batch",
+		"Pipeline mode: batch, streaming")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -100,6 +103,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid language %q: must be go or python", initLanguage)
 	}
 
+	// Validate mode
+	if !isValidMode(initMode) {
+		return fmt.Errorf("invalid mode %q: must be batch or streaming", initMode)
+	}
+
 	// Set default owner
 	if initOwner == "" {
 		initOwner = fmt.Sprintf("%s-team", initNamespace)
@@ -118,6 +126,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Description: fmt.Sprintf("A %s package", initType),
 		Owner:       initOwner,
 		Language:    initLanguage,
+		Mode:        initMode,
 	}
 
 	// Create dp.yaml
@@ -131,7 +140,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Create pipeline.yaml for pipeline type
 	if initType == "pipeline" {
 		pipelinePath := filepath.Join(targetDir, "pipeline.yaml")
-		if err := renderer.RenderToFile(pipelinePath, templates.GetPipelineTemplate(), config); err != nil {
+		pipelineTemplate := templates.GetPipelineTemplateForMode(initMode)
+		if err := renderer.RenderToFile(pipelinePath, pipelineTemplate, config); err != nil {
 			return fmt.Errorf("failed to create pipeline.yaml: %w", err)
 		}
 		output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", pipelinePath))
@@ -235,6 +245,16 @@ func isValidPackageType(t string) bool {
 func isValidLanguage(lang string) bool {
 	switch lang {
 	case "go", "python":
+		return true
+	default:
+		return false
+	}
+}
+
+// isValidMode checks if a pipeline mode is valid
+func isValidMode(mode string) bool {
+	switch mode {
+	case "batch", "streaming":
 		return true
 	default:
 		return false
