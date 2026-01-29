@@ -104,6 +104,78 @@ dev:
 
 Now `dp dev up` will use k3d by default.
 
+## Registry Pull-Through Cache
+
+The k3d runtime includes an automatic Docker registry pull-through cache that:
+
+- **Speeds up image pulls**: Cached images are served locally on subsequent pulls
+- **Reduces bandwidth**: Only pulls images from Docker Hub once
+- **Works automatically**: No configuration required
+
+### How It Works
+
+When you run `dp dev up --runtime=k3d`:
+
+1. A local registry cache container (`dev-registry-cache`) starts on port 5000
+2. The k3d cluster is configured to use this cache as a mirror
+3. All `docker.io` image pulls go through the local cache
+4. Subsequent pulls are served from the local cache
+
+### Verify Cache is Running
+
+```bash
+dp dev status --runtime=k3d
+```
+
+The output will include:
+```
+Registry Cache:
+  Status:    running
+  Endpoint:  host.k3d.internal:5000
+```
+
+### Cache Data Persistence
+
+The cache stores image layers in a Docker volume (`dev_registry_cache`). This volume:
+
+- **Persists across restarts**: Cached images survive `dp dev down`
+- **Removed with --volumes**: Use `dp dev down --volumes` to clear the cache
+
+### CI/CD Environments
+
+The registry cache is **automatically skipped** in CI environments to avoid complications. Detection is based on:
+
+- `CI=true`
+- `GITHUB_ACTIONS=true`
+- `JENKINS_URL` set
+
+### Troubleshooting Cache Issues
+
+**Cache container not starting:**
+```bash
+# Check container logs
+docker logs dev-registry-cache
+
+# Manually inspect container
+docker inspect dev-registry-cache
+```
+
+**Force cache rebuild:**
+```bash
+# Stop everything including cache
+dp dev down --volumes
+
+# Restart
+dp dev up --runtime=k3d
+```
+
+**Custom mirror host:**
+For advanced setups, override the mirror host with:
+```bash
+export DEV_REGISTRY_MIRROR_HOST=my-registry.local
+dp dev up --runtime=k3d
+```
+
 ### Using from Any Directory
 
 With k3d runtime, you can run `dp dev up` from any directory - no need to be in the DP workspace:

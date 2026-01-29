@@ -431,6 +431,91 @@ dp logs my-pipeline --env dev --sync
 
 ---
 
+## Registry Cache Issues (k3d Runtime)
+
+### Cache Container Not Starting
+
+**Symptom**: `dev-registry-cache` container fails to start
+
+**Solutions**:
+
+1. **Check Docker resources**
+   ```bash
+   docker system df
+   docker system prune -f  # Clean up if low on space
+   ```
+
+2. **Check for port conflicts**
+   ```bash
+   lsof -i :5000
+   # Kill conflicting process if found
+   ```
+
+3. **Inspect container logs**
+   ```bash
+   docker logs dev-registry-cache
+   ```
+
+4. **Force cache rebuild**
+   ```bash
+   docker rm -f dev-registry-cache
+   docker volume rm dev_registry_cache
+   dp dev up --runtime=k3d
+   ```
+
+### Image Pulls Still Slow
+
+**Symptom**: Cache is running but images aren't being cached
+
+**Solutions**:
+
+1. **Verify cache is being used**
+   ```bash
+   # Check the registries.yaml was created
+   cat .cache/registries.yaml
+   ```
+
+2. **Check cache hit rate**
+   ```bash
+   docker logs dev-registry-cache 2>&1 | grep -E "manifest|blob"
+   ```
+
+3. **Ensure cluster uses the registry config**
+   ```bash
+   # Delete cluster and recreate
+   dp dev down --runtime=k3d
+   dp dev up --runtime=k3d
+   ```
+
+### Cache Not Created in CI
+
+**Symptom**: Cache doesn't start in CI environment
+
+**Cause**: This is expected behavior. The registry cache is automatically skipped in CI to avoid complications.
+
+**Detection**: The following environment variables trigger CI mode:
+- `CI=true`
+- `GITHUB_ACTIONS=true`
+- `JENKINS_URL` (any value)
+
+**Solution**: If you need the cache in CI, unset these variables (not recommended).
+
+### "Network not found" Error
+
+**Symptom**: Container fails to start with network error
+
+**Solution**:
+```bash
+# Create the network manually
+docker network create devcache
+
+# Or remove and let it recreate
+docker network rm devcache
+dp dev up --runtime=k3d
+```
+
+---
+
 ## Lineage Issues
 
 ### Missing Upstream/Downstream

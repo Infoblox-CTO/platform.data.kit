@@ -197,7 +197,11 @@ func getRuntimeManager(runtime localdev.RuntimeType) (localdev.RuntimeManager, e
 		return localdev.NewComposeManager(composePath)
 
 	case localdev.RuntimeK3d:
-		return localdev.NewK3dManager("dp-local")
+		k3dManager, err := localdev.NewK3dManager("dp-local")
+		if err != nil {
+			return nil, err
+		}
+		return k3dManager, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported runtime: %s", runtime)
@@ -217,9 +221,33 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("prerequisites check failed: %w", err)
 	}
 
+	// Start registry cache for k3d runtime (before getting runtime manager)
+	var cacheManager *localdev.CacheManager
+	var registriesPath string
+	if runtime == localdev.RuntimeK3d {
+		var err error
+		cacheManager, err = localdev.NewCacheManager()
+		if err != nil {
+			return fmt.Errorf("failed to initialize cache manager: %w", err)
+		}
+
+		if err := cacheManager.Up(ctx, os.Stdout); err != nil {
+			return fmt.Errorf("failed to start registry cache: %w", err)
+		}
+
+		registriesPath = cacheManager.GetRegistriesYAMLPath()
+	}
+
 	manager, err := getRuntimeManager(runtime)
 	if err != nil {
 		return fmt.Errorf("failed to initialize runtime manager: %w", err)
+	}
+
+	// Set registries path for k3d manager
+	if runtime == localdev.RuntimeK3d && registriesPath != "" {
+		if k3dMgr, ok := manager.(*localdev.K3dManager); ok {
+			k3dMgr.SetRegistriesPath(registriesPath)
+		}
 	}
 
 	// Check if already running - if so, just report status
@@ -301,6 +329,18 @@ func runDevDown(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to stop stack: %w", err)
 	}
 
+	// Stop registry cache for k3d runtime (after k3d is stopped)
+	if runtime == localdev.RuntimeK3d {
+		cacheManager, err := localdev.NewCacheManager()
+		if err != nil {
+			return fmt.Errorf("failed to initialize cache manager: %w", err)
+		}
+
+		if err := cacheManager.Down(ctx, devRemoveVolumes, os.Stdout); err != nil {
+			return fmt.Errorf("failed to stop registry cache: %w", err)
+		}
+	}
+
 	fmt.Println("\n✓ Local development stack stopped")
 	if devRemoveVolumes {
 		fmt.Println("  Data volumes removed")
@@ -342,7 +382,37 @@ func runDevStatus(cmd *cobra.Command, args []string) error {
 	formatter := GetFormatter()
 	data := formatServiceStatus(status)
 
-	return formatter.Format(os.Stdout, data)
+	if err := formatter.Format(os.Stdout, data); err != nil {
+		return err
+	}
+
+	// Show registry cache status for k3d runtime
+	if runtime == localdev.RuntimeK3d {
+		cacheManager, err := localdev.NewCacheManager()
+		if err != nil {
+			return fmt.Errorf("failed to initialize cache manager: %w", err)
+		}
+
+		cacheStatus, err := cacheManager.Status(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get cache status: %w", err)
+		}
+
+		fmt.Println("\nRegistry Cache:")
+		if cacheStatus.Running {
+			fmt.Printf("  Status:    running\n")
+			fmt.Printf("  Endpoint:  %s\n", cacheStatus.Endpoint)
+			if cacheStatus.VolumeSize != "" {
+				fmt.Printf("  Cache Size: %s\n", cacheStatus.VolumeSize)
+			}
+		} else if cacheStatus.Exists {
+			fmt.Println("  Status:    stopped")
+		} else {
+			fmt.Println("  Status:    not created")
+		}
+	}
+
+	return nil
 }
 
 // formatServiceStatus converts status to a format suitable for output

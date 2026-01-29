@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
@@ -23,10 +24,11 @@ const (
 
 // K3dManager manages k3d cluster operations for local development.
 type K3dManager struct {
-	clusterName   string
-	namespace     string
-	portForwarder *PortForwarder
-	kubeContext   string
+	clusterName    string
+	namespace      string
+	portForwarder  *PortForwarder
+	kubeContext    string
+	registriesPath string // Path to k3d registries.yaml config (for registry cache)
 }
 
 // NewK3dManager creates a new K3dManager with the specified cluster name.
@@ -40,6 +42,12 @@ func NewK3dManager(clusterName string) (*K3dManager, error) {
 		namespace:   DefaultNamespace,
 		kubeContext: fmt.Sprintf("k3d-%s", clusterName),
 	}, nil
+}
+
+// SetRegistriesPath sets the path to the k3d registries.yaml config.
+// This is used to configure k3d to use a registry mirror (e.g., pull-through cache).
+func (m *K3dManager) SetRegistriesPath(path string) {
+	m.registriesPath = path
 }
 
 // Type returns the runtime type for this manager.
@@ -268,10 +276,14 @@ func (m *K3dManager) clusterRunning(ctx context.Context) (bool, error) {
 
 // createCluster creates a new k3d cluster.
 func (m *K3dManager) createCluster(ctx context.Context, output io.Writer) error {
-	cmd := exec.CommandContext(ctx, "k3d", "cluster", "create", m.clusterName,
-		"--wait",
-		"--timeout", "120s",
-	)
+	args := []string{"cluster", "create", m.clusterName, "--wait", "--timeout", "120s"}
+
+	// Add registry config if set (for pull-through cache)
+	if m.registriesPath != "" {
+		args = append(args, "--registry-config", m.registriesPath)
+	}
+
+	cmd := exec.CommandContext(ctx, "k3d", args...)
 	cmd.Stdout = output
 	cmd.Stderr = output
 
@@ -305,7 +317,7 @@ func (m *K3dManager) deleteCluster(ctx context.Context, output io.Writer) error 
 	return cmd.Run()
 }
 
-// deployCharts installs the embedded Helm charts.
+// deployCharts installs the embedded Helm charts in parallel.
 func (m *K3dManager) deployCharts(ctx context.Context, output io.Writer) error {
 	// Create temporary directory for chart extraction
 	tempDir, err := os.MkdirTemp("", "dp-charts-*")
@@ -314,29 +326,62 @@ func (m *K3dManager) deployCharts(ctx context.Context, output io.Writer) error {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Extract and install each chart
+	// Extract all charts first (sequential, fast)
+	chartDirs := make(map[string]string)
 	for _, chartName := range charts.ChartNames {
 		chartDir := filepath.Join(tempDir, chartName)
 		if err := extractChart(chartName, chartDir); err != nil {
 			return fmt.Errorf("failed to extract chart %s: %w", chartName, err)
 		}
+		chartDirs[chartName] = chartDir
+	}
 
-		// Install chart using helm upgrade --install
-		releaseName := fmt.Sprintf("dp-%s", chartName)
-		cmd := exec.CommandContext(ctx, "helm",
-			"upgrade", "--install", releaseName, chartDir,
-			"--kube-context", m.kubeContext,
-			"--namespace", m.namespace,
-			"--create-namespace",
-			"--wait",
-			"--timeout", "120s",
-		)
-		cmd.Stdout = output
-		cmd.Stderr = output
+	// Install all charts in parallel
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(charts.ChartNames))
 
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to install chart %s: %w", chartName, err)
-		}
+	for _, chartName := range charts.ChartNames {
+		wg.Add(1)
+		go func(name string, dir string) {
+			defer wg.Done()
+
+			releaseName := fmt.Sprintf("dp-%s", name)
+			cmd := exec.CommandContext(ctx, "helm",
+				"upgrade", "--install", releaseName, dir,
+				"--kube-context", m.kubeContext,
+				"--namespace", m.namespace,
+				"--create-namespace",
+				"--wait",
+				"--timeout", "300s", // 5 minutes for parallel image pulls
+			)
+
+			// Capture output per chart to avoid interleaving
+			var outBuf bytes.Buffer
+			cmd.Stdout = &outBuf
+			cmd.Stderr = &outBuf
+
+			if err := cmd.Run(); err != nil {
+				errChan <- fmt.Errorf("failed to install chart %s: %w\n%s", name, err, outBuf.String())
+				return
+			}
+
+			// Write output after successful completion
+			fmt.Fprint(output, outBuf.String())
+		}(chartName, chartDirs[chartName])
+	}
+
+	// Wait for all charts to complete
+	wg.Wait()
+	close(errChan)
+
+	// Collect any errors
+	var errs []error
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("helm installation errors: %v", errs)
 	}
 
 	return nil
