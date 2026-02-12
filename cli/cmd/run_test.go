@@ -17,7 +17,7 @@ func TestRunCmd_Flags(t *testing.T) {
 	}{
 		{"env", "[]"},
 		{"bindings", ""},
-		{"network", "dp-network"},
+		{"network", ""},
 		{"timeout", "30m0s"},
 		{"dry-run", "false"},
 		{"detach", "false"},

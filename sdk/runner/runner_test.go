@@ -16,8 +16,8 @@ func TestDefaultRunOptions(t *testing.T) {
 	if opts.Env == nil {
 		t.Error("Env should not be nil")
 	}
-	if opts.Network != "dp-network" {
-		t.Errorf("Network = %s, want dp-network", opts.Network)
+	if opts.Network != "" {
+		t.Errorf("Network = %s, want empty (auto-detect)", opts.Network)
 	}
 	if opts.Timeout != 30*time.Minute {
 		t.Errorf("Timeout = %v, want 30m", opts.Timeout)

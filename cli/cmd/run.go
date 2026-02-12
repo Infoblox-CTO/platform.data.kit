@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/runner"
 	"github.com/spf13/cobra"
@@ -85,7 +87,7 @@ func init() {
 
 	runCmd.Flags().StringArrayVarP(&runEnv, "env", "e", []string{}, "Environment variables (KEY=VALUE)")
 	runCmd.Flags().StringVarP(&runBindings, "bindings", "b", "", "Path to bindings file")
-	runCmd.Flags().StringVar(&runNetwork, "network", "dp-network", "Docker network to connect to")
+	runCmd.Flags().StringVar(&runNetwork, "network", "", "Docker network to connect to (auto-detected from dev runtime if empty)")
 	runCmd.Flags().DurationVar(&runTimeout, "timeout", 30*time.Minute, "Timeout for pipeline execution")
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Validate and build only, don't execute")
 	runCmd.Flags().BoolVarP(&runDetach, "detach", "d", false, "Run in background")
@@ -139,6 +141,19 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		env[parts[0]] = parts[1]
 	}
 
+	// Auto-detect network from dev runtime if not specified
+	network := runNetwork
+	if network == "" {
+		network = detectDevNetwork()
+	}
+
+	// Ensure the Docker network exists before running
+	if network != "" {
+		if err := ensureNetworkExists(network); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not ensure network %q exists: %v\n", network, err)
+		}
+	}
+
 	// Create runner
 	dockerRunner, err := runner.NewDockerRunner()
 	if err != nil {
@@ -150,7 +165,7 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		PackageDir:   absDir,
 		Env:          env,
 		BindingsFile: runBindings,
-		Network:      runNetwork,
+		Network:      network,
 		Timeout:      runTimeout,
 		DryRun:       runDryRun,
 		Detach:       runDetach,
@@ -289,4 +304,45 @@ func applyOverrides(dpPath string) error {
 	// For now, we leave the merged file - the user can restore from .bak
 
 	return nil
+}
+
+// detectDevNetwork returns the Docker network name for the active dev runtime.
+// For k3d, it uses "k3d-<cluster-name>". For compose, it uses "dp-network".
+func detectDevNetwork() string {
+	config, err := localdev.LoadConfig()
+	if err != nil {
+		// Fall back to trying k3d network first (since it's the default runtime),
+		// then dp-network.
+		return detectNetworkByProbing()
+	}
+
+	switch config.GetDefaultRuntime() {
+	case localdev.RuntimeK3d:
+		cluster := config.Dev.K3d.ClusterName
+		if cluster == "" {
+			cluster = localdev.DefaultClusterName
+		}
+		return fmt.Sprintf("k3d-%s", cluster)
+	case localdev.RuntimeCompose:
+		return "dp-network"
+	default:
+		return detectNetworkByProbing()
+	}
+}
+
+// detectNetworkByProbing checks which dev network actually exists.
+func detectNetworkByProbing() string {
+	// Try k3d network first (default runtime)
+	k3dNetwork := fmt.Sprintf("k3d-%s", localdev.DefaultClusterName)
+	if networkExists(k3dNetwork) {
+		return k3dNetwork
+	}
+	// Fall back to compose network
+	return "dp-network"
+}
+
+// networkExists checks if a Docker network exists.
+func networkExists(name string) bool {
+	cmd := exec.Command("docker", "network", "inspect", name)
+	return cmd.Run() == nil
 }

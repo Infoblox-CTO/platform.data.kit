@@ -51,7 +51,7 @@ func DefaultRunOptions(packageDir string) RunOptions {
 	return RunOptions{
 		PackageDir: packageDir,
 		Env:        make(map[string]string),
-		Network:    "dp-network",
+		Network:    "", // Empty means auto-detect from dev runtime
 		Timeout:    30 * time.Minute,
 		DryRun:     false,
 		Detach:     false,

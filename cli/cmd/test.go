@@ -170,7 +170,8 @@ func runTest(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	// Ensure the Docker network exists
-	if err := ensureNetworkExists("dp-network"); err != nil {
+	testNetwork := detectDevNetwork()
+	if err := ensureNetworkExists(testNetwork); err != nil {
 		fmt.Printf("Warning: Could not create network: %v\n", err)
 	}
 
@@ -190,7 +191,7 @@ func runTest(cmd *cobra.Command, args []string) error {
 		PackageDir:   absDir,
 		Env:          env,
 		BindingsFile: bindingsPath,
-		Network:      "dp-network",
+		Network:      testNetwork,
 		Timeout:      timeout,
 		DryRun:       false,
 		Detach:       false,
