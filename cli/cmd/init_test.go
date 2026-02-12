@@ -165,7 +165,7 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 		initNamespace = oldNamespace
 	}()
 
-	initType = "dataset"
+	initType = "pipeline"
 	initNamespace = "default"
 
 	oldWd, _ := os.Getwd()
@@ -189,7 +189,7 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 
 func TestInitCmd_PackageTypes(t *testing.T) {
 	// Test different package types
-	types := []string{"pipeline", "model", "dataset"}
+	types := []string{"pipeline"}
 
 	for _, pkgType := range types {
 		t.Run(pkgType, func(t *testing.T) {

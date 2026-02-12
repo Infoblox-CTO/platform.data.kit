@@ -141,20 +141,12 @@ spec:
 
 ## Package Types
 
-The DP CLI supports multiple package types:
+The DP CLI currently supports the **pipeline** package type — a data processing pipeline (e.g., Kafka → S3 ETL).
 
-| Type | Purpose | Example |
-|------|---------|---------|
-| `pipeline` | Data transformation pipeline | Kafka → S3 ETL |
-| `producer` | Data source/producer | Sensor data publisher |
-| `consumer` | Data consumer | Dashboard data loader |
-| `streaming` | Real-time streaming job | Kafka Streams app |
-
-Specify the type when initializing:
+Initialize a new pipeline:
 
 ```bash
-dp init my-package --type pipeline
-dp init my-producer --type producer
+dp init my-pipeline
 ```
 
 ## Package Lifecycle

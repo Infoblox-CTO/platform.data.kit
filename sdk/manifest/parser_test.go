@@ -36,7 +36,7 @@ metadata:
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
+  type: pipeline
   description: Test package
   owner: data-team
 `),
@@ -209,7 +209,7 @@ metadata:
   namespace: test
   version: 1.0.0
 spec:
-  type: dataset
+  type: pipeline
   owner: test
 `
 				path := filepath.Join(dir, "dp.yaml")
@@ -484,7 +484,7 @@ metadata:
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 spec:
-  type: dataset
+  type: pipeline
 `),
 			checkErr: false, // Parses but has empty metadata
 		},

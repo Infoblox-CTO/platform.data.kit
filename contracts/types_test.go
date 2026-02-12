@@ -16,16 +16,6 @@ func TestPackageType_Constants(t *testing.T) {
 			pkgType:  PackageTypePipeline,
 			wantType: "pipeline",
 		},
-		{
-			name:     "model",
-			pkgType:  PackageTypeModel,
-			wantType: "model",
-		},
-		{
-			name:     "dataset",
-			pkgType:  PackageTypeDataset,
-			wantType: "dataset",
-		},
 	}
 
 	for _, tt := range tests {

@@ -232,19 +232,19 @@ func TestRunCmd_TimeoutFlag(t *testing.T) {
 	}
 }
 
-func TestRunCmd_NotPipeline(t *testing.T) {
-	// Test running a non-pipeline package type
+func TestRunCmd_InvalidType(t *testing.T) {
+	// Test running a package with an invalid type
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
-  name: test-dataset
+  name: test-invalid
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
-  description: Test dataset
+  type: invalid
+  description: Test invalid type
   owner: data-team
   outputs:
     - name: output
@@ -267,7 +267,7 @@ spec:
 	cmd := &cobra.Command{}
 	err := runPipeline(cmd, []string{tmpDir})
 
-	// Running a dataset (not pipeline) should fail or handle gracefully
+	// Running an invalid type should fail or handle gracefully
 	// The exact behavior depends on implementation
 	_ = err
 }

@@ -24,46 +24,6 @@ func TestInit_CreatesPackageStructure(t *testing.T) {
 	assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
 }
 
-func TestInit_CreatesDatasetPackage(t *testing.T) {
-	skipIfShort(t)
-
-	tmpDir := createTempDir(t)
-
-	result, err := runDPInDir(t, tmpDir, "init", "--type", "dataset", "my-dataset")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.ExitCode != 0 {
-		t.Errorf("expected exit code 0, got %d\nstderr: %s", result.ExitCode, result.Stderr)
-	}
-
-	pkgDir := filepath.Join(tmpDir, "my-dataset")
-	assertFileExists(t, pkgDir)
-	assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-	assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "type: dataset")
-}
-
-func TestInit_CreatesModelPackage(t *testing.T) {
-	skipIfShort(t)
-
-	tmpDir := createTempDir(t)
-
-	result, err := runDPInDir(t, tmpDir, "init", "--type", "model", "my-model")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.ExitCode != 0 {
-		t.Errorf("expected exit code 0, got %d\nstderr: %s", result.ExitCode, result.Stderr)
-	}
-
-	pkgDir := filepath.Join(tmpDir, "my-model")
-	assertFileExists(t, pkgDir)
-	assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-	assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "type: model")
-}
-
 func TestInit_ValidatesPackageName(t *testing.T) {
 	skipIfShort(t)
 

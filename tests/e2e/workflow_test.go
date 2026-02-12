@@ -55,7 +55,7 @@ func TestWorkflow_InitLintBuild(t *testing.T) {
 func TestWorkflow_AllPackageTypes(t *testing.T) {
 	skipIfShort(t)
 
-	packageTypes := []string{"pipeline", "dataset", "model"}
+	packageTypes := []string{"pipeline"}
 
 	for _, pkgType := range packageTypes {
 		t.Run(pkgType, func(t *testing.T) {

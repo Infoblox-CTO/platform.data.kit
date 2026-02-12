@@ -105,9 +105,11 @@ metadata:
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
+  type: pipeline
   description: Test package
   owner: data-team
+  runtime:
+    image: myimage:v1
   outputs:
     - name: output
       type: s3-prefix
@@ -146,9 +148,11 @@ metadata:
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
+  type: pipeline
   description: Test package
   owner: data-team
+  runtime:
+    image: myimage:v1
   outputs:
     - name: output
       type: s3-prefix

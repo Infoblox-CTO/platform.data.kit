@@ -53,9 +53,12 @@ func TestDataPackageValidator_Validate(t *testing.T) {
 					Version:   "1.0.0",
 				},
 				Spec: contracts.DataPackageSpec{
-					Type:        contracts.PackageTypeDataset,
+					Type:        contracts.PackageTypePipeline,
 					Description: "A test package",
 					Owner:       "data-team",
+					Runtime: &contracts.RuntimeSpec{
+						Image: "myimage:v1",
+					},
 					Outputs: []contracts.ArtifactContract{
 						{
 							Name:    "output-data",
@@ -261,24 +264,6 @@ func TestDataPackageValidator_RuntimeValidation(t *testing.T) {
 					Outputs: []contracts.ArtifactContract{
 						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data", Classification: &contracts.Classification{}},
 					},
-				},
-			},
-			wantValid: true,
-		},
-		{
-			name: "dataset without runtime is valid",
-			pkg: &contracts.DataPackage{
-				APIVersion: string(contracts.APIVersionV1Alpha1),
-				Kind:       "DataPackage",
-				Metadata: contracts.PackageMetadata{
-					Name:      "test-dataset",
-					Namespace: "data-team",
-					Version:   "1.0.0",
-				},
-				Spec: contracts.DataPackageSpec{
-					Type:        contracts.PackageTypeDataset,
-					Description: "A test dataset",
-					Owner:       "data-team",
 				},
 			},
 			wantValid: true,

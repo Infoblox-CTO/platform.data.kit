@@ -26,20 +26,15 @@ var initCmd = &cobra.Command{
 	Short: "Initialize a new data package",
 	Long: `Initialize a new data package with the required manifest files.
 
-This command creates a new directory with dp.yaml and (for pipeline type)
+This command creates a new directory with dp.yaml and
 pipeline.yaml files pre-configured with sensible defaults.
-
-Package types:
-  pipeline - A data processing pipeline (default)
-  model    - A machine learning model package
-  dataset  - A curated dataset package
 
 Examples:
   # Create a new pipeline package
   dp init my-pipeline
 
-  # Create a model package with custom namespace
-  dp init my-model --type model --namespace ml-team
+  # Create with custom namespace
+  dp init my-pipeline --namespace data-team
 
   # Create in current directory
   dp init . --type pipeline`,
@@ -51,7 +46,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 
 	initCmd.Flags().StringVarP(&initType, "type", "t", "pipeline",
-		"Package type: pipeline, model, dataset")
+		"Package type (pipeline)")
 	initCmd.Flags().StringVarP(&initNamespace, "namespace", "n", "default",
 		"Package namespace")
 	initCmd.Flags().StringVar(&initTeam, "team", "my-team",
@@ -234,7 +229,7 @@ func isValidPackageName(name string) bool {
 // isValidPackageType checks if a package type is valid
 func isValidPackageType(t string) bool {
 	switch t {
-	case "pipeline", "model", "dataset":
+	case "pipeline":
 		return true
 	default:
 		return false

@@ -19,17 +19,17 @@ func TestDataPackageFromBytes(t *testing.T) {
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
-  name: test-dataset
+  name: test-pipeline
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
-  description: A test dataset
+  type: pipeline
+  description: A test pipeline
   owner: data-team
 `),
 			wantErr:  false,
-			wantName: "test-dataset",
-			wantType: contracts.PackageTypeDataset,
+			wantName: "test-pipeline",
+			wantType: contracts.PackageTypePipeline,
 		},
 		{
 			name: "pipeline type",
@@ -47,23 +47,6 @@ spec:
 			wantErr:  false,
 			wantName: "test-pipeline",
 			wantType: contracts.PackageTypePipeline,
-		},
-		{
-			name: "model type",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: test-model
-  namespace: ml-team
-  version: 1.0.0
-spec:
-  type: model
-  description: A test model
-  owner: ml-team
-`),
-			wantErr:  false,
-			wantName: "test-model",
-			wantType: contracts.PackageTypeModel,
 		},
 		{
 			name: "wrong kind returns error",
@@ -122,7 +105,7 @@ func TestDataPackageToBytes(t *testing.T) {
 					Version:   "1.0.0",
 				},
 				Spec: contracts.DataPackageSpec{
-					Type:        contracts.PackageTypeDataset,
+					Type:        contracts.PackageTypePipeline,
 					Description: "Test package",
 					Owner:       "data-team",
 				},
@@ -161,7 +144,7 @@ func TestDataPackage_RoundTrip(t *testing.T) {
 			Labels:    map[string]string{"env": "test"},
 		},
 		Spec: contracts.DataPackageSpec{
-			Type:        contracts.PackageTypeDataset,
+			Type:        contracts.PackageTypePipeline,
 			Description: "Round trip test",
 			Owner:       "data-team",
 		},
@@ -250,7 +233,7 @@ metadata:
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
+  type: pipeline
   description: Test with outputs
   owner: data-team
   outputs:

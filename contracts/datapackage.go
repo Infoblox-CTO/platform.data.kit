@@ -35,7 +35,7 @@ type PackageMetadata struct {
 
 // DataPackageSpec contains the package specification details.
 type DataPackageSpec struct {
-	// Type is the package type: "pipeline", "model", or "dataset"
+	// Type is the package type (currently only "pipeline" is supported).
 	Type PackageType `json:"type" yaml:"type"`
 
 	// Description is a human-readable purpose description

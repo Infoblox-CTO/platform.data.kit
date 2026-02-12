@@ -1,13 +1,15 @@
 apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
-  name: basic-dataset
+  name: basic-pipeline
   namespace: data-team
   version: 1.0.0
 spec:
-  type: dataset
-  description: A basic dataset package for testing
+  type: pipeline
+  description: A basic pipeline package for testing
   owner: data-team
+  runtime:
+    image: myimage:v1
   outputs:
     - name: customer-data
       type: s3-prefix

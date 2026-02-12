@@ -51,7 +51,7 @@ dp init <package-name> [flags]
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--type` | `-t` | Package type (pipeline, producer, consumer, streaming) | pipeline |
+| `--type` | `-t` | Package type (pipeline) | pipeline |
 | `--mode` | `-m` | Pipeline execution mode (batch, streaming) | batch |
 | `--dir` | `-d` | Directory to create package in | . |
 | `--lang` | `-l` | Programming language (go, python) | go |

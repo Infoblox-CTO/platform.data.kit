@@ -56,7 +56,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["pipeline", "model", "dataset"],
+          "enum": ["pipeline"],
           "description": "Package type"
         },
         "description": {

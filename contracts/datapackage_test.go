@@ -115,16 +115,6 @@ func TestDataPackageSpec_Type(t *testing.T) {
 			spec:     DataPackageSpec{Type: PackageTypePipeline},
 			wantType: PackageTypePipeline,
 		},
-		{
-			name:     "model type",
-			spec:     DataPackageSpec{Type: PackageTypeModel},
-			wantType: PackageTypeModel,
-		},
-		{
-			name:     "dataset type",
-			spec:     DataPackageSpec{Type: PackageTypeDataset},
-			wantType: PackageTypeDataset,
-		},
 	}
 
 	for _, tt := range tests {

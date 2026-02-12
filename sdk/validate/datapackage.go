@@ -159,8 +159,6 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 	// Validate type
 	validTypes := []contracts.PackageType{
 		contracts.PackageTypePipeline,
-		contracts.PackageTypeModel,
-		contracts.PackageTypeDataset,
 	}
 
 	valid := false
@@ -172,7 +170,7 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 	}
 
 	if !valid {
-		errs.AddError(contracts.ErrCodeInvalidPackageType, "spec.type", "spec.type must be one of: pipeline, model, dataset")
+		errs.AddError(contracts.ErrCodeInvalidPackageType, "spec.type", "spec.type must be: pipeline")
 	}
 
 	// Validate description

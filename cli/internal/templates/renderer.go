@@ -70,14 +70,7 @@ func (r *Renderer) RenderToFile(path, templateName string, config *PackageConfig
 
 // GetDPTemplate returns the template name for the given package type.
 func GetDPTemplate(packageType string) string {
-	switch packageType {
-	case "model":
-		return "model.dp.yaml.tmpl"
-	case "dataset":
-		return "dataset.dp.yaml.tmpl"
-	default:
-		return "dp.yaml.tmpl"
-	}
+	return "dp.yaml.tmpl"
 }
 
 // GetPipelineTemplate returns the pipeline template name.

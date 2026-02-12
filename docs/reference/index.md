@@ -40,7 +40,7 @@ Environment variables and configuration options.
 
 ```bash
 # Initialize a new package
-dp init <name> --type <pipeline|model|dataset>
+dp init <name>
 
 # Local development
 dp dev up|down|status

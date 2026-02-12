@@ -8,12 +8,6 @@ type PackageType string
 const (
 	// PackageTypePipeline is a data processing pipeline.
 	PackageTypePipeline PackageType = "pipeline"
-
-	// PackageTypeModel is a data model/schema package.
-	PackageTypeModel PackageType = "model"
-
-	// PackageTypeDataset is a static dataset package.
-	PackageTypeDataset PackageType = "dataset"
 )
 
 // RunStatus represents the status of a pipeline run.
