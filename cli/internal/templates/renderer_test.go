@@ -339,3 +339,105 @@ func TestRenderMakefileCommon_InvalidLanguage(t *testing.T) {
 		t.Error("expected error for invalid language")
 	}
 }
+
+func TestSnakeCase(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"my-app", "my_app"},
+		{"simple", "simple"},
+		{"a-b-c", "a_b_c"},
+		{"already_snake", "already_snake"},
+		{"camelCase", "camel_case"},
+		{"PascalCase", "pascal_case"},
+		{"my-cool-plugin", "my_cool_plugin"},
+		{"x", "x"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got := snakeCase(tt.in)
+			if got != tt.want {
+				t.Errorf("snakeCase(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPascalCase(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"my-app", "MyApp"},
+		{"simple", "Simple"},
+		{"a-b-c", "ABC"},
+		{"already_snake", "AlreadySnake"},
+		{"my-cool-plugin", "MyCoolPlugin"},
+		{"x", "X"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got := pascalCase(tt.in)
+			if got != tt.want {
+				t.Errorf("pascalCase(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRenderDirectory_PythonDashedName(t *testing.T) {
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer() error: %v", err)
+	}
+
+	outputDir := t.TempDir()
+	config := &PackageConfig{
+		Name:        "my-app",
+		Namespace:   "test-team",
+		Description: "Plugin with dashed name",
+		Owner:       "test-team",
+		Language:    "python",
+		Type:        "cloudquery",
+		Role:        "source",
+		GRPCPort:    7777,
+		Concurrency: 10000,
+		Version:     "dev",
+	}
+
+	if err := r.RenderDirectory(outputDir, "cloudquery/python", config); err != nil {
+		t.Fatalf("RenderDirectory() error: %v", err)
+	}
+
+	// main.py should use PascalCase for the class name
+	mainData, err := os.ReadFile(filepath.Join(outputDir, "main.py"))
+	if err != nil {
+		t.Fatalf("failed to read main.py: %v", err)
+	}
+	mainContent := string(mainData)
+	if !strings.Contains(mainContent, "from plugin.plugin import MyAppPlugin") {
+		t.Errorf("main.py should import MyAppPlugin, got:\n%s", mainContent)
+	}
+	if !strings.Contains(mainContent, "p = MyAppPlugin()") {
+		t.Errorf("main.py should instantiate MyAppPlugin(), got:\n%s", mainContent)
+	}
+	// Must NOT contain the raw dashed name as a Python identifier
+	if strings.Contains(mainContent, "my-appPlugin") {
+		t.Error("main.py must not contain 'my-appPlugin' — dashes are invalid in Python identifiers")
+	}
+
+	// plugin/plugin.py should use PascalCase for the class definition
+	pluginData, err := os.ReadFile(filepath.Join(outputDir, "plugin", "plugin.py"))
+	if err != nil {
+		t.Fatalf("failed to read plugin/plugin.py: %v", err)
+	}
+	pluginContent := string(pluginData)
+	if !strings.Contains(pluginContent, "class MyAppPlugin(plugin.Plugin):") {
+		t.Errorf("plugin.py should define class MyAppPlugin, got:\n%s", pluginContent)
+	}
+	// The name= string arg should still use the original dashed name
+	if !strings.Contains(pluginContent, `name="my-app"`) {
+		t.Errorf("plugin.py should keep original name in string literal, got:\n%s", pluginContent)
+	}
+}

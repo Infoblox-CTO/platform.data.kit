@@ -11,7 +11,7 @@ from plugin.spec import Spec
 from plugin.tables.example_resource import ExampleResourceTable, ExampleResourceResolver
 
 
-class {{.Name | printf "%s"}}Plugin(plugin.Plugin):
+class {{.Name | pascalCase}}Plugin(plugin.Plugin):
     """CloudQuery {{.Role}} plugin for {{.Name}}."""
 
     def __init__(self) -> None:

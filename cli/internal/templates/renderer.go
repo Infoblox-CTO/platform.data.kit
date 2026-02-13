@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"unicode"
 )
 
 //go:embed *.tmpl
@@ -100,6 +101,56 @@ func GetPipelineTemplateForMode(mode string) string {
 	}
 }
 
+// splitWords splits a string on dashes, underscores, and camelCase boundaries.
+func splitWords(s string) []string {
+	var words []string
+	var current []rune
+	for _, r := range s {
+		if r == '-' || r == '_' {
+			if len(current) > 0 {
+				words = append(words, string(current))
+				current = nil
+			}
+			continue
+		}
+		if unicode.IsUpper(r) && len(current) > 0 {
+			words = append(words, string(current))
+			current = nil
+		}
+		current = append(current, r)
+	}
+	if len(current) > 0 {
+		words = append(words, string(current))
+	}
+	return words
+}
+
+// snakeCase converts a string to snake_case (e.g. "my-app" -> "my_app").
+func snakeCase(s string) string {
+	words := splitWords(s)
+	for i, w := range words {
+		words[i] = strings.ToLower(w)
+	}
+	return strings.Join(words, "_")
+}
+
+// pascalCase converts a string to PascalCase (e.g. "my-app" -> "MyApp").
+func pascalCase(s string) string {
+	words := splitWords(s)
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
+		}
+	}
+	return strings.Join(words, "")
+}
+
+// templateFuncMap provides helper functions available in all templates.
+var templateFuncMap = template.FuncMap{
+	"snakeCase":  snakeCase,
+	"pascalCase": pascalCase,
+}
+
 // RenderDirectory renders all templates from a template subdirectory into outputDir.
 // It walks the embedded template tree under templateSubDir, creates matching
 // subdirectories in outputDir, and renders each .tmpl file stripping the .tmpl suffix.
@@ -141,7 +192,7 @@ func (r *Renderer) RenderDirectory(outputDir, templateSubDir string, config *Pac
 			return fmt.Errorf("failed to read template %s: %w", path, err)
 		}
 
-		tmpl, err := template.New(filepath.Base(path)).Parse(string(data))
+		tmpl, err := template.New(filepath.Base(path)).Funcs(templateFuncMap).Parse(string(data))
 		if err != nil {
 			return fmt.Errorf("failed to parse template %s: %w", path, err)
 		}

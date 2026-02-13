@@ -8,11 +8,11 @@ import sys
 
 from cloudquery.sdk import serve
 
-from plugin.plugin import {{.Name | printf "%s"}}Plugin
+from plugin.plugin import {{.Name | pascalCase}}Plugin
 
 
 def main():
-    p = {{.Name | printf "%s"}}Plugin()
+    p = {{.Name | pascalCase}}Plugin()
     cmd = serve.PluginCommand(p)
     cmd.run(sys.argv[1:])
 
