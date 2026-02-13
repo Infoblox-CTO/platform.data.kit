@@ -1,0 +1,58 @@
+package tables
+
+import (
+	"context"
+
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/cloudquery/plugin-sdk/v4/schema"
+)
+
+// ExampleResourceTable returns the schema for the example_resource table.
+func ExampleResourceTable() *schema.Table {
+	return &schema.Table{
+		Name:        "example_resource",
+		Description: "An example table demonstrating the CloudQuery plugin pattern.",
+		Resolver:    fetchExampleResource,
+		Columns: []schema.Column{
+			{
+				Name:        "id",
+				Type:        arrow.BinaryTypes.String,
+				Description: "The unique identifier of the resource.",
+				Resolver:    schema.PathResolver("ID"),
+			},
+			{
+				Name:        "name",
+				Type:        arrow.BinaryTypes.String,
+				Description: "The name of the resource.",
+				Resolver:    schema.PathResolver("Name"),
+			},
+			{
+				Name:        "active",
+				Type:        arrow.FixedWidthTypes.Boolean,
+				Description: "Whether the resource is active.",
+				Resolver:    schema.PathResolver("Active"),
+			},
+		},
+	}
+}
+
+// ExampleResource represents a single resource fetched by the plugin.
+type ExampleResource struct {
+	ID     string
+	Name   string
+	Active bool
+}
+
+func fetchExampleResource(_ context.Context, _ schema.ClientMeta, _ *schema.Resource, res chan<- any) error {
+	// Replace this with your actual data-fetching logic.
+	resources := []ExampleResource{
+		{ID: "res-001", Name: "example-1", Active: true},
+		{ID: "res-002", Name: "example-2", Active: false},
+	}
+
+	for _, r := range resources {
+		res <- r
+	}
+
+	return nil
+}

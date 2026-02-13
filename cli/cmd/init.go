@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 
@@ -18,6 +19,7 @@ var (
 	initOwner     string
 	initLanguage  string
 	initMode      string
+	initRole      string
 )
 
 // initCmd represents the init command
@@ -26,12 +28,20 @@ var initCmd = &cobra.Command{
 	Short: "Initialize a new data package",
 	Long: `Initialize a new data package with the required manifest files.
 
-This command creates a new directory with dp.yaml and
-pipeline.yaml files pre-configured with sensible defaults.
+Supported package types: pipeline, cloudquery
+
+This command creates a new directory with dp.yaml and project
+files pre-configured with sensible defaults for the selected type.
 
 Examples:
-  # Create a new pipeline package
+  # Create a new pipeline package (default)
   dp init my-pipeline
+
+  # Create a CloudQuery source plugin (Python, default)
+  dp init my-source --type cloudquery
+
+  # Create a CloudQuery destination plugin in Go
+  dp init my-dest --type cloudquery --role destination --language go
 
   # Create with custom namespace
   dp init my-pipeline --namespace data-team
@@ -46,7 +56,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 
 	initCmd.Flags().StringVarP(&initType, "type", "t", "pipeline",
-		"Package type (pipeline)")
+		"Package type: pipeline, cloudquery")
 	initCmd.Flags().StringVarP(&initNamespace, "namespace", "n", "default",
 		"Package namespace")
 	initCmd.Flags().StringVar(&initTeam, "team", "my-team",
@@ -54,9 +64,11 @@ func init() {
 	initCmd.Flags().StringVar(&initOwner, "owner", "",
 		"Package owner (defaults to current user)")
 	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "go",
-		"Pipeline language: go, python")
+		"Language: go, python")
 	initCmd.Flags().StringVarP(&initMode, "mode", "m", "batch",
-		"Pipeline mode: batch, streaming")
+		"Pipeline mode: batch, streaming (pipeline only)")
+	initCmd.Flags().StringVar(&initRole, "role", "source",
+		"Plugin role: source, destination (cloudquery only)")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -90,7 +102,12 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Validate package type
 	if !isValidPackageType(initType) {
-		return fmt.Errorf("invalid package type %q: must be pipeline, model, or dataset", initType)
+		return fmt.Errorf("invalid package type %q: must be pipeline or cloudquery", initType)
+	}
+
+	// For cloudquery type, default language to python if not explicitly set
+	if initType == "cloudquery" && !cmd.Flags().Changed("language") {
+		initLanguage = "python"
 	}
 
 	// Validate language
@@ -98,9 +115,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid language %q: must be go or python", initLanguage)
 	}
 
-	// Validate mode
-	if !isValidMode(initMode) {
+	// Validate mode (only for pipeline type)
+	if initType == "pipeline" && !isValidMode(initMode) {
 		return fmt.Errorf("invalid mode %q: must be batch or streaming", initMode)
+	}
+
+	// Validate role for cloudquery type
+	if initType == "cloudquery" {
+		if initRole == "destination" {
+			return fmt.Errorf("destination plugins are not yet supported; only 'source' is currently available")
+		}
+		if initRole != "source" {
+			return fmt.Errorf("invalid role %q: must be source", initRole)
+		}
 	}
 
 	// Set default owner
@@ -122,9 +149,38 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Owner:       initOwner,
 		Language:    initLanguage,
 		Mode:        initMode,
+		Type:        initType,
+		Role:        initRole,
+		GRPCPort:    7777,
+		Concurrency: 10000,
 	}
 
-	// Create dp.yaml
+	// CloudQuery packages use directory-based scaffolding
+	if initType == "cloudquery" {
+		templateSubDir := fmt.Sprintf("cloudquery/%s", initLanguage)
+		if err := renderer.RenderDirectory(targetDir, templateSubDir, config); err != nil {
+			return fmt.Errorf("failed to scaffold cloudquery project: %w", err)
+		}
+		output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Scaffolded CloudQuery %s plugin in %s", initLanguage, targetDir))
+
+		// Go projects: resolve dependencies and format source
+		if initLanguage == "go" {
+			if err := goPostScaffold(cmd, targetDir); err != nil {
+				cmd.PrintErrf("Warning: go post-scaffold failed: %v\n", err)
+			}
+		}
+
+		cmd.Printf("\nPackage %q initialized successfully!\n", name)
+		cmd.Printf("\nNext steps:\n")
+		cmd.Printf("  1. Edit dp.yaml to configure your package\n")
+		cmd.Printf("  2. Implement your tables in plugin/tables/\n")
+		cmd.Printf("  3. Run 'dp lint' to validate\n")
+		cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
+		cmd.Printf("  5. Run 'dp run' to sync data\n")
+		return nil
+	}
+
+	// Pipeline packages use single-file templates
 	dpPath := filepath.Join(targetDir, "dp.yaml")
 	dpTemplate := templates.GetDPTemplate(initType)
 	if err := renderer.RenderToFile(dpPath, dpTemplate, config); err != nil {
@@ -204,6 +260,17 @@ func main() {
 		}
 	}
 
+	// Go projects: resolve dependencies and format source
+	if initLanguage == "go" {
+		goDir := targetDir
+		if initType == "pipeline" {
+			goDir = filepath.Join(targetDir, "src")
+		}
+		if err := goPostScaffold(cmd, goDir); err != nil {
+			cmd.PrintErrf("Warning: go post-scaffold failed: %v\n", err)
+		}
+	}
+
 	cmd.Printf("\nPackage %q initialized successfully!\n", name)
 	cmd.Printf("\nNext steps:\n")
 	cmd.Printf("  1. Edit dp.yaml to configure your package\n")
@@ -212,6 +279,36 @@ func main() {
 		cmd.Printf("  3. Implement your pipeline in src/\n")
 		cmd.Printf("  4. Run 'dp lint' to validate\n")
 		cmd.Printf("  5. Run 'dp dev up' to start local environment\n")
+	}
+
+	return nil
+}
+
+// goPostScaffold runs go mod tidy and go fmt on a scaffolded Go project so
+// the generated code compiles immediately (go.sum present, source formatted).
+func goPostScaffold(cmd *cobra.Command, dir string) error {
+	// Require the go toolchain
+	if _, err := exec.LookPath("go"); err != nil {
+		return fmt.Errorf("go toolchain not found: install Go from https://go.dev/dl/")
+	}
+
+	cmd.Printf("Running go mod tidy...\n")
+	tidy := exec.Command("go", "mod", "tidy")
+	tidy.Dir = dir
+	tidy.Stdout = os.Stdout
+	tidy.Stderr = os.Stderr
+	if err := tidy.Run(); err != nil {
+		return fmt.Errorf("go mod tidy failed: %w", err)
+	}
+
+	cmd.Printf("Running go fmt...\n")
+	gofmt := exec.Command("go", "fmt", "./...")
+	gofmt.Dir = dir
+	gofmt.Stdout = os.Stdout
+	gofmt.Stderr = os.Stderr
+	if err := gofmt.Run(); err != nil {
+		// go fmt is non-critical; warn but don't fail
+		cmd.PrintErrf("Warning: go fmt failed: %v\n", err)
 	}
 
 	return nil
@@ -229,7 +326,7 @@ func isValidPackageName(name string) bool {
 // isValidPackageType checks if a package type is valid
 func isValidPackageType(t string) bool {
 	switch t {
-	case "pipeline":
+	case "pipeline", "cloudquery":
 		return true
 	default:
 		return false

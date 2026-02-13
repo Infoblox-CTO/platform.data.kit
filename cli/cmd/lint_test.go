@@ -440,3 +440,233 @@ func stringContains(s, substr string) bool {
 	}
 	return false
 }
+
+// --- CloudQuery Lint Integration Tests (T053) ---
+
+func TestLintCmd_CloudQueryValidManifest(t *testing.T) {
+	// A fully valid CloudQuery manifest should pass lint
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: cq-test-source
+  namespace: acme
+  version: "0.1.0"
+spec:
+  type: cloudquery
+  description: "Test CloudQuery plugin"
+  owner: "acme-team"
+  cloudquery:
+    role: source
+    tables:
+      - example_resource
+    grpcPort: 7777
+    concurrency: 10000
+  runtime:
+    image: "acme/cq-test-source:latest"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	lintStrict = false
+	lintSkipPII = true
+
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	err := runLint(cmd, []string{tmpDir})
+
+	if err != nil {
+		t.Errorf("runLint() error = %v, want nil for valid CloudQuery package", err)
+	}
+}
+
+func TestLintCmd_CloudQueryMissingCloudQuerySection(t *testing.T) {
+	// Missing spec.cloudquery should fail with E060
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: cq-missing-section
+  namespace: acme
+  version: "0.1.0"
+spec:
+  type: cloudquery
+  description: "Missing cloudquery section"
+  owner: "acme-team"
+  runtime:
+    image: "acme/cq-test:latest"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	lintStrict = false
+	lintSkipPII = true
+
+	cmd := &cobra.Command{}
+	err := runLint(cmd, []string{tmpDir})
+
+	if err == nil {
+		t.Error("expected error for missing cloudquery section (E060)")
+	}
+}
+
+func TestLintCmd_CloudQueryMissingRole(t *testing.T) {
+	// Missing role should fail with E061
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: cq-missing-role
+  namespace: acme
+  version: "0.1.0"
+spec:
+  type: cloudquery
+  description: "Missing role"
+  owner: "acme-team"
+  cloudquery:
+    grpcPort: 7777
+  runtime:
+    image: "acme/cq-test:latest"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	lintStrict = false
+	lintSkipPII = true
+
+	cmd := &cobra.Command{}
+	err := runLint(cmd, []string{tmpDir})
+
+	if err == nil {
+		t.Error("expected error for missing role (E061)")
+	}
+}
+
+func TestLintCmd_CloudQueryDestinationWarning(t *testing.T) {
+	// Destination role should produce warning W060 but not fail (unless strict)
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: cq-destination
+  namespace: acme
+  version: "0.1.0"
+spec:
+  type: cloudquery
+  description: "Destination plugin"
+  owner: "acme-team"
+  cloudquery:
+    role: destination
+    grpcPort: 7777
+    concurrency: 10000
+  runtime:
+    image: "acme/cq-dest:latest"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Non-strict: warning only, should pass
+	lintStrict = false
+	lintSkipPII = true
+
+	cmd := &cobra.Command{}
+	err := runLint(cmd, []string{tmpDir})
+
+	if err != nil {
+		t.Errorf("non-strict mode should pass with W060 warning, got error: %v", err)
+	}
+
+	// Strict: warning becomes error, should fail
+	lintStrict = true
+
+	cmd2 := &cobra.Command{}
+	err2 := runLint(cmd2, []string{tmpDir})
+
+	if err2 == nil {
+		t.Error("strict mode should fail with W060 becoming an error")
+	}
+
+	// Reset
+	lintStrict = false
+}
+
+func TestLintCmd_CloudQueryInvalidGRPCPort(t *testing.T) {
+	// Invalid gRPC port should fail with E062
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: cq-bad-port
+  namespace: acme
+  version: "0.1.0"
+spec:
+  type: cloudquery
+  description: "Bad port"
+  owner: "acme-team"
+  cloudquery:
+    role: source
+    grpcPort: 99999
+    concurrency: 10000
+  runtime:
+    image: "acme/cq-test:latest"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	lintStrict = false
+	lintSkipPII = true
+
+	cmd := &cobra.Command{}
+	err := runLint(cmd, []string{tmpDir})
+
+	if err == nil {
+		t.Error("expected error for invalid gRPC port (E062)")
+	}
+}
+
+func TestLintCmd_CloudQueryInvalidConcurrency(t *testing.T) {
+	// Invalid concurrency should fail with E063
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: cq-bad-concurrency
+  namespace: acme
+  version: "0.1.0"
+spec:
+  type: cloudquery
+  description: "Bad concurrency"
+  owner: "acme-team"
+  cloudquery:
+    role: source
+    grpcPort: 7777
+    concurrency: -1
+  runtime:
+    image: "acme/cq-test:latest"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	lintStrict = false
+	lintSkipPII = true
+
+	cmd := &cobra.Command{}
+	err := runLint(cmd, []string{tmpDir})
+
+	if err == nil {
+		t.Error("expected error for invalid concurrency (E063)")
+	}
+}

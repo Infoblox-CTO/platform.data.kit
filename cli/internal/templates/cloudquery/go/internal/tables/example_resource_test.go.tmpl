@@ -1,0 +1,28 @@
+package tables
+
+import (
+	"testing"
+)
+
+func TestExampleResourceTable(t *testing.T) {
+	table := ExampleResourceTable()
+
+	if table.Name != "example_resource" {
+		t.Errorf("table name = %q, want %q", table.Name, "example_resource")
+	}
+
+	if len(table.Columns) != 3 {
+		t.Fatalf("expected 3 columns, got %d", len(table.Columns))
+	}
+
+	expectedColumns := []string{"id", "name", "active"}
+	for i, expected := range expectedColumns {
+		if table.Columns[i].Name != expected {
+			t.Errorf("column[%d].Name = %q, want %q", i, table.Columns[i].Name, expected)
+		}
+	}
+
+	if table.Resolver == nil {
+		t.Error("table resolver should not be nil")
+	}
+}

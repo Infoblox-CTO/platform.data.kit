@@ -48,7 +48,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["pipeline", "infra", "report"],
+          "enum": ["pipeline", "cloudquery", "infra", "report"],
           "description": "Package type"
         },
         "description": {
@@ -78,6 +78,14 @@
         "resources": {
           "$ref": "#/$defs/resourceSpec",
           "description": "CPU/memory requirements"
+        },
+        "cloudquery": {
+          "$ref": "#/$defs/cloudquerySpec",
+          "description": "CloudQuery plugin configuration (required when type=cloudquery)"
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtimeSpec",
+          "description": "Container runtime configuration"
         }
       },
       "allOf": [
@@ -90,6 +98,19 @@
             "properties": {
               "outputs": {
                 "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "cloudquery" } }
+          },
+          "then": {
+            "required": ["cloudquery", "runtime"],
+            "properties": {
+              "cloudquery": {
+                "$ref": "#/$defs/cloudquerySpec"
               }
             }
           }
@@ -224,6 +245,65 @@
           "type": "string",
           "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti)?$",
           "description": "Memory request/limit"
+        }
+      }
+    },
+    "cloudquerySpec": {
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["source", "destination"],
+          "description": "CloudQuery plugin role"
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,126}$"
+          },
+          "description": "Table names this plugin provides"
+        },
+        "grpcPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 7777,
+          "description": "Port for gRPC server"
+        },
+        "concurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10000,
+          "description": "Max concurrent table resolvers"
+        }
+      }
+    },
+    "runtimeSpec": {
+      "type": "object",
+      "required": ["image"],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Container image reference"
+        },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Container command override"
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "properties": {
+              "name": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          },
+          "description": "Environment variables"
         }
       }
     }

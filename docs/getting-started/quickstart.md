@@ -263,3 +263,84 @@ Now that you understand the basics:
 
 !!! success "Congratulations!"
     You've successfully created, run, and published your first data package!
+
+---
+
+## CloudQuery Plugin Quickstart
+
+This section walks you through creating and running a CloudQuery source plugin.
+
+### Prerequisites
+
+In addition to the standard prerequisites, you need:
+
+- **CloudQuery CLI** — Install with `brew install cloudquery/tap/cloudquery` (macOS) or see [CloudQuery docs](https://docs.cloudquery.io/docs/quickstart)
+- **Docker** — Required for building and running the plugin container
+
+### Step 1: Scaffold a Plugin
+
+```bash
+# Create a Python CloudQuery source plugin
+dp init my-source --type cloudquery
+
+# Or a Go plugin
+dp init my-source --type cloudquery --lang go
+```
+
+### Step 2: Explore the Generated Code
+
+```bash
+cd my-source
+```
+
+The scaffolded project includes:
+
+- `dp.yaml` — Package manifest with CloudQuery configuration
+- `main.py` — gRPC server entry point
+- `plugin/` — Plugin implementation (tables, client, spec)
+- `tests/` — Unit tests
+
+### Step 3: Run Unit Tests
+
+```bash
+dp test
+```
+
+This runs `pytest` (Python) or `go test ./...` (Go) against the generated test suite.
+
+### Step 4: Start Local Dev Stack
+
+```bash
+dp dev up
+```
+
+This starts PostgreSQL (and other services) for the sync destination.
+
+### Step 5: Run the Plugin
+
+```bash
+dp run
+```
+
+This will:
+
+1. Build the plugin Docker image
+2. Start the container with gRPC port exposed
+3. Wait for the gRPC server to be ready
+4. Generate a CloudQuery sync configuration
+5. Run `cloudquery sync` to fetch data into PostgreSQL
+6. Display a sync summary
+
+### Step 6: Validate and Publish
+
+```bash
+dp lint           # Validate manifest
+dp build          # Build OCI artifact
+dp publish        # Push to registry
+```
+
+### Step 7: Clean Up
+
+```bash
+dp dev down
+```

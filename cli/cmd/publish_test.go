@@ -213,3 +213,84 @@ spec:
 		t.Error("expected error for invalid package")
 	}
 }
+
+func TestPublishCmd_CloudQueryPackage(t *testing.T) {
+	// Test that dp publish works for a CloudQuery package in dry-run mode
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: my-cq-source
+  namespace: data-team
+  version: 0.1.0
+spec:
+  type: cloudquery
+  description: CloudQuery source plugin
+  owner: data-team
+  cloudquery:
+    role: source
+    tables:
+      - example_resource
+    grpcPort: 7777
+    concurrency: 10000
+  runtime:
+    image: my-cq-source:latest
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldDryRun := publishDryRun
+	defer func() { publishDryRun = oldDryRun }()
+
+	publishDryRun = true
+
+	cmd := &cobra.Command{}
+	err := runPublish(cmd, []string{tmpDir})
+
+	// Dry run should succeed for a valid CloudQuery package
+	if err != nil {
+		t.Errorf("runPublish() dry-run for CloudQuery package error = %v, want nil", err)
+	}
+}
+
+func TestPublishCmd_CloudQueryInvalidPackage(t *testing.T) {
+	// Test that dp publish handles a CloudQuery package with missing fields
+	// Note: publish does not run validation - it only builds and pushes the OCI artifact.
+	// Validation is the responsibility of dp lint / dp build.
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: bad-cq-source
+  namespace: data-team
+  version: 0.1.0
+spec:
+  type: cloudquery
+  description: Invalid CloudQuery plugin
+  owner: data-team
+  runtime:
+    image: bad-source:latest
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldDryRun := publishDryRun
+	defer func() { publishDryRun = oldDryRun }()
+
+	publishDryRun = true
+
+	cmd := &cobra.Command{}
+	err := runPublish(cmd, []string{tmpDir})
+
+	// Publish dry-run still succeeds because publish does not validate —
+	// validation is done by dp lint and dp build
+	if err != nil {
+		t.Errorf("runPublish() dry-run error = %v, want nil (publish doesn't validate)", err)
+	}
+}

@@ -141,12 +141,83 @@ spec:
 
 ## Package Types
 
-The DP CLI currently supports the **pipeline** package type — a data processing pipeline (e.g., Kafka → S3 ETL).
+The DP CLI supports the following package types:
 
-Initialize a new pipeline:
+### Pipeline
+
+A data processing pipeline (e.g., Kafka → S3 ETL). This is the default package type.
 
 ```bash
 dp init my-pipeline
+```
+
+### CloudQuery
+
+A [CloudQuery](https://docs.cloudquery.io/) source plugin that extracts data from external systems using the CloudQuery SDK and gRPC protocol. CloudQuery plugins run as gRPC servers inside containers, and `dp run` orchestrates the full sync lifecycle.
+
+```bash
+# Create a Python CloudQuery source plugin (default)
+dp init my-source --type cloudquery
+
+# Create a Go CloudQuery source plugin
+dp init my-source --type cloudquery --lang go
+```
+
+This creates a complete, immediately-runnable plugin project:
+
+```
+my-source/
+├── dp.yaml                     # Package manifest with cloudquery config
+├── main.py                     # gRPC server entry point
+├── pyproject.toml              # Python project config
+├── requirements.txt            # Python dependencies
+├── plugin/
+│   ├── __init__.py
+│   ├── plugin.py               # Plugin class (get_tables, sync)
+│   ├── client.py               # Client for API connections
+│   ├── spec.py                 # Plugin configuration spec
+│   └── tables/
+│       ├── __init__.py
+│       └── example_resource.py # Example table definition
+└── tests/
+    └── test_example_resource.py
+```
+
+The generated `dp.yaml` includes CloudQuery-specific configuration:
+
+```yaml title="dp.yaml (cloudquery type)"
+apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: my-source
+  namespace: default
+  version: 0.1.0
+spec:
+  type: cloudquery
+  description: A CloudQuery source plugin
+  owner: my-team
+  cloudquery:
+    role: source           # Plugin role (source only, for now)
+    tables:                # Tables this plugin provides
+      - example_resource
+    grpcPort: 7777         # gRPC server port
+    concurrency: 10000     # Max concurrent table resolvers
+  runtime:
+    image: my-source:latest
+```
+
+#### CloudQuery Workflow
+
+```bash
+dp init my-source --type cloudquery   # Scaffold plugin
+dp test                                # Run unit tests (pytest/go test)
+dp dev up                              # Start local dev stack (PostgreSQL)
+dp run                                 # Build container → start gRPC → sync
+dp test --integration                  # Full sync integration test
+dp lint                                # Validate manifest
+dp build                               # Build OCI artifact
+dp publish                             # Publish to registry
+dp promote my-source 0.1.0 --to dev   # Deploy
 ```
 
 ## Package Lifecycle

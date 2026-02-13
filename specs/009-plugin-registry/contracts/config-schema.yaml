@@ -1,0 +1,95 @@
+# Config Schema Contract
+# Defines the structure of dp CLI configuration files
+# Location: .dp/config.yaml (repo), ~/.config/dp/config.yaml (user), /etc/datakit/config.yaml (system)
+
+type: object
+additionalProperties: false
+properties:
+
+  dev:
+    description: Development environment settings (existing, backward-compatible)
+    type: object
+    additionalProperties: false
+    properties:
+      runtime:
+        description: Default runtime type for dp dev
+        type: string
+        enum: [k3d, compose]
+        default: k3d
+      workspace:
+        description: Path to the DP workspace directory
+        type: string
+        default: ""
+      k3d:
+        description: k3d-specific configuration
+        type: object
+        additionalProperties: false
+        properties:
+          clusterName:
+            description: Name of the k3d cluster
+            type: string
+            pattern: "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+            default: dp-dev
+
+  plugins:
+    description: Plugin registry and override settings
+    type: object
+    additionalProperties: false
+    properties:
+      registry:
+        description: >
+          Default OCI registry for pulling destination plugin images.
+          Images are resolved as: {registry}/cloudquery-plugin-{name}:{version}
+        type: string
+        default: ghcr.io/infobloxopen
+        examples:
+          - ghcr.io/infobloxopen
+          - ghcr.io/myorg
+          - internal.registry.io:5000/data-team
+      mirrors:
+        description: >
+          Ordered list of fallback registries. Tried sequentially when the
+          primary registry is unreachable. Each mirror follows the same image
+          naming convention as the primary registry.
+        type: array
+        items:
+          type: string
+        default: []
+        examples:
+          - [ghcr.io/backup-org, internal.registry.io/mirrors]
+      overrides:
+        description: >
+          Per-plugin configuration overrides. Keys are plugin short names
+          (e.g., postgresql, s3, file). Values override the default version
+          or provide a full custom image reference.
+        type: object
+        additionalProperties:
+          type: object
+          additionalProperties: false
+          properties:
+            version:
+              description: >
+                Override version tag for this plugin. Used with the registry
+                and naming convention: {registry}/cloudquery-plugin-{name}:{version}.
+                Mutually exclusive with 'image'.
+              type: string
+              pattern: "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+              examples:
+                - v8.13.0
+                - v5.5.1
+            image:
+              description: >
+                Full container image reference. Bypasses the registry and naming
+                convention entirely. Mutually exclusive with 'version'.
+              type: string
+              examples:
+                - internal.registry.io/custom-pg:v2.0.0
+                - ghcr.io/myorg/my-custom-dest:latest
+
+# Precedence Order (highest to lowest):
+#   1. CLI flags (--registry, --destination, etc.)
+#   2. Environment variables (DP_PLUGIN_REGISTRY)
+#   3. Repo-scope config ({git-root}/.dp/config.yaml)
+#   4. User-scope config (~/.config/dp/config.yaml)
+#   5. System-scope config (/etc/datakit/config.yaml)
+#   6. Built-in defaults (hardcoded in Go source)

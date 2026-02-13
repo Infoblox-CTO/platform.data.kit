@@ -1,0 +1,19 @@
+package main
+
+import (
+	"context"
+	"log"
+
+	"{{.Name}}/resources/plugin"
+
+	"github.com/cloudquery/plugin-sdk/v4/serve"
+)
+
+func main() {
+	p := plugin.Plugin()
+
+	ctx := context.Background()
+	if err := serve.Plugin(p).Serve(ctx); err != nil {
+		log.Fatalf("failed to serve plugin: %v", err)
+	}
+}

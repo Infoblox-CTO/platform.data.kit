@@ -1,0 +1,107 @@
+{
+  "$comment": "Additive changes to dp-manifest.schema.json for CloudQuery package type support",
+  "changes": [
+    {
+      "path": "/properties/spec/properties/type/enum",
+      "action": "replace",
+      "value": ["pipeline", "cloudquery", "infra", "report"],
+      "rationale": "Add 'cloudquery' to the allowed package types"
+    },
+    {
+      "path": "/properties/spec/properties/cloudquery",
+      "action": "add",
+      "value": {
+        "$ref": "#/$defs/cloudquerySpec",
+        "description": "CloudQuery plugin configuration (required when type=cloudquery)"
+      }
+    },
+    {
+      "path": "/properties/spec/properties/runtime",
+      "action": "add",
+      "value": {
+        "$ref": "#/$defs/runtimeSpec",
+        "description": "Container runtime configuration"
+      },
+      "rationale": "Already partially supported; formalize for cloudquery type"
+    },
+    {
+      "path": "/properties/spec/allOf/-",
+      "action": "append",
+      "value": {
+        "if": {
+          "properties": { "type": { "const": "cloudquery" } }
+        },
+        "then": {
+          "required": ["cloudquery", "runtime"],
+          "properties": {
+            "cloudquery": {
+              "$ref": "#/$defs/cloudquerySpec"
+            }
+          }
+        }
+      },
+      "rationale": "When type=cloudquery, the cloudquery and runtime sections are required"
+    }
+  ],
+  "newDefinitions": {
+    "cloudquerySpec": {
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["source", "destination"],
+          "description": "CloudQuery plugin role"
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,126}$"
+          },
+          "description": "Table names this plugin provides"
+        },
+        "grpcPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 7777,
+          "description": "Port for gRPC server"
+        },
+        "concurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10000,
+          "description": "Max concurrent table resolvers"
+        }
+      }
+    },
+    "runtimeSpec": {
+      "type": "object",
+      "required": ["image"],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Container image reference"
+        },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Container command override"
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "properties": {
+              "name": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          },
+          "description": "Environment variables"
+        }
+      }
+    }
+  }
+}

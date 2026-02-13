@@ -1,0 +1,68 @@
+package client
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"{{.Name}}/internal/tables"
+
+	"github.com/cloudquery/plugin-sdk/v4/message"
+	"github.com/cloudquery/plugin-sdk/v4/plugin"
+	"github.com/cloudquery/plugin-sdk/v4/schema"
+	"github.com/cloudquery/plugin-sdk/v4/scheduler"
+	"github.com/rs/zerolog"
+)
+
+// Client implements the plugin.Client interface for the {{.Name}} source plugin.
+type Client struct {
+	logger    zerolog.Logger
+	spec      Spec
+	scheduler *scheduler.Scheduler
+	plugin.UnimplementedDestination
+}
+
+// New creates a new Client from the given spec bytes and options.
+func New(logger zerolog.Logger, specBytes []byte, opts plugin.NewClientOptions) *Client {
+	var spec Spec
+	if len(specBytes) > 0 {
+		if err := json.Unmarshal(specBytes, &spec); err != nil {
+			logger.Error().Err(err).Msg("failed to unmarshal spec")
+		}
+	}
+	spec.SetDefaults()
+
+	sc := scheduler.NewScheduler(
+		scheduler.WithLogger(logger),
+		scheduler.WithConcurrency(spec.Concurrency),
+	)
+
+	return &Client{
+		logger:    logger,
+		spec:      spec,
+		scheduler: sc,
+	}
+}
+
+func (c *Client) ID() string {
+	return fmt.Sprintf("{{.Name}}:%s", c.spec.ID)
+}
+
+func (c *Client) Tables(_ context.Context, _ plugin.TableOptions) (schema.Tables, error) {
+	return []*schema.Table{
+		tables.ExampleResourceTable(),
+	}, nil
+}
+
+func (c *Client) Sync(ctx context.Context, options plugin.SyncOptions, res chan<- message.SyncMessage) error {
+	tt, err := c.Tables(ctx, plugin.TableOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get tables: %w", err)
+	}
+
+	return c.scheduler.Sync(ctx, c, tt, res, scheduler.WithSyncDeterministicCQID(options.DeterministicCQID))
+}
+
+func (c *Client) Close(_ context.Context) error {
+	return nil
+}

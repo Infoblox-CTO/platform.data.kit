@@ -61,6 +61,9 @@ type DataPackageSpec struct {
 
 	// Runtime is the container runtime configuration (previously in pipeline.yaml)
 	Runtime *RuntimeSpec `json:"runtime,omitempty" yaml:"runtime,omitempty"`
+
+	// CloudQuery is the CloudQuery plugin configuration (required when type=cloudquery)
+	CloudQuery *CloudQuerySpec `json:"cloudquery,omitempty" yaml:"cloudquery,omitempty"`
 }
 
 // RuntimeSpec defines the container runtime configuration for executing a pipeline.

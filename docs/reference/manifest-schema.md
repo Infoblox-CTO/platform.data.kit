@@ -107,7 +107,7 @@ spec:                               # Required: Package specification
 |----------|-------|
 | Type | enum |
 | Required | Yes |
-| Values | `pipeline`, `producer`, `consumer`, `streaming` |
+| Values | `pipeline`, `cloudquery`, `producer`, `consumer`, `streaming` |
 | Description | Type of data package |
 
 #### spec.inputs[].type
@@ -127,6 +127,104 @@ spec:                               # Required: Package specification
 | Required | When `pii: true` |
 | Values | `internal`, `confidential`, `restricted` |
 | Description | Data sensitivity level |
+
+---
+
+## spec.cloudquery (CloudQuery Configuration)
+
+For packages with `type: cloudquery`, the `spec.cloudquery` section configures the CloudQuery plugin.
+
+### Full Schema
+
+```yaml
+spec:
+  type: cloudquery
+  cloudquery:
+    role: string                    # Required: Plugin role ("source")
+    tables:                         # Optional: List of table names
+      - string
+    grpcPort: integer               # Optional: gRPC server port (default: 7777)
+    concurrency: integer            # Optional: Max concurrent resolvers (default: 10000)
+  runtime:
+    image: string                   # Required: Container image for the plugin
+```
+
+### Field Reference
+
+#### spec.cloudquery.role
+
+| Property | Value |
+|----------|-------|
+| Type | enum |
+| Required | Yes |
+| Values | `source` |
+| Description | Plugin role. Currently only `source` is supported. `destination` is reserved for future use. |
+
+#### spec.cloudquery.tables
+
+| Property | Value |
+|----------|-------|
+| Type | array of strings |
+| Required | No |
+| Default | `["*"]` (all tables) |
+| Description | List of table names this plugin provides. Used in sync config generation. |
+
+#### spec.cloudquery.grpcPort
+
+| Property | Value |
+|----------|-------|
+| Type | integer |
+| Required | No |
+| Default | `7777` |
+| Range | 1024–65535 |
+| Description | Port the gRPC server listens on. Must not conflict with other services. |
+
+#### spec.cloudquery.concurrency
+
+| Property | Value |
+|----------|-------|
+| Type | integer |
+| Required | No |
+| Default | `10000` |
+| Minimum | 1 |
+| Description | Maximum number of concurrent table resolvers during sync. |
+
+### Validation Rules
+
+| Code | Rule | Severity |
+|------|------|----------|
+| E060 | `spec.cloudquery` is required when `type: cloudquery` | Error |
+| E061 | `spec.cloudquery.role` must be a valid, supported role | Error |
+| W060 | `role: destination` is recognized but not yet supported | Warning |
+| E062 | `spec.cloudquery.grpcPort` must be 1024–65535 | Error |
+| E063 | `spec.cloudquery.concurrency` must be > 0 | Error |
+
+### Example
+
+```yaml title="dp.yaml (CloudQuery source plugin)"
+apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: my-source
+  namespace: analytics
+  version: 0.1.0
+  labels:
+    team: data-engineering
+spec:
+  type: cloudquery
+  description: CloudQuery source plugin for internal API
+  owner: data-engineering@example.com
+  cloudquery:
+    role: source
+    tables:
+      - users
+      - orders
+      - products
+    grpcPort: 7777
+    concurrency: 10000
+  runtime:
+    image: analytics/my-source:v0.1.0
+```
 
 ---
 
@@ -429,6 +527,16 @@ bindings:
 |------|---------|------------|
 | E025 | `pii=true requires sensitivity` | Add sensitivity level |
 | E026 | `confidential requires retention` | Add retention policy |
+
+### CloudQuery Errors
+
+| Code | Message | Resolution |
+|------|---------|------------|
+| E060 | `spec.cloudquery is required when type is cloudquery` | Add `spec.cloudquery` section |
+| E061 | `spec.cloudquery.role is required and must be valid` | Set `role: source` |
+| W060 | `role: destination is not yet supported` | Use `role: source` (warning in normal mode, error in strict) |
+| E062 | `spec.cloudquery.grpcPort must be between 1024 and 65535` | Use a valid port number |
+| E063 | `spec.cloudquery.concurrency must be greater than 0` | Set concurrency ≥ 1 |
 
 ---
 
