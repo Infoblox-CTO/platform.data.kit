@@ -4,11 +4,11 @@
 [![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8?logo=go)](https://go.dev)
 [![Coverage](https://img.shields.io/badge/coverage-70%25+-green)](https://github.com/Infoblox-CTO/platform.data.kit/actions)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://infoblox-cto.github.io/data-platform/)
+[![Docs](https://img.shields.io/badge/docs-datakit-blue)](https://datakit.internal.infoblox.dev/)
 
 A Kubernetes-native data pipeline platform enabling teams to contribute reusable, versioned "data packages" with a complete developer workflow: **bootstrap → local run → validate → publish → promote**.
 
-> 📚 **[View Full Documentation](https://infoblox-cto.github.io/data-platform/)** for detailed guides, tutorials, and reference.
+> 📚 **[View Full Documentation](https://datakit.internal.infoblox.dev/)** for detailed guides, tutorials, and reference.
 
 ## 🚀 Quick Start
 

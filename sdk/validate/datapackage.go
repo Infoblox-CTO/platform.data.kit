@@ -159,6 +159,7 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 	// Validate type
 	validTypes := []contracts.PackageType{
 		contracts.PackageTypePipeline,
+		contracts.PackageTypeCloudQuery,
 	}
 
 	valid := false
@@ -170,7 +171,7 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 	}
 
 	if !valid {
-		errs.AddError(contracts.ErrCodeInvalidPackageType, "spec.type", "spec.type must be: pipeline")
+		errs.AddError(contracts.ErrCodeInvalidPackageType, "spec.type", "spec.type must be: pipeline, cloudquery")
 	}
 
 	// Validate description
@@ -185,6 +186,11 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 
 	// For pipeline type, runtime is required
 	if spec.Type == contracts.PackageTypePipeline {
+		v.validateRuntime(errs)
+	}
+
+	// For cloudquery type, runtime is required (outputs are NOT required)
+	if spec.Type == contracts.PackageTypeCloudQuery {
 		v.validateRuntime(errs)
 	}
 

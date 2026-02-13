@@ -1,0 +1,50 @@
+"""
+{{.Name}} CloudQuery {{.Role}} plugin.
+"""
+from typing import List, Generator
+
+from cloudquery.sdk import message, plugin, schema
+from cloudquery.sdk.scheduler import Scheduler, TableResolver
+
+from plugin.client import Client
+from plugin.spec import Spec
+from plugin.tables.example_resource import ExampleResourceTable, ExampleResourceResolver
+
+
+class {{.Name | pascalCase}}Plugin(plugin.Plugin):
+    """CloudQuery {{.Role}} plugin for {{.Name}}."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="{{.Name}}",
+            version="0.1.0",
+        )
+        self._client: Client | None = None
+        self._scheduler: Scheduler | None = None
+        self._tables: List[schema.Table] = [
+            ExampleResourceTable(),
+        ]
+        self._resolvers: List[TableResolver] = [
+            ExampleResourceResolver(table=self._tables[0]),
+        ]
+
+    def init(self, spec: bytes, no_connection: bool = False) -> None:
+        """Initialize the plugin with the given spec."""
+        parsed = Spec.from_json(spec)
+        self._client = Client(spec=parsed)
+        self._scheduler = Scheduler(concurrency=parsed.concurrency)
+
+    def get_tables(self, options: plugin.TableOptions) -> List[schema.Table]:
+        """Return the list of tables this plugin provides."""
+        return self._tables
+
+    def sync(self, options: plugin.SyncOptions) -> Generator[message.SyncMessage, None, None]:
+        """Sync data from the source."""
+        if self._scheduler is None or self._client is None:
+            raise RuntimeError("plugin not initialized — call init() first")
+        return self._scheduler.sync(self._client, self._resolvers)
+
+    def close(self) -> None:
+        """Clean up resources."""
+        if self._client is not None:
+            self._client.close()

@@ -3,7 +3,7 @@
 
 site_name: Data Platform Documentation
 site_description: Documentation for the DP CLI and Data Platform
-site_url: https://infoblox-cto.github.io/platform.data.kit/
+site_url: https://datakit.internal.infoblox.dev/
 repo_url: https://github.com/Infoblox-CTO/platform.data.kit
 repo_name: Infoblox-CTO/platform.data.kit
 edit_uri: edit/main/docs/
@@ -121,6 +121,8 @@ nav:
     - Kafka to S3: tutorials/kafka-to-s3.md
     - Local Development: tutorials/local-development.md
     - Promoting Packages: tutorials/promoting-packages.md
+    - CloudQuery Python Plugin: tutorials/cloudquery-python.md
+    - CloudQuery Go Plugin: tutorials/cloudquery-go.md
   - Reference:
     - reference/index.md
     - CLI Commands: reference/cli.md

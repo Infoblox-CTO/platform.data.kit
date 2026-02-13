@@ -1,0 +1,24 @@
+"""
+Spec for the {{.Name}} plugin.
+
+Defines the configuration schema deserialized from the CloudQuery sync spec.
+"""
+import json
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Spec:
+    """Configuration spec for the {{.Name}} plugin."""
+
+    concurrency: int = field(default={{.Concurrency}})
+
+    @classmethod
+    def from_json(cls, data: bytes) -> "Spec":
+        """Deserialize from JSON bytes."""
+        if not data:
+            return cls()
+        parsed = json.loads(data)
+        return cls(
+            concurrency=parsed.get("concurrency", {{.Concurrency}}),
+        )

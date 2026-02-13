@@ -25,6 +25,7 @@ These flags apply to all commands:
 |---------|-------------|
 | [`dp init`](#dp-init) | Create a new data package |
 | [`dp dev`](#dp-dev) | Manage local development stack |
+| [`dp config`](#dp-config) | Manage dp configuration |
 | [`dp lint`](#dp-lint) | Validate package manifests |
 | [`dp run`](#dp-run) | Execute pipeline locally |
 | [`dp show`](#dp-show) | Show effective manifest |
@@ -51,10 +52,11 @@ dp init <package-name> [flags]
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--type` | `-t` | Package type (pipeline) | pipeline |
+| `--type` | `-t` | Package type (pipeline, cloudquery) | pipeline |
 | `--mode` | `-m` | Pipeline execution mode (batch, streaming) | batch |
 | `--dir` | `-d` | Directory to create package in | . |
 | `--lang` | `-l` | Programming language (go, python) | go |
+| `--role` | | CloudQuery plugin role (source) | source |
 
 ### Examples
 
@@ -76,6 +78,16 @@ dp init etl-job --lang python
 ```bash
 # Create in specific directory
 dp init kafka-processor --dir ./packages
+```
+
+```bash
+# Create a Python CloudQuery source plugin
+dp init my-source --type cloudquery
+```
+
+```bash
+# Create a Go CloudQuery source plugin
+dp init my-source --type cloudquery --lang go
 ```
 
 ### Output
@@ -188,6 +200,151 @@ postgres        running   5432
 
 ---
 
+## dp config
+
+Manage dp CLI configuration settings.
+
+Configuration is stored in YAML files at three scopes (highest to lowest precedence):
+
+- **repo**: `{git-root}/.dp/config.yaml`
+- **user**: `~/.config/dp/config.yaml`
+- **system**: `/etc/datakit/config.yaml`
+
+### dp config set
+
+Set a configuration value.
+
+```bash
+dp config set <key> <value> [--scope <scope>]
+```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--scope` | Config scope: repo, user, or system | user |
+
+#### Valid Keys
+
+| Key | Description | Allowed Values |
+|-----|-------------|----------------|
+| `dev.runtime` | Runtime type | `k3d`, `compose` |
+| `dev.workspace` | Path to DP workspace | any path |
+| `dev.k3d.clusterName` | k3d cluster name | DNS-safe name |
+| `plugins.registry` | Default OCI registry | valid registry URL |
+| `plugins.overrides.<name>.version` | Pin plugin version | semver (e.g., `v8.13.0`) |
+| `plugins.overrides.<name>.image` | Override plugin image | full image reference |
+
+#### Examples
+
+```bash
+# Set default plugin registry
+dp config set plugins.registry ghcr.io/myteam
+
+# Pin a plugin version
+dp config set plugins.overrides.postgresql.version v8.13.0
+
+# Set for this project only
+dp config set plugins.registry internal.registry.io --scope repo
+```
+
+### dp config get
+
+Get the effective value of a configuration key.
+
+```bash
+dp config get <key>
+```
+
+Shows the resolved value and which scope it comes from (repo, user, system, or built-in).
+
+#### Examples
+
+```bash
+dp config get plugins.registry
+# ghcr.io/infobloxopen (source: built-in)
+
+dp config get dev.runtime
+# k3d (source: built-in)
+```
+
+### dp config unset
+
+Remove a configuration value from a scope.
+
+```bash
+dp config unset <key> [--scope <scope>]
+```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--scope` | Config scope: repo, user, or system | user |
+
+#### Examples
+
+```bash
+dp config unset plugins.registry
+dp config unset plugins.overrides.postgresql.version --scope repo
+```
+
+### dp config list
+
+List all effective configuration settings.
+
+```bash
+dp config list [--scope <scope>]
+```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--scope` | Show settings from a specific scope only | (all scopes) |
+
+#### Output Example
+
+```
+KEY                    VALUE                     SOURCE
+dev.runtime            k3d                       built-in
+dev.k3d.clusterName    dp-local                  built-in
+plugins.registry       ghcr.io/myteam            repo
+```
+
+### dp config add-mirror
+
+Add a fallback registry mirror.
+
+```bash
+dp config add-mirror <registry> [--scope <scope>]
+```
+
+Mirrors are tried in order when the primary registry is unreachable.
+
+#### Examples
+
+```bash
+dp config add-mirror ghcr.io/backup-org
+dp config add-mirror internal.registry.io --scope repo
+```
+
+### dp config remove-mirror
+
+Remove a fallback registry mirror.
+
+```bash
+dp config remove-mirror <registry> [--scope <scope>]
+```
+
+#### Examples
+
+```bash
+dp config remove-mirror ghcr.io/backup-org
+```
+
+---
+
 ## dp lint
 
 Validate package manifests.
@@ -272,6 +429,9 @@ dp run [package-dir] [flags]
 | `--timeout` | - | Execution timeout | 30m |
 | `--set` | - | Override values (key=value, repeatable) | - |
 | `--values` | `-f` | Override files (repeatable) | - |
+| `--sync` | - | Run a full CloudQuery sync (source → destination) | false |
+| `--destination` | - | Destination plugin for sync (file, postgresql, s3) | file |
+| `--registry` | - | Override plugin registry for this invocation | (from config) |
 
 ### Mode-aware Behavior
 
@@ -342,6 +502,24 @@ dp run ./my-pipeline -f production.yaml --set spec.runtime.timeout=1h
 dp run ./my-pipeline --env API_KEY=secret --env DEBUG=true
 ```
 
+```bash
+# Run a CloudQuery plugin (auto-detected from dp.yaml type: cloudquery)
+dp run ./my-source
+```
+
+**CloudQuery Mode** (when `spec.type: cloudquery`):
+
+When `dp run` detects a CloudQuery package, it orchestrates a full sync:
+
+1. Checks for `cloudquery` CLI in PATH
+2. Builds the plugin Docker image
+3. Starts the container with gRPC port exposed
+4. Waits for gRPC server health check (30s timeout)
+5. Generates a sync configuration (source → PostgreSQL)
+6. Runs `cloudquery sync`
+7. Displays sync summary
+8. Cleans up the container
+
 ---
 
 ## dp show
@@ -396,7 +574,7 @@ dp show ./my-pipeline -o json
 
 ## dp test
 
-Run pipeline tests with sample data.
+Run tests for a data package.
 
 ```bash
 dp test [package-dir] [flags]
@@ -411,6 +589,7 @@ dp test [package-dir] [flags]
 | `--bindings` | Bindings file path | bindings.yaml |
 | `--duration` | Test duration (streaming mode) | 30s |
 | `--startup-timeout` | Wait for healthy (streaming mode) | 60s |
+| `--integration` | Run CloudQuery integration test (full sync) | false |
 
 ### Mode-aware Testing
 
@@ -425,6 +604,11 @@ dp test [package-dir] [flags]
 - Runs for `--duration`
 - Sends SIGTERM for graceful shutdown
 - Reports success if no errors during run
+
+**CloudQuery Mode** (when `spec.type: cloudquery`):
+- Automatically detects project language (Python or Go)
+- Runs `pytest` (Python) or `go test ./...` (Go) for unit tests
+- With `--integration`: builds container, starts gRPC server, runs `cloudquery sync`
 
 ### Examples
 
@@ -444,6 +628,14 @@ dp test ./my-streaming-pipeline --duration 60s
 
 # Test with longer startup wait
 dp test ./my-streaming-pipeline --startup-timeout 120s
+```
+
+```bash
+# Run CloudQuery unit tests
+dp test ./my-source
+
+# Run CloudQuery integration test (full sync)
+dp test ./my-source --integration
 ```
 
 ---

@@ -9,77 +9,130 @@ This document covers all configuration options for the `dp` CLI including config
 
 ## Configuration File
 
-The dp CLI looks for configuration in these locations (in order):
+The dp CLI uses hierarchical YAML configuration. Settings are loaded from three scopes (lowest to highest precedence):
 
-1. `$XDG_CONFIG_HOME/dp/config.yaml`
-2. `~/.config/dp/config.yaml`
-3. `~/.dp/config.yaml`
-4. `.dp/config.yaml` (project-specific)
+1. **System**: `/etc/datakit/config.yaml`
+2. **User**: `~/.config/dp/config.yaml`
+3. **Repo**: `{git-root}/.dp/config.yaml`
+
+Higher-precedence scopes override lower ones. Command-line flags override all scopes.
 
 ### Full Configuration
 
 ```yaml
-# ~/.dp/config.yaml
+# .dp/config.yaml — Example with all supported settings
 
-# Registry configuration
-registry:
-  default: ghcr.io/myorg          # Default registry for publish
-  credentials:                     # Registry credentials
-    - registry: ghcr.io
-      username: ${DP_REGISTRY_USER}
-      token: ${DP_REGISTRY_TOKEN}
-    - registry: docker.io
-      username: ${DOCKER_USER}
-      token: ${DOCKER_TOKEN}
+# Local development settings
+dev:
+  runtime: k3d               # Runtime type: k3d or compose
+  workspace: /path/to/work   # Path to DP workspace (optional)
+  k3d:
+    clusterName: dp-local    # k3d cluster name (DNS-safe)
 
-# Environment configuration
-environments:
-  dev:
-    gitops: https://github.com/myorg/gitops.git
-    path: environments/dev
-    auto_merge: true
-  int:
-    gitops: https://github.com/myorg/gitops.git
-    path: environments/int
-    approvers:
-      - "@team-leads"
-  prod:
-    gitops: https://github.com/myorg/gitops.git
-    path: environments/prod
-    approvers:
-      - "@team-leads"
-      - "@security"
-    approval_count: 2
-
-# Lineage configuration
-lineage:
-  backend: marquez                 # marquez, datahub, custom
-  endpoint: http://marquez:5000/api/v1/lineage
-  api_key: ${LINEAGE_API_KEY}      # Optional
-
-# Default settings
-defaults:
-  output: table                    # table, json, yaml
-  timeout: 30m
-  namespace: default
-  log_level: info                  # debug, info, warn, error
-
-# Local development stack
-dev_stack:
-  compose_file: docker-compose.yaml
-  network: dp-network
-  services:
-    kafka:
-      port: 9092
-    minio:
-      port: 9000
-    marquez:
-      port: 5000
-    postgres:
-      port: 5432
+# Plugin registry settings
+plugins:
+  registry: ghcr.io/infobloxopen   # Default OCI registry for plugins
+  mirrors:                          # Fallback registries (tried in order)
+    - ghcr.io/backup-org
+    - internal.registry.io
+  overrides:                        # Per-plugin version/image overrides
+    postgresql:
+      version: v8.13.0             # Pin a specific version
+    s3:
+      image: custom-s3:v1          # Full image override (bypasses registry)
+  destinations:                     # Per-destination connection overrides
+    postgresql:
+      connection_string: "postgresql://user:pass@host:5432/mydb?sslmode=disable"
+    s3:
+      bucket: my-output-bucket
+      region: us-west-2
+      endpoint: "http://localstack:4566"
+    file:
+      path: /custom/output/path
 ```
 
 ### Configuration Sections
+
+#### dev
+
+Local development settings.
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `dev.runtime` | string | Runtime type: `k3d` or `compose` | `k3d` |
+| `dev.workspace` | string | Path to DP workspace | (none) |
+| `dev.k3d.clusterName` | string | k3d cluster name (DNS-safe) | `dp-local` |
+
+#### plugins
+
+Plugin registry and override settings.
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `plugins.registry` | string | Default OCI registry for destination plugins | `ghcr.io/infobloxopen` |
+| `plugins.mirrors` | string[] | Fallback registries tried in order when primary fails | `[]` |
+| `plugins.overrides.<name>.version` | string | Pin a specific version for a plugin (semver) | built-in default |
+| `plugins.overrides.<name>.image` | string | Full image reference (bypasses registry + naming) | (none) |
+
+**Image resolution precedence:**
+
+1. `plugins.overrides.<name>.image` → used as-is
+2. `plugins.overrides.<name>.version` → `{registry}/cloudquery-plugin-{name}:{version}`
+3. Default → `{registry}/cloudquery-plugin-{name}:{built-in-version}`
+
+#### plugins.destinations
+
+Per-destination connection and spec overrides. These settings control how `dp run` connects destination plugins to their backing services (databases, object stores, etc.).
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `plugins.destinations.<name>.connection_string` | string | Full connection string (postgresql) | auto-detected |
+| `plugins.destinations.<name>.bucket` | string | S3 bucket name | `dp-output` |
+| `plugins.destinations.<name>.region` | string | AWS region for S3 | `us-east-1` |
+| `plugins.destinations.<name>.endpoint` | string | Custom S3 endpoint (e.g., LocalStack) | auto-detected |
+| `plugins.destinations.<name>.path` | string | Output directory for file destination | `/home/nonroot/cq-sync-output` |
+
+**Spec resolution order** (highest to lowest precedence):
+
+1. **Config override** — explicit values in `plugins.destinations.<name>.*`
+2. **In-cluster auto-detect** — discovered from running k3d services via `kubectl`
+3. **Built-in default** — hardcoded fallback values
+
+**Auto-detection details:**
+
+During `dp run`, the CLI queries the k3d cluster for known services:
+
+- **PostgreSQL**: Looks for `dp-postgres-postgres` service in the current namespace. If found, builds the connection string using the in-cluster DNS name (`dp-postgres-postgres.<namespace>.svc.cluster.local:5432`) with default credentials (`postgres:postgres`, database `postgres`).
+- **S3 (LocalStack)**: Looks for `dp-localstack-localstack` service in the current namespace. If found, uses its in-cluster DNS endpoint (`http://dp-localstack-localstack.<namespace>.svc.cluster.local:4566`), sets `force_path_style: true`, and uses the `dp-output` bucket.
+- **File**: No auto-detection needed. Defaults to `/home/nonroot/cq-sync-output` inside the container, which is bind-mounted to `./cq-sync-output/` on the host.
+
+**Examples:**
+
+Override the PostgreSQL connection string for a custom database:
+
+```bash
+dp config set plugins.destinations.postgresql.connection_string \
+  "postgresql://myuser:mypass@custom-host:5432/analytics?sslmode=disable"
+```
+
+Point S3 output at a custom bucket and endpoint:
+
+```bash
+dp config set plugins.destinations.s3.bucket my-data-lake
+dp config set plugins.destinations.s3.endpoint "http://minio:9000"
+```
+
+Change the file output path:
+
+```bash
+dp config set plugins.destinations.file.path /data/output
+```
+
+View the effective destination configuration:
+
+```bash
+dp config list | grep destinations
+```
 
 #### registry
 
@@ -188,11 +241,14 @@ bindings:
 
 ### Configuration Precedence
 
-1. Command-line flags (highest priority)
+1. Command-line flags (highest priority) — e.g., `--registry`
 2. Environment variables
-3. Project configuration (`.dp/config.yaml`)
-4. User configuration (`~/.dp/config.yaml`)
-5. Default values (lowest priority)
+3. Repo configuration (`{git-root}/.dp/config.yaml`)
+4. User configuration (`~/.config/dp/config.yaml`)
+5. System configuration (`/etc/datakit/config.yaml`)
+6. Built-in defaults (lowest priority)
+
+Use `dp config list` to see the effective value and source for each setting.
 
 ---
 

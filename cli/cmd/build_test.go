@@ -206,3 +206,75 @@ spec:
 		t.Errorf("runBuild() with tag error = %v, want nil", err)
 	}
 }
+
+func TestBuildCmd_CloudQueryPackage(t *testing.T) {
+	// Test that dp build works for a CloudQuery package in dry-run mode
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: my-cq-source
+  namespace: data-team
+  version: 0.1.0
+spec:
+  type: cloudquery
+  description: CloudQuery source plugin
+  owner: data-team
+  cloudquery:
+    role: source
+    tables:
+      - example_resource
+    grpcPort: 7777
+    concurrency: 10000
+  runtime:
+    image: my-cq-source:latest
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	// Save and restore global flags
+	oldDryRun := buildDryRun
+	defer func() { buildDryRun = oldDryRun }()
+
+	buildDryRun = true
+
+	cmd := &cobra.Command{}
+	err := runBuild(cmd, []string{tmpDir})
+
+	// Dry run should succeed for a valid CloudQuery package
+	if err != nil {
+		t.Errorf("runBuild() dry-run for CloudQuery package error = %v, want nil", err)
+	}
+}
+
+func TestBuildCmd_CloudQueryInvalidPackage(t *testing.T) {
+	// Test that dp build rejects an invalid CloudQuery package (missing required fields)
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: bad-cq-source
+  namespace: data-team
+  version: 0.1.0
+spec:
+  type: cloudquery
+  description: Invalid CloudQuery plugin
+  owner: data-team
+  runtime:
+    image: bad-source:latest
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dp.yaml: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	err := runBuild(cmd, []string{tmpDir})
+
+	// Should fail validation (missing cloudquery section)
+	if err == nil {
+		t.Error("expected validation error for CloudQuery package missing cloudquery section")
+	}
+}

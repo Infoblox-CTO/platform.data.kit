@@ -1,0 +1,21 @@
+package client
+
+// Spec holds the configuration for the {{.Name}} source plugin.
+type Spec struct {
+	// ID is an optional identifier for this plugin instance.
+	ID string `json:"id,omitempty"`
+	// Concurrency controls the maximum number of concurrent table resolvers.
+	Concurrency int `json:"concurrency,omitempty"`
+}
+
+// SetDefaults fills in default values for optional fields.
+func (s *Spec) SetDefaults() {
+	if s.Concurrency == 0 {
+		s.Concurrency = {{.Concurrency}}
+	}
+}
+
+// Validate checks the spec for errors.
+func (s *Spec) Validate() error {
+	return nil
+}

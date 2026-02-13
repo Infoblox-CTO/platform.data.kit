@@ -83,6 +83,20 @@ func (v *AggregateValidator) validateDataPackage(ctx context.Context, path strin
 		}
 	}
 
+	// Run CloudQuery-specific validation if the package type is cloudquery
+	pkg := validator.Package()
+	if pkg != nil && pkg.Spec.Type == contracts.PackageTypeCloudQuery {
+		cqValidator := NewCloudQueryValidator(pkg)
+		cqErrs := cqValidator.Validate(ctx)
+		for _, e := range cqErrs {
+			if e.Severity == contracts.SeverityWarning {
+				result.AddWarning(e.Error())
+			} else {
+				result.AddError(e.Code, e.Field, e.Message)
+			}
+		}
+	}
+
 	// Run PII validation if configured
 	if v.vctx != nil && v.vctx.ValidatePII {
 		piiResult := v.validatePII(ctx, validator.Package())

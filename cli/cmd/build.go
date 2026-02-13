@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/registry"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/validate"
 	"github.com/spf13/cobra"
@@ -26,22 +28,20 @@ var buildCmd = &cobra.Command{
 	Short: "Build a DP package artifact",
 	Long: `Build a DP data package into an OCI artifact.
 
+Supported package types: pipeline, cloudquery
+
 The build command validates the package manifests, bundles all files,
 and creates an OCI-compliant artifact ready for publishing.
 
-The artifact includes:
-  - dp.yaml: Package manifest
-  - pipeline.yaml: Pipeline configuration (if present)
-  - bindings.yaml: Binding definitions (if present)
-  - schemas/: Schema files
-  - Source code and other package content
+For cloudquery packages the build also produces a distroless Docker
+image for the plugin (Go or Python auto-detected).
 
 Examples:
   # Build package in current directory
   dp build
 
-  # Build specific package
-  dp build ./my-pipeline
+  # Build a CloudQuery plugin
+  dp build ./my-source
 
   # Build with custom tag
   dp build --tag v1.0.0
@@ -107,6 +107,32 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	if buildDryRun {
 		fmt.Println("\nDry run complete - no artifact built")
 		return nil
+	}
+
+	// CloudQuery packages: build the Docker image
+	dp, parseErr := manifest.ParseDataPackageFile(dpPath)
+	if parseErr == nil && dp.Spec.Type == contracts.PackageTypeCloudQuery {
+		// Keep .datakit/Makefile.common in sync
+		if updated, err := syncMakefileCommon(absDir); err != nil {
+			fmt.Printf("Warning: failed to sync Makefile.common: %v\n", err)
+		} else if updated {
+			fmt.Println("✓ Updated .datakit/Makefile.common")
+		}
+
+		grpcPort := 7777
+		if dp.Spec.CloudQuery != nil && dp.Spec.CloudQuery.GRPCPort > 0 {
+			grpcPort = dp.Spec.CloudQuery.GRPCPort
+		}
+		lang := detectCloudQueryLanguage(absDir)
+		imageName := fmt.Sprintf("%s/%s:latest", dp.Metadata.Namespace, dp.Metadata.Name)
+		if buildTag != "" {
+			imageName = fmt.Sprintf("%s/%s:%s", dp.Metadata.Namespace, dp.Metadata.Name, buildTag)
+		}
+		fmt.Printf("\nBuilding CloudQuery plugin image: %s (lang=%s)\n", imageName, lang)
+		if err := buildDockerImage(absDir, imageName, lang, grpcPort, buildNoCache); err != nil {
+			return fmt.Errorf("failed to build plugin image: %w", err)
+		}
+		fmt.Println("✓ Docker image built")
 	}
 
 	// Step 2: Gather git info

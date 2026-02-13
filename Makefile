@@ -133,10 +133,10 @@ tidy:
 	@cd cli && go mod tidy
 	@cd platform/controller && go mod tidy
 
-install: build-cli
-	@echo "Installing dp to GOPATH/bin..."
-	@cp bin/dp $(GOPATH)/bin/dp
-	@echo "✓ Installed dp"
+install:
+	@echo "Installing dp to $(GOPATH)/bin..."
+	@cd cli && go build -o $(GOPATH)/bin/dp .
+	@echo "✓ Installed dp to $(GOPATH)/bin/dp"
 
 run-local:
 	@echo "Starting local development stack..."
@@ -198,7 +198,7 @@ clean:
 # ============================================================================
 
 help:
-	@echo "CDPP Build System"
+	@echo "Data Kit Build System"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""

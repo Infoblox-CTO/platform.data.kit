@@ -8,6 +8,9 @@ type PackageType string
 const (
 	// PackageTypePipeline is a data processing pipeline.
 	PackageTypePipeline PackageType = "pipeline"
+
+	// PackageTypeCloudQuery is a CloudQuery source or destination plugin.
+	PackageTypeCloudQuery PackageType = "cloudquery"
 )
 
 // RunStatus represents the status of a pipeline run.
