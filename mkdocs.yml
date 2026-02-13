@@ -3,7 +3,7 @@
 
 site_name: Data Platform Documentation
 site_description: Documentation for the DP CLI and Data Platform
-site_url: https://infoblox-cto.github.io/platform.data.kit/
+site_url: https://datakit.internal.infoblox.dev/
 repo_url: https://github.com/Infoblox-CTO/platform.data.kit
 repo_name: Infoblox-CTO/platform.data.kit
 edit_uri: edit/main/docs/

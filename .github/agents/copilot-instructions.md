@@ -36,9 +36,9 @@ tests/
 Go (latest stable per constitution): Follow standard conventions
 
 ## Recent Changes
+- 010-python-cloudquery-plugins: Python Dockerfile build stage changed from python:3.13-slim to python:3.11-slim (matching distroless python3-debian12 runtime); pyproject.toml requires-python changed from >=3.13 to >=3.12; added pytest pythonpath config
 - 009-plugin-registry: Added Go 1.25 (all three modules: cli, sdk, contracts) + cobra (CLI), gopkg.in/yaml.v3 (config), os/exec (docker pull, git, k3d, kubectl)
 - 008-cloudquery-plugins: Added Go 1.25 (CLI + SDK), Python 3.13+ and Go 1.25 (generated plugin targets) + Cobra CLI framework, testify (CLI/SDK tests); cloudquery-plugin-sdk/pyarrow/pytest (Python plugins); github.com/cloudquery/plugin-sdk/v4 (Go plugins)
-- 007-registry-cache: Added Go 1.25 (matches existing codebase per go.mod) + Docker CLI (exec-based), k3d CLI, registry:2 image
 
 
 <!-- MANUAL ADDITIONS START -->

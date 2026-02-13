@@ -448,6 +448,20 @@ func TestInitCmd_CloudQueryPython(t *testing.T) {
 	if !strings.Contains(dpStr, "source") {
 		t.Error("dp.yaml should contain role 'source'")
 	}
+
+	// T006: Verify pyproject.toml has correct Python version constraint
+	pyprojectContent, err := os.ReadFile(filepath.Join(pkgDir, "pyproject.toml"))
+	if err != nil {
+		t.Fatalf("failed to read pyproject.toml: %v", err)
+	}
+	pyprojectStr := string(pyprojectContent)
+
+	if !strings.Contains(pyprojectStr, `requires-python = ">=3.12"`) {
+		t.Error("pyproject.toml should contain requires-python >= 3.12")
+	}
+	if strings.Contains(pyprojectStr, "3.13") {
+		t.Error("pyproject.toml should NOT contain any 3.13 references")
+	}
 }
 
 func TestInitCmd_CloudQueryDefaultLanguage(t *testing.T) {

@@ -1666,3 +1666,69 @@ func TestGenerateSyncConfig_PostgresqlWithConfigOverride(t *testing.T) {
 		t.Error("sync config should use the config-override connection string")
 	}
 }
+
+// --- Phase 5: CloudQuery Dockerfile Generation Tests ---
+
+func TestCloudQueryDockerfile_Python(t *testing.T) {
+	// T004: Verify cloudQueryDockerfile("python", ...) produces correct Python 3.11
+	// build stage and distroless 3.11 runtime stage.
+	df := cloudQueryDockerfile("python", 7777)
+
+	// Build stage must use python:3.11-slim (must match distroless runtime version)
+	if !strings.Contains(df, "FROM python:3.11-slim AS builder") {
+		t.Error("Python Dockerfile should use python:3.11-slim as build stage")
+	}
+
+	// Runtime stage must use distroless python3-debian12
+	if !strings.Contains(df, "FROM gcr.io/distroless/python3-debian12:nonroot") {
+		t.Error("Python Dockerfile should use gcr.io/distroless/python3-debian12:nonroot as runtime stage")
+	}
+
+	// Site-packages path must reference python3.11 (matching distroless)
+	if !strings.Contains(df, "python3.11/site-packages") {
+		t.Error("Python Dockerfile should reference python3.11/site-packages for distroless runtime")
+	}
+
+	// PYTHONPATH must reference python3.11
+	if !strings.Contains(df, "ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages") {
+		t.Error("Python Dockerfile PYTHONPATH should use python3.11")
+	}
+
+	// Entrypoint must use python3 with serve --address
+	if !strings.Contains(df, `ENTRYPOINT ["python3", "main.py", "serve", "--address", "[::]:7777"]`) {
+		t.Error("Python Dockerfile should have correct ENTRYPOINT with port 7777")
+	}
+
+	// Must NOT contain old python 3.13 references
+	if strings.Contains(df, "python:3.13") {
+		t.Error("Python Dockerfile should NOT contain python:3.13")
+	}
+	if strings.Contains(df, "python3.13") {
+		t.Error("Python Dockerfile should NOT contain python3.13 paths")
+	}
+}
+
+func TestCloudQueryDockerfile_Go(t *testing.T) {
+	// T005: Verify cloudQueryDockerfile("go", ...) still produces correct Go Dockerfile.
+	df := cloudQueryDockerfile("go", 7777)
+
+	// Build stage must use golang
+	if !strings.Contains(df, "FROM golang:") {
+		t.Error("Go Dockerfile should use golang base image")
+	}
+
+	// Runtime stage must use distroless static
+	if !strings.Contains(df, "FROM gcr.io/distroless/static-debian12:nonroot") {
+		t.Error("Go Dockerfile should use gcr.io/distroless/static-debian12:nonroot as runtime stage")
+	}
+
+	// Must NOT contain Python references
+	if strings.Contains(df, "python") {
+		t.Error("Go Dockerfile should NOT contain any python references")
+	}
+
+	// Port must be substituted
+	if !strings.Contains(df, "EXPOSE 7777") {
+		t.Error("Go Dockerfile should expose port 7777")
+	}
+}

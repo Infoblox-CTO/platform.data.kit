@@ -773,7 +773,7 @@ ENTRYPOINT ["/usr/local/bin/plugin", "serve", "--address", "0.0.0.0:%d"]
 	default: // python
 		return fmt.Sprintf(`# syntax=docker/dockerfile:1
 # Build stage — cached pip installs via buildx cache mount
-FROM python:3.13-slim AS builder
+FROM python:3.11-slim AS builder
 WORKDIR /app
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -783,9 +783,9 @@ COPY . .
 # Runtime stage — distroless for minimal attack surface
 FROM gcr.io/distroless/python3-debian12:nonroot
 WORKDIR /app
-COPY --from=builder /deps /usr/local/lib/python3.13/site-packages
+COPY --from=builder /deps /usr/local/lib/python3.11/site-packages
 COPY --from=builder /app /app
-ENV PYTHONPATH=/usr/local/lib/python3.13/site-packages
+ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages
 EXPOSE %d
 ENTRYPOINT ["python3", "main.py", "serve", "--address", "[::]:%d"]
 `, grpcPort, grpcPort)
