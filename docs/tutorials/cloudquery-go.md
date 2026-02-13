@@ -33,6 +33,10 @@ This creates a complete Go plugin project:
 
 ```text
 my-source/
+├── .gitignore                       # Go-specific ignore patterns
+├── .datakit/
+│   └── Makefile.common              # Managed targets (do not edit)
+├── Makefile                         # Project Makefile (add your own targets here)
 ├── dp.yaml                          # Package manifest
 ├── go.mod                           # Go module definition
 ├── main.go                          # Plugin entry point
@@ -125,6 +129,36 @@ func Plugin() *plugin.Plugin {
 func Configure(ctx context.Context, logger zerolog.Logger, specBytes []byte, opts plugin.NewClientOptions) (plugin.Client, error) {
     return client.New(logger, specBytes, opts), nil
 }
+```
+
+### Makefile — Common Targets
+
+Every scaffolded project includes a `Makefile` with standard targets. Run `make` or `make help` to see them:
+
+```text
+$ make
+Usage: make <target>
+
+Targets:
+  build                Build the plugin container image
+  clean                Remove build artifacts and sync output
+  fmt                  Format Go source code
+  help                 Show this help message
+  lint                 Run dp lint on the package
+  run                  Build and deploy to k3d, discover tables
+  sync                 Run a full sync to local files
+  sync-pg              Run a full sync to PostgreSQL
+  test                 Run unit tests
+  tidy                 Run go mod tidy
+  vet                  Run go vet
+```
+
+The `Makefile` includes `.datakit/Makefile.common` which is **managed by the dp CLI** — do not edit it. It is automatically kept in sync when you run `dp build` or `dp run`. Add your own targets to the root `Makefile` using `##` comments so they appear in `make help`:
+
+```makefile
+# In your Makefile:
+my-target: ## My custom description
+	echo "hello"
 ```
 
 ## 3. Run Tests
@@ -305,6 +339,9 @@ dp run --sync --destination postgresql  # Sync to PostgreSQL
 | `dp run --sync` | Sync data to local JSON files | Yes |
 | `dp run --sync --destination postgresql` | Sync data to PostgreSQL | Yes |
 | `dp test --integration` | Full build + sync integration test | Yes |
+| `make` | Show all available Make targets | No |
+| `make test` | Run `go test ./... -v` (same as `dp test`) | No |
+| `make sync` | Build + sync to local files | Yes |
 
 ## Python vs Go Comparison
 

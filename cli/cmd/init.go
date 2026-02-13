@@ -153,6 +153,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Role:        initRole,
 		GRPCPort:    7777,
 		Concurrency: 10000,
+		Version:     Version,
 	}
 
 	// CloudQuery packages use directory-based scaffolding
@@ -162,6 +163,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to scaffold cloudquery project: %w", err)
 		}
 		output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Scaffolded CloudQuery %s plugin in %s", initLanguage, targetDir))
+
+		// Write the Makefile.common hash so build/run can detect freshness
+		if _, err := syncMakefileCommon(targetDir); err != nil {
+			cmd.PrintErrf("Warning: failed to write Makefile.common hash: %v\n", err)
+		}
 
 		// Go projects: resolve dependencies and format source
 		if initLanguage == "go" {

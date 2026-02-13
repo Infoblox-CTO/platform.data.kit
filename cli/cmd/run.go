@@ -456,6 +456,14 @@ func runCloudQuery(cmd *cobra.Command, absDir string, dp *contracts.DataPackage)
 
 	// Build plugin container image
 	lang := detectCloudQueryLanguage(absDir)
+
+	// Keep .datakit/Makefile.common in sync
+	if updated, syncErr := syncMakefileCommon(absDir); syncErr != nil {
+		fmt.Printf("Warning: failed to sync Makefile.common: %v\n", syncErr)
+	} else if updated {
+		fmt.Println("✓ Updated .datakit/Makefile.common")
+	}
+
 	fmt.Printf("Building CloudQuery plugin image: %s (lang=%s)\n", imageName, lang)
 	if err := buildDockerImage(absDir, imageName, lang, grpcPort, false); err != nil {
 		return fmt.Errorf("failed to build plugin image: %w", err)
@@ -826,6 +834,7 @@ func buildDockerImage(dir, imageName string, lang string, grpcPort int, noCache 
 // that change between runs and would otherwise invalidate layer caches.
 var dockerignorePatterns = []string{
 	"cq-sync-output/",
+	".datakit/",
 	"*.log",
 	".env",
 	".env.*",

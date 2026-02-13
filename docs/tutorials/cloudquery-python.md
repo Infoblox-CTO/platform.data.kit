@@ -33,6 +33,10 @@ This creates a complete Python plugin project:
 
 ```text
 my-source/
+├── .gitignore                 # Python-specific ignore patterns
+├── .datakit/
+│   └── Makefile.common        # Managed targets (do not edit)
+├── Makefile                   # Project Makefile (add your own targets here)
 ├── dp.yaml                    # Package manifest
 ├── main.py                    # gRPC server entry point
 ├── requirements.txt           # pip dependencies (used by Docker build)
@@ -121,6 +125,36 @@ dev = ["pytest>=8.0"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+```
+
+### Makefile — Common Targets
+
+Every scaffolded project includes a `Makefile` with standard targets. Run `make` or `make help` to see them:
+
+```text
+$ make
+Usage: make <target>
+
+Targets:
+  build                Build the plugin container image
+  clean                Remove build artifacts, venv, and sync output
+  fmt                  Format Python source code with black
+  help                 Show this help message
+  lint                 Run dp lint on the package
+  run                  Build and deploy to k3d, discover tables
+  sync                 Run a full sync to local files
+  sync-pg              Run a full sync to PostgreSQL
+  test                 Run unit tests
+  typecheck            Run mypy type checking
+  venv                 Create virtual environment and install deps
+```
+
+The `Makefile` includes `.datakit/Makefile.common` which is **managed by the dp CLI** — do not edit it. It is automatically kept in sync when you run `dp build` or `dp run`. Add your own targets to the root `Makefile` using `## ` comments so they appear in `make help`:
+
+```makefile
+# In your Makefile:
+my-target: ## My custom description
+	echo "hello"
 ```
 
 ## 3. Run Tests
@@ -322,6 +356,9 @@ dp run --sync --destination postgresql  # Sync to PostgreSQL
 | `dp run --sync` | Sync data to local JSON files | Yes |
 | `dp run --sync --destination postgresql` | Sync data to PostgreSQL | Yes |
 | `dp test --integration` | Full build + sync integration test | Yes |
+| `make` | Show all available Make targets | No |
+| `make test` | Create venv + run pytest (same as `dp test`) | No |
+| `make sync` | Build + sync to local files | Yes |
 
 ## Troubleshooting
 

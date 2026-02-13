@@ -2,7 +2,9 @@ package templates
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
@@ -31,6 +33,7 @@ type PackageConfig struct {
 	Role        string // source, destination (cloudquery)
 	GRPCPort    int    // gRPC server port (cloudquery, default 7777)
 	Concurrency int    // max concurrent resolvers (cloudquery, default 10000)
+	Version     string // dp CLI version (for managed file stamps)
 }
 
 // Renderer renders package templates.
@@ -161,4 +164,36 @@ func (r *Renderer) RenderDirectory(outputDir, templateSubDir string, config *Pac
 
 		return nil
 	})
+}
+
+// MakefileCommonConfig holds the values needed to render Makefile.common.
+type MakefileCommonConfig struct {
+	Version string // dp CLI version that generated the file
+}
+
+// RenderMakefileCommon renders the .datakit/Makefile.common template for the
+// given language ("go" or "python") and returns the content along with its
+// SHA-256 hash. The hash can be stored on disk and compared on subsequent
+// build/run invocations to decide whether the file needs updating.
+func (r *Renderer) RenderMakefileCommon(language, version string) (content string, hash string, err error) {
+	tmplPath := fmt.Sprintf("cloudquery/%s/.datakit/Makefile.common.tmpl", language)
+	data, err := cloudqueryFS.ReadFile(tmplPath)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read Makefile.common template for %s: %w", language, err)
+	}
+
+	tmpl, err := template.New("Makefile.common").Parse(string(data))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse Makefile.common template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	cfg := MakefileCommonConfig{Version: version}
+	if err := tmpl.Execute(&buf, cfg); err != nil {
+		return "", "", fmt.Errorf("failed to render Makefile.common: %w", err)
+	}
+
+	rendered := buf.String()
+	h := sha256.Sum256([]byte(rendered))
+	return rendered, hex.EncodeToString(h[:]), nil
 }

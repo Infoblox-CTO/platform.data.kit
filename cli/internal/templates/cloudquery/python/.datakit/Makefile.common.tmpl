@@ -1,0 +1,76 @@
+# ============================================================================
+# DO NOT EDIT — This file is managed by the dp CLI ({{.Version}})
+#
+# Any changes will be overwritten on the next dp build or dp run.
+# To add custom targets, edit the Makefile in the project root instead.
+# ============================================================================
+
+.DEFAULT_GOAL := help
+
+VENV := .venv
+PYTHON := $(VENV)/bin/python
+PIP := $(VENV)/bin/pip
+
+# -- Meta targets ------------------------------------------------------------
+
+.PHONY: help
+help: ## Show this help message
+	@printf '\nUsage: make <target>\n\n'
+	@printf 'Targets:\n'
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
+
+# -- Environment targets -----------------------------------------------------
+
+.PHONY: venv
+venv: $(VENV)/bin/activate ## Create virtual environment and install deps
+
+$(VENV)/bin/activate: pyproject.toml
+	python3 -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -e ".[dev]"
+	touch $(VENV)/bin/activate
+
+# -- Development targets -----------------------------------------------------
+
+.PHONY: test
+test: venv ## Run unit tests
+	$(VENV)/bin/pytest -v
+
+.PHONY: lint
+lint: ## Run dp lint on the package
+	dp lint .
+
+.PHONY: build
+build: ## Build the plugin container image
+	dp build .
+
+.PHONY: run
+run: ## Build and deploy to k3d, discover tables
+	dp run .
+
+.PHONY: sync
+sync: ## Run a full sync to local files
+	dp run . --sync
+
+.PHONY: sync-pg
+sync-pg: ## Run a full sync to PostgreSQL
+	dp run . --sync --destination postgresql
+
+# -- Code quality targets ----------------------------------------------------
+
+.PHONY: fmt
+fmt: venv ## Format Python source code with black
+	$(VENV)/bin/black plugin/ tests/
+
+.PHONY: typecheck
+typecheck: venv ## Run mypy type checking
+	$(VENV)/bin/mypy plugin/
+
+# -- Cleanup targets ---------------------------------------------------------
+
+.PHONY: clean
+clean: ## Remove build artifacts, venv, and sync output
+	rm -rf $(VENV) dist/ build/ *.egg-info/ .pytest_cache/ cq-sync-output/
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name '*.pyc' -delete 2>/dev/null || true

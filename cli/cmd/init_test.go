@@ -420,6 +420,9 @@ func TestInitCmd_CloudQueryPython(t *testing.T) {
 		"plugin/tables/__init__.py",
 		"plugin/tables/example_resource.py",
 		"tests/test_example_resource.py",
+		".gitignore",
+		"Makefile",
+		".datakit/Makefile.common",
 	}
 
 	for _, f := range expectedFiles {
@@ -774,6 +777,9 @@ func TestInitCmd_CloudQueryGo(t *testing.T) {
 		"internal/client/spec.go",
 		"internal/tables/example_resource.go",
 		"internal/tables/example_resource_test.go",
+		".gitignore",
+		"Makefile",
+		".datakit/Makefile.common",
 	}
 
 	for _, f := range expectedFiles {

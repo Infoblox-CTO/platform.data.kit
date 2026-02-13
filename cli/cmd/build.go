@@ -112,6 +112,13 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	// CloudQuery packages: build the Docker image
 	dp, parseErr := manifest.ParseDataPackageFile(dpPath)
 	if parseErr == nil && dp.Spec.Type == contracts.PackageTypeCloudQuery {
+		// Keep .datakit/Makefile.common in sync
+		if updated, err := syncMakefileCommon(absDir); err != nil {
+			fmt.Printf("Warning: failed to sync Makefile.common: %v\n", err)
+		} else if updated {
+			fmt.Println("✓ Updated .datakit/Makefile.common")
+		}
+
 		grpcPort := 7777
 		if dp.Spec.CloudQuery != nil && dp.Spec.CloudQuery.GRPCPort > 0 {
 			grpcPort = dp.Spec.CloudQuery.GRPCPort
