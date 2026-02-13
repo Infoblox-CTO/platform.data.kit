@@ -343,7 +343,12 @@ func runCloudQueryUnitTests(dir, lang string) error {
 	case "go":
 		testCmd = exec.Command("go", "test", "./...", "-v")
 	case "python":
-		testCmd = exec.Command("pytest", "-v")
+		venvDir, err := ensurePythonVenv(dir)
+		if err != nil {
+			return fmt.Errorf("failed to set up Python environment: %w", err)
+		}
+		pytestBin := filepath.Join(venvDir, "bin", "pytest")
+		testCmd = exec.Command(pytestBin, "-v")
 	default:
 		return fmt.Errorf("unsupported CloudQuery plugin language: %s", lang)
 	}
@@ -371,6 +376,67 @@ func runCloudQueryUnitTests(dir, lang string) error {
 	fmt.Println("✓ CloudQuery unit tests PASSED")
 	fmt.Printf("  Duration: %s\n", duration.Round(time.Millisecond))
 	return nil
+}
+
+// ensurePythonVenv creates a Python virtual environment in the plugin directory
+// if one does not already exist, and installs the project dependencies.
+// Returns the absolute path to the .venv directory.
+func ensurePythonVenv(dir string) (string, error) {
+	venvDir := filepath.Join(dir, ".venv")
+
+	// Check if venv already has a working pytest
+	pytestBin := filepath.Join(venvDir, "bin", "pytest")
+	if _, err := os.Stat(pytestBin); err == nil {
+		// venv exists and has pytest — skip bootstrap
+		return venvDir, nil
+	}
+
+	// Find python3 binary
+	pythonBin, err := findPython3()
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println("Setting up Python virtual environment...")
+	fmt.Printf("  Python: %s\n", pythonBin)
+	fmt.Printf("  Venv:   .venv/\n")
+	fmt.Println()
+
+	// Create venv
+	venvCmd := exec.Command(pythonBin, "-m", "venv", venvDir)
+	venvCmd.Dir = dir
+	venvCmd.Stdout = os.Stdout
+	venvCmd.Stderr = os.Stderr
+	if err := venvCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to create venv: %w", err)
+	}
+
+	// Install project with dev dependencies: pip install -e ".[dev]"
+	pipBin := filepath.Join(venvDir, "bin", "pip")
+
+	fmt.Println("Installing dependencies...")
+	fmt.Println()
+
+	installCmd := exec.Command(pipBin, "install", "-e", ".[dev]")
+	installCmd.Dir = dir
+	installCmd.Stdout = os.Stdout
+	installCmd.Stderr = os.Stderr
+	if err := installCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to install dependencies: %w", err)
+	}
+	fmt.Println()
+
+	return venvDir, nil
+}
+
+// findPython3 locates a suitable python3 binary on the system.
+func findPython3() (string, error) {
+	for _, name := range []string{"python3", "python"} {
+		if p, err := exec.LookPath(name); err == nil {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("python3 not found — install Python 3.12+ to run CloudQuery Python plugin tests")
 }
 
 // runCloudQueryIntegrationTest runs a full CloudQuery sync integration test.

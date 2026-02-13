@@ -121,6 +121,8 @@ nav:
     - Kafka to S3: tutorials/kafka-to-s3.md
     - Local Development: tutorials/local-development.md
     - Promoting Packages: tutorials/promoting-packages.md
+    - CloudQuery Python Plugin: tutorials/cloudquery-python.md
+    - CloudQuery Go Plugin: tutorials/cloudquery-go.md
   - Reference:
     - reference/index.md
     - CLI Commands: reference/cli.md

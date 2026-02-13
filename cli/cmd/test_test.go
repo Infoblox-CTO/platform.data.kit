@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -79,16 +80,21 @@ spec:
 	cmd := &cobra.Command{}
 	err := runTest(cmd, []string{tmpDir})
 
-	// Should route to cloudquery test path and fail because pytest isn't available
-	// in the test environment (but it should NOT fail with pipeline-related errors)
+	// Should route to cloudquery test path and fail because there are no real
+	// test files or the venv bootstrap may fail (but it should NOT fail with
+	// pipeline-related errors)
 	if err != nil {
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "pipeline") || strings.Contains(errMsg, "runner") {
 			t.Errorf("cloudquery type should not route to pipeline test path, got: %s", errMsg)
 		}
-		// Expected: error about pytest/test execution, not about pipeline mode
-		if !strings.Contains(errMsg, "CloudQuery") && !strings.Contains(errMsg, "unit tests") {
-			t.Errorf("expected CloudQuery-related error, got: %s", errMsg)
+		// Expected: error about CloudQuery/Python/venv, not about pipeline mode
+		isCloudQueryError := strings.Contains(errMsg, "CloudQuery") ||
+			strings.Contains(errMsg, "unit tests") ||
+			strings.Contains(errMsg, "Python") ||
+			strings.Contains(errMsg, "venv")
+		if !isCloudQueryError {
+			t.Errorf("expected CloudQuery/Python-related error, got: %s", errMsg)
 		}
 	}
 }
@@ -284,6 +290,104 @@ func TestTestCmd_CloudQueryMissingDpYaml(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "dp.yaml not found") {
 		t.Errorf("expected 'dp.yaml not found' error, got: %s", err.Error())
+	}
+}
+
+func TestFindPython3(t *testing.T) {
+	// findPython3 should locate a python3 binary on the system
+	p, err := findPython3()
+	if err != nil {
+		t.Skip("python3 not available on this system")
+	}
+	if p == "" {
+		t.Error("findPython3() returned empty path")
+	}
+	// Verify it's executable
+	cmd := exec.Command(p, "--version")
+	if err := cmd.Run(); err != nil {
+		t.Errorf("python3 at %s is not executable: %v", p, err)
+	}
+}
+
+func TestEnsurePythonVenv_CreatesVenv(t *testing.T) {
+	// ensurePythonVenv should create a .venv directory with pytest
+	if _, err := findPython3(); err != nil {
+		t.Skip("python3 not available on this system")
+	}
+
+	tmpDir := t.TempDir()
+
+	// Create a minimal pyproject.toml with pytest as dev dep
+	pyproject := `[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-plugin"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte(pyproject), 0644); err != nil {
+		t.Fatalf("failed to write pyproject.toml: %v", err)
+	}
+
+	venvDir, err := ensurePythonVenv(tmpDir)
+	if err != nil {
+		t.Fatalf("ensurePythonVenv() error: %v", err)
+	}
+
+	// Verify .venv was created
+	if _, err := os.Stat(venvDir); os.IsNotExist(err) {
+		t.Error(".venv directory was not created")
+	}
+
+	// Verify pytest is installed in venv
+	pytestBin := filepath.Join(venvDir, "bin", "pytest")
+	if _, err := os.Stat(pytestBin); os.IsNotExist(err) {
+		t.Error("pytest not found in .venv/bin/")
+	}
+}
+
+func TestEnsurePythonVenv_SkipsIfExists(t *testing.T) {
+	// ensurePythonVenv should skip creation if .venv/bin/pytest already exists
+	if _, err := findPython3(); err != nil {
+		t.Skip("python3 not available on this system")
+	}
+
+	tmpDir := t.TempDir()
+
+	// Create a fake venv with pytest binary
+	venvBinDir := filepath.Join(tmpDir, ".venv", "bin")
+	if err := os.MkdirAll(venvBinDir, 0755); err != nil {
+		t.Fatalf("failed to create .venv/bin: %v", err)
+	}
+	pytestBin := filepath.Join(venvBinDir, "pytest")
+	if err := os.WriteFile(pytestBin, []byte("#!/bin/sh\necho fake"), 0755); err != nil {
+		t.Fatalf("failed to create fake pytest: %v", err)
+	}
+
+	// ensurePythonVenv should detect the existing pytest and return immediately
+	venvDir, err := ensurePythonVenv(tmpDir)
+	if err != nil {
+		t.Fatalf("ensurePythonVenv() error: %v", err)
+	}
+
+	expected := filepath.Join(tmpDir, ".venv")
+	if venvDir != expected {
+		t.Errorf("ensurePythonVenv() = %q, want %q", venvDir, expected)
+	}
+
+	// Verify the fake pytest was NOT overwritten (no pip install ran)
+	content, _ := os.ReadFile(pytestBin)
+	if !strings.Contains(string(content), "fake") {
+		t.Error("ensurePythonVenv should have skipped creation for existing venv")
 	}
 }
 

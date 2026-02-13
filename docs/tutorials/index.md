@@ -38,6 +38,24 @@ Deploy packages across environments using GitOps.
 [Start Tutorial →](promoting-packages.md)
 </div>
 
+<div class="card" markdown>
+### :snake: CloudQuery Python Plugin
+Build a Python CloudQuery source plugin with automatic venv management.
+
+**Time**: ~15 minutes
+
+[Start Tutorial →](cloudquery-python.md)
+</div>
+
+<div class="card" markdown>
+### :gear: CloudQuery Go Plugin
+Build a Go CloudQuery source plugin with tables and resolvers.
+
+**Time**: ~15 minutes
+
+[Start Tutorial →](cloudquery-go.md)
+</div>
+
 </div>
 
 ## Prerequisites
@@ -64,6 +82,8 @@ Each tutorial follows a consistent structure:
 | Kafka to S3 | Intermediate | Quickstart completed |
 | Local Development | Beginner | DP CLI installed |
 | Promoting Packages | Intermediate | Quickstart completed |
+| CloudQuery Python Plugin | Beginner | DP CLI + Python 3.12+ |
+| CloudQuery Go Plugin | Beginner | DP CLI + Go 1.25+ |
 
 ## Suggest a Tutorial
 
