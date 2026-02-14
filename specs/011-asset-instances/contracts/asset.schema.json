@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdpp.io/schemas/v1alpha1/asset.schema.json",
+  "title": "Asset Manifest",
+  "description": "Schema for asset.yaml - a configured instance of an approved extension",
+  "type": "object",
+  "required": ["apiVersion", "kind", "name", "type", "extension", "version", "ownerTeam", "config"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "cdpp.io/v1alpha1",
+      "description": "Schema version"
+    },
+    "kind": {
+      "type": "string",
+      "const": "Asset",
+      "description": "Resource kind"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,62}$",
+      "description": "Unique asset identifier (DNS-safe, lowercase, 3-63 characters)"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["source", "sink", "model-engine"],
+      "description": "Asset type — must match the extension's kind segment"
+    },
+    "extension": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$",
+      "description": "Fully-qualified extension name (vendor.kind.name)"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+      "description": "Extension version (semver)"
+    },
+    "ownerTeam": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Team that owns this asset instance"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Human-readable description of what this asset does"
+    },
+    "binding": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,126}$",
+      "description": "Name of the binding entry in bindings.yaml for this asset"
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration block validated against the extension's schema.json. Keys and structure are defined by the extension schema."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Key-value labels for filtering and organizing"
+    }
+  },
+  "additionalProperties": false
+}
