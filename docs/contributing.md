@@ -17,7 +17,7 @@ Thank you for your interest in improving the Data Platform documentation! This g
 
 2. **Install dependencies**
    ```bash
-   pip install -r requirements-docs.txt
+   pip install -r requirements.txt
    ```
 
 3. **Start local preview**
