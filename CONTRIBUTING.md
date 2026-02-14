@@ -253,8 +253,11 @@ All contributions must align with the [DP Constitution](.specify/memory/constitu
 
 - **Article I**: Developer Experience first
 - **Article II**: Maintain stable contracts
+- **Article IV**: Separation of concerns (platform vs domain layers)
 - **Article V**: Security by default
 - **Article VII**: Quality gates enforced
+- **Article X**: Persona boundaries — platform engineers own extensions/environments/policies; data engineers own assets/pipelines/models
+- **Article XI**: Extensions are contracts — schema-validated, versioned, self-describing
 
 ## 📞 Getting Help
 

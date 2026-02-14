@@ -2,24 +2,31 @@
 ================================================================================
 SYNC IMPACT REPORT
 ================================================================================
-Version Change: 1.1.0 → 1.2.0
-Bump Rationale: Added Unit Testing Requirements and CLI Name standards
+Version Change: 1.2.0 → 2.0.0
+Bump Rationale: Operating model evolution — two-persona architecture
+  (platform engineer + data engineer), extension type system, policy engine.
 
-Modified Principles: N/A
+Modified Principles:
+  - Article IV: Expanded from "Infra vs Pipelines" to "Platform vs Domain"
+    with four-layer separation (extension → asset → pipeline → binding).
 
 Added Sections:
-  - Technology Standards
-    - Unit Testing Requirements: Comprehensive unit test mandate
-    - CLI Name: dp as the official CLI name
+  - Article X: Persona Boundaries and Least Authority
+  - Article XI: Extensions are Contracts
+  - Technology Standards / Python Testing Requirements
+  - Definition of Done / Schema-validated gate
+  - MVP Guardrails: extension system scope limits
+  - Pre-Implementation Gates: Persona Mapping gate
 
 Removed Sections: N/A
 
-Templates Requiring Updates: None
+Templates Requiring Updates:
+  - plan-template.md: Constitution Check table needs Articles X and XI rows
 
 Follow-up TODOs:
-  - Add unit tests to all packages
-  - Ensure CI/CD runs go test ./... 
-  - Verify test coverage meets 80% threshold
+  - Generate specs 011–015 for the operating model evolution
+  - Update CONTRIBUTING.md constitution summary to reflect new articles
+  - Ensure all future specs include persona mapping in their plans
 ================================================================================
 -->
 
@@ -70,15 +77,18 @@ Once released, artifacts cannot be silently modified.
 
 **Rationale**: Mutability creates debugging nightmares and compliance violations. Auditability enables incident response and governance.
 
-### Article IV — Separation of Concerns (Infra vs Pipelines)
+### Article IV — Separation of Concerns (Platform vs Domain)
 
-Infrastructure provisioning/configuration is separate from pipeline definitions.
+The platform has four distinct layers — extension definitions, asset instances, pipelines, and infrastructure bindings — each with clear ownership boundaries.
 
+- Extension *definitions* (schemas, templates, version policy) MUST be independent of any specific domain's configuration.
+- Asset *instances* MUST reference extensions by fully-qualified name and version, never by embedding extension internals.
+- Pipelines MUST reference assets by name, not by embedding asset configuration inline.
 - Pipelines MUST reference infrastructure through bindings/contracts, not hardcoded identifiers.
 - Multiple infrastructure "flavors" may exist as long as contracts remain satisfied.
-- Environment-specific configuration MUST NOT leak into package definitions.
+- Environment-specific configuration (bindings, secrets, quotas) MUST NOT leak into extension, asset, or pipeline definitions.
 
-**Rationale**: Tight coupling prevents portability and makes testing across environments impossible.
+**Rationale**: Tight coupling prevents portability and makes testing across environments impossible. Clean layer boundaries enable platform and domain teams to evolve independently.
 
 ### Article V — Security and Compliance by Default
 
@@ -136,6 +146,29 @@ Code is read more than written; systems are operated longer than built.
 
 **Rationale**: Unmaintainable code becomes legacy quickly. Clear boundaries enable independent evolution.
 
+### Article X — Persona Boundaries and Least Authority
+
+The platform serves two distinct personas with different authorities.
+
+- **Platform engineers** own extension definitions, managed environments, and policies. They define *what is allowed*.
+- **Data engineers** own asset instances, pipelines, and models. They define *what runs and what it produces*.
+- Each persona's artifacts MUST be independently validatable without requiring the other's tooling or credentials.
+- Data engineers MUST NOT need to understand infrastructure implementation details — they declare *capabilities needed*, not *resources provisioned*.
+- Platform engineers MUST NOT need to understand domain business logic — they define *guardrails*, not *pipeline content*.
+
+**Rationale**: Unclear ownership creates friction, security gaps, and operational confusion. Clean persona boundaries enable independent velocity while maintaining governance.
+
+### Article XI — Extensions are Contracts
+
+Extensions define the approved building blocks of the platform. They are APIs between platform and domain teams.
+
+- Every extension MUST have a machine-readable schema (`schema.json`) that validates consumer configuration.
+- Extension schemas MUST be versioned; breaking changes require a major version bump.
+- Extensions MUST be self-describing: schema, documentation, examples, and version policy travel together.
+- The platform MUST validate asset configuration against the referenced extension's schema at `dp validate` time — not at runtime.
+
+**Rationale**: Unschematized configuration leads to runtime failures and support burden. Schema-validated extensions shift errors left and create a reliable contract between platform and domain teams.
+
 ## Technology Standards
 
 ### Go Version
@@ -161,6 +194,16 @@ Code is read more than written; systems are operated longer than built.
 
 **Rationale**: Unit tests catch regressions early, document expected behavior, and enable confident refactoring. Table-driven tests improve maintainability and coverage.
 
+### Python Testing Requirements
+
+- Python packages MUST have tests runnable via `pytest` without external dependencies.
+- Test files MUST follow the `test_*.py` naming convention.
+- Tests MUST cover exported functions, edge cases, and input validation.
+- Test coverage SHOULD aim for 80% or higher for business logic modules.
+- Mock external dependencies (HTTP clients, databases, file systems) in unit tests.
+
+**Rationale**: Python is a supported language for extensions (e.g., CloudQuery plugins). Consistent testing standards across languages prevent quality gaps.
+
 ### CLI Name
 
 - The CLI binary MUST be named `dp` (short for Data Platform).
@@ -176,6 +219,7 @@ A feature is "done" only when:
 2. **Documented**: It has documentation (README or docs section) for usage and troubleshooting.
 3. **Observable**: It has observable behavior (metrics/logs) if it affects runtime execution.
 4. **Reversible**: It has a rollback story if it affects deployments or contracts.
+5. **Schema-validated**: If the feature introduces or modifies a user-facing configuration surface, it MUST have a machine-readable schema and validation at write/validate time.
 
 ## Versioning and Compatibility Rules
 
@@ -194,6 +238,10 @@ The following are explicitly out of scope for MVP:
 - **Do NOT** build a new scheduler.
 - **Do NOT** build a full enterprise data marketplace in MVP.
 - **Do NOT** introduce complex multi-tenancy until MVP workflow is proven.
+- **Do NOT** build a custom policy engine — start with declarative YAML policies evaluated at `dp validate` time.
+- **Do NOT** build dynamic extension discovery or marketplace UI — extensions are registered via `dp ext publish` and referenced by FQN.
+- **Do NOT** build a multi-repo extension resolution protocol — start with a single OCI registry.
+- The extension type system SHOULD launch with existing CloudQuery as the first built-in extension, not with a broad catalog.
 - **Avoid** over-generalizing beyond current requirements; design for extensibility, not maximal abstraction.
 
 ## Pre-Implementation Gates
@@ -207,6 +255,7 @@ Before implementing any major milestone, the following MUST be verified:
 | **Promotion/Rollback** | Promotion and rollback mechanics are explicit |
 | **Observability** | Observability requirements are defined and addressed |
 | **Security/Compliance** | Secrets, least privilege, and PII metadata requirements are addressed (at minimum) |
+| **Persona Mapping** | The plan identifies which persona owns each artifact and validates that ownership boundaries are clean |
 
 ## Governance
 
@@ -231,4 +280,4 @@ This constitution follows SemVer:
 
 ---
 
-**Version**: 1.2.0 | **Ratified**: 2026-01-22 | **Last Amended**: 2026-01-22
+**Version**: 2.0.0 | **Ratified**: 2026-01-22 | **Last Amended**: 2026-02-14
