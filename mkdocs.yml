@@ -133,6 +133,7 @@ nav:
     - Common Issues: troubleshooting/common-issues.md
     - FAQ: troubleshooting/faq.md
   - Architecture: architecture.md
+  - Target State: target-state.md
   - Testing: testing.md
   - Contributing: contributing.md
 
