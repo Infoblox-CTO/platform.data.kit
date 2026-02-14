@@ -37,6 +37,14 @@ These flags apply to all commands:
 | [`dp logs`](#dp-logs) | Stream logs |
 | [`dp rollback`](#dp-rollback) | Rollback to previous version |
 | [`dp lineage`](#dp-lineage) | View data lineage |
+| [`dp asset create`](#dp-asset-create) | Create a new asset from an extension |
+| [`dp asset validate`](#dp-asset-validate) | Validate asset configuration |
+| [`dp asset list`](#dp-asset-list) | List all assets in the project |
+| [`dp asset show`](#dp-asset-show) | Show details of an asset |
+| [`dp pipeline create`](#dp-pipeline-create) | Create a pipeline workflow from a template |
+| [`dp pipeline run`](#dp-pipeline-run) | Execute the pipeline workflow |
+| [`dp pipeline backfill`](#dp-pipeline-backfill) | Re-execute sync steps for a date range |
+| [`dp pipeline show`](#dp-pipeline-show) | Display pipeline definition and schedule |
 
 ---
 
@@ -935,6 +943,372 @@ Upstream:
 Downstream:
   ├─ s3://analytics-bucket/processed/
   └─ dashboard/user-metrics
+```
+
+---
+
+## dp asset create
+
+Create a new asset from an extension.
+
+```bash
+dp asset create <name> --ext <vendor.kind.name> [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--ext` | | Extension FQN (required) | - |
+| `--version` | | Extension version | latest known |
+| `--force` | | Overwrite existing asset | false |
+| `--interactive` | `-i` | Prompt for each required config field | false |
+
+### Examples
+
+```bash
+# Create a source asset
+dp asset create aws-security --ext cloudquery.source.aws
+
+# Create with a specific version
+dp asset create aws-security --ext cloudquery.source.aws --version v24.0.2
+
+# Overwrite an existing asset
+dp asset create aws-security --ext cloudquery.source.aws --force
+
+# Interactive mode
+dp asset create aws-security --ext cloudquery.source.aws --interactive
+```
+
+### Output
+
+```
+✓ Created asset "aws-security" at assets/sources/aws-security/asset.yaml
+
+Next steps:
+  1. Edit assets/sources/aws-security/asset.yaml to configure your asset
+  2. Set ownerTeam to your team name
+  3. Run 'dp asset validate' to validate the config
+  4. Add 'aws-security' to the assets section in dp.yaml
+```
+
+---
+
+## dp asset validate
+
+Validate asset configuration against the extension's JSON Schema.
+
+```bash
+dp asset validate [path] [flags]
+```
+
+### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--offline` | Skip schema validation (structural checks only) | false |
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `path` | Optional path to a specific asset directory or file. If omitted, validates all assets under `assets/`. |
+
+### Examples
+
+```bash
+# Validate a single asset
+dp asset validate assets/sources/aws-security/
+
+# Validate all assets
+dp asset validate
+
+# Structural checks only (offline)
+dp asset validate --offline
+```
+
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| E070 | Required field missing |
+| E071 | Invalid extension FQN format |
+| E072 | Invalid version format |
+| E073 | Asset type does not match extension kind |
+| E074 | Config block fails schema validation |
+| E075 | Extension schema not found |
+
+---
+
+## dp asset list
+
+List all assets in the project.
+
+```bash
+dp asset list [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--output` | `-o` | Output format (table, json) | table |
+
+### Examples
+
+```bash
+# Table output
+dp asset list
+```
+
+```
+NAME             TYPE     EXTENSION              VERSION   OWNER
+aws-security     source   cloudquery.source.aws   v24.0.2   security-data
+gcp-infra        source   cloudquery.source.gcp   v10.0.0   infra-team
+raw-output       sink     cloudquery.sink.s3       v1.2.0    data-team
+```
+
+```bash
+# JSON output
+dp asset list --output json
+```
+
+---
+
+## dp asset show
+
+Show details of a specific asset.
+
+```bash
+dp asset show <name> [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--output` | `-o` | Output format (yaml, json) | yaml |
+
+### Examples
+
+```bash
+# YAML output (default)
+dp asset show aws-security
+```
+
+```yaml
+apiVersion: cdpp.io/v1alpha1
+kind: Asset
+name: aws-security
+type: source
+extension: cloudquery.source.aws
+version: v24.0.2
+ownerTeam: security-data
+config:
+  accounts:
+    - "123456789012"
+  regions:
+    - us-east-1
+  tables:
+    - aws_s3_buckets
+```
+
+```bash
+# JSON output
+dp asset show aws-security --output json
+```
+
+---
+
+## dp pipeline create
+
+Create a pipeline workflow from a template.
+
+```bash
+dp pipeline create <name> [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--template` | `-t` | Template to use | sync-transform-test |
+| `--force` | | Overwrite existing pipeline.yaml | false |
+| `--list-templates` | | List available templates and exit | false |
+
+### Available Templates
+
+| Template | Description |
+|----------|-------------|
+| `sync-transform-test` | Sync → Transform → Test → Publish (default) |
+| `sync-only` | Single sync step |
+| `custom` | Single custom step with arbitrary image |
+
+### Examples
+
+```bash
+# Create with default template
+dp pipeline create my-pipeline
+```
+
+```bash
+# Use a specific template
+dp pipeline create my-pipeline --template sync-only
+```
+
+```bash
+# Overwrite existing pipeline.yaml
+dp pipeline create my-pipeline --force
+```
+
+```bash
+# List available templates
+dp pipeline create --list-templates
+```
+
+### Output
+
+Creates `pipeline.yaml` in the current directory with the selected template.
+
+---
+
+## dp pipeline run
+
+Execute the pipeline workflow defined in `pipeline.yaml`.
+
+```bash
+dp pipeline run [dir] [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--env` | `-e` | Environment variables (KEY=VALUE, repeatable) | - |
+| `--step` | | Run a single step by name | - |
+
+### Examples
+
+```bash
+# Run all steps in the current directory
+dp pipeline run
+```
+
+```bash
+# Run all steps in a specific directory
+dp pipeline run ./my-pipeline
+```
+
+```bash
+# Run a single step
+dp pipeline run --step sync-data
+```
+
+```bash
+# Pass environment variables
+dp pipeline run --env DEBUG=true --env LOG_LEVEL=info
+```
+
+### Output
+
+Displays step-by-step execution with status icons:
+
+```
+Pipeline: my-pipeline
+Steps: 3
+──────────────────
+[sync-data]      output from step...
+[transform-data] output from step...
+[run-tests]      output from step...
+──────────────────
+Results:
+  ✓ sync-data       [2.3s]
+  ✓ transform-data  [1.1s]
+  ✓ run-tests       [0.5s]
+```
+
+---
+
+## dp pipeline backfill
+
+Re-execute sync steps for a historical date range. Only sync-type steps are executed; transform, test, publish, and custom steps are skipped.
+
+```bash
+dp pipeline backfill [dir] [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--from` | | Start date (YYYY-MM-DD, required) | - |
+| `--to` | | End date (YYYY-MM-DD, required) | - |
+| `--env` | `-e` | Additional environment variables (KEY=VALUE) | - |
+
+### Examples
+
+```bash
+# Backfill January 2026
+dp pipeline backfill --from 2026-01-01 --to 2026-01-31
+```
+
+```bash
+# Backfill with extra env vars
+dp pipeline backfill --from 2026-01-01 --to 2026-01-31 --env BATCH_SIZE=1000
+```
+
+### Environment Variables Injected
+
+| Variable | Description |
+|----------|-------------|
+| `DP_BACKFILL_FROM` | Start date in YYYY-MM-DD format |
+| `DP_BACKFILL_TO` | End date in YYYY-MM-DD format |
+
+---
+
+## dp pipeline show
+
+Display the pipeline definition, steps, and schedule.
+
+```bash
+dp pipeline show [dir] [flags]
+```
+
+### Flags
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--output` | `-o` | Output format (table, json, yaml) | table |
+
+### Examples
+
+```bash
+# Table view (default)
+dp pipeline show
+```
+
+```bash
+# JSON output
+dp pipeline show --output json
+```
+
+```bash
+# YAML output
+dp pipeline show --output yaml
+```
+
+### Output Example (Table)
+
+```
+Pipeline: my-pipeline
+Description: Ingest and transform security data
+
+STEP             TYPE        DETAILS
+sync-data        sync        source=aws-security sink=postgres-warehouse
+transform-data   transform   asset=dbt-security-model
+run-tests        test        asset=dbt-security-model cmd=dbt test
+
+Schedule: 0 6 * * * (America/New_York)
 ```
 
 ---

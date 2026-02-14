@@ -33,6 +33,20 @@ Configuration files that define your package: dp.yaml (with runtime config), bin
 </div>
 
 <div class="card" markdown>
+### :jigsaw: Assets
+Configured instances of extensions — config-only YAML files validated against schemas.
+
+[Learn about Assets →](assets.md)
+</div>
+
+<div class="card" markdown>
+### :gear: Pipeline Workflows
+Multi-step pipeline execution with sync, transform, test, publish, and custom steps.
+
+[Pipeline Workflows →](pipelines.md)
+</div>
+
+<div class="card" markdown>
 ### :link: Lineage
 Track data flow and dependencies with OpenLineage and Marquez.
 
@@ -62,9 +76,11 @@ We recommend reading the concepts in this order:
 1. **[Overview](overview.md)** - Start with the big picture
 2. **[Data Packages](data-packages.md)** - Understand the core unit of work
 3. **[Manifests](manifests.md)** - Learn how to configure packages
-4. **[Lineage](lineage.md)** - Track data flow
-5. **[Governance](governance.md)** - Classify and protect data
-6. **[Environments](environments.md)** - Deploy across stages
+4. **[Assets](assets.md)** - Configure extension instances
+5. **[Pipeline Workflows](pipelines.md)** - Define multi-step execution
+6. **[Lineage](lineage.md)** - Track data flow
+7. **[Governance](governance.md)** - Classify and protect data
+8. **[Environments](environments.md)** - Deploy across stages
 
 ## Key Principles
 

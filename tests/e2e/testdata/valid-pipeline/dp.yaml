@@ -8,9 +8,16 @@ spec:
   type: pipeline
   description: A valid pipeline package for E2E testing
   owner: data-team
+
+  runtime:
+    image: "python:3.11"
+    timeout: 30m
+    retries: 2
+
   inputs:
     - name: source-events
       type: kafka-topic
+      binding: input.events
   outputs:
     - name: processed-data
       type: s3-prefix

@@ -1,0 +1,29 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: PipelineWorkflow
+metadata:
+  name: {{.Name}}
+  description: "Full ETL workflow: sync, transform, test, and publish"
+steps:
+  - name: sync-data
+    type: sync
+    source: "TODO-source-asset"
+    sink: "TODO-sink-asset"
+    description: "Sync data from source to sink"
+
+  - name: transform-data
+    type: transform
+    asset: "TODO-model-engine-asset"
+    description: "Transform synced data"
+
+  - name: test-output
+    type: test
+    asset: "TODO-model-engine-asset"
+    command: ["dbt", "test"]
+    description: "Validate transformed data"
+
+  - name: publish-results
+    type: publish
+    notify:
+      channels: []
+    promote: false
+    description: "Publish and notify on completion"

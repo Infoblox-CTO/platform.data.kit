@@ -1,0 +1,123 @@
+// Package contracts defines the Go types for pipeline workflow manifests.
+// This file is a design draft — final implementation goes in contracts/pipeline_workflow.go
+package contracts
+
+// --- Pipeline Workflow Types ---
+
+// StepType enumerates the supported pipeline step types.
+type StepType string
+
+const (
+	StepTypeSync      StepType = "sync"
+	StepTypeTransform StepType = "transform"
+	StepTypeTest      StepType = "test"
+	StepTypePublish   StepType = "publish"
+	StepTypeCustom    StepType = "custom"
+)
+
+// ValidStepTypes returns all valid step type values.
+func ValidStepTypes() []StepType {
+	return []StepType{
+		StepTypeSync, StepTypeTransform, StepTypeTest, StepTypePublish, StepTypeCustom,
+	}
+}
+
+// IsValid reports whether s is a recognized step type.
+func (s StepType) IsValid() bool {
+	for _, v := range ValidStepTypes() {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
+// PipelineWorkflow represents a multi-step pipeline workflow defined in pipeline.yaml.
+type PipelineWorkflow struct {
+	APIVersion string                   `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string                   `json:"kind" yaml:"kind"`
+	Metadata   PipelineWorkflowMetadata `json:"metadata" yaml:"metadata"`
+	Steps      []Step                   `json:"steps" yaml:"steps"`
+}
+
+// PipelineWorkflowMetadata holds the pipeline's identity and description.
+type PipelineWorkflowMetadata struct {
+	Name        string `json:"name" yaml:"name"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+}
+
+// Step represents a single unit of work within a pipeline workflow.
+// Fields are conditionally required based on the step Type (see StepType).
+type Step struct {
+	// Common fields (all step types)
+	Name        string   `json:"name" yaml:"name"`
+	Type        StepType `json:"type" yaml:"type"`
+	Description string   `json:"description,omitempty" yaml:"description,omitempty"`
+
+	// Sync step fields
+	Source string `json:"source,omitempty" yaml:"source,omitempty"` // source asset name
+	Sink   string `json:"sink,omitempty" yaml:"sink,omitempty"`     // sink asset name
+
+	// Transform / Test step fields
+	Asset   string   `json:"asset,omitempty" yaml:"asset,omitempty"`     // asset name
+	Command []string `json:"command,omitempty" yaml:"command,omitempty"` // test command
+
+	// Custom step fields
+	Image string   `json:"image,omitempty" yaml:"image,omitempty"` // container image
+	Args  []string `json:"args,omitempty" yaml:"args,omitempty"`   // container args
+
+	// Shared optional fields
+	Env []EnvVar `json:"env,omitempty" yaml:"env,omitempty"` // additional env vars
+
+	// Publish step fields
+	Notify  *NotifyConfig `json:"notify,omitempty" yaml:"notify,omitempty"`
+	Promote bool          `json:"promote,omitempty" yaml:"promote,omitempty"`
+}
+
+// NotifyConfig configures notifications for a publish step.
+type NotifyConfig struct {
+	Channels   []string `json:"channels,omitempty" yaml:"channels,omitempty"`
+	Recipients []string `json:"recipients,omitempty" yaml:"recipients,omitempty"`
+}
+
+// --- Schedule Types ---
+
+// ScheduleManifest represents a pipeline schedule defined in schedule.yaml.
+type ScheduleManifest struct {
+	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string `json:"kind" yaml:"kind"`
+	Cron       string `json:"cron" yaml:"cron"`
+	Timezone   string `json:"timezone,omitempty" yaml:"timezone,omitempty"`
+	Suspend    bool   `json:"suspend,omitempty" yaml:"suspend,omitempty"`
+}
+
+// --- Execution Types ---
+
+// StepStatus represents the execution status of a single pipeline step.
+type StepStatus string
+
+const (
+	StepStatusPending   StepStatus = "pending"
+	StepStatusRunning   StepStatus = "running"
+	StepStatusCompleted StepStatus = "completed"
+	StepStatusFailed    StepStatus = "failed"
+	StepStatusSkipped   StepStatus = "skipped"
+)
+
+// StepResult captures the outcome of executing a single pipeline step.
+type StepResult struct {
+	Name     string     `json:"name"`
+	Type     StepType   `json:"type"`
+	Status   StepStatus `json:"status"`
+	Duration string     `json:"duration,omitempty"`
+	Error    string     `json:"error,omitempty"`
+}
+
+// PipelineRunResult captures the outcome of executing a full pipeline.
+type PipelineRunResult struct {
+	PipelineName string       `json:"pipelineName"`
+	Status       StepStatus   `json:"status"` // overall: completed, failed, cancelled
+	Steps        []StepResult `json:"steps"`
+	Duration     string       `json:"duration"`
+	FailedStep   string       `json:"failedStep,omitempty"` // name of the step that failed
+}

@@ -1,0 +1,11 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: PipelineWorkflow
+metadata:
+  name: {{.Name}}
+  description: "Simple data synchronization pipeline"
+steps:
+  - name: sync-data
+    type: sync
+    source: "TODO-source-asset"
+    sink: "TODO-sink-asset"
+    description: "Sync data from source to sink"

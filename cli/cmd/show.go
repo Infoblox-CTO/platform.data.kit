@@ -8,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/pipeline"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -64,6 +66,10 @@ Examples:
 		}
 
 		fmt.Fprint(cmd.OutOrStdout(), output)
+
+		// Show schedule info if schedule.yaml exists
+		showScheduleInfo(absPath, cmd.OutOrStdout())
+
 		return nil
 	},
 }
@@ -134,6 +140,9 @@ func showManifest(packageDir string, w io.Writer) (string, error) {
 		}
 	}
 
+	// Resolve asset details if assets are referenced
+	resolveAssetDetails(base, packageDir)
+
 	// Format output
 	var output []byte
 	switch showOutputFormat {
@@ -153,4 +162,65 @@ func showManifest(packageDir string, w io.Writer) (string, error) {
 	}
 
 	return string(output), nil
+}
+
+// resolveAssetDetails enriches the assets section with resolved info from asset.yaml files.
+func resolveAssetDetails(base map[string]any, packageDir string) {
+	spec, ok := base["spec"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	assetNames, ok := spec["assets"].([]any)
+	if !ok || len(assetNames) == 0 {
+		return
+	}
+
+	var resolved []map[string]any
+	for _, nameAny := range assetNames {
+		name, ok := nameAny.(string)
+		if !ok {
+			continue
+		}
+
+		entry := map[string]any{"name": name}
+
+		a, err := asset.FindAssetByName(packageDir, name)
+		if err == nil && a != nil {
+			entry["extension"] = a.Extension
+			entry["version"] = a.Version
+			entry["type"] = string(a.Type)
+			if a.OwnerTeam != "" {
+				entry["ownerTeam"] = a.OwnerTeam
+			}
+		} else {
+			entry["status"] = "not found"
+		}
+
+		resolved = append(resolved, entry)
+	}
+
+	spec["assets"] = resolved
+}
+
+// showScheduleInfo displays schedule information if schedule.yaml exists.
+func showScheduleInfo(packageDir string, w io.Writer) {
+	sched, err := pipeline.LoadSchedule(packageDir)
+	if err != nil || sched == nil {
+		return
+	}
+
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "--- Schedule ---")
+	fmt.Fprintf(w, "  Cron:     %s\n", sched.Cron)
+	tz := sched.Timezone
+	if tz == "" {
+		tz = "UTC"
+	}
+	fmt.Fprintf(w, "  Timezone: %s\n", tz)
+	if sched.Suspend {
+		fmt.Fprintln(w, "  Status:   SUSPENDED")
+	} else {
+		fmt.Fprintln(w, "  Status:   Active")
+	}
 }

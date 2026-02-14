@@ -112,7 +112,9 @@ nav:
     - concepts/index.md
     - Overview: concepts/overview.md
     - Data Packages: concepts/data-packages.md
+    - Assets: concepts/assets.md
     - Manifests: concepts/manifests.md
+    - Pipeline Workflows: concepts/pipelines.md
     - Lineage: concepts/lineage.md
     - Governance: concepts/governance.md
     - Environments: concepts/environments.md

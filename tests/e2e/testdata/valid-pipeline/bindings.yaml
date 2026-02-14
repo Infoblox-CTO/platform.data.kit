@@ -4,7 +4,7 @@ metadata:
   name: valid-pipeline-bindings
 spec:
   bindings:
-    - name: source-events
+    - name: input.events
       kafkaTopic:
         bootstrapServers: kafka:9092
         topic: events

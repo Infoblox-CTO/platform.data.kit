@@ -1732,3 +1732,93 @@ func TestCloudQueryDockerfile_Go(t *testing.T) {
 		t.Error("Go Dockerfile should expose port 7777")
 	}
 }
+
+// --- Phase 5: Backward Compatibility Tests (T036) ---
+
+func TestRunCmd_BackwardCompat_NoPipelineYaml(t *testing.T) {
+	// Verify that dp run without pipeline.yaml works unchanged — still
+	// requires dp.yaml and routes through the standard DockerRunner path.
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pkg
+  namespace: test
+spec:
+  type: pipeline
+  description: "Test"
+  owner: "team"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// No pipeline.yaml — dp run should still work (will use default batch mode)
+
+	oldDryRun := runDryRun
+	defer func() { runDryRun = oldDryRun }()
+	runDryRun = true
+
+	cmd := &cobra.Command{}
+	err := runPipeline(cmd, []string{tmpDir})
+
+	// The error should NOT mention pipeline workflow or pipeline.Execute
+	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "failed to load pipeline workflow") {
+			t.Error("dp run should not try to load pipeline workflow when no pipeline.yaml exists")
+		}
+	}
+}
+
+func TestRunCmd_BackwardCompat_IgnoresPipelineWorkflow(t *testing.T) {
+	// Even if a pipeline.yaml (PipelineWorkflow kind) exists, dp run should
+	// go through dp.yaml DockerRunner path, not pipeline.Execute().
+	tmpDir := t.TempDir()
+
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pkg
+  namespace: test
+spec:
+  type: pipeline
+  description: "Test"
+  owner: "team"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write a PipelineWorkflow-style pipeline.yaml
+	pipelineContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: PipelineWorkflow
+metadata:
+  name: my-workflow
+steps:
+  - name: sync-data
+    type: sync
+    source: aws-source
+    sink: postgres-sink
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "pipeline.yaml"), []byte(pipelineContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDryRun := runDryRun
+	defer func() { runDryRun = oldDryRun }()
+	runDryRun = true
+
+	cmd := &cobra.Command{}
+	err := runPipeline(cmd, []string{tmpDir})
+
+	// dp run routes through DockerRunner — it may fail for docker reasons
+	// but must NOT fail because of pipeline workflow execution
+	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "failed to execute step") ||
+			strings.Contains(errMsg, "pipeline workflow") {
+			t.Errorf("dp run should not execute pipeline workflow steps, got error: %s", errMsg)
+		}
+	}
+}

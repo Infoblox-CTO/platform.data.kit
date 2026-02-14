@@ -221,3 +221,103 @@ func containsStr(s, substr string) bool {
 	}
 	return false
 }
+
+// --- Schedule Display Test (T044) ---
+
+func TestShowCmd_DisplaysSchedule(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Write a minimal dp.yaml
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pkg
+  namespace: test
+spec:
+  type: pipeline
+  description: "Test"
+  owner: "team"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write a schedule.yaml
+	schedContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: Schedule
+cron: "0 6 * * *"
+timezone: America/Chicago
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "schedule.yaml"), []byte(schedContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Reset flags
+	showSet = nil
+	showValueFiles = nil
+	showOutputFormat = "yaml"
+
+	var buf bytes.Buffer
+	cmd := rootCmd
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"show", tmpDir})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("show command error = %v", err)
+	}
+
+	output := buf.String()
+	if !containsStr(output, "--- Schedule ---") {
+		t.Errorf("output should contain schedule section, got:\n%s", output)
+	}
+	if !containsStr(output, "0 6 * * *") {
+		t.Errorf("output should contain cron expression, got:\n%s", output)
+	}
+	if !containsStr(output, "America/Chicago") {
+		t.Errorf("output should contain timezone, got:\n%s", output)
+	}
+	if !containsStr(output, "Active") {
+		t.Errorf("output should contain Active status, got:\n%s", output)
+	}
+}
+
+func TestShowCmd_NoSchedule(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Write dp.yaml only, no schedule.yaml
+	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: test-pkg
+  namespace: test
+spec:
+  type: pipeline
+  description: "Test"
+  owner: "team"
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	showSet = nil
+	showValueFiles = nil
+	showOutputFormat = "yaml"
+
+	var buf bytes.Buffer
+	cmd := rootCmd
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"show", tmpDir})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("show command error = %v", err)
+	}
+
+	output := buf.String()
+	if containsStr(output, "--- Schedule ---") {
+		t.Errorf("output should NOT contain schedule section when no schedule.yaml exists, got:\n%s", output)
+	}
+}

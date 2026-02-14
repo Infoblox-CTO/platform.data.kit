@@ -78,6 +78,9 @@ spec:                               # Required: Package specification
           - string
       config:                       # Optional: Type-specific configuration
         key: value
+
+  assets:                           # Optional: Asset references
+    - string                        # Asset name (DNS-safe, must match an asset under assets/)
 ```
 
 ### Field Reference
@@ -494,6 +497,238 @@ bindings:
       host: postgres:5432
       driver: postgresql
 ```
+
+---
+
+## asset.yaml Schema
+
+Asset configuration file for extension instances. Located at `assets/<type>/<name>/asset.yaml`.
+
+### Full Schema
+
+```yaml
+# asset.yaml
+apiVersion: cdpp.io/v1alpha1        # Required: API version
+kind: Asset                          # Required: Always "Asset"
+name: string                         # Required: Asset name (DNS-safe, 3-63 chars)
+type: string                         # Required: source | sink | model-engine
+extension: string                    # Required: Extension FQN (vendor.kind.name)
+version: string                      # Required: Extension version (semver, e.g., v24.0.2)
+ownerTeam: string                    # Required: Owning team name
+description: string                  # Optional: Human-readable description
+binding: string                      # Optional: Reference to bindings.yaml entry name
+config:                              # Required: Extension-specific configuration
+  key: value                         #   Validated against the extension's JSON Schema
+labels:                              # Optional: Key-value labels
+  key: value
+```
+
+### Field Reference
+
+#### name
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Pattern | `^[a-z][a-z0-9-]{2,62}$` |
+| Description | DNS-safe asset identifier. Must start with a lowercase letter. |
+
+#### type
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Enum | `source`, `sink`, `model-engine` |
+| Description | Asset type, must match the `kind` segment of the extension FQN. |
+
+#### extension
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Format | `<vendor>.<kind>.<name>` |
+| Description | Fully-qualified extension name identifying the runtime extension. |
+
+#### version
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Format | Semantic version (e.g., `v24.0.2`) |
+| Description | Pinned extension version. |
+
+#### config
+
+| Property | Value |
+|----------|-------|
+| Type | object |
+| Required | Yes |
+| Description | Extension-specific configuration validated against the extension's JSON Schema. |
+
+#### binding
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Description | Name of a binding entry in `bindings.yaml`. Cross-validated by `dp validate`. |
+
+### Directory Structure
+
+Assets are placed in type-based directories under `assets/`:
+
+| Type | Directory |
+|------|-----------|
+| `source` | `assets/sources/<name>/asset.yaml` |
+| `sink` | `assets/sinks/<name>/asset.yaml` |
+| `model-engine` | `assets/models/<name>/asset.yaml` |
+
+### Asset Validation Error Codes
+
+| Code | Message | Resolution |
+|------|---------|------------|
+| E070 | Required field missing | Add the required field to asset.yaml |
+| E071 | Invalid extension FQN | Use `vendor.kind.name` format |
+| E072 | Invalid version format | Use semver format (e.g., `v1.0.0`) |
+| E073 | Type does not match extension kind | Ensure `type` matches the kind segment of the FQN |
+| E074 | Config fails schema validation | Fix config per the extension's JSON Schema |
+| E075 | Extension schema not found | Check extension FQN and version |
+| E076 | Asset referenced in dp.yaml not found | Run `dp asset create <name> --ext <extension>` |
+| E077 | Asset binding not found in bindings.yaml | Add the binding entry to bindings.yaml |
+
+---
+
+## pipeline.yaml Schema
+
+The pipeline workflow manifest defines ordered execution steps for multi-step data pipelines.
+
+### Full Schema
+
+```yaml
+# pipeline.yaml
+apiVersion: data.infoblox.com/v1alpha1  # Required: API version
+kind: PipelineWorkflow                  # Required: Resource type
+
+metadata:                               # Required: Pipeline metadata
+  name: string                          # Required: Pipeline name (3-63 chars, lowercase)
+  description: string                   # Optional: Human-readable description
+
+steps:                                  # Required: Ordered list of steps
+  - name: string                        # Required: Step name (3-63 chars, DNS-safe)
+    type: string                        # Required: sync | transform | test | publish | custom
+    description: string                 # Optional: Step description
+
+    # Sync step fields
+    source: string                      # Required for sync: Source asset name
+    sink: string                        # Required for sync: Sink asset name
+
+    # Transform step fields
+    asset: string                       # Required for transform: Asset name
+
+    # Test step fields
+    asset: string                       # Required for test: Asset to test
+    command: [string]                   # Required for test: Command and args
+
+    # Publish step fields
+    promote: boolean                    # Optional: Trigger promotion
+    notify:                             # Optional: Notification config
+      channels: [string]               # Notification channels
+      recipients: [string]             # Direct recipients
+
+    # Custom step fields
+    image: string                       # Required for custom: Container image
+    command: [string]                   # Optional: Override entrypoint
+    args: [string]                      # Optional: Container arguments
+
+    # Common optional fields
+    env:                                # Optional: Environment variables
+      - name: string
+        value: string
+      - name: string
+        valueFrom:
+          secretRef:
+            name: string
+            key: string
+```
+
+### Step Type Requirements
+
+| Type | Required Fields | Description |
+|------|----------------|-------------|
+| `sync` | `source`, `sink` | Data ingestion from source to sink |
+| `transform` | `asset` | Transformation engine execution |
+| `test` | `asset`, `command` | Validation and assertions |
+| `publish` | — | Notification and promotion |
+| `custom` | `image` | Arbitrary container execution |
+
+### Validation Error Codes
+
+| Code | Message | Resolution |
+|------|---------|------------|
+| E080 | `metadata.name is required` | Add name to metadata |
+| E081 | `steps list is required` | Add at least one step |
+| E082 | `step name is required` | Give each step a name |
+| E083 | `step type is required` | Set type: sync/transform/test/publish/custom |
+| E084 | `invalid step name format` | Use 3-63 lowercase chars, hyphens allowed |
+| E085 | `duplicate step name` | Make each step name unique |
+| E086 | `invalid step type` | Use a valid step type |
+| E087 | `sync step requires source` | Add source field to sync step |
+| E088 | `sync step requires sink` | Add sink field to sync step |
+| E089 | `transform step requires asset` | Add asset field to transform step |
+| E090 | `test step requires asset` | Add asset field to test step |
+| E091 | `custom step requires image` | Add image field to custom step |
+
+---
+
+## schedule.yaml Schema
+
+Optional cron-based schedule for pipeline execution.
+
+### Full Schema
+
+```yaml
+# schedule.yaml
+apiVersion: data.infoblox.com/v1alpha1  # Required: API version
+kind: Schedule                          # Required: Resource type
+
+cron: string                            # Required: 5-field cron expression
+timezone: string                        # Optional: IANA timezone (default: UTC)
+suspend: boolean                        # Optional: Pause execution (default: false)
+```
+
+### Cron Expression Format
+
+```
+┌───────────── minute (0-59)
+│ ┌───────────── hour (0-23)
+│ │ ┌───────────── day of month (1-31)
+│ │ │ ┌───────────── month (1-12)
+│ │ │ │ ┌───────────── day of week (0-6, Sun=0)
+│ │ │ │ │
+* * * * *
+```
+
+### Examples
+
+| Expression | Description |
+|-----------|-------------|
+| `0 6 * * *` | Every day at 6:00 AM |
+| `*/15 * * * *` | Every 15 minutes |
+| `0 0 * * 1` | Every Monday at midnight |
+| `0 8 1 * *` | First day of each month at 8:00 AM |
+
+### Validation Error Codes
+
+| Code | Message | Resolution |
+|------|---------|------------|
+| E100 | `cron expression is required` | Add a cron field |
+| E101 | `invalid cron expression` | Use valid 5-field cron syntax |
+| E102 | `invalid timezone` | Use a valid IANA timezone (e.g., America/New_York) |
+| E103 | `schedule has no actionable fields` | Add cron expression |
 
 ---
 

@@ -2,10 +2,13 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/pipeline"
 )
 
 // AggregateValidator validates all manifests in a package directory.
@@ -42,12 +45,15 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		return result
 	}
 
+	var dpPkg *contracts.DataPackage
+
 	dpPath := filepath.Join(v.packageDir, "dp.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
 		result.AddError(ErrFileNotFound, "dp.yaml", "dp.yaml not found - this is required for a valid package")
 	} else {
-		dpResult := v.validateDataPackage(ctx, dpPath)
+		dpResult, pkg := v.validateDataPackage(ctx, dpPath)
 		result.Merge(dpResult)
+		dpPkg = pkg
 	}
 
 	bindingsPath := filepath.Join(v.packageDir, "bindings.yaml")
@@ -62,17 +68,43 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		result.Merge(schemasResult)
 	}
 
+	// Validate assets if assets/ directory exists
+	assetsResult := v.validateAssets(ctx)
+	result.Merge(assetsResult)
+
+	// Check for orphan assets (assets on disk not referenced in dp.yaml)
+	v.checkOrphanAssets(result, dpPkg)
+
+	// Validate pipeline workflow if pipeline.yaml exists and is PipelineWorkflow kind.
+	// Skip validation for legacy pipeline.yaml files (kind: Pipeline) which are
+	// validated as part of the runtime configuration, not as workflow definitions.
+	pipelinePath := filepath.Join(v.packageDir, pipeline.PipelineFileName)
+	if _, err := os.Stat(pipelinePath); err == nil {
+		pw, loadErr := pipeline.LoadPipeline(pipelinePath)
+		if loadErr == nil && pw.Kind == "PipelineWorkflow" {
+			pwResult := v.validatePipelineWorkflow(ctx, pipelinePath)
+			result.Merge(pwResult)
+		}
+	}
+
+	// Validate schedule if schedule.yaml exists
+	schedulePath := filepath.Join(v.packageDir, ScheduleFileName)
+	if _, err := os.Stat(schedulePath); err == nil {
+		schedResult := v.validateSchedule(ctx, schedulePath)
+		result.Merge(schedResult)
+	}
+
 	return result
 }
 
 // validateDataPackage validates the dp.yaml file.
-func (v *AggregateValidator) validateDataPackage(ctx context.Context, path string) *ValidationResult {
+func (v *AggregateValidator) validateDataPackage(ctx context.Context, path string) (*ValidationResult, *contracts.DataPackage) {
 	result := NewValidationResult()
 
 	validator, err := NewDataPackageValidatorFromFile(path)
 	if err != nil {
 		result.AddError(ErrParseError, "dp.yaml", "failed to parse dp.yaml: "+err.Error())
-		return result
+		return result, nil
 	}
 
 	errs := validator.Validate(ctx)
@@ -83,8 +115,9 @@ func (v *AggregateValidator) validateDataPackage(ctx context.Context, path strin
 		}
 	}
 
-	// Run CloudQuery-specific validation if the package type is cloudquery
 	pkg := validator.Package()
+
+	// Run CloudQuery-specific validation if the package type is cloudquery
 	if pkg != nil && pkg.Spec.Type == contracts.PackageTypeCloudQuery {
 		cqValidator := NewCloudQueryValidator(pkg)
 		cqErrs := cqValidator.Validate(ctx)
@@ -103,7 +136,7 @@ func (v *AggregateValidator) validateDataPackage(ctx context.Context, path strin
 		result.Merge(piiResult)
 	}
 
-	return result
+	return result, pkg
 }
 
 // validateBindings validates the bindings.yaml file.
@@ -120,6 +153,18 @@ func (v *AggregateValidator) validateBindings(ctx context.Context, path string) 
 	if errs.HasErrors() {
 		result.Valid = false
 		for _, e := range errs {
+			result.Errors.Add(e)
+		}
+	}
+
+	// Cross-validate asset-binding references
+	assets, loadErr := asset.LoadAllAssets(v.packageDir)
+	if loadErr == nil && len(assets) > 0 {
+		assetErrs := validator.ValidateAssetBindings(assets)
+		if assetErrs.HasErrors() {
+			result.Valid = false
+		}
+		for _, e := range assetErrs {
 			result.Errors.Add(e)
 		}
 	}
@@ -156,6 +201,33 @@ func (v *AggregateValidator) validateSchemas(ctx context.Context, schemasDir str
 	}
 
 	return result
+}
+
+// checkOrphanAssets warns about assets on disk that are not referenced in dp.yaml.
+func (v *AggregateValidator) checkOrphanAssets(result *ValidationResult, dpPkg *contracts.DataPackage) {
+	assets, err := asset.LoadAllAssets(v.packageDir)
+	if err != nil || len(assets) == 0 {
+		return
+	}
+
+	// Build set of referenced asset names from dp.yaml
+	referenced := make(map[string]bool)
+	if dpPkg != nil {
+		for _, name := range dpPkg.Spec.Assets {
+			referenced[name] = true
+		}
+	}
+
+	// If dp.yaml has no assets section at all, don't warn — the user may not have adopted assets yet
+	if dpPkg == nil || len(dpPkg.Spec.Assets) == 0 {
+		return
+	}
+
+	for _, a := range assets {
+		if !referenced[a.Name] {
+			result.AddWarning(fmt.Sprintf("asset %q exists in assets/ but is not referenced in dp.yaml spec.assets (consider adding it or removing the asset)", a.Name))
+		}
+	}
 }
 
 // validateAvroSchema validates an Avro schema file.
@@ -214,6 +286,34 @@ func bytesContain(data, pattern []byte) bool {
 	return false
 }
 
+// validateAssets validates all asset.yaml files in the assets/ directory.
+func (v *AggregateValidator) validateAssets(ctx context.Context) *ValidationResult {
+	result := NewValidationResult()
+
+	assets, err := asset.LoadAllAssets(v.packageDir)
+	if err != nil {
+		result.AddWarning("failed to load assets: " + err.Error())
+		return result
+	}
+
+	if len(assets) == 0 {
+		return result
+	}
+
+	validator := NewAssetValidator(asset.DefaultResolver())
+	for _, a := range assets {
+		errs := validator.ValidateAsset(ctx, a)
+		if errs.HasErrors() {
+			result.Valid = false
+		}
+		for _, e := range errs {
+			result.Errors.Add(e)
+		}
+	}
+
+	return result
+}
+
 // validatePII runs PII classification validation on a data package.
 func (v *AggregateValidator) validatePII(ctx context.Context, pkg *contracts.DataPackage) *ValidationResult {
 	result := NewValidationResult()
@@ -224,6 +324,60 @@ func (v *AggregateValidator) validatePII(ctx context.Context, pkg *contracts.Dat
 
 	piiValidator := NewPIIValidator()
 	errs := piiValidator.Validate(pkg)
+	if errs.HasErrors() {
+		result.Valid = false
+		for _, e := range errs {
+			result.Errors.Add(e)
+		}
+	}
+
+	return result
+}
+
+// validatePipelineWorkflow validates a pipeline.yaml file.
+func (v *AggregateValidator) validatePipelineWorkflow(ctx context.Context, path string) *ValidationResult {
+	result := NewValidationResult()
+
+	pwValidator, err := NewPipelineWorkflowValidatorFromFile(path)
+	if err != nil {
+		result.AddError(ErrParseError, "pipeline.yaml", "failed to parse pipeline.yaml: "+err.Error())
+		return result
+	}
+
+	errs := pwValidator.Validate(ctx)
+	if errs.HasErrors() {
+		result.Valid = false
+		for _, e := range errs {
+			result.Errors.Add(e)
+		}
+	}
+
+	// Cross-validate asset references if assets exist
+	assets, loadErr := asset.LoadAllAssets(v.packageDir)
+	if loadErr == nil && len(assets) > 0 {
+		assetErrs := ValidateAssetReferences(pwValidator.Workflow(), assets)
+		if assetErrs.HasErrors() {
+			result.Valid = false
+			for _, e := range assetErrs {
+				result.Errors.Add(e)
+			}
+		}
+	}
+
+	return result
+}
+
+// validateSchedule validates a schedule.yaml file.
+func (v *AggregateValidator) validateSchedule(ctx context.Context, path string) *ValidationResult {
+	result := NewValidationResult()
+
+	schedValidator, err := NewScheduleValidatorFromFile(path)
+	if err != nil {
+		result.AddError(ErrParseError, "schedule.yaml", "failed to parse schedule.yaml: "+err.Error())
+		return result
+	}
+
+	errs := schedValidator.Validate(ctx)
 	if errs.HasErrors() {
 		result.Valid = false
 		for _, e := range errs {
