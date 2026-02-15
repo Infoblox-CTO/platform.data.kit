@@ -6,10 +6,13 @@ import (
 )
 
 func TestDefaultPorts(t *testing.T) {
+	// DefaultPorts is now derived from charts.DefaultCharts.
+	// Verify key services are present and have expected primary ports.
 	expectedPorts := map[string]int{
 		"redpanda":   19092,
 		"localstack": 4566,
 		"postgres":   5432,
+		"marquez":    5000,
 	}
 
 	for service, expected := range expectedPorts {
@@ -18,6 +21,11 @@ func TestDefaultPorts(t *testing.T) {
 		} else if port != expected {
 			t.Errorf("DefaultPorts[%q] = %d, want %d", service, port, expected)
 		}
+	}
+
+	// Verify count matches number of charts
+	if len(DefaultPorts) != 4 {
+		t.Errorf("DefaultPorts has %d entries, want 4", len(DefaultPorts))
 	}
 }
 

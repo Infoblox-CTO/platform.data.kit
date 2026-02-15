@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
 	"github.com/spf13/cobra"
 )
 
@@ -46,14 +47,21 @@ Examples:
 var devUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start the local development stack",
-	Long: `Start the local development stack using Docker Compose.
+	Long: `Start the local development stack by deploying Helm charts to a k3d cluster.
 
-This command starts all required services for local development:
-  - Redpanda: Kafka-compatible streaming at localhost:19092
-  - LocalStack: S3 at localhost:4566
-  - PostgreSQL: Database at localhost:5432
+This command deploys all required dev dependency charts:
+  - Redpanda: Kafka-compatible streaming
+  - LocalStack: AWS-compatible S3
+  - PostgreSQL: Relational database
+  - Marquez: Data lineage tracking
 
-The command waits for all services to become healthy before returning.`,
+Each chart includes init jobs that automatically create topics, buckets,
+database schemas, and lineage namespaces. The command waits for all
+services to become healthy before returning.
+
+Chart versions and Helm values can be overridden via dp config:
+  dp config set dev.charts.redpanda.version 25.2.0
+  dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi`,
 	RunE: runDevUp,
 }
 
@@ -266,7 +274,7 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 
 	// Check port availability only if not already running
 	portChecker := localdev.NewPortChecker(1 * time.Second)
-	if err := portChecker.CheckAllAvailable([]int{19092, 4566, 5432}); err != nil {
+	if err := portChecker.CheckAllAvailable(charts.AllLocalPorts(charts.DefaultCharts)); err != nil {
 		return fmt.Errorf("port availability check failed: %w", err)
 	}
 
@@ -302,11 +310,11 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("\nEndpoints:")
-	fmt.Println("  Kafka:           localhost:19092")
-	fmt.Println("  Schema Registry: localhost:18081")
-	fmt.Println("  Redpanda Console: http://localhost:8080")
-	fmt.Println("  S3 (LocalStack): localhost:4566")
-	fmt.Println("  PostgreSQL:      localhost:5432")
+	for _, def := range charts.DefaultCharts {
+		for _, ep := range def.DisplayEndpoints {
+			fmt.Printf("  %-18s %s\n", ep.Label+":", ep.URL)
+		}
+	}
 
 	return nil
 }

@@ -9,6 +9,7 @@ GOPATH := $(HOME)/go
 .PHONY: test-contracts test-sdk test-cli test-controller
 .PHONY: lint-contracts lint-sdk lint-cli lint-controller
 .PHONY: tidy install run-local
+.PHONY: helm-deps
 
 # Default target
 all: lint test build
@@ -147,6 +148,20 @@ stop-local:
 	@echo "Stopping local development stack..."
 	@docker compose -f hack/compose/docker-compose.yaml down
 	@echo "✓ Local stack stopped"
+
+# ============================================================================
+# Helm chart dependency targets
+# ============================================================================
+
+helm-deps:
+	@echo "Building Helm chart dependencies..."
+	@for chart in sdk/localdev/charts/redpanda sdk/localdev/charts/postgres; do \
+		if [ -f "$$chart/Chart.yaml" ] && grep -q "dependencies:" "$$chart/Chart.yaml"; then \
+			echo "  Building deps for $$(basename $$chart)..."; \
+			helm dependency build "$$chart"; \
+		fi; \
+	done
+	@echo "✓ Helm chart dependencies built"
 
 # ============================================================================
 # Code generation targets

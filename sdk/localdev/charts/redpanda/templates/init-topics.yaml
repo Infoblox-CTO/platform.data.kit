@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-init-topics
+  labels:
+    app.kubernetes.io/name: redpanda
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: redpanda-init-topics
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-topics
+          image: docker.redpanda.com/redpandadata/redpanda:v25.3.6
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              BROKER="{{ .Release.Name }}:9092"
+
+              # Wait for Redpanda to be ready
+              echo "Waiting for Redpanda to be ready..."
+              until rpk cluster info --brokers "$BROKER" 2>/dev/null; do
+                echo "Redpanda not ready yet, retrying in 5s..."
+                sleep 5
+              done
+
+              echo "Creating topics..."
+              {{- range $topic := list "dp.raw.events" "dp.processed.events" "dp.errors.dlq" "dp.audit.logs" "dp.test.input" "dp.test.output" }}
+              rpk topic create "{{ $topic }}" --brokers "$BROKER" --partitions 1 --replicas 1 2>/dev/null || echo "Topic {{ $topic }} already exists"
+              {{- end }}
+
+              echo "All topics created successfully."
+              rpk topic list --brokers "$BROKER"

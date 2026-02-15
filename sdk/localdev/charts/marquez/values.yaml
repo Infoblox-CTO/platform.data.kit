@@ -1,0 +1,43 @@
+replicaCount: 1
+
+api:
+  image:
+    repository: marquezproject/marquez
+    pullPolicy: IfNotPresent
+    tag: "0.51.1"
+  port: 5000
+  adminPort: 5001
+  resources:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+web:
+  image:
+    repository: marquezproject/marquez-web
+    pullPolicy: IfNotPresent
+    tag: "0.51.1"
+  port: 3000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+db:
+  host: dp-postgres-postgresql
+  port: 5432
+  name: marquez
+  user: postgres
+  password: devpassword
+
+marquez:
+  migrateOnStartup: true
+
+service:
+  type: ClusterIP

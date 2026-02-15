@@ -1,28 +1,47 @@
 # PostgreSQL values for dp local development
-replicaCount: 1
+# These values configure the upstream bitnami/postgresql subchart for dev use.
 
-image:
-  repository: postgres
-  pullPolicy: IfNotPresent
-  tag: "16-alpine"
+postgresql:
+  architecture: standalone
 
-service:
-  type: ClusterIP
-  port: 5432
+  auth:
+    postgresPassword: devpassword
+    username: dpuser
+    password: dppassword
+    database: dataplatform
 
-# Database credentials (local dev only)
-auth:
-  database: postgres
-  username: postgres
-  password: postgres
+  primary:
+    persistence:
+      enabled: false
+    resourcesPreset: nano
+    initdb:
+      user: postgres
+      password: devpassword
+      scripts:
+        init-schemas.sql: |
+          -- Create marquez role (used by Marquez API's built-in dev config)
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'marquez') THEN
+              CREATE ROLE marquez WITH LOGIN PASSWORD 'marquez';
+            END IF;
+          END
+          $$;
 
-resources:
-  limits:
-    cpu: "1"
-    memory: 512Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
+          -- Create additional databases for dev services
+          SELECT 'CREATE DATABASE marquez OWNER marquez' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'marquez')\gexec
+          SELECT 'CREATE DATABASE lineage' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lineage')\gexec
 
-persistence:
-  enabled: false
+          -- Grant marquez user full access to its database
+          GRANT ALL PRIVILEGES ON DATABASE marquez TO marquez;
+
+          -- Connect to dataplatform DB and create schemas
+          \c dataplatform
+          CREATE SCHEMA IF NOT EXISTS dp;
+          CREATE SCHEMA IF NOT EXISTS staging;
+          CREATE SCHEMA IF NOT EXISTS curated;
+
+          -- Grant permissions to dpuser
+          GRANT ALL PRIVILEGES ON SCHEMA dp TO dpuser;
+          GRANT ALL PRIVILEGES ON SCHEMA staging TO dpuser;
+          GRANT ALL PRIVILEGES ON SCHEMA curated TO dpuser;

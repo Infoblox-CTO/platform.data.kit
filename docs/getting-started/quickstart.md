@@ -71,24 +71,25 @@ spec:
 
 ## Step 2: Start Local Development
 
-Start the local development stack (Kafka, S3, Marquez):
+Start the local development stack. This deploys four services as Helm charts into a local k3d cluster:
+
+- **Redpanda** — Kafka-compatible streaming (port 19092)
+- **LocalStack** — AWS-compatible S3 (port 4566)
+- **PostgreSQL** — Relational database (port 5432)
+- **Marquez** — Data lineage tracking (ports 5000, 3000)
 
 ```bash
 dp dev up
 ```
 
-!!! tip "Alternative: Use k3d Runtime"
-    You can also run the local development stack using k3d (Kubernetes):
+Each chart includes init jobs that automatically create topics, buckets, database schemas, and lineage namespaces — no manual setup required.
+
+!!! tip "Alternative: Use Docker Compose"
+    You can also run the local development stack using Docker Compose:
     
     ```bash
-    dp dev up --runtime=k3d
+    dp dev up --runtime=compose
     ```
-    
-    This creates a k3d cluster with the same services. Useful when:
-    
-    - You want to test Kubernetes-native deployments
-    - You're running from a directory without docker-compose.yaml
-    - You need to simulate production K8s environments locally
 
 Check the status:
 
@@ -101,17 +102,30 @@ Expected output:
 ```
 Local Development Stack
 ───────────────────────
-Service     Status    Port
-kafka       running   9092
-minio       running   9000
-marquez     running   5000
-postgres    running   5432
+Chart         Status    Ports
+redpanda      healthy   19092, 18081
+localstack    healthy   4566
+postgres      healthy   5432
+marquez       healthy   5000, 3000
 
-Marquez UI: http://localhost:5000
+Endpoints:
+  Kafka:              localhost:19092
+  Schema Registry:    http://localhost:18081
+  S3 API:             http://localhost:4566
+  PostgreSQL:         localhost:5432
+  Marquez API:        http://localhost:5000
+  Marquez Web:        http://localhost:3000
 ```
 
 !!! tip "View Lineage"
-    Open http://localhost:5000 in your browser to see the Marquez lineage UI.
+    Open http://localhost:3000 in your browser to see the Marquez lineage UI.
+
+!!! info "Chart Customization"
+    You can override chart versions or Helm values via the config system:
+    ```bash
+    dp config set dev.charts.redpanda.version 25.2.0
+    dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
+    ```
 
 ## Step 3: Validate Your Package
 

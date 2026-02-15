@@ -1,29 +1,49 @@
 # Redpanda values for dp local development
-replicaCount: 1
+# These values configure the upstream redpanda subchart for single-node dev use.
+# developer_mode skips hardware/memory checks that fail inside k3d.
 
-image:
-  repository: docker.redpanda.com/redpandadata/redpanda
-  pullPolicy: IfNotPresent
-  tag: "v24.2.4"
+redpanda:
+  statefulset:
+    replicas: 1
 
-service:
-  type: ClusterIP
-  kafka:
-    port: 9092
-  schemaRegistry:
-    port: 8081
-  httpProxy:
-    port: 8082
-  adminApi:
-    port: 9644
+  config:
+    node:
+      developer_mode: true
 
-resources:
-  limits:
-    cpu: "1"
-    memory: 1Gi
-  requests:
-    cpu: 100m
-    memory: 256Mi
+  storage:
+    persistentVolume:
+      enabled: false
 
-persistence:
-  enabled: false
+  tls:
+    enabled: false
+
+  external:
+    enabled: false
+
+  tuning:
+    tune_aio_events: false
+
+  resources:
+    cpu:
+      cores: 1
+    memory:
+      enable_memory_locking: false
+      container:
+        max: 2Gi
+        min: 2Gi
+      redpanda:
+        memory: 1Gi
+        reserveMemory: 256Mi
+
+  listeners:
+    kafka:
+      port: 9092
+    schemaRegistry:
+      port: 8081
+    http:
+      port: 8082
+    admin:
+      port: 9644
+
+  console:
+    enabled: false

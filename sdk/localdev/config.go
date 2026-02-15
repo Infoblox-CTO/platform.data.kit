@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
 	"gopkg.in/yaml.v3"
 )
 
@@ -86,6 +87,8 @@ type DevConfig struct {
 	Workspace string `yaml:"workspace"`
 	// K3d contains k3d-specific configuration.
 	K3d K3dConfig `yaml:"k3d"`
+	// Charts contains per-chart overrides (version, values).
+	Charts map[string]charts.ChartOverride `yaml:"charts,omitempty"`
 }
 
 // K3dConfig represents k3d-specific configuration.
@@ -290,6 +293,29 @@ var knownConfigKeys = map[string]bool{
 	"plugins.registry":    true,
 }
 
+// isChartKey checks if a key matches the dynamic pattern dev.charts.<name>.version
+// or dev.charts.<name>.values.<path>.
+func isChartKey(key string) (chartName, field, valuesPath string, ok bool) {
+	parts := strings.Split(key, ".")
+	if len(parts) < 4 || parts[0] != "dev" || parts[1] != "charts" {
+		return "", "", "", false
+	}
+	chartName = parts[2]
+	field = parts[3]
+	switch field {
+	case "version":
+		if len(parts) == 4 {
+			return chartName, "version", "", true
+		}
+	case "values":
+		if len(parts) >= 5 {
+			valuesPath = strings.Join(parts[4:], ".")
+			return chartName, "values", valuesPath, true
+		}
+	}
+	return "", "", "", false
+}
+
 // validRuntimes lists valid values for dev.runtime.
 var validRuntimes = map[string]bool{
 	"k3d":     true,
@@ -397,6 +423,14 @@ func ValidateField(key, value string) error {
 		return nil
 	}
 
+	// Check for dynamic chart keys
+	if _, field, _, ok := isChartKey(key); ok {
+		if field == "version" && value != "" && !semverRegex.MatchString(value) {
+			return fmt.Errorf("invalid version %q (must match v0.0.0)", value)
+		}
+		return nil
+	}
+
 	if !knownConfigKeys[key] {
 		return fmt.Errorf("unknown config key %q", key)
 	}
@@ -456,6 +490,25 @@ func (c *Config) SetField(key, value string) error {
 			dest.Path = value
 		}
 		c.Plugins.Destinations[destName] = dest
+		return nil
+	}
+
+	// Handle dynamic chart keys (dev.charts.<name>.version / dev.charts.<name>.values.<path>)
+	if chartName, field, valuesPath, ok := isChartKey(key); ok {
+		if c.Dev.Charts == nil {
+			c.Dev.Charts = make(map[string]charts.ChartOverride)
+		}
+		override := c.Dev.Charts[chartName]
+		switch field {
+		case "version":
+			override.Version = value
+		case "values":
+			if override.Values == nil {
+				override.Values = make(map[string]interface{})
+			}
+			override.Values[valuesPath] = value
+		}
+		c.Dev.Charts[chartName] = override
 		return nil
 	}
 
@@ -527,6 +580,30 @@ func (c *Config) UnsetField(key string) error {
 			delete(c.Plugins.Destinations, destName)
 		} else {
 			c.Plugins.Destinations[destName] = dest
+		}
+		return nil
+	}
+
+	// Handle dynamic chart keys
+	if chartName, field, valuesPath, ok := isChartKey(key); ok {
+		if c.Dev.Charts == nil {
+			return nil
+		}
+		override, exists := c.Dev.Charts[chartName]
+		if !exists {
+			return nil
+		}
+		switch field {
+		case "version":
+			override.Version = ""
+		case "values":
+			delete(override.Values, valuesPath)
+		}
+		// Remove entry if empty
+		if override.Version == "" && len(override.Values) == 0 {
+			delete(c.Dev.Charts, chartName)
+		} else {
+			c.Dev.Charts[chartName] = override
 		}
 		return nil
 	}
@@ -624,6 +701,28 @@ func (c *Config) GetField(key string) (string, bool) {
 		return "", false
 	}
 
+	// Handle dynamic chart keys
+	if chartName, field, valuesPath, ok := isChartKey(key); ok {
+		if c.Dev.Charts == nil {
+			return "", false
+		}
+		override, exists := c.Dev.Charts[chartName]
+		if !exists {
+			return "", false
+		}
+		switch field {
+		case "version":
+			if override.Version != "" {
+				return override.Version, true
+			}
+		case "values":
+			if v, ok := override.Values[valuesPath]; ok {
+				return fmt.Sprintf("%v", v), true
+			}
+		}
+		return "", false
+	}
+
 	switch key {
 	case "dev.runtime":
 		if c.Dev.Runtime != "" {
@@ -651,8 +750,11 @@ func EffectiveValue(key string) (value string, source string, err error) {
 	// Check dynamic override keys
 	if _, _, ok := isOverrideKey(key); !ok {
 		// Check dynamic destination keys
-		if _, _, ok := isDestinationKey(key); !ok && !knownConfigKeys[key] {
-			return "", "", fmt.Errorf("unknown config key %q", key)
+		if _, _, ok := isDestinationKey(key); !ok {
+			// Check dynamic chart keys
+			if _, _, _, ok := isChartKey(key); !ok && !knownConfigKeys[key] {
+				return "", "", fmt.Errorf("unknown config key %q", key)
+			}
 		}
 	}
 

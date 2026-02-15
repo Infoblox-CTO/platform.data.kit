@@ -852,3 +852,109 @@ func TestDestinationConfig_EffectiveValue(t *testing.T) {
 		t.Errorf("EffectiveValue() should accept destination key, got: %v", err)
 	}
 }
+
+// TestChartOverride_SetGetUnset tests round-trip of chart override config keys.
+func TestChartOverride_SetGetUnset(t *testing.T) {
+	config := &Config{}
+
+	// Set chart version
+	if err := config.SetField("dev.charts.redpanda.version", "v25.2.0"); err != nil {
+		t.Fatalf("SetField(dev.charts.redpanda.version) error: %v", err)
+	}
+
+	// Get chart version
+	val, ok := config.GetField("dev.charts.redpanda.version")
+	if !ok || val != "v25.2.0" {
+		t.Errorf("GetField(dev.charts.redpanda.version) = %q, %v; want %q, true", val, ok, "v25.2.0")
+	}
+
+	// Set chart value override
+	if err := config.SetField("dev.charts.postgres.values.primary.resources.limits.memory", "512Mi"); err != nil {
+		t.Fatalf("SetField(dev.charts.postgres.values...) error: %v", err)
+	}
+
+	// Get chart value override
+	val, ok = config.GetField("dev.charts.postgres.values.primary.resources.limits.memory")
+	if !ok || val != "512Mi" {
+		t.Errorf("GetField(dev.charts.postgres.values...) = %q, %v; want %q, true", val, ok, "512Mi")
+	}
+
+	// Unset chart version
+	if err := config.UnsetField("dev.charts.redpanda.version"); err != nil {
+		t.Fatalf("UnsetField(dev.charts.redpanda.version) error: %v", err)
+	}
+	_, ok = config.GetField("dev.charts.redpanda.version")
+	if ok {
+		t.Error("GetField should return false after UnsetField")
+	}
+
+	// Unset chart value
+	if err := config.UnsetField("dev.charts.postgres.values.primary.resources.limits.memory"); err != nil {
+		t.Fatalf("UnsetField(dev.charts.postgres.values...) error: %v", err)
+	}
+	_, ok = config.GetField("dev.charts.postgres.values.primary.resources.limits.memory")
+	if ok {
+		t.Error("GetField should return false after UnsetField")
+	}
+}
+
+// TestChartOverride_ValidateField tests validation of chart config keys.
+func TestChartOverride_ValidateField(t *testing.T) {
+	// Valid version
+	err := ValidateField("dev.charts.redpanda.version", "v25.3.2")
+	if err != nil {
+		t.Errorf("ValidateField valid version error: %v", err)
+	}
+
+	// Invalid version
+	err = ValidateField("dev.charts.redpanda.version", "not-semver")
+	if err == nil {
+		t.Error("ValidateField should reject non-semver version")
+	}
+
+	// Values path — any value is valid
+	err = ValidateField("dev.charts.postgres.values.some.path", "anything")
+	if err != nil {
+		t.Errorf("ValidateField values path error: %v", err)
+	}
+}
+
+// TestChartOverride_YAMLRoundTrip tests YAML marshaling of chart overrides.
+func TestChartOverride_YAMLRoundTrip(t *testing.T) {
+	config := &Config{}
+	config.SetField("dev.charts.redpanda.version", "v25.2.0")
+	config.SetField("dev.charts.postgres.values.memory", "512Mi")
+
+	// Save and reload
+	tmpDir := t.TempDir()
+	path := tmpDir + "/config.yaml"
+	if err := SaveConfigToPath(config, path); err != nil {
+		t.Fatalf("SaveConfigToPath error: %v", err)
+	}
+
+	loaded, err := LoadConfigFromPath(path)
+	if err != nil {
+		t.Fatalf("LoadConfigFromPath error: %v", err)
+	}
+
+	// Verify chart overrides survived round-trip
+	if loaded.Dev.Charts == nil {
+		t.Fatal("Charts map is nil after round-trip")
+	}
+	if loaded.Dev.Charts["redpanda"].Version != "v25.2.0" {
+		t.Errorf("redpanda version = %q, want %q", loaded.Dev.Charts["redpanda"].Version, "v25.2.0")
+	}
+}
+
+// TestChartOverride_EffectiveValue tests EffectiveValue accepts chart keys.
+func TestChartOverride_EffectiveValue(t *testing.T) {
+	_, _, err := EffectiveValue("dev.charts.redpanda.version")
+	if err != nil {
+		t.Errorf("EffectiveValue should accept chart key, got: %v", err)
+	}
+
+	_, _, err = EffectiveValue("dev.charts.postgres.values.some.path")
+	if err != nil {
+		t.Errorf("EffectiveValue should accept chart values key, got: %v", err)
+	}
+}

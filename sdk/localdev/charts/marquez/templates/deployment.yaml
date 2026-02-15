@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: marquez
+    component: api
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: marquez
+      component: api
+  template:
+    metadata:
+      labels:
+        app: marquez
+        component: api
+    spec:
+      containers:
+        - name: marquez
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+            - name: admin
+              containerPort: {{ .Values.api.adminPort }}
+              protocol: TCP
+          env:
+            - name: MARQUEZ_PORT
+              value: "{{ .Values.api.port }}"
+            - name: MARQUEZ_ADMIN_PORT
+              value: "{{ .Values.api.adminPort }}"
+            - name: POSTGRES_HOST
+              value: "{{ .Values.db.host }}"
+            - name: POSTGRES_PORT
+              value: "{{ .Values.db.port }}"
+            - name: POSTGRES_DB
+              value: "{{ .Values.db.name }}"
+            - name: MIGRATE_ON_STARTUP
+              value: "{{ .Values.marquez.migrateOnStartup }}"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/namespaces
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/v1/namespaces
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}

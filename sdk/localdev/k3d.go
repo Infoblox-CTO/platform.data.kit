@@ -6,10 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
@@ -164,28 +161,29 @@ func (m *K3dManager) WaitForHealthy(ctx context.Context, timeout time.Duration) 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	services := []string{"redpanda", "localstack", "postgres"}
+	// Derive health check targets from chart definitions
+	for _, def := range charts.DefaultCharts {
+		for labelKey, labelVal := range def.HealthLabels {
+			// First wait for pod to exist (with polling)
+			if err := m.waitForPodToExist(ctx, labelVal, def.HealthTimeout); err != nil {
+				return fmt.Errorf("service %s pod not created: %w", def.Name, err)
+			}
 
-	for _, svc := range services {
-		// First wait for pod to exist (with polling)
-		if err := m.waitForPodToExist(ctx, svc, timeout); err != nil {
-			return fmt.Errorf("service %s pod not created: %w", svc, err)
-		}
+			// Then wait for pod to be ready
+			cmd := exec.CommandContext(ctx, "kubectl",
+				"--context", m.kubeContext,
+				"wait", "--for=condition=ready", "pod",
+				"-l", fmt.Sprintf("%s=%s", labelKey, labelVal),
+				"-n", m.namespace,
+				"--timeout", fmt.Sprintf("%ds", int(def.HealthTimeout.Seconds())),
+			)
 
-		// Then wait for pod to be ready
-		cmd := exec.CommandContext(ctx, "kubectl",
-			"--context", m.kubeContext,
-			"wait", "--for=condition=ready", "pod",
-			"-l", fmt.Sprintf("app=%s", svc),
-			"-n", m.namespace,
-			"--timeout", fmt.Sprintf("%ds", int(timeout.Seconds())),
-		)
+			var stderr bytes.Buffer
+			cmd.Stderr = &stderr
 
-		var stderr bytes.Buffer
-		cmd.Stderr = &stderr
-
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("service %s not ready: %s", svc, stderr.String())
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("service %s not ready: %s", def.Name, stderr.String())
+			}
 		}
 	}
 
@@ -317,118 +315,34 @@ func (m *K3dManager) deleteCluster(ctx context.Context, output io.Writer) error 
 	return cmd.Run()
 }
 
-// deployCharts installs the embedded Helm charts in parallel.
+// deployCharts installs the embedded Helm charts in parallel using the uniform
+// chart deployment mechanism. Config overrides are loaded from the hierarchical
+// config system and passed through to helm install.
 func (m *K3dManager) deployCharts(ctx context.Context, output io.Writer) error {
-	// Create temporary directory for chart extraction
-	tempDir, err := os.MkdirTemp("", "dp-charts-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
+	// Load config overrides (best-effort — empty map if config unavailable)
+	var overrides map[string]charts.ChartOverride
+	if cfg, err := LoadHierarchicalConfig(); err == nil && cfg != nil {
+		overrides = cfg.Dev.Charts
 	}
-	defer os.RemoveAll(tempDir)
 
-	// Extract all charts first (sequential, fast)
-	chartDirs := make(map[string]string)
-	for _, chartName := range charts.ChartNames {
-		chartDir := filepath.Join(tempDir, chartName)
-		if err := extractChart(chartName, chartDir); err != nil {
-			return fmt.Errorf("failed to extract chart %s: %w", chartName, err)
+	result, err := charts.DeployCharts(ctx, charts.DefaultCharts, overrides, m.kubeContext)
+	if err != nil {
+		return fmt.Errorf("failed to deploy Helm charts: %w", err)
+	}
+
+	// Report successes
+	for _, name := range result.Succeeded {
+		fmt.Fprintf(output, "  ✓ %s deployed\n", name)
+	}
+
+	// Report failures
+	if result.HasFailures() {
+		var msgs []string
+		for _, ce := range result.Failed {
+			fmt.Fprintf(output, "  ✗ %s failed: %v\n", ce.ChartName, ce.Error)
+			msgs = append(msgs, fmt.Sprintf("%s: %v", ce.ChartName, ce.Error))
 		}
-		chartDirs[chartName] = chartDir
-	}
-
-	// Install all charts in parallel
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(charts.ChartNames))
-
-	for _, chartName := range charts.ChartNames {
-		wg.Add(1)
-		go func(name string, dir string) {
-			defer wg.Done()
-
-			releaseName := fmt.Sprintf("dp-%s", name)
-			cmd := exec.CommandContext(ctx, "helm",
-				"upgrade", "--install", releaseName, dir,
-				"--kube-context", m.kubeContext,
-				"--namespace", m.namespace,
-				"--create-namespace",
-				"--wait",
-				"--timeout", "300s", // 5 minutes for parallel image pulls
-			)
-
-			// Capture output per chart to avoid interleaving
-			var outBuf bytes.Buffer
-			cmd.Stdout = &outBuf
-			cmd.Stderr = &outBuf
-
-			if err := cmd.Run(); err != nil {
-				errChan <- fmt.Errorf("failed to install chart %s: %w\n%s", name, err, outBuf.String())
-				return
-			}
-
-			// Write output after successful completion
-			fmt.Fprint(output, outBuf.String())
-		}(chartName, chartDirs[chartName])
-	}
-
-	// Wait for all charts to complete
-	wg.Wait()
-	close(errChan)
-
-	// Collect any errors
-	var errs []error
-	for err := range errChan {
-		errs = append(errs, err)
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("helm installation errors: %v", errs)
-	}
-
-	return nil
-}
-
-// extractChart extracts an embedded chart to a directory.
-func extractChart(chartName string, destDir string) error {
-	// Verify the chart exists in embedded FS
-	_, err := charts.FS.ReadDir(chartName)
-	if err != nil {
-		return err
-	}
-
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return err
-	}
-
-	return extractDir(chartName, destDir)
-}
-
-// extractDir recursively extracts embedded files to a directory.
-func extractDir(srcPath string, destPath string) error {
-	entries, err := charts.FS.ReadDir(srcPath)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		srcFile := filepath.Join(srcPath, entry.Name())
-		destFile := filepath.Join(destPath, entry.Name())
-
-		if entry.IsDir() {
-			if err := os.MkdirAll(destFile, 0755); err != nil {
-				return err
-			}
-			if err := extractDir(srcFile, destFile); err != nil {
-				return err
-			}
-		} else {
-			content, err := charts.FS.ReadFile(srcFile)
-			if err != nil {
-				return err
-			}
-			if err := os.WriteFile(destFile, content, 0644); err != nil {
-				return err
-			}
-		}
+		return fmt.Errorf("helm installation errors: %v", msgs)
 	}
 
 	return nil
@@ -501,28 +415,18 @@ func (m *K3dManager) getPodStatuses(ctx context.Context) ([]ServiceStatus, error
 	return services, nil
 }
 
-// getPortsForService returns the port mappings for a service.
+// getPortsForService returns the port mappings for a service by looking up
+// the chart definitions. Falls back to empty if no match found.
 func getPortsForService(serviceName string) []string {
-	switch serviceName {
-	case "redpanda":
-		return []string{"19092:9092", "18081:8081"}
-	case "localstack":
-		return []string{"4566:4566"}
-	case "postgres":
-		return []string{"5432:5432"}
-	default:
-		return nil
-	}
+	return charts.PortsForService(charts.DefaultCharts, serviceName)
 }
 
-// startPortForwarding starts port forwarding for all services.
+// startPortForwarding starts port forwarding for all services defined in DefaultCharts.
 func (m *K3dManager) startPortForwarding(ctx context.Context, output io.Writer) error {
 	m.portForwarder = NewPortForwarder(m.kubeContext, m.namespace)
 
-	// Add port forwards for each service
-	m.portForwarder.AddForward("redpanda", 19092, 9092)
-	m.portForwarder.AddForward("localstack", 4566, 4566)
-	m.portForwarder.AddForward("postgres", 5432, 5432)
+	// Add port forwards from chart definitions
+	m.portForwarder.AddForwardsFromCharts(charts.DefaultCharts)
 
 	return m.portForwarder.Start(ctx)
 }

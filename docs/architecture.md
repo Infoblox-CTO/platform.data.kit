@@ -161,10 +161,29 @@ gitops/
 
 ```
 Developer → dp init → Creates dp.yaml
-         → dp dev up → Starts Docker Compose (Kafka, S3, Postgres, Marquez)
+         → dp dev up → Deploys embedded Helm charts to k3d
+                        (Redpanda, LocalStack, PostgreSQL, Marquez)
+                        Init jobs seed topics, buckets, schemas, namespaces
          → dp run → Builds container, runs locally
          → Lineage events → Marquez
 ```
+
+#### Helm Chart Deployment Mechanism
+
+The `dp dev up` command uses a uniform Helm chart deployment mechanism:
+
+1. **Embedded Charts**: All dev dependency charts are embedded in the CLI binary via Go's `embed.FS` (`sdk/localdev/charts/`)
+2. **Chart Registry**: A `DefaultCharts` registry defines each chart's port-forwarding rules, health labels, display endpoints, and timeouts
+3. **Uniform Deployment**: `charts.DeployCharts()` extracts charts to a temp directory and runs `helm upgrade --install` in parallel
+4. **Init Jobs**: Each chart includes Helm hook jobs (post-install/post-upgrade) that automatically create required resources (Kafka topics, S3 buckets, DB schemas, Marquez namespaces)
+5. **Config Overrides**: Users can override chart versions (`dev.charts.<name>.version`) or Helm values (`dev.charts.<name>.values.<path>`) via the hierarchical config system
+6. **Upstream Subcharts**: Redpanda and PostgreSQL wrap upstream Helm charts as subcharts, inheriting production-quality templates while providing dev-appropriate value overrides
+
+Adding a new dev dependency requires only:
+
+- Creating a chart directory under `sdk/localdev/charts/<name>/`
+- Registering a `ChartDefinition` in the `DefaultCharts` slice in `embed.go`
+- No changes to deployment, health-checking, port-forwarding, or CLI code
 
 ### Publish & Promote
 

@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-init-namespaces
+  labels:
+    app: marquez
+    app.kubernetes.io/name: marquez
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: marquez-init
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-namespaces
+          image: curlimages/curl:8.7.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              MARQUEZ_API="http://{{ .Release.Name }}:{{ .Values.api.port | default 5000 }}"
+
+              # Wait for Marquez API to be ready
+              echo "Waiting for Marquez API to be ready..."
+              until curl -sf "$MARQUEZ_API/api/v1/namespaces" > /dev/null 2>&1; do
+                echo "Marquez API not ready yet, retrying in 5s..."
+                sleep 5
+              done
+
+              echo "Creating namespaces..."
+              {{- range $ns := list "dp" "dp-dev" "analytics" }}
+              curl -sf -X PUT "$MARQUEZ_API/api/v1/namespaces/{{ $ns }}" \
+                -H "Content-Type: application/json" \
+                -d '{"ownerName": "dataplatform", "description": "{{ $ns }} namespace"}' \
+                && echo " Created namespace: {{ $ns }}" \
+                || echo " Namespace {{ $ns }} may already exist"
+              {{- end }}
+
+              echo "All namespaces created successfully."
+              curl -sf "$MARQUEZ_API/api/v1/namespaces" | head -c 500
+              echo ""

@@ -1,6 +1,11 @@
 apiVersion: v2
 name: redpanda
-description: Redpanda single-node for dp local development
+description: Redpanda single-node for dp local development (upstream subchart wrapper)
 type: application
-version: 0.1.0
-appVersion: "v24.2.4"
+version: 0.2.0
+appVersion: "v25.3.6"
+
+dependencies:
+  - name: redpanda
+    version: "25.3.2"
+    repository: "https://charts.redpanda.com"

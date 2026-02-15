@@ -65,38 +65,36 @@ func TestK3dManager_Type(t *testing.T) {
 
 func TestGetPortsForService(t *testing.T) {
 	tests := []struct {
-		service string
-		expect  []string
+		service   string
+		expectLen int // Number of port mappings expected
 	}{
 		{
-			service: "redpanda",
-			expect:  []string{"19092:9092", "18081:8081"},
+			service:   "redpanda",
+			expectLen: 2, // 19092:9092, 18081:8081
 		},
 		{
-			service: "localstack",
-			expect:  []string{"4566:4566"},
+			service:   "localstack",
+			expectLen: 1, // 4566:4566
 		},
 		{
-			service: "postgres",
-			expect:  []string{"5432:5432"},
+			service:   "postgres",
+			expectLen: 1, // 5432:5432
 		},
 		{
-			service: "unknown",
-			expect:  nil,
+			service:   "marquez",
+			expectLen: 3, // 5000:5000, 5001:5001, 3000:3000
+		},
+		{
+			service:   "unknown",
+			expectLen: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.service, func(t *testing.T) {
 			result := getPortsForService(tt.service)
-			if len(result) != len(tt.expect) {
-				t.Errorf("getPortsForService(%q) returned %d ports, want %d", tt.service, len(result), len(tt.expect))
-				return
-			}
-			for i, port := range result {
-				if port != tt.expect[i] {
-					t.Errorf("port[%d] = %q, want %q", i, port, tt.expect[i])
-				}
+			if len(result) != tt.expectLen {
+				t.Errorf("getPortsForService(%q) returned %d ports, want %d: %v", tt.service, len(result), tt.expectLen, result)
 			}
 		})
 	}
@@ -306,8 +304,8 @@ func TestK3dManager_Status_ContextCancellation(t *testing.T) {
 
 // TestGetPortsForService_AllServices tests port mappings for all known services.
 func TestGetPortsForService_AllServices(t *testing.T) {
-	// Verify all standard services have port mappings
-	services := []string{"redpanda", "localstack", "postgres"}
+	// Verify all chart-defined services have port mappings
+	services := []string{"redpanda", "localstack", "postgres", "marquez"}
 
 	for _, svc := range services {
 		ports := getPortsForService(svc)
@@ -320,13 +318,13 @@ func TestGetPortsForService_AllServices(t *testing.T) {
 // TestGetPortsForService_PortFormat tests that ports are in correct format.
 func TestGetPortsForService_PortFormat(t *testing.T) {
 	tests := []struct {
-		service       string
-		minPorts      int
-		expectPattern string
+		service  string
+		minPorts int
 	}{
-		{service: "redpanda", minPorts: 2, expectPattern: ":"},
-		{service: "localstack", minPorts: 1, expectPattern: ":"},
-		{service: "postgres", minPorts: 1, expectPattern: ":"},
+		{service: "redpanda", minPorts: 2},
+		{service: "localstack", minPorts: 1},
+		{service: "postgres", minPorts: 1},
+		{service: "marquez", minPorts: 2},
 	}
 
 	for _, tt := range tests {

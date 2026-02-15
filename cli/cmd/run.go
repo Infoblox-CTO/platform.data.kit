@@ -1487,10 +1487,13 @@ func resolveS3Spec(cfg *localdev.Config, namespace string) string {
 // detectPostgresqlService discovers a PostgreSQL service in the given k3d namespace.
 // Returns a connection string using in-cluster DNS, or empty string if not found.
 // The destination plugin runs as a pod inside k3d, so it can reach services via DNS.
+//
+// The service name dp-postgres-postgresql matches the Bitnami PostgreSQL subchart
+// naming convention: <release-name>-postgresql (see sdk/localdev/charts/embed.go).
 func detectPostgresqlService(namespace string) string {
-	// Look for a service with "postgres" in the name
+	// Look for the Bitnami PostgreSQL service created by the upstream subchart
 	cmd := exec.Command("kubectl", "get", "svc", "-n", namespace,
-		"-o", "jsonpath={.items[?(@.metadata.name=='dp-postgres-postgres')].metadata.name}")
+		"-o", "jsonpath={.items[?(@.metadata.name=='dp-postgres-postgresql')].metadata.name}")
 	out, err := cmd.Output()
 	if err != nil || len(out) == 0 {
 		return ""
@@ -1513,6 +1516,9 @@ func detectPostgresqlService(namespace string) string {
 
 // detectLocalStackService discovers a LocalStack service in the given k3d namespace.
 // Returns the in-cluster endpoint URL, or empty string if not found.
+//
+// The service name dp-localstack-localstack matches the chart template naming
+// convention: <release-name>-<chart-name> (see sdk/localdev/charts/localstack/templates/service.yaml).
 func detectLocalStackService(namespace string) string {
 	cmd := exec.Command("kubectl", "get", "svc", "-n", namespace,
 		"-o", "jsonpath={.items[?(@.metadata.name=='dp-localstack-localstack')].metadata.name}")

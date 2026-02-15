@@ -4,7 +4,7 @@ replicaCount: 1
 image:
   repository: localstack/localstack
   pullPolicy: IfNotPresent
-  tag: "3.0"
+  tag: "3.8.1"
 
 service:
   type: ClusterIP

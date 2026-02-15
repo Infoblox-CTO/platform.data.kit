@@ -2,6 +2,8 @@ package localdev
 
 import (
 	"testing"
+
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
 )
 
 func TestNewPortForwarder(t *testing.T) {
@@ -79,6 +81,38 @@ func TestPortForwarder_Status_WithForwards(t *testing.T) {
 	for _, s := range statuses {
 		if s.Active {
 			t.Errorf("status for %s should not be active before Start()", s.TargetService)
+		}
+	}
+}
+
+// TestPortForwarder_AddForwardsFromCharts tests that port forwards are
+// correctly derived from ChartDefinition slices.
+func TestPortForwarder_AddForwardsFromCharts(t *testing.T) {
+	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf.AddForwardsFromCharts(charts.DefaultCharts)
+
+	// Count total expected port forwards from all default charts
+	expectedTotal := 0
+	for _, def := range charts.DefaultCharts {
+		expectedTotal += len(def.PortForwards)
+	}
+
+	if len(pf.forwards) != expectedTotal {
+		t.Errorf("forwards count = %d, want %d", len(pf.forwards), expectedTotal)
+	}
+
+	// Verify first forward matches first chart's first port forward
+	if len(pf.forwards) > 0 {
+		first := pf.forwards[0]
+		expected := charts.DefaultCharts[0].PortForwards[0]
+		if first.ServiceName != expected.ServiceName {
+			t.Errorf("first forward ServiceName = %q, want %q", first.ServiceName, expected.ServiceName)
+		}
+		if first.LocalPort != expected.LocalPort {
+			t.Errorf("first forward LocalPort = %d, want %d", first.LocalPort, expected.LocalPort)
+		}
+		if first.RemotePort != expected.RemotePort {
+			t.Errorf("first forward RemotePort = %d, want %d", first.RemotePort, expected.RemotePort)
 		}
 	}
 }

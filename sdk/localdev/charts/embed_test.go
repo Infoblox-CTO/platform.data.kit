@@ -11,7 +11,7 @@ func TestChartNamesNotEmpty(t *testing.T) {
 }
 
 func TestChartNamesContainsExpected(t *testing.T) {
-	expected := []string{"redpanda", "localstack", "postgres"}
+	expected := []string{"redpanda", "localstack", "postgres", "marquez"}
 
 	for _, name := range expected {
 		found := false

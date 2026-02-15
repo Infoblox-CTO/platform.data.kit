@@ -4,13 +4,23 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
 )
 
-// DefaultPorts defines the standard port mappings for local development services.
-var DefaultPorts = map[string]int{
-	"redpanda":   19092, // Kafka protocol
-	"localstack": 4566,  // AWS services
-	"postgres":   5432,  // PostgreSQL
+// DefaultPorts returns the standard port mappings for local development services,
+// derived from the DefaultCharts registry. The map key is the chart name,
+// and the value is the first local port for that chart.
+var DefaultPorts = buildDefaultPorts()
+
+func buildDefaultPorts() map[string]int {
+	ports := make(map[string]int)
+	for _, def := range charts.DefaultCharts {
+		if len(def.PortForwards) > 0 {
+			ports[def.Name] = def.PortForwards[0].LocalPort
+		}
+	}
+	return ports
 }
 
 // PortChecker validates port availability.

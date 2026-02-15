@@ -199,11 +199,21 @@ dp dev status [flags]
 #### Output Example
 
 ```
-Service         Status    Ports
-━━━━━━━━━━━━━━  ━━━━━━━   ━━━━━━━━━
-redpanda        running   19092
-localstack      running   4566
-postgres        running   5432
+Local Development Stack (k3d)
+─────────────────────────────
+Chart         Status    Ports
+redpanda      healthy   19092, 18081
+localstack    healthy   4566
+postgres      healthy   5432
+marquez       healthy   5000, 3000
+
+Endpoints:
+  Kafka:              localhost:19092
+  Schema Registry:    http://localhost:18081
+  S3 API:             http://localhost:4566
+  PostgreSQL:         localhost:5432
+  Marquez API:        http://localhost:5000
+  Marquez Web:        http://localhost:3000
 ```
 
 ---
@@ -239,6 +249,8 @@ dp config set <key> <value> [--scope <scope>]
 | `dev.runtime` | Runtime type | `k3d`, `compose` |
 | `dev.workspace` | Path to DP workspace | any path |
 | `dev.k3d.clusterName` | k3d cluster name | DNS-safe name |
+| `dev.charts.<name>.version` | Override chart version | semver (e.g., `25.2.0`) |
+| `dev.charts.<name>.values.<path>` | Override Helm values | any value |
 | `plugins.registry` | Default OCI registry | valid registry URL |
 | `plugins.overrides.<name>.version` | Pin plugin version | semver (e.g., `v8.13.0`) |
 | `plugins.overrides.<name>.image` | Override plugin image | full image reference |
@@ -251,6 +263,12 @@ dp config set plugins.registry ghcr.io/myteam
 
 # Pin a plugin version
 dp config set plugins.overrides.postgresql.version v8.13.0
+
+# Override a dev chart version
+dp config set dev.charts.redpanda.version 25.2.0
+
+# Override a Helm value for a dev chart
+dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 
 # Set for this project only
 dp config set plugins.registry internal.registry.io --scope repo

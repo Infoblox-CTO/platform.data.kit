@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"sync"
+
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
 )
 
 // PortForward represents a single port forward configuration.
@@ -43,6 +45,16 @@ func (p *PortForwarder) AddForward(serviceName string, localPort, remotePort int
 		LocalPort:   localPort,
 		RemotePort:  remotePort,
 	})
+}
+
+// AddForwardsFromCharts adds port forwards for all services defined in the
+// given chart definitions. This replaces hardcoded AddForward calls.
+func (p *PortForwarder) AddForwardsFromCharts(defs []charts.ChartDefinition) {
+	for _, def := range defs {
+		for _, pf := range def.PortForwards {
+			p.AddForward(pf.ServiceName, pf.LocalPort, pf.RemotePort)
+		}
+	}
 }
 
 // Start begins all configured port forwards.
