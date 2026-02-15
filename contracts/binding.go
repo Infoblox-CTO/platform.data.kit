@@ -19,6 +19,10 @@ type Binding struct {
 	// Name is the logical name of this binding.
 	Name string `json:"name" yaml:"name"`
 
+	// Asset is the optional asset name this binding is associated with.
+	// When present, this binding is scoped to a specific asset instance.
+	Asset string `json:"asset,omitempty" yaml:"asset,omitempty"`
+
 	// Type is the binding type.
 	Type BindingType `json:"type" yaml:"type"`
 

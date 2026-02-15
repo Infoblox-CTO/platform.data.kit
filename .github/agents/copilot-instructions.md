@@ -19,6 +19,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-22
 - YAML config files at three scopes — `.dp/config.yaml` (repo), `~/.config/dp/config.yaml` (user), `/etc/datakit/config.yaml` (system) (009-plugin-registry)
 - Go 1.25 (multi-module monorepo: `cli/`, `sdk/`, `contracts/`) + `gopkg.in/yaml.v3` (parsing), `github.com/santhosh-tekuri/jsonschema/v6` (JSON Schema validation), `oras.land/oras-go/v2` (OCI registry), `github.com/spf13/cobra` (CLI) (011-asset-instances)
 - Local filesystem (`assets/` directory tree); OCI registry for extension schema resolution (011-asset-instances)
+- Go 1.25 (all modules) + github.com/spf13/cobra v1.8.1 (CLI), gopkg.in/yaml.v3 v3.0.1 (serialization), github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 (JSON Schema validation), oras.land/oras-go/v2 v2.5.0 (OCI registry) (012-pipeline-workflows)
+- Filesystem — `pipeline.yaml` and `schedule.yaml` as YAML files in project root, assets under `assets/` directory (012-pipeline-workflows)
 
 - Go (latest stable per constitution) + Cobra (CLI), client-go (K8s), ORAS (OCI), Flux (GitOps), Dagster (orchestration) (001-cdpp-mvp)
 
@@ -38,9 +40,9 @@ tests/
 Go (latest stable per constitution): Follow standard conventions
 
 ## Recent Changes
+- 012-pipeline-workflows: Added Go 1.25 (all modules) + github.com/spf13/cobra v1.8.1 (CLI), gopkg.in/yaml.v3 v3.0.1 (serialization), github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 (JSON Schema validation), oras.land/oras-go/v2 v2.5.0 (OCI registry)
 - 011-asset-instances: Added Go 1.25 (multi-module monorepo: `cli/`, `sdk/`, `contracts/`) + `gopkg.in/yaml.v3` (parsing), `github.com/santhosh-tekuri/jsonschema/v6` (JSON Schema validation), `oras.land/oras-go/v2` (OCI registry), `github.com/spf13/cobra` (CLI)
 - 010-python-cloudquery-plugins: Python Dockerfile build stage changed from python:3.13-slim to python:3.11-slim (matching distroless python3-debian12 runtime); pyproject.toml requires-python changed from >=3.13 to >=3.12; added pytest pythonpath config
-- 009-plugin-registry: Added Go 1.25 (all three modules: cli, sdk, contracts) + cobra (CLI), gopkg.in/yaml.v3 (config), os/exec (docker pull, git, k3d, kubectl)
 
 
 <!-- MANUAL ADDITIONS START -->

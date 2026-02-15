@@ -2,6 +2,8 @@ package contracts
 
 import (
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestDataPackage_Fields(t *testing.T) {
@@ -339,5 +341,51 @@ func TestDataPackageSpec_WithRuntime(t *testing.T) {
 	}
 	if !spec.Lineage.Enabled {
 		t.Error("Lineage.Enabled should be true")
+	}
+}
+
+func TestDataPackageSpec_Assets_BackwardCompat(t *testing.T) {
+	// Existing dp.yaml without assets should parse and serialize correctly
+	yamlWithout := `type: pipeline
+description: "Test pipeline"
+owner: team-a
+`
+	var specWithout DataPackageSpec
+	if err := yaml.Unmarshal([]byte(yamlWithout), &specWithout); err != nil {
+		t.Fatalf("Unmarshal (no assets) error = %v", err)
+	}
+	if specWithout.Assets != nil {
+		t.Error("Assets should be nil when not present in YAML")
+	}
+
+	// Ensure empty assets don't appear in serialized output
+	out, err := yaml.Marshal(&specWithout)
+	if err != nil {
+		t.Fatalf("Marshal error = %v", err)
+	}
+	if containsSubstring(string(out), "assets:") {
+		t.Error("assets field should be omitted when empty")
+	}
+
+	// dp.yaml with assets should parse correctly
+	yamlWith := `type: pipeline
+description: "Test pipeline with assets"
+owner: team-a
+assets:
+  - aws-security
+  - gcp-billing
+`
+	var specWith DataPackageSpec
+	if err := yaml.Unmarshal([]byte(yamlWith), &specWith); err != nil {
+		t.Fatalf("Unmarshal (with assets) error = %v", err)
+	}
+	if len(specWith.Assets) != 2 {
+		t.Fatalf("Assets length = %d, want 2", len(specWith.Assets))
+	}
+	if specWith.Assets[0] != "aws-security" {
+		t.Errorf("Assets[0] = %q, want %q", specWith.Assets[0], "aws-security")
+	}
+	if specWith.Assets[1] != "gcp-billing" {
+		t.Errorf("Assets[1] = %q, want %q", specWith.Assets[1], "gcp-billing")
 	}
 }

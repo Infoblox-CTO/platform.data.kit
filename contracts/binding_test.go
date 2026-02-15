@@ -2,6 +2,8 @@ package contracts
 
 import (
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestBindingType_Constants(t *testing.T) {
@@ -176,5 +178,56 @@ func TestBinding_Postgres(t *testing.T) {
 				t.Errorf("Table = %v, want %v", got, tt.wantTable)
 			}
 		})
+	}
+}
+
+func TestBinding_Asset_BackwardCompat(t *testing.T) {
+	// Existing binding YAML without asset field should parse correctly
+	yamlWithout := `name: raw-data
+type: s3-prefix
+s3:
+  bucket: my-bucket
+  prefix: data/raw/
+`
+	var bindingWithout Binding
+	if err := yaml.Unmarshal([]byte(yamlWithout), &bindingWithout); err != nil {
+		t.Fatalf("Unmarshal (no asset) error = %v", err)
+	}
+	if bindingWithout.Asset != "" {
+		t.Errorf("Asset should be empty when not present, got %q", bindingWithout.Asset)
+	}
+	if bindingWithout.Name != "raw-data" {
+		t.Errorf("Name = %q, want %q", bindingWithout.Name, "raw-data")
+	}
+
+	// Ensure empty asset doesn't appear in serialized output
+	out, err := yaml.Marshal(&bindingWithout)
+	if err != nil {
+		t.Fatalf("Marshal error = %v", err)
+	}
+	if containsSubstring(string(out), "asset:") {
+		t.Error("asset field should be omitted when empty")
+	}
+
+	// Binding with asset field should parse correctly
+	yamlWith := `name: raw-output
+asset: aws-security
+type: s3-prefix
+s3:
+  bucket: output-bucket
+  prefix: raw/
+`
+	var bindingWith Binding
+	if err := yaml.Unmarshal([]byte(yamlWith), &bindingWith); err != nil {
+		t.Fatalf("Unmarshal (with asset) error = %v", err)
+	}
+	if bindingWith.Asset != "aws-security" {
+		t.Errorf("Asset = %q, want %q", bindingWith.Asset, "aws-security")
+	}
+	if bindingWith.Name != "raw-output" {
+		t.Errorf("Name = %q, want %q", bindingWith.Name, "raw-output")
+	}
+	if bindingWith.Type != BindingTypeS3Prefix {
+		t.Errorf("Type = %q, want %q", bindingWith.Type, BindingTypeS3Prefix)
 	}
 }

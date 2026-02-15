@@ -170,3 +170,79 @@ func TestBindingsValidator_ValidateFromFile(t *testing.T) {
 		})
 	}
 }
+
+func TestBindingsValidator_ValidateAssetBindings(t *testing.T) {
+	tests := []struct {
+		name        string
+		bindings    []contracts.Binding
+		assets      []*contracts.AssetManifest
+		wantErrCode string
+		wantErrs    int
+	}{
+		{
+			name: "asset binding matches",
+			bindings: []contracts.Binding{
+				{Name: "raw-output", Type: contracts.BindingTypeS3Prefix, S3: &contracts.S3PrefixBinding{Bucket: "b"}},
+			},
+			assets: []*contracts.AssetManifest{
+				{Name: "aws-security", Binding: "raw-output"},
+			},
+			wantErrs: 0,
+		},
+		{
+			name: "asset binding missing",
+			bindings: []contracts.Binding{
+				{Name: "other-binding", Type: contracts.BindingTypeS3Prefix, S3: &contracts.S3PrefixBinding{Bucket: "b"}},
+			},
+			assets: []*contracts.AssetManifest{
+				{Name: "aws-security", Binding: "non-existent-binding"},
+			},
+			wantErrs:    1,
+			wantErrCode: ErrAssetBindingNotFound,
+		},
+		{
+			name: "mixed asset-scoped and top-level bindings",
+			bindings: []contracts.Binding{
+				{Name: "raw-output", Type: contracts.BindingTypeS3Prefix, S3: &contracts.S3PrefixBinding{Bucket: "b"}},
+				{Name: "top-level", Type: contracts.BindingTypeS3Prefix, S3: &contracts.S3PrefixBinding{Bucket: "b"}},
+			},
+			assets: []*contracts.AssetManifest{
+				{Name: "aws-security", Binding: "raw-output"},
+				{Name: "legacy-asset"}, // No binding field — backward compatible
+			},
+			wantErrs: 0,
+		},
+		{
+			name: "backward compat - no asset field",
+			bindings: []contracts.Binding{
+				{Name: "raw-output", Type: contracts.BindingTypeS3Prefix, S3: &contracts.S3PrefixBinding{Bucket: "b"}},
+			},
+			assets:   []*contracts.AssetManifest{},
+			wantErrs: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := NewBindingsValidator(tt.bindings, "/path/to/bindings")
+			errs := v.ValidateAssetBindings(tt.assets)
+
+			if len(errs) != tt.wantErrs {
+				t.Errorf("got %d errors, want %d: %v", len(errs), tt.wantErrs, errs)
+			}
+
+			if tt.wantErrCode != "" {
+				found := false
+				for _, e := range errs {
+					if e.Code == tt.wantErrCode {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error code %s, got: %v", tt.wantErrCode, errs)
+				}
+			}
+		})
+	}
+}

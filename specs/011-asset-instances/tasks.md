@@ -148,13 +148,13 @@
 
 ### Tests for User Story 5
 
-- [ ] T037 [P] [US5] Unit tests for `dp asset list` in `cli/cmd/asset_list_test.go` — table output with 3 assets, empty project, `--output json` flag
-- [ ] T038 [P] [US5] Unit tests for `dp asset show` in `cli/cmd/asset_show_test.go` — valid asset name, non-existent asset name, YAML vs JSON output
+- [X] T037 [P] [US5] Unit tests for `dp asset list` in `cli/cmd/asset_list_test.go` — table output with 3 assets, empty project, `--output json` flag
+- [X] T038 [P] [US5] Unit tests for `dp asset show` in `cli/cmd/asset_show_test.go` — valid asset name, non-existent asset name, YAML vs JSON output
 
 ### Implementation for User Story 5
 
-- [ ] T039 [US5] Implement `dp asset list` command in `cli/cmd/asset_list.go` — loads all assets via `sdk/asset/loader.go`, displays table with columns: Name, Type, Extension, Version, Status; supports `--output json` flag for JSON array output; displays helpful message when no assets found
-- [ ] T040 [US5] Implement `dp asset show` command in `cli/cmd/asset_show.go` — takes asset name argument, resolves to `asset.yaml` path, loads and displays full asset content with resolved extension metadata; supports `--output json` flag
+- [X] T039 [US5] Implement `dp asset list` command in `cli/cmd/asset_list.go` — loads all assets via `sdk/asset/loader.go`, displays table with columns: Name, Type, Extension, Version, Status; supports `--output json` flag for JSON array output; displays helpful message when no assets found
+- [X] T040 [US5] Implement `dp asset show` command in `cli/cmd/asset_show.go` — takes asset name argument, resolves to `asset.yaml` path, loads and displays full asset content with resolved extension metadata; supports `--output json` flag
 
 **Checkpoint**: `dp asset list` and `dp asset show` work correctly. All user stories are independently functional.
 
@@ -164,12 +164,12 @@
 
 **Purpose**: Documentation, validation completeness, and end-to-end testing
 
-- [ ] T041 [P] Add asset documentation section to `docs/concepts/` — create `docs/concepts/assets.md` covering asset abstraction, types, lifecycle, and relationship to extensions
-- [ ] T042 [P] Update `docs/reference/cli.md` with `dp asset create`, `dp asset validate`, `dp asset list`, `dp asset show` command reference
-- [ ] T043 [P] Update `docs/reference/manifest-schema.md` with `asset.yaml` schema reference and dp.yaml `assets` field documentation
-- [ ] T044 Add `assets.md` to navigation in `mkdocs.yml` under concepts section
-- [ ] T045 Implement end-to-end test in `tests/e2e/asset_test.go` — full workflow: create asset → validate → add to dp.yaml → validate project → list → show
-- [ ] T046 Run quickstart.md validation — execute all commands from `specs/011-asset-instances/quickstart.md` against a test project to verify documentation accuracy
+- [X] T041 [P] Add asset documentation section to `docs/concepts/` — create `docs/concepts/assets.md` covering asset abstraction, types, lifecycle, and relationship to extensions
+- [X] T042 [P] Update `docs/reference/cli.md` with `dp asset create`, `dp asset validate`, `dp asset list`, `dp asset show` command reference
+- [X] T043 [P] Update `docs/reference/manifest-schema.md` with `asset.yaml` schema reference and dp.yaml `assets` field documentation
+- [X] T044 Add `assets.md` to navigation in `mkdocs.yml` under concepts section
+- [X] T045 Implement end-to-end test in `tests/e2e/asset_test.go` — full workflow: create asset → validate → add to dp.yaml → validate project → list → show
+- [X] T046 Run quickstart.md validation — execute all commands from `specs/011-asset-instances/quickstart.md` against a test project to verify documentation accuracy
 
 ---
 

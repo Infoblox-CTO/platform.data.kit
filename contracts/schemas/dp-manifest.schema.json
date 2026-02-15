@@ -86,6 +86,14 @@
         "runtime": {
           "$ref": "#/$defs/runtimeSpec",
           "description": "Container runtime configuration"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{2,62}$"
+          },
+          "description": "Asset names included in this package"
         }
       },
       "allOf": [

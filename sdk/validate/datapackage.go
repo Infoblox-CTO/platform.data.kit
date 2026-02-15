@@ -2,10 +2,13 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
@@ -79,7 +82,44 @@ func (v *DataPackageValidator) Validate(ctx context.Context) contracts.Validatio
 	// Validate outputs if present
 	v.validateArtifacts(&errs, v.pkg.Spec.Outputs, "spec.outputs")
 
+	// Validate asset references if present
+	v.validateAssetRefs(&errs)
+
 	return errs
+}
+
+// validateAssetRefs validates that referenced assets exist in the project.
+func (v *DataPackageValidator) validateAssetRefs(errs *contracts.ValidationErrors) {
+	if len(v.pkg.Spec.Assets) == 0 {
+		return
+	}
+
+	// Derive project directory from dp.yaml path
+	projectDir := filepath.Dir(v.pkgPath)
+	if projectDir == "" || projectDir == "." {
+		projectDir, _ = os.Getwd()
+	}
+
+	for i, name := range v.pkg.Spec.Assets {
+		field := fmt.Sprintf("spec.assets[%d]", i)
+
+		// Validate name format
+		if name == "" {
+			errs.AddError(ErrMissingRequired, field, "asset reference name is required")
+			continue
+		}
+
+		// Try to find the asset by name
+		a, err := asset.FindAssetByName(projectDir, name)
+		if err != nil || a == nil {
+			errs.Add(&contracts.ValidationError{
+				Code:    ErrAssetRefNotFound,
+				Field:   field,
+				Message: fmt.Sprintf("asset %q not found in assets/ directory (run: dp asset create %s --ext <extension>)", name, name),
+				Value:   name,
+			})
+		}
+	}
 }
 
 // validateRequiredFields checks for required top-level fields.

@@ -1,0 +1,21 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
+metadata:
+  name: pipeline-missing-asset
+  namespace: data-team
+  version: 1.0.0
+spec:
+  type: pipeline
+  description: A pipeline with a missing asset reference
+  owner: data-team
+  runtime:
+    image: myimage:v1
+  assets:
+    - non-existent-asset
+  outputs:
+    - name: customer-data
+      type: s3-prefix
+      binding: customer-data-bucket
+      classification:
+        sensitivity: public
+        pii: false

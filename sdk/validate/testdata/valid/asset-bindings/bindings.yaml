@@ -1,0 +1,13 @@
+- name: raw-output
+  type: s3-prefix
+  asset: my-source
+  s3:
+    bucket: my-data-bucket
+    prefix: raw/security/
+    region: us-east-1
+- name: shared-output
+  type: s3-prefix
+  s3:
+    bucket: shared-bucket
+    prefix: data/
+    region: us-east-1

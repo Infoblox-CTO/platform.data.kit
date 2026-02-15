@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
@@ -297,4 +298,132 @@ func TestDataPackageValidator_RuntimeValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDataPackageValidator_AssetRefs(t *testing.T) {
+	tests := []struct {
+		name        string
+		pkg         *contracts.DataPackage
+		setupAssets func(dir string)
+		wantErrCode string
+	}{
+		{
+			name: "valid asset references",
+			pkg:  makeValidPkgWithAssets("aws-security"),
+			setupAssets: func(dir string) {
+				writeTestAsset(t, dir, "sources", "aws-security")
+			},
+		},
+		{
+			name:        "missing asset reference",
+			pkg:         makeValidPkgWithAssets("non-existent"),
+			wantErrCode: ErrAssetRefNotFound,
+		},
+		{
+			name: "empty assets list (no errors)",
+			pkg:  makeValidPkgWithAssets(),
+		},
+		{
+			name: "multiple assets - one missing",
+			pkg:  makeValidPkgWithAssets("aws-security", "missing-asset"),
+			setupAssets: func(dir string) {
+				writeTestAsset(t, dir, "sources", "aws-security")
+			},
+			wantErrCode: ErrAssetRefNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+
+			if tt.setupAssets != nil {
+				tt.setupAssets(tmpDir)
+			}
+
+			// Write dp.yaml so pkgPath resolves correctly
+			dpPath := tmpDir + "/dp.yaml"
+			v := NewDataPackageValidator(tt.pkg, dpPath)
+			errs := v.Validate(context.Background())
+
+			if tt.wantErrCode == "" {
+				// Should have no asset ref errors
+				for _, e := range errs {
+					if e.Code == ErrAssetRefNotFound {
+						t.Errorf("unexpected asset ref error: %v", e)
+					}
+				}
+			} else {
+				found := false
+				for _, e := range errs {
+					if e.Code == tt.wantErrCode {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error code %s, got: %v", tt.wantErrCode, errs)
+				}
+			}
+		})
+	}
+}
+
+func makeValidPkgWithAssets(assets ...string) *contracts.DataPackage {
+	return &contracts.DataPackage{
+		APIVersion: string(contracts.APIVersionV1Alpha1),
+		Kind:       "DataPackage",
+		Metadata: contracts.PackageMetadata{
+			Name:      "test-pkg",
+			Namespace: "data-team",
+			Version:   "1.0.0",
+		},
+		Spec: contracts.DataPackageSpec{
+			Type:        contracts.PackageTypePipeline,
+			Description: "A test package",
+			Owner:       "data-team",
+			Runtime: &contracts.RuntimeSpec{
+				Image: "myimage:v1",
+			},
+			Assets: assets,
+			Outputs: []contracts.ArtifactContract{
+				{
+					Name:    "output",
+					Type:    contracts.ArtifactTypeS3Prefix,
+					Binding: "my-bucket",
+					Classification: &contracts.Classification{
+						Sensitivity: contracts.SensitivityPublic,
+						PII:         false,
+					},
+				},
+			},
+		},
+	}
+}
+
+func writeTestAsset(t *testing.T, projectDir, typeDir, name string) {
+	t.Helper()
+	assetDir := projectDir + "/assets/" + typeDir + "/" + name
+	if err := os.MkdirAll(assetDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`apiVersion: cdpp.io/v1alpha1
+kind: Asset
+name: ` + name + `
+type: source
+extension: cloudquery.source.aws
+version: v1.0.0
+ownerTeam: data-team
+config:
+  accounts: ["123456789012"]
+  regions: ["us-east-1"]
+  tables: ["aws_s3_buckets"]
+`)
+	if err := os.WriteFile(assetDir+"/asset.yaml", content, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

@@ -47,6 +47,11 @@
           "pattern": "^[a-z][a-z0-9.-]{0,126}$",
           "description": "Binding name (matches package reference)"
         },
+        "asset": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{2,62}$",
+          "description": "Asset name this binding is associated with"
+        },
         "type": {
           "type": "string",
           "enum": ["s3-prefix", "kafka-topic", "postgres-table", "spark-job"],

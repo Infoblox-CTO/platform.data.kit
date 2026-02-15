@@ -50,6 +50,10 @@ type DataPackageSpec struct {
 	// Outputs are declared output artifacts (required for pipeline type)
 	Outputs []ArtifactContract `json:"outputs,omitempty" yaml:"outputs,omitempty"`
 
+	// Assets are asset names included in this package.
+	// Each name must correspond to an asset.yaml in the assets/ directory.
+	Assets []string `json:"assets,omitempty" yaml:"assets,omitempty"`
+
 	// Schedule is the scheduling configuration
 	Schedule *ScheduleSpec `json:"schedule,omitempty" yaml:"schedule,omitempty"`
 

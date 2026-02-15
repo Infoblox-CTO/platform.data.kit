@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -144,4 +145,39 @@ func (v *BindingsValidator) validatePostgresBinding(errs *contracts.ValidationEr
 	if err := validateRequired(basePath+".postgres.database", pg.Database); err != nil {
 		errs.Add(err)
 	}
+}
+
+// ValidateAssetBindings cross-validates that each asset's binding field references
+// an existing binding name. This maintains backward compatibility — bindings without
+// the asset field continue to work unchanged.
+func (v *BindingsValidator) ValidateAssetBindings(assets []*contracts.AssetManifest) contracts.ValidationErrors {
+	var errs contracts.ValidationErrors
+
+	if len(assets) == 0 {
+		return errs
+	}
+
+	// Build set of known binding names
+	bindingNames := make(map[string]bool)
+	for _, b := range v.bindings {
+		bindingNames[b.Name] = true
+	}
+
+	for _, a := range assets {
+		if a.Binding == "" {
+			continue // binding field is optional on assets
+		}
+		if !bindingNames[a.Binding] {
+			errs.Add(&contracts.ValidationError{
+				Code:  ErrAssetBindingNotFound,
+				Field: fmt.Sprintf("assets/%s.binding", a.Name),
+				Message: fmt.Sprintf(
+					"asset %q references binding %q but no binding with that name exists in bindings.yaml",
+					a.Name, a.Binding),
+				Value: a.Binding,
+			})
+		}
+	}
+
+	return errs
 }

@@ -1,0 +1,15 @@
+apiVersion: cdpp.io/v1alpha1
+kind: Asset
+name: my-source
+type: source
+extension: cloudquery.source.aws
+version: v24.0.2
+ownerTeam: security-data
+binding: raw-output
+config:
+  accounts:
+    - "123456789012"
+  regions:
+    - us-east-1
+  tables:
+    - aws_s3_buckets
