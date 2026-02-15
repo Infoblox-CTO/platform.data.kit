@@ -158,19 +158,16 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		image = imageName
 	}
 
-	// Read pipeline.yaml to determine mode (if it exists)
-	pipelineMode := contracts.PipelineModeBatch // Default to batch for backward compatibility
-	pipelinePath := filepath.Join(opts.PackageDir, "pipeline.yaml")
-	if pipelineData, err := os.ReadFile(pipelinePath); err == nil {
-		if pipelineManifest, err := manifest.PipelineFromBytes(pipelineData); err == nil {
-			if pipelineManifest.Spec.Mode.IsValid() {
-				pipelineMode = pipelineManifest.Spec.Mode.Default()
-			}
-			// Apply timeout from pipeline spec if not set in opts
-			if opts.Timeout == 0 && pipelineManifest.Spec.Timeout != "" {
-				if d, err := time.ParseDuration(pipelineManifest.Spec.Timeout); err == nil {
-					opts.Timeout = d
-				}
+	// Read pipeline mode from dp.yaml spec.runtime (defaults to batch)
+	pipelineMode := contracts.PipelineModeBatch
+	if pkg.Spec.Runtime != nil {
+		if pkg.Spec.Runtime.Mode.IsValid() {
+			pipelineMode = pkg.Spec.Runtime.Mode.Default()
+		}
+		// Apply timeout from runtime spec if not set in opts
+		if opts.Timeout == 0 && pkg.Spec.Runtime.Timeout != "" {
+			if d, err := time.ParseDuration(pkg.Spec.Runtime.Timeout); err == nil {
+				opts.Timeout = d
 			}
 		}
 	}

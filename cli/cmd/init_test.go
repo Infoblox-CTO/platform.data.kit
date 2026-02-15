@@ -261,23 +261,17 @@ func TestInitCmd_BatchMode(t *testing.T) {
 		return
 	}
 
-	// Verify pipeline.yaml was created with batch mode
-	pipelinePath := filepath.Join(pkgDir, "pipeline.yaml")
-	if _, err := os.Stat(pipelinePath); os.IsNotExist(err) {
-		t.Error("pipeline.yaml was not created for batch mode")
-		return
-	}
-
-	// Read and check mode
-	content, err := os.ReadFile(pipelinePath)
+	// Verify dp.yaml was created and contains batch mode
+	dpPath := filepath.Join(pkgDir, "dp.yaml")
+	content, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Errorf("failed to read pipeline.yaml: %v", err)
+		t.Errorf("failed to read dp.yaml: %v", err)
 		return
 	}
 
-	// Check that batch mode is set or mode is omitted (defaults to batch)
-	if len(content) == 0 {
-		t.Error("pipeline.yaml is empty")
+	// Check that batch mode is set in spec.runtime
+	if !strings.Contains(string(content), "mode: batch") {
+		t.Error("dp.yaml should contain 'mode: batch' in spec.runtime")
 	}
 }
 
@@ -312,23 +306,17 @@ func TestInitCmd_StreamingMode(t *testing.T) {
 		return
 	}
 
-	// Verify pipeline.yaml was created with streaming mode
-	pipelinePath := filepath.Join(pkgDir, "pipeline.yaml")
-	if _, err := os.Stat(pipelinePath); os.IsNotExist(err) {
-		t.Error("pipeline.yaml was not created for streaming mode")
-		return
-	}
-
-	// Read and check mode
-	content, err := os.ReadFile(pipelinePath)
+	// Verify dp.yaml was created and contains streaming mode
+	dpPath := filepath.Join(pkgDir, "dp.yaml")
+	content, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Errorf("failed to read pipeline.yaml: %v", err)
+		t.Errorf("failed to read dp.yaml: %v", err)
 		return
 	}
 
-	// Check that streaming mode is set
-	if len(content) == 0 {
-		t.Error("pipeline.yaml is empty")
+	// Check that streaming mode is set in spec.runtime
+	if !strings.Contains(string(content), "mode: streaming") {
+		t.Error("dp.yaml should contain 'mode: streaming' in spec.runtime")
 	}
 }
 

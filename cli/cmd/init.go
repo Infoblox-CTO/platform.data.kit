@@ -194,16 +194,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", dpPath))
 
-	// Create pipeline.yaml for pipeline type
-	if initType == "pipeline" {
-		pipelinePath := filepath.Join(targetDir, "pipeline.yaml")
-		pipelineTemplate := templates.GetPipelineTemplateForMode(initMode)
-		if err := renderer.RenderToFile(pipelinePath, pipelineTemplate, config); err != nil {
-			return fmt.Errorf("failed to create pipeline.yaml: %w", err)
-		}
-		output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", pipelinePath))
-	}
-
 	// Create src directory for pipeline
 	if initType == "pipeline" {
 		srcDir := filepath.Join(targetDir, "src")
@@ -281,10 +271,9 @@ func main() {
 	cmd.Printf("\nNext steps:\n")
 	cmd.Printf("  1. Edit dp.yaml to configure your package\n")
 	if initType == "pipeline" {
-		cmd.Printf("  2. Edit pipeline.yaml to configure runtime settings\n")
-		cmd.Printf("  3. Implement your pipeline in src/\n")
-		cmd.Printf("  4. Run 'dp lint' to validate\n")
-		cmd.Printf("  5. Run 'dp dev up' to start local environment\n")
+		cmd.Printf("  2. Implement your pipeline in src/\n")
+		cmd.Printf("  3. Run 'dp lint' to validate\n")
+		cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
 	}
 
 	return nil

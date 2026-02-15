@@ -754,21 +754,13 @@ spec:
   type: pipeline
   description: "Test pipeline"
   owner: "test"
+  runtime:
+    image: "test:latest"
+    mode: batch
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	// Create a minimal pipeline.yaml
-	pipelineContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
-spec:
-  mode: batch
-`
-	pipelinePath := filepath.Join(tmpDir, "pipeline.yaml")
-	if err := os.WriteFile(pipelinePath, []byte(pipelineContent), 0644); err != nil {
-		t.Fatalf("failed to write pipeline.yaml: %v", err)
 	}
 
 	oldDryRun := runDryRun

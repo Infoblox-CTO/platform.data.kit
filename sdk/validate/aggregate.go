@@ -76,8 +76,6 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 	v.checkOrphanAssets(result, dpPkg)
 
 	// Validate pipeline workflow if pipeline.yaml exists and is PipelineWorkflow kind.
-	// Skip validation for legacy pipeline.yaml files (kind: Pipeline) which are
-	// validated as part of the runtime configuration, not as workflow definitions.
 	pipelinePath := filepath.Join(v.packageDir, pipeline.PipelineFileName)
 	if _, err := os.Stat(pipelinePath); err == nil {
 		pw, loadErr := pipeline.LoadPipeline(pipelinePath)

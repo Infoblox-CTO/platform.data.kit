@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
@@ -67,16 +66,6 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
 
-	// Read and parse pipeline.yaml if it exists
-	var pipeline *contracts.PipelineManifest
-	pipelinePath := filepath.Join(absDir, "pipeline.yaml")
-	if pipelineData, err := os.ReadFile(pipelinePath); err == nil {
-		pipeline, err = parser.ParsePipeline(pipelineData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse pipeline.yaml: %w", err)
-		}
-	}
-
 	// Create manifest layer (YAML files)
 	manifestLayer, err := b.createManifestLayer(absDir)
 	if err != nil {
@@ -103,7 +92,6 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 	// Create artifact config
 	config := &ArtifactConfig{
 		Package:   pkg,
-		Pipeline:  pipeline,
 		BuildInfo: buildInfo,
 	}
 

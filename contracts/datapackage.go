@@ -77,6 +77,10 @@ type RuntimeSpec struct {
 	// Supports ${VAR} substitution from environment variables.
 	Image string `json:"image" yaml:"image"`
 
+	// Mode is the pipeline execution mode: batch or streaming.
+	// Defaults to "batch" if not specified.
+	Mode PipelineMode `json:"mode,omitempty" yaml:"mode,omitempty"`
+
 	// Command overrides the container entrypoint.
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
 
@@ -98,6 +102,9 @@ type RuntimeSpec struct {
 	// Defaults to 3 if not specified.
 	Retries int `json:"retries,omitempty" yaml:"retries,omitempty"`
 
+	// BackoffLimit is the Kubernetes Job backoff limit (batch only).
+	BackoffLimit int `json:"backoffLimit,omitempty" yaml:"backoffLimit,omitempty"`
+
 	// Replicas is the number of parallel instances.
 	// Defaults to 1 if not specified.
 	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
@@ -112,6 +119,15 @@ type RuntimeSpec struct {
 	// FailedJobsHistoryLimit is the number of failed jobs to retain.
 	// Defaults to 5 if not specified.
 	FailedJobsHistoryLimit int `json:"failedJobsHistoryLimit,omitempty" yaml:"failedJobsHistoryLimit,omitempty"`
+
+	// TerminationGracePeriodSeconds is the grace period for streaming pipeline shutdown.
+	TerminationGracePeriodSeconds int `json:"terminationGracePeriodSeconds,omitempty" yaml:"terminationGracePeriodSeconds,omitempty"`
+
+	// LivenessProbe defines the liveness health check for streaming pipelines.
+	LivenessProbe *Probe `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
+
+	// ReadinessProbe defines the readiness health check for streaming pipelines.
+	ReadinessProbe *Probe `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
 }
 
 // ScheduleSpec defines the scheduling configuration for a package.

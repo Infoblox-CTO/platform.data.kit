@@ -93,9 +93,6 @@ type ArtifactConfig struct {
 	// Package is the data package metadata.
 	Package *contracts.DataPackage `json:"package"`
 
-	// Pipeline is the pipeline manifest (if present).
-	Pipeline *contracts.PipelineManifest `json:"pipeline,omitempty"`
-
 	// BuildInfo contains build metadata.
 	BuildInfo *BuildInfo `json:"buildInfo"`
 }

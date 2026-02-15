@@ -86,21 +86,6 @@ func GetDPTemplate(packageType string) string {
 	return "dp.yaml.tmpl"
 }
 
-// GetPipelineTemplate returns the pipeline template name.
-func GetPipelineTemplate() string {
-	return "pipeline.yaml.tmpl"
-}
-
-// GetPipelineTemplateForMode returns the pipeline template for the given mode.
-func GetPipelineTemplateForMode(mode string) string {
-	switch mode {
-	case "streaming":
-		return "pipeline.streaming.yaml.tmpl"
-	default:
-		return "pipeline.batch.yaml.tmpl"
-	}
-}
-
 // splitWords splits a string on dashes, underscores, and camelCase boundaries.
 func splitWords(s string) []string {
 	var words []string

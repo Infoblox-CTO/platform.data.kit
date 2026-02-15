@@ -131,9 +131,6 @@ func runLint(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(filepath.Join(absDir, "dp.yaml")); err == nil {
 		files = append(files, "dp.yaml")
 	}
-	if _, err := os.Stat(filepath.Join(absDir, "pipeline.yaml")); err == nil {
-		files = append(files, "pipeline.yaml")
-	}
 	if _, err := os.Stat(filepath.Join(absDir, "bindings.yaml")); err == nil {
 		files = append(files, "bindings.yaml")
 	}

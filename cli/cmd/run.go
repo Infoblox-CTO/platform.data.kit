@@ -158,13 +158,10 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		return runCloudQuery(cmd, absDir, dp)
 	}
 
-	// Read pipeline mode from pipeline.yaml (if exists)
-	pipelineMode := "batch" // Default
-	pipelinePath := filepath.Join(absDir, "pipeline.yaml")
-	if pipeline, err := manifest.ParsePipelineFile(pipelinePath); err == nil {
-		if pipeline.Spec.Mode != "" {
-			pipelineMode = string(pipeline.Spec.Mode)
-		}
+	// Read pipeline mode from dp.yaml spec.runtime (defaults to batch)
+	pipelineMode := "batch"
+	if dp.Spec.Runtime != nil && dp.Spec.Runtime.Mode.IsValid() {
+		pipelineMode = string(dp.Spec.Runtime.Mode)
 	}
 
 	// Apply overrides if specified
