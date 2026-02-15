@@ -51,7 +51,7 @@ my-package/
 Every asset is defined by a single `asset.yaml` file:
 
 ```yaml title="asset.yaml"
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Asset
 name: aws-security                    # DNS-safe, 3-63 characters
 type: source                          # source | sink | model-engine

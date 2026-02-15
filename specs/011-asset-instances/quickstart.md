@@ -18,7 +18,7 @@ dp asset create aws-security --ext cloudquery.source.aws
 This creates `assets/sources/aws-security/asset.yaml`:
 
 ```yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Asset
 name: aws-security
 type: source
@@ -84,7 +84,7 @@ Add the asset to your package manifest:
 
 ```yaml
 # dp.yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: security-pipeline
@@ -113,7 +113,7 @@ Then define the binding in `bindings.yaml`:
 
 ```yaml
 # bindings.yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 metadata:
   environment: dev

@@ -17,7 +17,7 @@ func TestDataPackage_Fields(t *testing.T) {
 		{
 			name: "complete package",
 			pkg: DataPackage{
-				APIVersion: "dp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "DataPackage",
 				Metadata: PackageMetadata{
 					Name:      "test-pkg",
@@ -30,20 +30,20 @@ func TestDataPackage_Fields(t *testing.T) {
 					Owner:       "data-team",
 				},
 			},
-			wantAPI:  "dp.io/v1alpha1",
+			wantAPI:  "data.infoblox.com/v1alpha1",
 			wantKind: "DataPackage",
 			wantName: "test-pkg",
 		},
 		{
 			name: "minimal package",
 			pkg: DataPackage{
-				APIVersion: "dp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "DataPackage",
 				Metadata: PackageMetadata{
 					Name: "minimal",
 				},
 			},
-			wantAPI:  "dp.io/v1alpha1",
+			wantAPI:  "data.infoblox.com/v1alpha1",
 			wantKind: "DataPackage",
 			wantName: "minimal",
 		},

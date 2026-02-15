@@ -407,7 +407,7 @@ func writeTestAsset(t *testing.T, projectDir, typeDir, name string) {
 	if err := os.MkdirAll(assetDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	content := []byte(`apiVersion: cdpp.io/v1alpha1
+	content := []byte(`apiVersion: data.infoblox.com/v1alpha1
 kind: Asset
 name: ` + name + `
 type: source

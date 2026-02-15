@@ -86,7 +86,7 @@ if err := schema.Validate(yamlConfig); err != nil {
 
 **Current model** (works without assets):
 ```yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 metadata:
   name: dev-bindings
@@ -101,7 +101,7 @@ bindings:
 
 **New model** (asset-scoped, backward compatible):
 ```yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 metadata:
   name: dev-bindings

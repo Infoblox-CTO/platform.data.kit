@@ -176,7 +176,7 @@ dp init my-pipeline
 ```
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 ```
 
@@ -294,7 +294,7 @@ dp version v0.1.0
 Use title to show filename:
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 ```
 

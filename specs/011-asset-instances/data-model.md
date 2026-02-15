@@ -28,7 +28,7 @@ The primary new entity. A configured instance of an extension — config-only, n
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `apiVersion` | `string` | Yes | Schema version: `cdpp.io/v1alpha1` |
+| `apiVersion` | `string` | Yes | Schema version: `data.infoblox.com/v1alpha1` |
 | `kind` | `string` | Yes | Always `Asset` |
 | `name` | `string` | Yes | Unique asset identifier (DNS-safe: `^[a-z][a-z0-9-]{2,62}$`) |
 | `type` | `AssetType` | Yes | `source`, `sink`, or `model-engine` — derived from extension kind |
@@ -42,7 +42,7 @@ The primary new entity. A configured instance of an extension — config-only, n
 
 **Example** (`assets/sources/aws-security/asset.yaml`):
 ```yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Asset
 name: aws-security
 type: source

@@ -101,7 +101,7 @@ PR: Promote my-package v1.0.0 to dev
 Changes:
   environments/dev/my-package.yaml
 
-+apiVersion: dp.io/v1alpha1
++apiVersion: data.infoblox.com/v1alpha1
 +kind: DeployedPackage
 +metadata:
 +  name: my-package

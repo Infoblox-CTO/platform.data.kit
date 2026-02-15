@@ -193,7 +193,7 @@ func writeShowAsset(t *testing.T, projectDir, typeDir, name string, assetType co
 	}
 
 	a := &contracts.AssetManifest{
-		APIVersion: "cdpp.io/v1alpha1",
+		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
 		Name:       name,
 		Type:       assetType,

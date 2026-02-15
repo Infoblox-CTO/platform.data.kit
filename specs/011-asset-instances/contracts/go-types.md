@@ -45,7 +45,7 @@ func (t AssetType) IsValid() bool {
 
 // AssetManifest represents a parsed asset.yaml file.
 type AssetManifest struct {
-	// APIVersion is the schema version (e.g., "cdpp.io/v1alpha1").
+	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "Asset".

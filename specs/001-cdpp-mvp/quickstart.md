@@ -65,7 +65,7 @@ my-first-pipeline/
 
 ```yaml
 # dp.yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: my-first-pipeline

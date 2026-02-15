@@ -8,7 +8,7 @@
   "properties": {
     "apiVersion": {
       "type": "string",
-      "const": "cdpp.io/v1alpha1",
+      "const": "data.infoblox.com/v1alpha1",
       "description": "Schema version"
     },
     "kind": {

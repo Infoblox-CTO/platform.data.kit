@@ -15,7 +15,7 @@ Create a single `dp.yaml` file with all configuration:
 
 ```yaml
 # dp.yaml - Complete DataPackage manifest
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: my-pipeline

@@ -24,7 +24,7 @@ func TestLoadAsset(t *testing.T) {
 			setup: func(dir string) string {
 				assetDir := filepath.Join(dir, "assets", "sources", "my-source")
 				writeAssetYAML(t, assetDir, &contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1",
+					APIVersion: "data.infoblox.com/v1alpha1",
 					Kind:       "Asset",
 					Name:       "my-source",
 					Type:       contracts.AssetTypeSource,
@@ -44,7 +44,7 @@ func TestLoadAsset(t *testing.T) {
 			setup: func(dir string) string {
 				assetDir := filepath.Join(dir, "assets", "sinks", "my-sink")
 				writeAssetYAML(t, assetDir, &contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1",
+					APIVersion: "data.infoblox.com/v1alpha1",
 					Kind:       "Asset",
 					Name:       "my-sink",
 					Type:       contracts.AssetTypeSink,
@@ -129,17 +129,17 @@ func TestLoadAllAssets(t *testing.T) {
 			name: "three assets in different type directories",
 			setup: func(dir string) {
 				writeAssetYAML(t, filepath.Join(dir, "assets", "sources", "src-a"), &contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "src-a",
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "src-a",
 					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
 					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
 				})
 				writeAssetYAML(t, filepath.Join(dir, "assets", "sinks", "sink-b"), &contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "sink-b",
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "sink-b",
 					Type: contracts.AssetTypeSink, Extension: "infoblox.sink.snowflake",
 					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"db": "mydb"},
 				})
 				writeAssetYAML(t, filepath.Join(dir, "assets", "models", "model-c"), &contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "model-c",
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "model-c",
 					Type: contracts.AssetTypeModelEngine, Extension: "dbt.model-engine.core",
 					Version: "v2.0.0", OwnerTeam: "team", Config: map[string]any{"target": "prod"},
 				})
@@ -166,7 +166,7 @@ func TestLoadAllAssets(t *testing.T) {
 			setup: func(dir string) {
 				// Source asset placed in sinks/ directory
 				writeAssetYAML(t, filepath.Join(dir, "assets", "sinks", "wrong"), &contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "wrong",
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "wrong",
 					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
 					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
 				})
@@ -217,7 +217,7 @@ func TestLoadAllAssets(t *testing.T) {
 func TestFindAssetByName(t *testing.T) {
 	tmpDir := t.TempDir()
 	writeAssetYAML(t, filepath.Join(tmpDir, "assets", "sources", "my-source"), &contracts.AssetManifest{
-		APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "my-source",
+		APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "my-source",
 		Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
 		Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
 	})

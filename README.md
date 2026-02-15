@@ -73,7 +73,7 @@ A data package is a self-contained unit of data processing that includes:
 
 ```yaml
 # dp.yaml example
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: kafka-s3-pipeline

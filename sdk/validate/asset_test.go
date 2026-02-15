@@ -19,7 +19,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "valid asset",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "aws-security",
 				Type:       contracts.AssetTypeSource,
@@ -43,7 +43,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "missing required config field",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "aws-missing",
 				Type:       contracts.AssetTypeSource,
@@ -59,7 +59,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "wrong config type",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "aws-wrong-type",
 				Type:       contracts.AssetTypeSource,
@@ -78,7 +78,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "invalid FQN",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "bad-fqn",
 				Type:       contracts.AssetTypeSource,
@@ -94,7 +94,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "invalid version",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "bad-version",
 				Type:       contracts.AssetTypeSource,
@@ -110,7 +110,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "type mismatch with FQN kind",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "type-mismatch",
 				Type:       contracts.AssetTypeSink, // FQN says "source"
@@ -126,7 +126,7 @@ func TestAssetValidator_ValidateAsset(t *testing.T) {
 		{
 			name: "empty config with no required fields (offline)",
 			asset: &contracts.AssetManifest{
-				APIVersion: "cdpp.io/v1alpha1",
+				APIVersion: "data.infoblox.com/v1alpha1",
 				Kind:       "Asset",
 				Name:       "empty-config",
 				Type:       contracts.AssetTypeSource,

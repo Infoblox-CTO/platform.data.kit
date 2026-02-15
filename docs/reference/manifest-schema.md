@@ -15,7 +15,7 @@ The main package manifest file.
 
 ```yaml
 # dp.yaml
-apiVersion: dp.io/v1alpha1          # Required: API version
+apiVersion: data.infoblox.com/v1alpha1          # Required: API version
 kind: DataPackage                   # Required: Resource type
 
 metadata:                           # Required: Package metadata
@@ -447,7 +447,7 @@ Infrastructure binding references.
 
 ```yaml
 # bindings.yaml
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 
 spec:
@@ -508,7 +508,7 @@ Asset configuration file for extension instances. Located at `assets/<type>/<nam
 
 ```yaml
 # asset.yaml
-apiVersion: cdpp.io/v1alpha1        # Required: API version
+apiVersion: data.infoblox.com/v1alpha1        # Required: API version
 kind: Asset                          # Required: Always "Asset"
 name: string                         # Required: Asset name (DNS-safe, 3-63 chars)
 type: string                         # Required: source | sink | model-engine
@@ -780,7 +780,7 @@ suspend: boolean                        # Optional: Pause execution (default: fa
 ### dp.yaml
 
 ```yaml
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: user-events-processor
@@ -812,7 +812,7 @@ spec:
 ### bindings.yaml
 
 ```yaml
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 spec:
   bindings:

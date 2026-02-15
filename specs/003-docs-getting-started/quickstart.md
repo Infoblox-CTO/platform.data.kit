@@ -73,7 +73,7 @@ dp init my-pipeline --type pipeline
 ```
 
 ```yaml
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: example

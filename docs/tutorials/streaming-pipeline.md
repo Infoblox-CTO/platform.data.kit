@@ -84,7 +84,7 @@ spec:
 Edit `dp.yaml` to declare data connections:
 
 ```yaml
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: user-aggregator
@@ -114,7 +114,7 @@ spec:
 Edit `bindings.yaml` for local development:
 
 ```yaml
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 spec:
   bindings:

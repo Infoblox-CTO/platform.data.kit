@@ -164,7 +164,7 @@ func (p *Promoter) generateVersionFile(req *PromotionRequest) (string, error) {
 	}
 
 	vf := &VersionFile{
-		APIVersion: "dp.io/v1alpha1",
+		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "PackageVersion",
 		Metadata: VersionMeta{
 			Name: req.Package,

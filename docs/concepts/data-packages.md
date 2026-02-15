@@ -126,7 +126,7 @@ dp show ./my-pipeline -f production.yaml --set spec.runtime.image=new:v2
 References to infrastructure resources:
 
 ```yaml title="bindings.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 spec:
   bindings:

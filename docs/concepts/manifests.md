@@ -10,7 +10,7 @@ The manifest (`dp.yaml`) is the central configuration file for every data packag
 ## Manifest Structure
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1    # API version
+apiVersion: data.infoblox.com/v1alpha1    # API version
 kind: DataPackage             # Resource type
 metadata:                     # Package metadata
   name: my-package
@@ -29,7 +29,7 @@ spec:                         # Package specification
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `apiVersion` | string | Always `dp.io/v1alpha1` |
+| `apiVersion` | string | Always `data.infoblox.com/v1alpha1` |
 | `kind` | string | Always `DataPackage` |
 | `metadata.name` | string | Package name (lowercase, hyphenated) |
 | `spec.type` | string | One of: `pipeline`, `producer`, `consumer`, `streaming` |
@@ -151,7 +151,7 @@ spec:
 ### Complete Example
 
 ```yaml title="dp.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: user-events-processor

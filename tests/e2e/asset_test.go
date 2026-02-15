@@ -49,7 +49,7 @@ func TestAssetWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Fill in valid config values
-	validAsset := `apiVersion: cdpp.io/v1alpha1
+	validAsset := `apiVersion: data.infoblox.com/v1alpha1
 kind: Asset
 name: aws-security
 type: source
@@ -219,7 +219,7 @@ func TestAssetValidateInvalid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	invalidAsset := `apiVersion: cdpp.io/v1alpha1
+	invalidAsset := `apiVersion: data.infoblox.com/v1alpha1
 kind: Asset
 name: bad-asset
 type: source

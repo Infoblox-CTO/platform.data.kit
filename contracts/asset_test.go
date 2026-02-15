@@ -176,7 +176,7 @@ func TestAssetTypeDirName(t *testing.T) {
 
 func TestAssetManifest_YAML(t *testing.T) {
 	asset := AssetManifest{
-		APIVersion: "cdpp.io/v1alpha1",
+		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
 		Name:       "aws-security",
 		Type:       AssetTypeSource,
@@ -239,7 +239,7 @@ func TestAssetManifest_YAML(t *testing.T) {
 func TestAssetManifest_Omitempty(t *testing.T) {
 	// Minimal asset — optional fields should NOT appear in YAML output
 	asset := AssetManifest{
-		APIVersion: "cdpp.io/v1alpha1",
+		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
 		Name:       "minimal",
 		Type:       AssetTypeSource,

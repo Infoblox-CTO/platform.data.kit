@@ -109,7 +109,7 @@ func Scaffold(opts ScaffoldOpts) (*ScaffoldResult, error) {
 
 	// Build the asset manifest
 	asset := &contracts.AssetManifest{
-		APIVersion: "cdpp.io/v1alpha1",
+		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
 		Name:       opts.Name,
 		Type:       assetType,
@@ -314,7 +314,7 @@ func ExtractSchemaFields(schemaBytes []byte) ([]SchemaFieldInfo, error) {
 func marshalAssetWithComments(asset *contracts.AssetManifest) ([]byte, error) {
 	var b strings.Builder
 
-	b.WriteString("apiVersion: cdpp.io/v1alpha1\n")
+	b.WriteString("apiVersion: data.infoblox.com/v1alpha1\n")
 	b.WriteString("kind: Asset\n")
 	b.WriteString(fmt.Sprintf("name: %s\n", asset.Name))
 	b.WriteString(fmt.Sprintf("type: %s\n", asset.Type))

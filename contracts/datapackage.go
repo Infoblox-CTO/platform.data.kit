@@ -2,7 +2,7 @@ package contracts
 
 // DataPackage represents the root manifest (dp.yaml) declaring package identity, type, and contracts.
 type DataPackage struct {
-	// APIVersion is the schema version (e.g., "dp.io/v1alpha1")
+	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1")
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "DataPackage"

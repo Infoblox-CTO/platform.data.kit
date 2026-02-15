@@ -57,7 +57,7 @@ The root manifest declaring package identity, type, and contracts.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `apiVersion` | string | ✓ | Schema version (e.g., `cdpp.io/v1alpha1`) |
+| `apiVersion` | string | ✓ | Schema version (e.g., `data.infoblox.com/v1alpha1`) |
 | `kind` | string | ✓ | Always `DataPackage` |
 | `metadata.name` | string | ✓ | Package name (DNS-safe, lowercase) |
 | `metadata.namespace` | string | ✓ | Team/org namespace |
@@ -74,7 +74,7 @@ The root manifest declaring package identity, type, and contracts.
 ### Example
 
 ```yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: DataPackage
 metadata:
   name: kafka-s3-pipeline
@@ -181,7 +181,7 @@ Runtime configuration for pipeline execution.
 ### Example
 
 ```yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Pipeline
 spec:
   image: "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
@@ -319,7 +319,7 @@ registry.example.com/cdpp/kafka-s3-pipeline@sha256:abc123...
 
 ```yaml
 # environments/dev/packages/kafka-s3-pipeline.yaml
-apiVersion: cdpp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: PackageDeployment
 metadata:
   name: kafka-s3-pipeline

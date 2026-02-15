@@ -90,7 +90,7 @@ spec:
 Configure your infrastructure bindings:
 
 ```yaml title="bindings.yaml"
-apiVersion: dp.io/v1alpha1
+apiVersion: data.infoblox.com/v1alpha1
 kind: Bindings
 
 spec:

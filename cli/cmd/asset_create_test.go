@@ -50,7 +50,7 @@ func TestAssetCreate(t *testing.T) {
 					t.Fatal(err)
 				}
 				data, _ := yaml.Marshal(&contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "existing",
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "existing",
 					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
 					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
 				})
@@ -70,7 +70,7 @@ func TestAssetCreate(t *testing.T) {
 					t.Fatal(err)
 				}
 				data, _ := yaml.Marshal(&contracts.AssetManifest{
-					APIVersion: "cdpp.io/v1alpha1", Kind: "Asset", Name: "existing",
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "existing",
 					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
 					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
 				})
