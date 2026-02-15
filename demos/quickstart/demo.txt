@@ -1,0 +1,58 @@
+# Demo: Data Package Quickstart
+# Shows: dp init → dp lint → dp show → dp dev up → dp build → dp run → dp dev down
+# Prerequisites: dp binary (make build), Docker, k3d
+
+REQUIRE: docker
+REQUIRE: k3d
+
+SAY: Welcome to the Data Platform quickstart demo
+
+SAY: First, let's create a temporary working directory
+CMD: export DEMO_ORIGIN="$PWD" DEMO_DIR=$(mktemp -d) && echo "Working in $DEMO_DIR"
+
+SAY: Now let's create a new data package
+CMD: cd "$DEMO_DIR" && dp init quickstart-demo
+
+SAY: Let's look at the generated project structure
+CMD: ls "$DEMO_DIR/quickstart-demo/"
+
+WAIT: 1
+
+SAY: Here's the pipeline source code — a simple Go program
+CMD: cat "$DEMO_DIR/quickstart-demo/src/main.go"
+
+WAIT: 1
+
+SAY: Now let's validate the package configuration
+CMD: cd "$DEMO_DIR/quickstart-demo" && dp lint
+
+WAIT: 1
+
+SAY: Let's inspect the package metadata
+CMD: cd "$DEMO_DIR/quickstart-demo" && dp show
+
+WAIT: 1
+
+SAY: Time to start the local development environment
+CMD: cd "$DEMO_ORIGIN" && dp dev up
+
+WAIT: 2
+
+SAY: Now let's build the package into an OCI artifact
+CMD: cd "$DEMO_DIR" && dp build ./quickstart-demo
+
+WAIT: 1
+
+SAY: Let's run the pipeline against the dev environment
+CMD: cd "$DEMO_DIR" && dp run ./quickstart-demo
+
+WAIT: 1
+
+SAY: Cleaning up — tearing down the dev environment
+CMD: cd "$DEMO_ORIGIN" && dp dev down
+
+SAY: Removing the demo project and Docker image
+CMD: rm -rf "$DEMO_DIR"
+CMD: docker rmi dp/quickstart-demo:0.1.0 > /dev/null 2>&1 || true
+
+SAY: That's the complete workflow: init → lint → show → dev up → build → run → dev down!

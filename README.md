@@ -159,6 +159,7 @@ data-platform/
 │   ├── runner/         # Local execution runtime
 │   └── catalog/        # Data catalog client
 ├── cli/                # DP CLI implementation
+├── demos/              # Scripted terminal demos (see demos/README.md)
 ├── platform/
 │   └── controller/     # Kubernetes controller
 ├── gitops/             # Environment definitions

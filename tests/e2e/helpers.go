@@ -11,31 +11,91 @@ import (
 	"testing"
 )
 
-// dpBinaryPath finds the dp CLI binary path.
-// It looks for the binary in the bin directory at the root of the repository.
-func dpBinaryPath(t *testing.T) string {
+// repoRootDir returns the absolute path to the repository root.
+// It navigates from the test file location (tests/e2e/) up two directories.
+func repoRootDir(t *testing.T) string {
 	t.Helper()
 
-	// Get the path to the repository root
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("failed to get caller information")
 	}
 
-	// Navigate from tests/e2e to repository root
 	repoRoot := filepath.Join(filepath.Dir(filename), "..", "..")
-	binaryPath := filepath.Join(repoRoot, "bin", "dp")
+	absPath, err := filepath.Abs(repoRoot)
+	if err != nil {
+		t.Fatalf("failed to get absolute path for repo root: %v", err)
+	}
+
+	return absPath
+}
+
+// dpBinaryPath finds the dp CLI binary path.
+// It looks for the binary in the bin directory at the root of the repository.
+func dpBinaryPath(t *testing.T) string {
+	t.Helper()
+
+	binaryPath := filepath.Join(repoRootDir(t), "bin", "dp")
 
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		t.Fatalf("dp binary not found at %s. Run 'make build' first.", binaryPath)
 	}
 
-	absPath, err := filepath.Abs(binaryPath)
-	if err != nil {
-		t.Fatalf("failed to get absolute path: %v", err)
+	return binaryPath
+}
+
+// demoRunnerPath returns the absolute path to the demo runner script (demos/run_demo.sh).
+// It verifies the script exists before returning.
+func demoRunnerPath(t *testing.T) string {
+	t.Helper()
+
+	runnerPath := filepath.Join(repoRootDir(t), "demos", "run_demo.sh")
+
+	if _, err := os.Stat(runnerPath); os.IsNotExist(err) {
+		t.Fatalf("demo runner not found at %s", runnerPath)
 	}
 
-	return absPath
+	return runnerPath
+}
+
+// runDemo executes a demo dialog file through the runner script.
+// It sets the working directory to the repo root and prepends the bin/ directory
+// to PATH so that dp commands work without absolute paths.
+func runDemo(t *testing.T, demoName string) *CommandResult {
+	t.Helper()
+
+	root := repoRootDir(t)
+	runner := demoRunnerPath(t)
+	dialogFile := filepath.Join("demos", demoName, "demo.txt")
+
+	cmd := exec.Command("bash", runner, dialogFile)
+	cmd.Dir = root
+
+	// Prepend bin/ to PATH so dp is available
+	binDir := filepath.Join(root, "bin")
+	cmd.Env = append(os.Environ(), "PATH="+binDir+":"+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	result := &CommandResult{
+		Stdout:   stdout.String(),
+		Stderr:   stderr.String(),
+		ExitCode: 0,
+	}
+
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			result.ExitCode = exitErr.ExitCode()
+		} else {
+			t.Fatalf("failed to run demo %q: %v", demoName, err)
+		}
+	}
+
+	return result
 }
 
 // CommandResult holds the result of running a command.
