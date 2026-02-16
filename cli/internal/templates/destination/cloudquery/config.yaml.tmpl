@@ -1,0 +1,11 @@
+# CloudQuery destination plugin configuration for {{ .Name }}
+# See https://docs.cloudquery.io/docs/reference/destination-spec
+kind: destination
+spec:
+  name: {{ .Name }}
+  registry: local
+  path: plugin
+  spec:
+    # Add your destination-specific configuration here
+    bucket: "my-bucket"
+    region: "us-east-1"

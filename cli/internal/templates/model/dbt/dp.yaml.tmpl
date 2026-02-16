@@ -1,0 +1,39 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Model
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  version: 0.1.0
+  labels:
+    team: {{ .Team }}
+spec:
+  runtime: dbt
+  mode: batch
+  description: "{{ .Description }}"
+  owner: {{ .Owner }}
+
+  config:
+    target: production
+    project_dir: ./dbt
+    profiles_dir: ./dbt
+    select: "tag:daily"
+
+  inputs:
+    - name: {{ .Name }}-input
+      type: postgres-table
+      binding: input.raw
+
+  outputs:
+    - name: {{ .Name }}-output
+      type: postgres-table
+      binding: output.transformed
+      classification:
+        pii: false
+        sensitivity: internal
+
+  schedule:
+    cron: "30 6 * * *"
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"

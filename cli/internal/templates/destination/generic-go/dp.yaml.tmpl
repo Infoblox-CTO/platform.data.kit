@@ -1,0 +1,25 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Destination
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  version: 0.1.0
+  labels:
+    team: {{ .Team }}
+spec:
+  runtime: generic-go
+  description: "{{ .Description }}"
+  owner: {{ .Owner }}
+  image: "${REGISTRY}/{{ .Name }}:${VERSION}"
+
+  accepts:
+    name: {{ .Name }}-input
+    type: kafka-topic
+
+  configSchema:
+    properties:
+      endpoint:
+        type: string
+        description: "Destination endpoint URL"
+    required:
+      - endpoint

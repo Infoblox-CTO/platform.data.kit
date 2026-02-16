@@ -1,0 +1,15 @@
+-- {{ .Name }} example model
+-- This model is a starting point. Edit to match your transformation logic.
+
+{{ "{{" }} config(
+    materialized='table',
+    tags=['daily']
+) {{ "}}" }}
+
+SELECT
+    id,
+    created_at,
+    updated_at,
+    COUNT(*) AS total_count
+FROM {{ "{{ source('raw', 'my_table') }}" }}
+GROUP BY id, created_at, updated_at

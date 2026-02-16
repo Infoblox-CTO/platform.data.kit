@@ -1,0 +1,31 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Source
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  version: 0.1.0
+  labels:
+    team: {{ .Team }}
+spec:
+  runtime: cloudquery
+  description: "{{ .Description }}"
+  owner: {{ .Owner }}
+
+  provides:
+    name: {{ .Name }}-data
+    type: kafka-topic
+    classification:
+      pii: false
+      sensitivity: internal
+
+  configSchema:
+    properties:
+      connection_string:
+        type: string
+        description: "Connection string for the data source"
+      tables:
+        type: array
+        description: "Tables to replicate"
+    required:
+      - connection_string
+      - tables

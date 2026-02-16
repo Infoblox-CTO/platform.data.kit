@@ -1,0 +1,12 @@
+{{ .Name | snakeCase }}:
+  target: production
+  outputs:
+    production:
+      type: postgres
+      host: "{{ "{{ env_var('DB_HOST') }}" }}"
+      port: 5432
+      user: "{{ "{{ env_var('DB_USER') }}" }}"
+      pass: "{{ "{{ env_var('DB_PASSWORD') }}" }}"
+      dbname: "{{ "{{ env_var('DB_NAME') }}" }}"
+      schema: public
+      threads: 4
