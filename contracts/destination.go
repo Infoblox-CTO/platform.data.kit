@@ -40,3 +40,23 @@ type DestinationSpec struct {
 	// Command overrides the container entrypoint.
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
 }
+
+// --- Manifest interface implementation for Destination ---
+
+// GetKind returns the manifest kind.
+func (d *Destination) GetKind() Kind { return Kind(d.Kind) }
+
+// GetName returns the destination name.
+func (d *Destination) GetName() string { return d.Metadata.Name }
+
+// GetNamespace returns the destination namespace.
+func (d *Destination) GetNamespace() string { return d.Metadata.Namespace }
+
+// GetVersion returns the destination version.
+func (d *Destination) GetVersion() string { return d.Metadata.Version }
+
+// GetDescription returns the destination description.
+func (d *Destination) GetDescription() string { return d.Spec.Description }
+
+// GetOwner returns the destination owner.
+func (d *Destination) GetOwner() string { return d.Spec.Owner }

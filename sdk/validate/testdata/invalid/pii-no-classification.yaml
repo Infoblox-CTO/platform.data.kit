@@ -1,17 +1,21 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: pii-violation-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
-  description: A package with PII outputs but no classification
+  description: A model with outputs but no classification
   owner: data-team
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: customer-emails
       type: s3-prefix
+      binding: emails-bucket
       # classification is missing - this should fail PII validation
     - name: user-addresses
       type: s3-prefix
+      binding: addresses-bucket
       # classification is missing - this should also fail

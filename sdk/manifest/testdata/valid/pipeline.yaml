@@ -1,29 +1,14 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
+kind: Source
 metadata:
-  name: sample-pipeline
-  labels:
-    team: analytics
+  name: sample-source
+  namespace: data-team
+  version: 1.0.0
 spec:
-  image: docker.io/myorg/pipeline:latest
-  command:
-    - python
-    - main.py
-  args:
-    - --input
-    - /data/input
-    - --output
-    - /data/output
-  env:
-    - name: LOG_LEVEL
-      value: INFO
-    - name: DATABASE_URL
-      valueFrom:
-        secretKeyRef:
-          name: db-credentials
-          key: url
-  bindings:
-    - name: input-data
-    - name: output-data
-  replicas: 1
-  serviceAccountName: pipeline-runner
+  description: Sample source for parsing tests
+  owner: data-team
+  runtime: cloudquery
+  image: docker.io/myorg/source:latest
+  provides:
+    name: output-data
+    type: s3-prefix

@@ -2,11 +2,9 @@ package validate
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/pipeline"
 )
@@ -45,15 +43,12 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		return result
 	}
 
-	var dpPkg *contracts.DataPackage
-
 	dpPath := filepath.Join(v.packageDir, "dp.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
 		result.AddError(ErrFileNotFound, "dp.yaml", "dp.yaml not found - this is required for a valid package")
 	} else {
-		dpResult, pkg := v.validateDataPackage(ctx, dpPath)
+		dpResult := v.validateManifest(ctx, dpPath)
 		result.Merge(dpResult)
-		dpPkg = pkg
 	}
 
 	bindingsPath := filepath.Join(v.packageDir, "bindings.yaml")
@@ -71,9 +66,6 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 	// Validate assets if assets/ directory exists
 	assetsResult := v.validateAssets(ctx)
 	result.Merge(assetsResult)
-
-	// Check for orphan assets (assets on disk not referenced in dp.yaml)
-	v.checkOrphanAssets(result, dpPkg)
 
 	// Validate pipeline workflow if pipeline.yaml exists and is PipelineWorkflow kind.
 	pipelinePath := filepath.Join(v.packageDir, pipeline.PipelineFileName)
@@ -95,14 +87,14 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 	return result
 }
 
-// validateDataPackage validates the dp.yaml file.
-func (v *AggregateValidator) validateDataPackage(ctx context.Context, path string) (*ValidationResult, *contracts.DataPackage) {
+// validateManifest validates the dp.yaml file using the kind-aware ManifestValidator.
+func (v *AggregateValidator) validateManifest(ctx context.Context, path string) *ValidationResult {
 	result := NewValidationResult()
 
-	validator, err := NewDataPackageValidatorFromFile(path)
+	validator, err := NewManifestValidatorFromFile(path)
 	if err != nil {
 		result.AddError(ErrParseError, "dp.yaml", "failed to parse dp.yaml: "+err.Error())
-		return result, nil
+		return result
 	}
 
 	errs := validator.Validate(ctx)
@@ -113,28 +105,7 @@ func (v *AggregateValidator) validateDataPackage(ctx context.Context, path strin
 		}
 	}
 
-	pkg := validator.Package()
-
-	// Run CloudQuery-specific validation if the package type is cloudquery
-	if pkg != nil && pkg.Spec.Type == contracts.PackageTypeCloudQuery {
-		cqValidator := NewCloudQueryValidator(pkg)
-		cqErrs := cqValidator.Validate(ctx)
-		for _, e := range cqErrs {
-			if e.Severity == contracts.SeverityWarning {
-				result.AddWarning(e.Error())
-			} else {
-				result.AddError(e.Code, e.Field, e.Message)
-			}
-		}
-	}
-
-	// Run PII validation if configured
-	if v.vctx != nil && v.vctx.ValidatePII {
-		piiResult := v.validatePII(ctx, validator.Package())
-		result.Merge(piiResult)
-	}
-
-	return result, pkg
+	return result
 }
 
 // validateBindings validates the bindings.yaml file.
@@ -199,33 +170,6 @@ func (v *AggregateValidator) validateSchemas(ctx context.Context, schemasDir str
 	}
 
 	return result
-}
-
-// checkOrphanAssets warns about assets on disk that are not referenced in dp.yaml.
-func (v *AggregateValidator) checkOrphanAssets(result *ValidationResult, dpPkg *contracts.DataPackage) {
-	assets, err := asset.LoadAllAssets(v.packageDir)
-	if err != nil || len(assets) == 0 {
-		return
-	}
-
-	// Build set of referenced asset names from dp.yaml
-	referenced := make(map[string]bool)
-	if dpPkg != nil {
-		for _, name := range dpPkg.Spec.Assets {
-			referenced[name] = true
-		}
-	}
-
-	// If dp.yaml has no assets section at all, don't warn — the user may not have adopted assets yet
-	if dpPkg == nil || len(dpPkg.Spec.Assets) == 0 {
-		return
-	}
-
-	for _, a := range assets {
-		if !referenced[a.Name] {
-			result.AddWarning(fmt.Sprintf("asset %q exists in assets/ but is not referenced in dp.yaml spec.assets (consider adding it or removing the asset)", a.Name))
-		}
-	}
 }
 
 // validateAvroSchema validates an Avro schema file.
@@ -304,26 +248,6 @@ func (v *AggregateValidator) validateAssets(ctx context.Context) *ValidationResu
 		if errs.HasErrors() {
 			result.Valid = false
 		}
-		for _, e := range errs {
-			result.Errors.Add(e)
-		}
-	}
-
-	return result
-}
-
-// validatePII runs PII classification validation on a data package.
-func (v *AggregateValidator) validatePII(ctx context.Context, pkg *contracts.DataPackage) *ValidationResult {
-	result := NewValidationResult()
-
-	if pkg == nil {
-		return result
-	}
-
-	piiValidator := NewPIIValidator()
-	errs := piiValidator.Validate(pkg)
-	if errs.HasErrors() {
-		result.Valid = false
 		for _, e := range errs {
 			result.Errors.Add(e)
 		}

@@ -54,17 +54,17 @@ func TestAggregateValidator_Validate_ValidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test package
   owner: data-team
-  runtime:
-    image: myimage:v1
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: output-data
       type: s3-prefix
@@ -132,17 +132,17 @@ func TestAggregateValidator_Validate_WithPipeline(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test pipeline package
   owner: data-team
-  runtime:
-    image: myorg/pipeline:latest
+  runtime: generic-go
+  image: myorg/pipeline:latest
+  mode: batch
   outputs:
     - name: output-data
       type: s3-prefix

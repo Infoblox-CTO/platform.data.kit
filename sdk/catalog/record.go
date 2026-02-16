@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
 // RecordType represents the type of catalog record.
@@ -138,32 +139,25 @@ func NewRecord(recordType RecordType, namespace, name string) *Record {
 	}
 }
 
-// FromDataPackage creates a catalog record from a data package.
-func FromDataPackage(pkg *contracts.DataPackage) *Record {
+// FromManifest creates a catalog record from a manifest (Source, Destination, or Model).
+func FromManifest(m manifest.Manifest, kind contracts.Kind) *Record {
 	now := time.Now().UTC()
 
-	// Convert labels map to tags slice
-	var tags []string
-	for k, v := range pkg.Metadata.Labels {
-		tags = append(tags, k+"="+v)
-	}
-
 	record := &Record{
-		ID:          pkg.Metadata.Namespace + "/" + pkg.Metadata.Name,
+		ID:          m.GetNamespace() + "/" + m.GetName(),
 		Type:        RecordTypeDataset,
-		Namespace:   pkg.Metadata.Namespace,
-		Name:        pkg.Metadata.Name,
-		Description: pkg.Spec.Description,
-		Tags:        tags,
-		Owner:       pkg.Spec.Owner,
+		Namespace:   m.GetNamespace(),
+		Name:        m.GetName(),
+		Description: m.GetDescription(),
+		Tags:        []string{},
+		Owner:       m.GetOwner(),
 		Metadata:    make(map[string]string),
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
 
-	// Add version to metadata
-	record.Metadata["version"] = pkg.Metadata.Version
-	record.Metadata["type"] = string(pkg.Spec.Type)
+	record.Metadata["version"] = m.GetVersion()
+	record.Metadata["kind"] = string(kind)
 
 	return record
 }

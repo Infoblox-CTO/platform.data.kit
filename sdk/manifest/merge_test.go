@@ -372,13 +372,13 @@ func TestValidateOverridePath(t *testing.T) {
 		wantErr bool
 	}{
 		// Valid paths
-		{name: "spec.runtime.image", path: "spec.runtime.image", wantErr: false},
-		{name: "spec.runtime.timeout", path: "spec.runtime.timeout", wantErr: false},
-		{name: "spec.runtime.retries", path: "spec.runtime.retries", wantErr: false},
-		{name: "spec.runtime.env", path: "spec.runtime.env", wantErr: false},
-		{name: "spec.runtime.env with index", path: "spec.runtime.env[0].value", wantErr: false},
-		{name: "spec.runtime.resources.memory", path: "spec.runtime.resources.memory", wantErr: false},
-		{name: "spec.runtime.resources.cpu", path: "spec.runtime.resources.cpu", wantErr: false},
+		{name: "spec.image", path: "spec.image", wantErr: false},
+		{name: "spec.timeout", path: "spec.timeout", wantErr: false},
+		{name: "spec.retries", path: "spec.retries", wantErr: false},
+		{name: "spec.env", path: "spec.env", wantErr: false},
+		{name: "spec.env with index", path: "spec.env[0].value", wantErr: false},
+		{name: "spec.resources.memory", path: "spec.resources.memory", wantErr: false},
+		{name: "spec.resources.cpu", path: "spec.resources.cpu", wantErr: false},
 		{name: "metadata.name", path: "metadata.name", wantErr: false},
 		{name: "metadata.version", path: "metadata.version", wantErr: false},
 		{name: "metadata.labels", path: "metadata.labels", wantErr: false},
@@ -410,8 +410,8 @@ func TestValidateOverridePath_Suggestions(t *testing.T) {
 		suggestion string
 	}{
 		{path: "runtime", suggestion: "spec.runtime"},
-		{path: "image", suggestion: "spec.runtime.image"},
-		{path: "timeout", suggestion: "spec.runtime.timeout"},
+		{path: "image", suggestion: "spec.image"},
+		{path: "timeout", suggestion: "spec.timeout"},
 		{path: "name", suggestion: "metadata.name"},
 		{path: "version", suggestion: "metadata.version"},
 	}

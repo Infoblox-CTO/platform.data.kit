@@ -90,15 +90,17 @@ func TestBundle_ValidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test package
   owner: data-team
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: output
       type: s3-prefix
@@ -109,18 +111,6 @@ spec:
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	pipelineContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
-metadata:
-  name: test-pkg
-spec:
-  image: python:3.11
-  command: ["python", "-m", "main"]
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "pipeline.yaml"), []byte(pipelineContent), 0644); err != nil {
-		t.Fatalf("failed to write pipeline.yaml: %v", err)
 	}
 
 	bundler := NewBundler("v1.0.0")
@@ -156,17 +146,17 @@ func TestBundle_WithExcludePatterns(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test package
   owner: data-team
-  runtime:
-    image: myimage:v1
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: output
       type: s3-prefix

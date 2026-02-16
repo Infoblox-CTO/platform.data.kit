@@ -62,6 +62,6 @@ func (r *DockerRunner) RunBatch(ctx context.Context, opts RunOptions, image stri
 }
 
 // IsBatchMode checks if a pipeline is configured for batch mode.
-func IsBatchMode(mode contracts.PipelineMode) bool {
-	return mode == "" || mode == contracts.PipelineModeBatch
+func IsBatchMode(mode contracts.Mode) bool {
+	return mode == "" || mode == contracts.ModeBatch
 }

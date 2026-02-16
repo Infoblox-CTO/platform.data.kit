@@ -2,17 +2,6 @@ package contracts
 
 import "time"
 
-// PackageType represents the type of data package (legacy, kept for backward compat).
-type PackageType string
-
-const (
-	// PackageTypePipeline is a data processing pipeline (legacy).
-	PackageTypePipeline PackageType = "pipeline"
-
-	// PackageTypeCloudQuery is a CloudQuery source or destination plugin (legacy).
-	PackageTypeCloudQuery PackageType = "cloudquery"
-)
-
 // Kind identifies the manifest kind.
 type Kind string
 
@@ -25,15 +14,12 @@ const (
 
 	// KindModel is a data workload (data engineer).
 	KindModel Kind = "Model"
-
-	// KindDataPackage is the legacy manifest kind (backward compat).
-	KindDataPackage Kind = "DataPackage"
 )
 
 // IsValid checks if the kind is a recognized value.
 func (k Kind) IsValid() bool {
 	switch k {
-	case KindSource, KindDestination, KindModel, KindDataPackage:
+	case KindSource, KindDestination, KindModel:
 		return true
 	}
 	return false
@@ -162,12 +148,3 @@ type RunRecord struct {
 	// Metadata contains additional run metadata.
 	Metadata map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
-
-// PipelineMode is an alias for Mode (backward compat).
-type PipelineMode = Mode
-
-// Legacy constants pointing to the new Mode values.
-const (
-	PipelineModeBatch     = ModeBatch
-	PipelineModeStreaming = ModeStreaming
-)

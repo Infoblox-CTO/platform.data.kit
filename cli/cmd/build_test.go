@@ -98,17 +98,17 @@ func TestBuildCmd_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test package
   owner: data-team
-  runtime:
-    image: myimage:v1
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: output
       type: s3-prefix
@@ -141,11 +141,11 @@ func TestBuildCmd_InvalidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: ""
 spec:
-  type: pipeline
+  runtime: generic-go
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -165,17 +165,17 @@ func TestBuildCmd_CustomTag(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test package
   owner: data-team
-  runtime:
-    image: myimage:v1
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: output
       type: s3-prefix
@@ -212,23 +212,16 @@ func TestBuildCmd_CloudQueryPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Source
 metadata:
   name: my-cq-source
   namespace: data-team
   version: 0.1.0
 spec:
-  type: cloudquery
   description: CloudQuery source plugin
   owner: data-team
-  cloudquery:
-    role: source
-    tables:
-      - example_resource
-    grpcPort: 7777
-    concurrency: 10000
-  runtime:
-    image: my-cq-source:latest
+  runtime: cloudquery
+  image: my-cq-source:latest
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -249,22 +242,21 @@ spec:
 	}
 }
 
-func TestBuildCmd_CloudQueryInvalidPackage(t *testing.T) {
-	// Test that dp build rejects an invalid CloudQuery package (missing required fields)
+func TestBuildCmd_SourcePackageValid(t *testing.T) {
+	// Test that dp build accepts a valid Source package
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Source
 metadata:
-  name: bad-cq-source
+  name: cq-source
   namespace: data-team
   version: 0.1.0
 spec:
-  type: cloudquery
-  description: Invalid CloudQuery plugin
+  description: CloudQuery plugin
   owner: data-team
-  runtime:
-    image: bad-source:latest
+  runtime: cloudquery
+  image: cq-source:latest
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -273,8 +265,8 @@ spec:
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
-	// Should fail validation (missing cloudquery section)
-	if err == nil {
-		t.Error("expected validation error for CloudQuery package missing cloudquery section")
+	// Should succeed — Source is valid even without provides
+	if err != nil {
+		t.Errorf("runBuild() error = %v, want nil for valid Source package", err)
 	}
 }

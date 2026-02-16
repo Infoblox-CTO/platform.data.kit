@@ -1,4 +1,4 @@
-// Package validate provides PII classification validation for data packages.
+// Package validate provides PII classification validation for manifests.
 package validate
 
 import (
@@ -8,7 +8,7 @@ import (
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
 
-// PIIValidator validates PII classification on data package outputs.
+// PIIValidator validates PII classification on Model outputs.
 type PIIValidator struct {
 	// RequireClassification requires all outputs to have a classification.
 	RequireClassification bool
@@ -24,22 +24,22 @@ func NewPIIValidator() *PIIValidator {
 	}
 }
 
-// Validate checks PII classification requirements on a data package.
-func (v *PIIValidator) Validate(pkg *contracts.DataPackage) contracts.ValidationErrors {
+// Validate checks PII classification requirements on a Model manifest.
+func (v *PIIValidator) Validate(model *contracts.Model) contracts.ValidationErrors {
 	var errs contracts.ValidationErrors
 
-	if pkg == nil {
+	if model == nil {
 		errs = append(errs, &contracts.ValidationError{
 			Code:    ErrMissingRequired,
 			Field:   "",
-			Message: "data package is nil",
+			Message: "model is nil",
 		})
 		return errs
 	}
 
 	// Check all outputs have classification
 	if v.RequireClassification {
-		for i, output := range pkg.Spec.Outputs {
+		for i, output := range model.Spec.Outputs {
 			if output.Classification == nil {
 				errs = append(errs, &contracts.ValidationError{
 					Code:    contracts.ErrCodeClassificationRequired,
@@ -51,7 +51,7 @@ func (v *PIIValidator) Validate(pkg *contracts.DataPackage) contracts.Validation
 	}
 
 	// Validate sensitivity values
-	for i, output := range pkg.Spec.Outputs {
+	for i, output := range model.Spec.Outputs {
 		if output.Classification != nil && output.Classification.Sensitivity != "" {
 			if !v.isValidSensitivity(output.Classification.Sensitivity) {
 				errs = append(errs, &contracts.ValidationError{
@@ -62,9 +62,6 @@ func (v *PIIValidator) Validate(pkg *contracts.DataPackage) contracts.Validation
 			}
 		}
 	}
-
-	// Check for PII flag on potentially sensitive outputs (warning only, no severity field)
-	// Warnings are logged but don't fail validation
 
 	return errs
 }
@@ -105,8 +102,8 @@ func (v *PIIValidator) isPotentiallyPIIOutput(output contracts.ArtifactContract)
 	return false
 }
 
-// ValidatePIICompliance performs comprehensive PII compliance validation.
-func ValidatePIICompliance(pkg *contracts.DataPackage) contracts.ValidationErrors {
+// ValidatePIICompliance performs comprehensive PII compliance validation on a Model.
+func ValidatePIICompliance(model *contracts.Model) contracts.ValidationErrors {
 	validator := NewPIIValidator()
-	return validator.Validate(pkg)
+	return validator.Validate(model)
 }

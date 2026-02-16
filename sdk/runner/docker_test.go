@@ -22,17 +22,17 @@ func TestDockerRunner_BindingMapping(t *testing.T) {
 		{
 			name: "kafka binding maps to env vars",
 			dpYAML: `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-binding-mapper
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test binding mapping
   owner: data-team
-  runtime:
-    image: busybox:latest
+  runtime: generic-go
+  image: busybox:latest
+  mode: batch
   inputs:
     - name: events
       binding: input.events
@@ -123,22 +123,22 @@ func TestDockerRunner_RuntimeFromDP(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpYAML := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-runtime
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: Test runtime from dp.yaml
   owner: data-team
-  runtime:
-    image: busybox:latest
-    timeout: 1h
-    retries: 3
-    env:
-      - name: LOG_LEVEL
-        value: debug
+  runtime: generic-go
+  image: busybox:latest
+  mode: batch
+  timeout: 1h
+  retries: 3
+  env:
+    - name: LOG_LEVEL
+      value: debug
   outputs:
     - name: out
       binding: output.data

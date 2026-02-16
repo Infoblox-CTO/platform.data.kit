@@ -51,19 +51,33 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
 	}
 
-	parser := manifest.NewParser()
-	pkg, err := parser.ParseDataPackage(dpData)
+	m, kind, err := manifest.ParseManifest(dpData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
 
 	var image string
 	var runtimeEnv []contracts.EnvVar
+	var mode contracts.Mode
+	var timeout string
+	var inputs, outputs []contracts.ArtifactContract
 
-	// Get runtime configuration from dp.yaml
-	if pkg.Spec.Runtime != nil && pkg.Spec.Runtime.Image != "" {
-		image = pkg.Spec.Runtime.Image
-		runtimeEnv = pkg.Spec.Runtime.Env
+	// Extract kind-specific fields
+	switch kind {
+	case contracts.KindModel:
+		model := m.(*contracts.Model)
+		image = model.Spec.Image
+		runtimeEnv = model.Spec.Env
+		mode = model.Spec.Mode
+		timeout = model.Spec.Timeout
+		inputs = model.Spec.Inputs
+		outputs = model.Spec.Outputs
+	case contracts.KindSource:
+		src := m.(*contracts.Source)
+		image = src.Spec.Image
+	case contracts.KindDestination:
+		dst := m.(*contracts.Destination)
+		image = dst.Spec.Image
 	}
 
 	// Expand environment variables in image name
@@ -81,9 +95,9 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		image = ""
 	}
 
-	runID := GenerateRunID(pkg.Metadata.Name)
-	jobNamespace := pkg.Metadata.Namespace
-	jobName := pkg.Metadata.Name
+	runID := GenerateRunID(m.GetName())
+	jobNamespace := m.GetNamespace()
+	jobName := m.GetName()
 
 	result := &RunResult{
 		RunID:     runID,
@@ -103,13 +117,13 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		event := lineage.NewEvent(eventType, runID, jobNamespace, jobName)
 
 		// Add input datasets
-		for _, input := range pkg.Spec.Inputs {
+		for _, input := range inputs {
 			dataset := lineage.NewDataset(jobNamespace, input.Name)
 			event.AddInput(dataset)
 		}
 
 		// Add output datasets
-		for _, output := range pkg.Spec.Outputs {
+		for _, output := range outputs {
 			dataset := lineage.NewDataset(jobNamespace, output.Name)
 			event.AddOutput(dataset)
 		}
@@ -147,8 +161,8 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		}
 
 		// Build version tag with git revision
-		versionTag := buildVersionTag(pkg.Metadata.Version, opts.PackageDir)
-		imageName := fmt.Sprintf("dp/%s:%s", pkg.Metadata.Name, versionTag)
+		versionTag := buildVersionTag(m.GetVersion(), opts.PackageDir)
+		imageName := fmt.Sprintf("dp/%s:%s", m.GetName(), versionTag)
 		if err := r.buildImageWithDockerfile(ctx, opts.PackageDir, dockerfilePath, imageName, opts.Output); err != nil {
 			result.Status = contracts.RunStatusFailed
 			result.Error = fmt.Sprintf("failed to build image: %v", err)
@@ -158,17 +172,13 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		image = imageName
 	}
 
-	// Read pipeline mode from dp.yaml spec.runtime (defaults to batch)
-	pipelineMode := contracts.PipelineModeBatch
-	if pkg.Spec.Runtime != nil {
-		if pkg.Spec.Runtime.Mode.IsValid() {
-			pipelineMode = pkg.Spec.Runtime.Mode.Default()
-		}
-		// Apply timeout from runtime spec if not set in opts
-		if opts.Timeout == 0 && pkg.Spec.Runtime.Timeout != "" {
-			if d, err := time.ParseDuration(pkg.Spec.Runtime.Timeout); err == nil {
-				opts.Timeout = d
-			}
+	// Determine execution mode (defaults to batch)
+	execMode := mode.Default()
+
+	// Apply timeout if not set in opts
+	if opts.Timeout == 0 && timeout != "" {
+		if d, err := time.ParseDuration(timeout); err == nil {
+			opts.Timeout = d
 		}
 	}
 
@@ -216,9 +226,9 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	// Emit START lineage event
 	emitLineage(lineage.EventTypeStart, nil)
 
-	// Dispatch based on pipeline mode
+	// Dispatch based on execution mode
 	var runErr error
-	if IsStreamingMode(pipelineMode) {
+	if IsStreamingMode(execMode) {
 		if opts.Output != nil {
 			fmt.Fprintf(opts.Output, "Running streaming pipeline (mode: streaming)\n")
 		}
@@ -345,8 +355,7 @@ func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]st
 		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
 	}
 
-	parser := manifest.NewParser()
-	pkg, err := parser.ParseDataPackage(dpData)
+	m, kind, err := manifest.ParseManifest(dpData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
@@ -361,11 +370,11 @@ func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]st
 		}
 	}
 
-	// Map bindings to env vars
-	bindingProps, _ := MapBindingsToEnvVars(pkg, bindings)
+	// Map bindings to env vars (only Model has inputs/outputs)
+	bindingProps, _ := MapBindingsToEnvVars(m, kind, bindings)
 
-	// Get explicit env vars from runtime
-	explicitEnvs := EnvVarsFromRuntime(pkg.Spec.Runtime)
+	// Get explicit env vars from manifest
+	explicitEnvs := EnvVarsFromManifest(m, kind)
 
 	// Merge: explicit env vars override binding-derived ones
 	return MergeEnvVars(bindingProps, explicitEnvs), nil

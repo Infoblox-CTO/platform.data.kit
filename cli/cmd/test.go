@@ -95,26 +95,22 @@ func runTest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
 	}
 
-	// T054: Detect package type and route cloudquery to dedicated test path
-	dp, err := manifest.ParseDataPackageFile(dpPath)
+	// Detect package kind
+	m, kind, err := manifest.ParseManifestFile(dpPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
-	if dp.Spec.Type == contracts.PackageTypeCloudQuery {
-		return testCloudQuery(cmd, absDir, dp)
-	}
 
-	// Detect pipeline mode from pipeline.yaml
-	pipelineMode := contracts.PipelineModeBatch // default
-	pipelinePath := filepath.Join(absDir, "pipeline.yaml")
-	if _, err := os.Stat(pipelinePath); err == nil {
-		pipeline, err := manifest.ParsePipelineFile(pipelinePath)
-		if err == nil && pipeline.Spec.Mode != "" {
-			pipelineMode = pipeline.Spec.Mode
+	// Detect pipeline mode from Model spec
+	pipelineMode := contracts.ModeBatch // default
+	if kind == contracts.KindModel {
+		if model, ok := m.(*contracts.Model); ok && model.Spec.Mode.IsValid() {
+			pipelineMode = model.Spec.Mode
 		}
 	}
 
 	fmt.Printf("Running tests for: %s\n", packageDir)
+	fmt.Printf("Kind: %s\n", kind)
 	fmt.Printf("Pipeline mode: %s\n\n", pipelineMode.Default())
 
 	// Find test data
@@ -197,7 +193,7 @@ func runTest(cmd *cobra.Command, args []string) error {
 
 	// Run the pipeline in test mode - behavior depends on pipeline mode
 	timeout := testTimeout
-	if pipelineMode == contracts.PipelineModeStreaming {
+	if pipelineMode == contracts.ModeStreaming {
 		// For streaming, use the duration instead of timeout
 		timeout = testDuration
 		fmt.Printf("Streaming test: will run for %s\n", testDuration)
@@ -222,7 +218,7 @@ func runTest(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	var result *runner.RunResult
-	if pipelineMode == contracts.PipelineModeStreaming {
+	if pipelineMode == contracts.ModeStreaming {
 		// For streaming: start, wait for duration, then stop
 		result, err = runStreamingTest(ctx, dockerRunner, opts)
 	} else {
@@ -314,157 +310,3 @@ func runStreamingTest(ctx context.Context, r runner.Runner, opts runner.RunOptio
 	return result, nil
 }
 
-// --- CloudQuery Test Path ---
-
-// testCloudQuery runs tests for a CloudQuery plugin package.
-// Unit tests: runs pytest (Python) or go test (Go) based on project language.
-// Integration tests (--integration): builds container, starts gRPC, runs cloudquery sync.
-func testCloudQuery(cmd *cobra.Command, absDir string, dp *contracts.DataPackage) error {
-	lang := detectCloudQueryLanguage(absDir)
-	fmt.Printf("Running tests for CloudQuery %s plugin: %s\n", dp.Spec.CloudQuery.Role, dp.Metadata.Name)
-	fmt.Printf("Detected language: %s\n\n", lang)
-
-	if testIntegration {
-		return runCloudQueryIntegrationTest(cmd, absDir, dp)
-	}
-
-	return runCloudQueryUnitTests(absDir, lang)
-}
-
-// runCloudQueryUnitTests executes unit tests for a CloudQuery plugin project.
-func runCloudQueryUnitTests(dir, lang string) error {
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println("CloudQuery Unit Tests")
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println()
-
-	var testCmd *exec.Cmd
-	switch lang {
-	case "go":
-		testCmd = exec.Command("go", "test", "./...", "-v")
-	case "python":
-		venvDir, err := ensurePythonVenv(dir)
-		if err != nil {
-			return fmt.Errorf("failed to set up Python environment: %w", err)
-		}
-		pytestBin := filepath.Join(venvDir, "bin", "pytest")
-		testCmd = exec.Command(pytestBin, "-v")
-	default:
-		return fmt.Errorf("unsupported CloudQuery plugin language: %s", lang)
-	}
-
-	testCmd.Dir = dir
-	testCmd.Stdout = os.Stdout
-	testCmd.Stderr = os.Stderr
-
-	start := time.Now()
-	err := testCmd.Run()
-	duration := time.Since(start)
-
-	fmt.Println()
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println("Test Results")
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println()
-
-	if err != nil {
-		fmt.Println("✗ CloudQuery unit tests FAILED")
-		fmt.Printf("  Duration: %s\n", duration.Round(time.Millisecond))
-		return fmt.Errorf("CloudQuery unit tests failed: %w", err)
-	}
-
-	fmt.Println("✓ CloudQuery unit tests PASSED")
-	fmt.Printf("  Duration: %s\n", duration.Round(time.Millisecond))
-	return nil
-}
-
-// ensurePythonVenv creates a Python virtual environment in the plugin directory
-// if one does not already exist, and installs the project dependencies.
-// Returns the absolute path to the .venv directory.
-func ensurePythonVenv(dir string) (string, error) {
-	venvDir := filepath.Join(dir, ".venv")
-
-	// Check if venv already has a working pytest
-	pytestBin := filepath.Join(venvDir, "bin", "pytest")
-	if _, err := os.Stat(pytestBin); err == nil {
-		// venv exists and has pytest — skip bootstrap
-		return venvDir, nil
-	}
-
-	// Find python3 binary
-	pythonBin, err := findPython3()
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Println("Setting up Python virtual environment...")
-	fmt.Printf("  Python: %s\n", pythonBin)
-	fmt.Printf("  Venv:   .venv/\n")
-	fmt.Println()
-
-	// Create venv
-	venvCmd := exec.Command(pythonBin, "-m", "venv", venvDir)
-	venvCmd.Dir = dir
-	venvCmd.Stdout = os.Stdout
-	venvCmd.Stderr = os.Stderr
-	if err := venvCmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to create venv: %w", err)
-	}
-
-	// Install project with dev dependencies: pip install -e ".[dev]"
-	pipBin := filepath.Join(venvDir, "bin", "pip")
-
-	fmt.Println("Installing dependencies...")
-	fmt.Println()
-
-	installCmd := exec.Command(pipBin, "install", "-e", ".[dev]")
-	installCmd.Dir = dir
-	installCmd.Stdout = os.Stdout
-	installCmd.Stderr = os.Stderr
-	if err := installCmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to install dependencies: %w", err)
-	}
-	fmt.Println()
-
-	return venvDir, nil
-}
-
-// findPython3 locates a suitable python3 binary on the system.
-func findPython3() (string, error) {
-	for _, name := range []string{"python3", "python"} {
-		if p, err := exec.LookPath(name); err == nil {
-			return p, nil
-		}
-	}
-	return "", fmt.Errorf("python3 not found — install Python 3.12+ to run CloudQuery Python plugin tests")
-}
-
-// runCloudQueryIntegrationTest runs a full CloudQuery sync integration test.
-// It reuses the container build, gRPC startup, and sync workflow from the run command.
-func runCloudQueryIntegrationTest(cmd *cobra.Command, absDir string, dp *contracts.DataPackage) error {
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println("CloudQuery Integration Test")
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println()
-
-	// Reuse the CloudQuery run workflow for integration testing
-	fmt.Println("Running full sync integration test...")
-	fmt.Println()
-
-	err := runCloudQuery(cmd, absDir, dp)
-
-	fmt.Println()
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println("Integration Test Results")
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Println()
-
-	if err != nil {
-		fmt.Println("✗ CloudQuery integration test FAILED")
-		fmt.Printf("  Error: %v\n", err)
-		return fmt.Errorf("CloudQuery integration test failed: %w", err)
-	}
-
-	fmt.Println("✓ CloudQuery integration test PASSED")
-	return nil
-}

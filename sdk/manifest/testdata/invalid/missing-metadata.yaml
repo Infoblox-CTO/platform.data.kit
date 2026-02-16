@@ -1,6 +1,7 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-# metadata is completely missing - should fail parsing
+kind: Model
+# metadata is completely missing - should parse with empty metadata
 spec:
-  type: pipeline
   description: Missing metadata section
+  owner: data-team
+  runtime: generic-go

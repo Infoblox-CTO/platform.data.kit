@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
 // BindingToEnvVar converts a binding path to an environment variable name.
@@ -25,16 +26,25 @@ type BindingProperty struct {
 	Value string
 }
 
-// MapBindingsToEnvVars takes inputs/outputs from a DataPackage and bindings,
+// MapBindingsToEnvVars takes a parsed manifest and bindings,
 // and returns a list of environment variable mappings.
-// It automatically maps binding properties to environment variables.
-func MapBindingsToEnvVars(pkg *contracts.DataPackage, bindings []contracts.Binding) ([]BindingProperty, []string) {
+// Only Model manifests have inputs/outputs; other kinds return empty.
+func MapBindingsToEnvVars(m manifest.Manifest, kind contracts.Kind, bindings []contracts.Binding) ([]BindingProperty, []string) {
 	var result []BindingProperty
 	var warnings []string
 	seen := make(map[string]string) // envVar -> bindingPath (for collision detection)
 
+	if kind != contracts.KindModel {
+		return result, warnings
+	}
+
+	model, ok := m.(*contracts.Model)
+	if !ok {
+		return result, warnings
+	}
+
 	// Process inputs
-	for _, input := range pkg.Spec.Inputs {
+	for _, input := range model.Spec.Inputs {
 		if input.Binding == "" {
 			continue
 		}
@@ -44,7 +54,7 @@ func MapBindingsToEnvVars(pkg *contracts.DataPackage, bindings []contracts.Bindi
 	}
 
 	// Process outputs
-	for _, output := range pkg.Spec.Outputs {
+	for _, output := range model.Spec.Outputs {
 		if output.Binding == "" {
 			continue
 		}
@@ -168,15 +178,21 @@ func extractBindingProperties(binding *contracts.Binding) map[string]string {
 	return props
 }
 
-// EnvVarsFromRuntime extracts explicit environment variables from RuntimeSpec.
-// These are the custom env vars defined in the runtime section.
-func EnvVarsFromRuntime(runtime *contracts.RuntimeSpec) map[string]string {
+// EnvVarsFromManifest extracts explicit environment variables from a manifest.
+// Only Model manifests have user-defined env vars; other kinds return empty.
+func EnvVarsFromManifest(m manifest.Manifest, kind contracts.Kind) map[string]string {
 	result := make(map[string]string)
-	if runtime == nil {
+
+	if kind != contracts.KindModel {
 		return result
 	}
 
-	for _, env := range runtime.Env {
+	model, ok := m.(*contracts.Model)
+	if !ok {
+		return result
+	}
+
+	for _, env := range model.Spec.Env {
 		if env.Value != "" {
 			result[env.Name] = env.Value
 		}

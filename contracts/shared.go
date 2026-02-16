@@ -2,83 +2,9 @@ package contracts
 
 import "fmt"
 
-// PipelineManifest defines the runtime configuration for a pipeline.
-type PipelineManifest struct {
-	// APIVersion is the API version.
-	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
-
-	// Kind is always "Pipeline".
-	Kind string `json:"kind" yaml:"kind"`
-
-	// Metadata contains pipeline metadata.
-	Metadata PipelineMetadata `json:"metadata" yaml:"metadata"`
-
-	// Spec contains the pipeline specification.
-	Spec PipelineSpec `json:"spec" yaml:"spec"`
-}
-
-// PipelineMetadata contains metadata for a pipeline.
-type PipelineMetadata struct {
-	// Name is the pipeline name.
-	Name string `json:"name" yaml:"name"`
-
-	// Labels are key-value pairs for organizing pipelines.
-	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-
-	// Annotations are key-value pairs for additional metadata.
-	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
-}
-
-// PipelineSpec contains the pipeline runtime specification.
-type PipelineSpec struct {
-	// Image is the container image to run.
-	Image string `json:"image" yaml:"image"`
-
-	// Command overrides the container entrypoint.
-	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
-
-	// Args are arguments to pass to the entrypoint.
-	Args []string `json:"args,omitempty" yaml:"args,omitempty"`
-
-	// Env contains environment variable definitions.
-	Env []EnvVar `json:"env,omitempty" yaml:"env,omitempty"`
-
-	// EnvFrom sources environment variables from external sources.
-	EnvFrom []EnvFromSource `json:"envFrom,omitempty" yaml:"envFrom,omitempty"`
-
-	// Replicas is the number of parallel instances.
-	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
-
-	// Bindings are references to data bindings.
-	Bindings []BindingRef `json:"bindings,omitempty" yaml:"bindings,omitempty"`
-
-	// ServiceAccountName is the Kubernetes service account to use.
-	ServiceAccountName string `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
-
-	// Mode is the pipeline execution mode: batch or streaming.
-	Mode PipelineMode `json:"mode,omitempty" yaml:"mode,omitempty"`
-
-	// Timeout is the maximum execution time for batch pipelines (e.g., "30m", "1h").
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-
-	// Retries is the maximum retry attempts for batch pipelines.
-	Retries int `json:"retries,omitempty" yaml:"retries,omitempty"`
-
-	// BackoffLimit is the Kubernetes Job backoff limit.
-	BackoffLimit int `json:"backoffLimit,omitempty" yaml:"backoffLimit,omitempty"`
-
-	// LivenessProbe defines the liveness health check for streaming pipelines.
-	LivenessProbe *Probe `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
-
-	// ReadinessProbe defines the readiness health check for streaming pipelines.
-	ReadinessProbe *Probe `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
-
-	// TerminationGracePeriodSeconds is the grace period for streaming pipeline shutdown.
-	TerminationGracePeriodSeconds int `json:"terminationGracePeriodSeconds,omitempty" yaml:"terminationGracePeriodSeconds,omitempty"`
-
-	// Lineage configures lineage tracking for the pipeline.
-	Lineage *PipelineLineage `json:"lineage,omitempty" yaml:"lineage,omitempty"`
-}
+// --------------------------------------------------------------------------
+// Shared Kubernetes-compatible types used across manifest kinds.
+// --------------------------------------------------------------------------
 
 // EnvVar represents an environment variable.
 type EnvVar struct {
@@ -150,6 +76,10 @@ type BindingRef struct {
 	Ref  string `json:"ref" yaml:"ref"`
 }
 
+// --------------------------------------------------------------------------
+// Health-check probes (Kubernetes-compatible).
+// --------------------------------------------------------------------------
+
 // Probe defines a health check probe configuration (Kubernetes-compatible).
 type Probe struct {
 	// HTTPGet specifies an HTTP probe.
@@ -207,18 +137,8 @@ type TCPSocketAction struct {
 	Host string `json:"host,omitempty" yaml:"host,omitempty"`
 }
 
-// PipelineLineage configures lineage tracking for a pipeline.
-type PipelineLineage struct {
-	// Enabled indicates whether lineage tracking is enabled.
-	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
-
-	// HeartbeatInterval is the interval for emitting heartbeat events (streaming only).
-	HeartbeatInterval string `json:"heartbeatInterval,omitempty" yaml:"heartbeatInterval,omitempty"`
-}
-
 // Validate validates the probe configuration.
 func (p *Probe) Validate() error {
-	// Count how many probe types are specified
 	count := 0
 	if p.HTTPGet != nil {
 		count++
@@ -237,7 +157,6 @@ func (p *Probe) Validate() error {
 		return fmt.Errorf("probe must specify exactly one of httpGet, exec, or tcpSocket, got %d", count)
 	}
 
-	// Validate the specific probe type
 	if p.HTTPGet != nil {
 		if err := p.HTTPGet.Validate(); err != nil {
 			return fmt.Errorf("httpGet: %w", err)
@@ -282,4 +201,57 @@ func (t *TCPSocketAction) Validate() error {
 		return fmt.Errorf("port must be between 1 and 65535, got %d", t.Port)
 	}
 	return nil
+}
+
+// --------------------------------------------------------------------------
+// Pipeline lineage (used by pipeline workflow and runner).
+// --------------------------------------------------------------------------
+
+// PipelineLineage configures lineage tracking for a pipeline.
+type PipelineLineage struct {
+	// Enabled indicates whether lineage tracking is enabled.
+	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+
+	// HeartbeatInterval is the interval for emitting heartbeat events (streaming only).
+	HeartbeatInterval string `json:"heartbeatInterval,omitempty" yaml:"heartbeatInterval,omitempty"`
+}
+
+// --------------------------------------------------------------------------
+// Spec sub-types shared across manifest kinds.
+// --------------------------------------------------------------------------
+
+// ScheduleSpec defines the scheduling configuration for a package.
+type ScheduleSpec struct {
+	// Cron is a cron expression for scheduling (e.g., "0 */6 * * *")
+	Cron string `json:"cron,omitempty" yaml:"cron,omitempty"`
+
+	// Timezone is the timezone for the cron schedule
+	Timezone string `json:"timezone,omitempty" yaml:"timezone,omitempty"`
+
+	// Suspend indicates if scheduling is suspended
+	Suspend bool `json:"suspend,omitempty" yaml:"suspend,omitempty"`
+}
+
+// ResourceSpec defines resource requirements for a package.
+type ResourceSpec struct {
+	// CPU is the CPU request/limit (e.g., "2", "500m")
+	CPU string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+
+	// Memory is the memory request/limit (e.g., "4Gi", "512Mi")
+	Memory string `json:"memory,omitempty" yaml:"memory,omitempty"`
+
+	// EphemeralStorage is the ephemeral storage request/limit
+	EphemeralStorage string `json:"ephemeralStorage,omitempty" yaml:"ephemeralStorage,omitempty"`
+}
+
+// LineageSpec defines the lineage tracking configuration for a package.
+type LineageSpec struct {
+	// Enabled indicates if lineage tracking is enabled
+	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+
+	// Emitter is the lineage emitter type (e.g., "marquez", "openlineage")
+	Emitter string `json:"emitter,omitempty" yaml:"emitter,omitempty"`
+
+	// Namespace is the lineage namespace
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 }

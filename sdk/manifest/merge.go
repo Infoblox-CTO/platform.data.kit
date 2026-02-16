@@ -291,19 +291,27 @@ var ValidOverridePaths = []string{
 	"metadata.version",
 	"metadata.labels",
 	"metadata.annotations",
-	"spec.type",
+	"spec.runtime",
+	"spec.mode",
+	"spec.description",
+	"spec.owner",
+	"spec.image",
+	"spec.command",
+	"spec.timeout",
+	"spec.retries",
+	"spec.replicas",
+	"spec.env",
 	"spec.inputs",
 	"spec.outputs",
-	"spec.artifacts",
-	"spec.runtime",
-	"spec.runtime.image",
-	"spec.runtime.timeout",
-	"spec.runtime.retries",
-	"spec.runtime.env",
-	"spec.runtime.envFrom",
-	"spec.runtime.resources",
-	"spec.runtime.resources.cpu",
-	"spec.runtime.resources.memory",
+	"spec.config",
+	"spec.source",
+	"spec.destination",
+	"spec.provides",
+	"spec.accepts",
+	"spec.schedule",
+	"spec.resources",
+	"spec.resources.cpu",
+	"spec.resources.memory",
 }
 
 // ValidPrefixes defines the allowed prefixes for nested path extensions.
@@ -315,12 +323,15 @@ var ValidPrefixes = []string{
 	"spec.inputs[",
 	"spec.outputs.",
 	"spec.outputs[",
-	"spec.artifacts.",
-	"spec.artifacts[",
-	"spec.runtime.env.",
-	"spec.runtime.env[",
-	"spec.runtime.envFrom.",
-	"spec.runtime.envFrom[",
+	"spec.env.",
+	"spec.env[",
+	"spec.config.",
+	"spec.provides.",
+	"spec.accepts.",
+	"spec.source.",
+	"spec.destination.",
+	"spec.schedule.",
+	"spec.resources.",
 }
 
 // ValidateOverridePath checks if a path is valid for overriding.
@@ -349,11 +360,11 @@ func ValidateOverridePath(path string) error {
 		return fmt.Errorf("invalid override path: %s (did you mean: %s?)", path, suggestion)
 	}
 
-	return fmt.Errorf("invalid override path: %s (valid prefixes: spec.runtime, spec.inputs, spec.outputs, metadata)", path)
+	return fmt.Errorf("invalid override path: %s (valid prefixes: spec.runtime, spec.mode, spec.inputs, spec.outputs, spec.config, metadata)", path)
 }
 
 // stripArrayIndices removes array indices from a path.
-// Example: "spec.runtime.env[0].value" -> "spec.runtime.env.value"
+// Example: "spec.env[0].value" -> "spec.env.value"
 func stripArrayIndices(path string) string {
 	result := strings.Builder{}
 	inBracket := false
@@ -379,16 +390,18 @@ func stripArrayIndices(path string) string {
 func suggestPath(path string) string {
 	commonTypos := map[string]string{
 		"runtime":          "spec.runtime",
-		"image":            "spec.runtime.image",
-		"timeout":          "spec.runtime.timeout",
-		"retries":          "spec.runtime.retries",
-		"env":              "spec.runtime.env",
-		"resources":        "spec.runtime.resources",
-		"resources.memory": "spec.runtime.resources.memory",
-		"resources.cpu":    "spec.runtime.resources.cpu",
+		"image":            "spec.image",
+		"timeout":          "spec.timeout",
+		"retries":          "spec.retries",
+		"env":              "spec.env",
+		"resources":        "spec.resources",
+		"resources.memory": "spec.resources.memory",
+		"resources.cpu":    "spec.resources.cpu",
 		"name":             "metadata.name",
 		"version":          "metadata.version",
 		"labels":           "metadata.labels",
+		"mode":             "spec.mode",
+		"config":           "spec.config",
 	}
 
 	if suggestion, ok := commonTypos[path]; ok {

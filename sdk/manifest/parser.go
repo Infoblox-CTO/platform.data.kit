@@ -37,9 +37,6 @@ func DetectKindFromFile(path string) (contracts.Kind, error) {
 
 // Parser is the interface for parsing manifest files.
 type Parser interface {
-	// ParseDataPackage parses a dp.yaml file (legacy DataPackage kind)
-	ParseDataPackage(data []byte) (*contracts.DataPackage, error)
-
 	// ParseSource parses a dp.yaml file with kind: Source
 	ParseSource(data []byte) (*contracts.Source, error)
 
@@ -48,9 +45,6 @@ type Parser interface {
 
 	// ParseModel parses a dp.yaml file with kind: Model
 	ParseModel(data []byte) (*contracts.Model, error)
-
-	// ParsePipeline parses a pipeline.yaml file (legacy)
-	ParsePipeline(data []byte) (*contracts.PipelineManifest, error)
 
 	// ParseBindings parses a bindings.yaml file
 	ParseBindings(data []byte) ([]contracts.Binding, error)
@@ -62,11 +56,6 @@ type DefaultParser struct{}
 // NewParser creates a new manifest parser.
 func NewParser() Parser {
 	return &DefaultParser{}
-}
-
-// ParseDataPackage parses a dp.yaml file from bytes.
-func (p *DefaultParser) ParseDataPackage(data []byte) (*contracts.DataPackage, error) {
-	return DataPackageFromBytes(data)
 }
 
 // ParseSource parses a dp.yaml with kind: Source.
@@ -84,24 +73,9 @@ func (p *DefaultParser) ParseModel(data []byte) (*contracts.Model, error) {
 	return ModelFromBytes(data)
 }
 
-// ParsePipeline parses a pipeline.yaml file from bytes.
-func (p *DefaultParser) ParsePipeline(data []byte) (*contracts.PipelineManifest, error) {
-	return PipelineFromBytes(data)
-}
-
 // ParseBindings parses a bindings.yaml file from bytes.
 func (p *DefaultParser) ParseBindings(data []byte) ([]contracts.Binding, error) {
 	return BindingsFromBytes(data)
-}
-
-// ParseDataPackageFile parses a dp.yaml file from a path.
-func ParseDataPackageFile(path string) (*contracts.DataPackage, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
-	}
-
-	return NewParser().ParseDataPackage(data)
 }
 
 // ParseSourceFile parses a Source manifest file from a path.
@@ -131,16 +105,6 @@ func ParseModelFile(path string) (*contracts.Model, error) {
 	return NewParser().ParseModel(data)
 }
 
-// ParsePipelineFile parses a pipeline.yaml file from a path.
-func ParsePipelineFile(path string) (*contracts.PipelineManifest, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
-	}
-
-	return NewParser().ParsePipeline(data)
-}
-
 // ParseBindingsFile parses a bindings.yaml file from a path.
 func ParseBindingsFile(path string) ([]contracts.Binding, error) {
 	data, err := os.ReadFile(path)
@@ -149,4 +113,63 @@ func ParseBindingsFile(path string) ([]contracts.Binding, error) {
 	}
 
 	return NewParser().ParseBindings(data)
+}
+
+// Manifest is a generic interface satisfied by all manifest kinds
+// (Source, Destination, Model). It provides access to common metadata.
+type Manifest interface {
+	// GetKind returns the manifest kind.
+	GetKind() contracts.Kind
+	// GetName returns the manifest name.
+	GetName() string
+	// GetNamespace returns the manifest namespace.
+	GetNamespace() string
+	// GetVersion returns the manifest version.
+	GetVersion() string
+	// GetDescription returns the spec description.
+	GetDescription() string
+	// GetOwner returns the spec owner.
+	GetOwner() string
+}
+
+// ParseManifestFile reads a dp.yaml, detects the kind, and returns the
+// parsed manifest as a Manifest interface along with the concrete kind.
+func ParseManifestFile(path string) (Manifest, contracts.Kind, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read file %s: %w", path, err)
+	}
+	return ParseManifest(data)
+}
+
+// ParseManifest detects the kind from raw YAML and parses accordingly.
+func ParseManifest(data []byte) (Manifest, contracts.Kind, error) {
+	kind, err := DetectKind(data)
+	if err != nil {
+		return nil, "", err
+	}
+
+	parser := NewParser()
+	switch kind {
+	case contracts.KindSource:
+		m, err := parser.ParseSource(data)
+		if err != nil {
+			return nil, kind, err
+		}
+		return m, kind, nil
+	case contracts.KindDestination:
+		m, err := parser.ParseDestination(data)
+		if err != nil {
+			return nil, kind, err
+		}
+		return m, kind, nil
+	case contracts.KindModel:
+		m, err := parser.ParseModel(data)
+		if err != nil {
+			return nil, kind, err
+		}
+		return m, kind, nil
+	default:
+		return nil, kind, fmt.Errorf("unsupported manifest kind %q: must be Source, Destination, or Model", kind)
+	}
 }

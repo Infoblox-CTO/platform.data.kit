@@ -1,10 +1,12 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   # name is missing - this should fail validation
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
   description: A package with missing required name field
   owner: data-team
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch

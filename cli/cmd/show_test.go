@@ -55,14 +55,13 @@ func TestShowCmd_OutputYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pipeline
   version: 1.0.0
 spec:
-  type: pipeline
-  runtime:
-    image: test:v1
+  runtime: generic-go
+  image: test:v1
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -107,14 +106,13 @@ func TestShowCmd_OutputJSON(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pipeline
   version: 1.0.0
 spec:
-  type: pipeline
-  runtime:
-    image: test:v1
+  runtime: generic-go
+  image: test:v1
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -155,15 +153,14 @@ func TestShowCmd_WithOverrides(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pipeline
   version: 1.0.0
 spec:
-  type: pipeline
-  runtime:
-    image: original:v1
-    timeout: 30m
+  runtime: generic-go
+  image: original:v1
+  timeout: 30m
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -172,8 +169,7 @@ spec:
 
 	// Create override file
 	overrideContent := `spec:
-  runtime:
-    image: from-file:v2
+  image: from-file:v2
 `
 	overridePath := filepath.Join(tmpDir, "overrides.yaml")
 	if err := os.WriteFile(overridePath, []byte(overrideContent), 0644); err != nil {
@@ -192,7 +188,7 @@ spec:
 
 	// Apply file override and --set override
 	showValueFiles = []string{overridePath}
-	showSet = []string{"spec.runtime.image=from-set:v3"}
+	showSet = []string{"spec.image=from-set:v3"}
 	showOutputFormat = "yaml"
 
 	// Capture output
@@ -229,12 +225,12 @@ func TestShowCmd_DisplaysSchedule(t *testing.T) {
 
 	// Write a minimal dp.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: test
 spec:
-  type: pipeline
+  runtime: generic-go
   description: "Test"
   owner: "team"
 `
@@ -288,12 +284,12 @@ func TestShowCmd_NoSchedule(t *testing.T) {
 
 	// Write dp.yaml only, no schedule.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: test
 spec:
-  type: pipeline
+  runtime: generic-go
   description: "Test"
   owner: "team"
 `

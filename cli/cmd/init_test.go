@@ -37,19 +37,6 @@ func TestInitCmd_Flags(t *testing.T) {
 	}
 }
 
-func TestInitCmd_LegacyFlagsHidden(t *testing.T) {
-	for _, flag := range []string{"type", "language", "role"} {
-		f := initCmd.Flags().Lookup(flag)
-		if f == nil {
-			t.Errorf("legacy flag --%s not found", flag)
-			continue
-		}
-		if !f.Hidden {
-			t.Errorf("legacy flag --%s should be hidden", flag)
-		}
-	}
-}
-
 func TestInitCmd_Args(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -126,9 +113,7 @@ func saveAndRestoreInitFlags(t *testing.T) {
 	t.Helper()
 	saved := struct {
 		kind, runtime, mode, namespace, team, owner string
-		typ, language, role                          string
-	}{initKind, initRuntime, initMode, initNamespace, initTeam, initOwner,
-		initType, initLanguage, initRole}
+	}{initKind, initRuntime, initMode, initNamespace, initTeam, initOwner}
 	t.Cleanup(func() {
 		initKind = saved.kind
 		initRuntime = saved.runtime
@@ -136,9 +121,6 @@ func saveAndRestoreInitFlags(t *testing.T) {
 		initNamespace = saved.namespace
 		initTeam = saved.team
 		initOwner = saved.owner
-		initType = saved.typ
-		initLanguage = saved.language
-		initRole = saved.role
 	})
 }
 
@@ -156,9 +138,6 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 	initNamespace = "default"
 	initTeam = "my-team"
 	initOwner = ""
-	initType = ""
-	initLanguage = ""
-	initRole = ""
 
 	// Apply flags to vars
 	for k, v := range flags {
@@ -175,12 +154,6 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 			initTeam = v
 		case "owner":
 			initOwner = v
-		case "type":
-			initType = v
-		case "language":
-			initLanguage = v
-		case "role":
-			initRole = v
 		}
 	}
 
@@ -195,9 +168,6 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 	cmd.Flags().StringVarP(&initKind, "kind", "k", "model", "")
 	cmd.Flags().StringVarP(&initRuntime, "runtime", "r", "", "")
 	cmd.Flags().StringVarP(&initMode, "mode", "m", "batch", "")
-	cmd.Flags().StringVarP(&initType, "type", "t", "", "")
-	cmd.Flags().StringVarP(&initLanguage, "language", "l", "", "")
-	cmd.Flags().StringVar(&initRole, "role", "", "")
 
 	// Mark flags as changed so mapLegacyFlags detects them
 	for k, v := range flags {
@@ -499,49 +469,4 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 	}
 }
 
-// --- Legacy Flag Mapping Tests ---
 
-func TestInitCmd_LegacyTypeCloudQuery(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "legacy-cq-pkg", map[string]string{
-		"type": "cloudquery",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Source") {
-		t.Error("legacy --type cloudquery should map to kind: Source")
-	}
-	if !strings.Contains(dpStr, "runtime: cloudquery") {
-		t.Error("legacy --type cloudquery should map to runtime: cloudquery")
-	}
-}
-
-func TestInitCmd_LegacyTypePipeline(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "legacy-pipeline", map[string]string{
-		"type": "pipeline",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Model") {
-		t.Error("legacy --type pipeline should map to kind: Model")
-	}
-}
-
-func TestInitCmd_LegacyLanguagePython(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "legacy-python-pkg", map[string]string{
-		"language": "python", "kind": "model",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	dpStr := string(content)
-	if !strings.Contains(dpStr, "runtime: generic-python") {
-		t.Error("legacy --language python should map to runtime: generic-python")
-	}
-}

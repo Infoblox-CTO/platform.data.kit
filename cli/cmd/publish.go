@@ -85,7 +85,9 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	}
 
 	parser := manifest.NewParser()
-	pkg, err := parser.ParseDataPackage(dpData)
+	m, kind, err := manifest.ParseManifest(dpData)
+	_ = parser // parser still used elsewhere; keep import
+	_ = kind
 	if err != nil {
 		return fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
@@ -93,7 +95,7 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	// Determine version/tag
 	version := publishTag
 	if version == "" {
-		version = pkg.Metadata.Version
+		version = m.GetVersion()
 	}
 	if version == "" {
 		return fmt.Errorf("no version specified - use --tag or set metadata.version in dp.yaml")
@@ -107,11 +109,11 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	}
 	if reg == "" {
 		// Default to ghcr.io with namespace
-		reg = "ghcr.io/" + pkg.Metadata.Namespace
+		reg = "ghcr.io/" + m.GetNamespace()
 	}
 
 	// Build full reference
-	reference := registry.Reference(reg, pkg.Metadata.Namespace, pkg.Metadata.Name, version)
+	reference := registry.Reference(reg, m.GetNamespace(), m.GetName(), version)
 
 	fmt.Printf("Target: %s\n\n", reference)
 
@@ -182,7 +184,7 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	// Print next steps
 	fmt.Printf("\nNext steps:\n")
 	fmt.Printf("  dp promote %s %s --to dev  # Deploy to dev environment\n",
-		pkg.Metadata.Name, version)
+		m.GetName(), version)
 	fmt.Printf("  dp pull %s                       # Pull the artifact\n", reference)
 
 	return nil

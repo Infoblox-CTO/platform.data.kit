@@ -83,3 +83,23 @@ type ConfigProperty struct {
 	// Enum restricts the value to a set of allowed values.
 	Enum []any `json:"enum,omitempty" yaml:"enum,omitempty"`
 }
+
+// --- Manifest interface implementation for Source ---
+
+// GetKind returns the manifest kind.
+func (s *Source) GetKind() Kind { return Kind(s.Kind) }
+
+// GetName returns the source name.
+func (s *Source) GetName() string { return s.Metadata.Name }
+
+// GetNamespace returns the source namespace.
+func (s *Source) GetNamespace() string { return s.Metadata.Namespace }
+
+// GetVersion returns the source version.
+func (s *Source) GetVersion() string { return s.Metadata.Version }
+
+// GetDescription returns the source description.
+func (s *Source) GetDescription() string { return s.Spec.Description }
+
+// GetOwner returns the source owner.
+func (s *Source) GetOwner() string { return s.Spec.Owner }

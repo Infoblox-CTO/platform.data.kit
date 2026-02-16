@@ -1,12 +1,8 @@
 package templates
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"embed"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -14,12 +10,6 @@ import (
 	"text/template"
 	"unicode"
 )
-
-//go:embed *.tmpl
-var templateFS embed.FS
-
-//go:embed all:cloudquery
-var cloudqueryFS embed.FS
 
 //go:embed all:source
 var sourceFS embed.FS
@@ -30,6 +20,67 @@ var destinationFS embed.FS
 //go:embed all:model
 var modelFS embed.FS
 
+// templateFuncMap provides helper functions available in templates.
+var templateFuncMap = template.FuncMap{
+	"lower":     strings.ToLower,
+	"upper":     strings.ToUpper,
+	"title":     strings.Title,
+	"snake":     snakeCase,
+	"snakeCase": snakeCase,
+	"pascal":    pascalCase,
+	"pascalCase": pascalCase,
+	"contains":  strings.Contains,
+	"hasPrefix": strings.HasPrefix,
+	"hasSuffix": strings.HasSuffix,
+	"replace":   strings.ReplaceAll,
+	"trimSpace": strings.TrimSpace,
+}
+
+// snakeCase converts a string to snake_case.
+func snakeCase(s string) string {
+	words := splitWords(s)
+	for i := range words {
+		words[i] = strings.ToLower(words[i])
+	}
+	return strings.Join(words, "_")
+}
+
+// pascalCase converts a string to PascalCase.
+func pascalCase(s string) string {
+	words := splitWords(s)
+	for i := range words {
+		if len(words[i]) > 0 {
+			words[i] = strings.ToUpper(words[i][:1]) + strings.ToLower(words[i][1:])
+		}
+	}
+	return strings.Join(words, "")
+}
+
+// splitWords splits a string into words on hyphens, underscores, and camelCase boundaries.
+func splitWords(s string) []string {
+	var words []string
+	var current strings.Builder
+
+	for i, r := range s {
+		if r == '-' || r == '_' || r == ' ' {
+			if current.Len() > 0 {
+				words = append(words, current.String())
+				current.Reset()
+			}
+			continue
+		}
+		if i > 0 && unicode.IsUpper(r) && current.Len() > 0 {
+			words = append(words, current.String())
+			current.Reset()
+		}
+		current.WriteRune(r)
+	}
+	if current.Len() > 0 {
+		words = append(words, current.String())
+	}
+	return words
+}
+
 // PackageConfig contains the configuration for rendering package templates.
 type PackageConfig struct {
 	Name        string
@@ -37,10 +88,7 @@ type PackageConfig struct {
 	Team        string
 	Description string
 	Owner       string
-	Language    string // go, python (legacy)
 	Mode        string // batch, streaming
-	Type        string // pipeline, cloudquery (legacy)
-	Role        string // source, destination (cloudquery, legacy)
 	Kind        string // Source, Destination, Model (new taxonomy)
 	Runtime     string // cloudquery, generic-go, generic-python, dbt (new taxonomy)
 	GRPCPort    int    // gRPC server port (cloudquery, default 7777)
@@ -49,168 +97,11 @@ type PackageConfig struct {
 }
 
 // Renderer renders package templates.
-type Renderer struct {
-	templates *template.Template
-}
+type Renderer struct{}
 
 // NewRenderer creates a new template renderer.
 func NewRenderer() (*Renderer, error) {
-	tmpl, err := template.ParseFS(templateFS, "*.tmpl")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
-	return &Renderer{templates: tmpl}, nil
-}
-
-// RenderToWriter renders a template to a writer.
-func (r *Renderer) RenderToWriter(w io.Writer, templateName string, config *PackageConfig) error {
-	return r.templates.ExecuteTemplate(w, templateName, config)
-}
-
-// RenderToString renders a template to a string.
-func (r *Renderer) RenderToString(templateName string, config *PackageConfig) (string, error) {
-	var buf bytes.Buffer
-	if err := r.RenderToWriter(&buf, templateName, config); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-// RenderToFile renders a template to a file.
-func (r *Renderer) RenderToFile(path, templateName string, config *PackageConfig) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", path, err)
-	}
-	defer f.Close()
-
-	return r.RenderToWriter(f, templateName, config)
-}
-
-// GetDPTemplate returns the template name for the given package type.
-func GetDPTemplate(packageType string) string {
-	return "dp.yaml.tmpl"
-}
-
-// splitWords splits a string on dashes, underscores, and camelCase boundaries.
-func splitWords(s string) []string {
-	var words []string
-	var current []rune
-	for _, r := range s {
-		if r == '-' || r == '_' {
-			if len(current) > 0 {
-				words = append(words, string(current))
-				current = nil
-			}
-			continue
-		}
-		if unicode.IsUpper(r) && len(current) > 0 {
-			words = append(words, string(current))
-			current = nil
-		}
-		current = append(current, r)
-	}
-	if len(current) > 0 {
-		words = append(words, string(current))
-	}
-	return words
-}
-
-// snakeCase converts a string to snake_case (e.g. "my-app" -> "my_app").
-func snakeCase(s string) string {
-	words := splitWords(s)
-	for i, w := range words {
-		words[i] = strings.ToLower(w)
-	}
-	return strings.Join(words, "_")
-}
-
-// pascalCase converts a string to PascalCase (e.g. "my-app" -> "MyApp").
-func pascalCase(s string) string {
-	words := splitWords(s)
-	for i, w := range words {
-		if len(w) > 0 {
-			words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
-		}
-	}
-	return strings.Join(words, "")
-}
-
-// templateFuncMap provides helper functions available in all templates.
-var templateFuncMap = template.FuncMap{
-	"snakeCase":  snakeCase,
-	"pascalCase": pascalCase,
-}
-
-// RenderDirectory renders all templates from a template subdirectory into outputDir.
-// It walks the embedded template tree under templateSubDir, creates matching
-// subdirectories in outputDir, and renders each .tmpl file stripping the .tmpl suffix.
-func (r *Renderer) RenderDirectory(outputDir, templateSubDir string, config *PackageConfig) error {
-	return fs.WalkDir(cloudqueryFS, templateSubDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Compute the relative path from the template subdirectory
-		relPath, err := filepath.Rel(templateSubDir, path)
-		if err != nil {
-			return fmt.Errorf("failed to compute relative path: %w", err)
-		}
-
-		// Skip the root directory itself
-		if relPath == "." {
-			return nil
-		}
-
-		outPath := filepath.Join(outputDir, relPath)
-
-		// Create directories
-		if d.IsDir() {
-			return os.MkdirAll(outPath, 0755)
-		}
-
-		// Only process .tmpl files
-		if filepath.Ext(path) != ".tmpl" {
-			return nil
-		}
-
-		// Strip the .tmpl suffix for the output file
-		outPath = strings.TrimSuffix(outPath, ".tmpl")
-
-		// Read and parse the template
-		data, err := cloudqueryFS.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read template %s: %w", path, err)
-		}
-
-		tmpl, err := template.New(filepath.Base(path)).Funcs(templateFuncMap).Parse(string(data))
-		if err != nil {
-			return fmt.Errorf("failed to parse template %s: %w", path, err)
-		}
-
-		// Ensure parent directory exists
-		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-			return fmt.Errorf("failed to create directory for %s: %w", outPath, err)
-		}
-
-		// Create output file and render
-		f, err := os.Create(outPath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", outPath, err)
-		}
-		defer f.Close()
-
-		if err := tmpl.Execute(f, config); err != nil {
-			return fmt.Errorf("failed to render template %s: %w", path, err)
-		}
-
-		return nil
-	})
+	return &Renderer{}, nil
 }
 
 // kindFS returns the embedded filesystem for the given kind.
@@ -222,8 +113,6 @@ func kindFS(kind string) (embed.FS, error) {
 		return destinationFS, nil
 	case "model":
 		return modelFS, nil
-	case "cloudquery":
-		return cloudqueryFS, nil
 	default:
 		return embed.FS{}, fmt.Errorf("unknown kind %q: must be source, destination, or model", kind)
 	}
@@ -295,36 +184,4 @@ func (r *Renderer) RenderKindDirectory(outputDir string, config *PackageConfig) 
 
 		return nil
 	})
-}
-
-// MakefileCommonConfig holds the values needed to render Makefile.common.
-type MakefileCommonConfig struct {
-	Version string // dp CLI version that generated the file
-}
-
-// RenderMakefileCommon renders the .datakit/Makefile.common template for the
-// given language ("go" or "python") and returns the content along with its
-// SHA-256 hash. The hash can be stored on disk and compared on subsequent
-// build/run invocations to decide whether the file needs updating.
-func (r *Renderer) RenderMakefileCommon(language, version string) (content string, hash string, err error) {
-	tmplPath := fmt.Sprintf("cloudquery/%s/.datakit/Makefile.common.tmpl", language)
-	data, err := cloudqueryFS.ReadFile(tmplPath)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read Makefile.common template for %s: %w", language, err)
-	}
-
-	tmpl, err := template.New("Makefile.common").Parse(string(data))
-	if err != nil {
-		return "", "", fmt.Errorf("failed to parse Makefile.common template: %w", err)
-	}
-
-	var buf bytes.Buffer
-	cfg := MakefileCommonConfig{Version: version}
-	if err := tmpl.Execute(&buf, cfg); err != nil {
-		return "", "", fmt.Errorf("failed to render Makefile.common: %w", err)
-	}
-
-	rendered := buf.String()
-	h := sha256.Sum256([]byte(rendered))
-	return rendered, hex.EncodeToString(h[:]), nil
 }

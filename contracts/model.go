@@ -103,3 +103,23 @@ type ExtensionRef struct {
 	// Version is the extension version or constraint (e.g., "1.2.0", ">=1.0.0").
 	Version string `json:"version" yaml:"version"`
 }
+
+// --- Manifest interface implementation for Model ---
+
+// GetKind returns the manifest kind.
+func (m *Model) GetKind() Kind { return Kind(m.Kind) }
+
+// GetName returns the model name.
+func (m *Model) GetName() string { return m.Metadata.Name }
+
+// GetNamespace returns the model namespace.
+func (m *Model) GetNamespace() string { return m.Metadata.Namespace }
+
+// GetVersion returns the model version.
+func (m *Model) GetVersion() string { return m.Metadata.Version }
+
+// GetDescription returns the model description.
+func (m *Model) GetDescription() string { return m.Spec.Description }
+
+// GetOwner returns the model owner.
+func (m *Model) GetOwner() string { return m.Spec.Owner }

@@ -23,20 +23,20 @@ func TestNewPIIValidator(t *testing.T) {
 func TestPIIValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name      string
-		pkg       *contracts.DataPackage
+		model     *contracts.Model
 		wantValid bool
 		wantErrs  int
 	}{
 		{
-			name:      "nil package",
-			pkg:       nil,
+			name:      "nil model",
+			model:     nil,
 			wantValid: false,
 			wantErrs:  1,
 		},
 		{
-			name: "package with no outputs",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			name: "model with no outputs",
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Outputs: nil,
 				},
 			},
@@ -44,9 +44,9 @@ func TestPIIValidator_Validate(t *testing.T) {
 			wantErrs:  0,
 		},
 		{
-			name: "package with classified output",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			name: "model with classified output",
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Outputs: []contracts.ArtifactContract{
 						{
 							Name: "output1",
@@ -61,9 +61,9 @@ func TestPIIValidator_Validate(t *testing.T) {
 			wantErrs:  0,
 		},
 		{
-			name: "package with unclassified output",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			name: "model with unclassified output",
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Outputs: []contracts.ArtifactContract{
 						{
 							Name:           "output1",
@@ -77,8 +77,8 @@ func TestPIIValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "mixed classified and unclassified",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Outputs: []contracts.ArtifactContract{
 						{
 							Name: "output1",
@@ -101,7 +101,7 @@ func TestPIIValidator_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := NewPIIValidator()
-			errs := v.Validate(tt.pkg)
+			errs := v.Validate(tt.model)
 
 			if tt.wantValid && errs.HasErrors() {
 				t.Errorf("expected valid, got errors: %v", errs)
@@ -117,8 +117,8 @@ func TestPIIValidator_Validate(t *testing.T) {
 }
 
 func TestPIIValidator_InvalidSensitivity(t *testing.T) {
-	pkg := &contracts.DataPackage{
-		Spec: contracts.DataPackageSpec{
+	model := &contracts.Model{
+		Spec: contracts.ModelSpec{
 			Outputs: []contracts.ArtifactContract{
 				{
 					Name: "output1",
@@ -131,7 +131,7 @@ func TestPIIValidator_InvalidSensitivity(t *testing.T) {
 	}
 
 	v := NewPIIValidator()
-	errs := v.Validate(pkg)
+	errs := v.Validate(model)
 
 	if !errs.HasErrors() {
 		t.Error("expected error for invalid sensitivity")
@@ -139,8 +139,8 @@ func TestPIIValidator_InvalidSensitivity(t *testing.T) {
 }
 
 func TestPIIValidator_DisableClassificationRequired(t *testing.T) {
-	pkg := &contracts.DataPackage{
-		Spec: contracts.DataPackageSpec{
+	model := &contracts.Model{
+		Spec: contracts.ModelSpec{
 			Outputs: []contracts.ArtifactContract{
 				{
 					Name:           "output1",
@@ -153,7 +153,7 @@ func TestPIIValidator_DisableClassificationRequired(t *testing.T) {
 	v := NewPIIValidator()
 	v.RequireClassification = false
 
-	errs := v.Validate(pkg)
+	errs := v.Validate(model)
 
 	if errs.HasErrors() {
 		t.Errorf("should not error when classification not required: %v", errs)

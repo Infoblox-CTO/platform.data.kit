@@ -148,6 +148,6 @@ func streamOutput(r io.Reader, w io.Writer) {
 }
 
 // IsStreamingMode checks if a pipeline is configured for streaming mode.
-func IsStreamingMode(mode contracts.PipelineMode) bool {
-	return mode == contracts.PipelineModeStreaming
+func IsStreamingMode(mode contracts.Mode) bool {
+	return mode == contracts.ModeStreaming
 }

@@ -20,119 +20,270 @@ func TestNewParser(t *testing.T) {
 	}
 }
 
-func TestDefaultParser_ParseDataPackage(t *testing.T) {
+func TestParseManifest(t *testing.T) {
 	tests := []struct {
 		name     string
 		data     []byte
 		wantErr  bool
+		wantKind contracts.Kind
 		wantName string
 	}{
 		{
-			name: "valid datapackage",
+			name: "valid source",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Source
 metadata:
-  name: test-pkg
+  name: my-source
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
-  description: Test package
+  description: A test source
   owner: data-team
+  runtime: cloudquery
 `),
 			wantErr:  false,
-			wantName: "test-pkg",
+			wantKind: contracts.KindSource,
+			wantName: "my-source",
 		},
 		{
-			name: "wrong kind",
+			name: "valid destination",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
+kind: Destination
+metadata:
+  name: my-dest
+  namespace: data-team
+  version: 1.0.0
+spec:
+  description: A test destination
+  owner: data-team
+  runtime: cloudquery
+`),
+			wantErr:  false,
+			wantKind: contracts.KindDestination,
+			wantName: "my-dest",
+		},
+		{
+			name: "valid model",
+			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Model
+metadata:
+  name: my-model
+  namespace: data-team
+  version: 1.0.0
+spec:
+  description: A test model
+  owner: data-team
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
+`),
+			wantErr:  false,
+			wantKind: contracts.KindModel,
+			wantName: "my-model",
+		},
+		{
+			name: "unsupported kind returns error",
+			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: DataPackage
 metadata:
   name: test
 `),
 			wantErr: true,
 		},
 		{
-			name:    "malformed YAML",
-			data:    []byte("this is not valid yaml: [broken"),
+			name:    "empty bytes returns error",
+			data:    []byte(""),
 			wantErr: true,
 		},
 		{
-			name:    "empty data",
-			data:    []byte(""),
+			name:    "invalid YAML returns error",
+			data:    []byte("invalid: yaml: content: ["),
 			wantErr: true,
 		},
 	}
 
-	p := NewParser()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pkg, err := p.ParseDataPackage(tt.data)
+			m, kind, err := ParseManifest(tt.data)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseDataPackage() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseManifest() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !tt.wantErr && pkg.Metadata.Name != tt.wantName {
-				t.Errorf("ParseDataPackage() name = %v, want %v", pkg.Metadata.Name, tt.wantName)
+			if !tt.wantErr {
+				if kind != tt.wantKind {
+					t.Errorf("kind = %v, want %v", kind, tt.wantKind)
+				}
+				if m.GetName() != tt.wantName {
+					t.Errorf("name = %v, want %v", m.GetName(), tt.wantName)
+				}
 			}
 		})
 	}
 }
 
-func TestDefaultParser_ParsePipeline(t *testing.T) {
+func TestParseManifestFile(t *testing.T) {
 	tests := []struct {
-		name      string
-		data      []byte
-		wantErr   bool
-		wantName  string
-		wantImage string
+		name     string
+		setup    func(t *testing.T, dir string) string
+		wantErr  bool
+		wantName string
+		wantKind contracts.Kind
 	}{
 		{
-			name: "valid pipeline",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
+			name: "valid model file",
+			setup: func(t *testing.T, dir string) string {
+				content := `apiVersion: data.infoblox.com/v1alpha1
+kind: Model
 metadata:
-  name: test-pipeline
+  name: file-test
+  namespace: test
+  version: 1.0.0
 spec:
-  image: myorg/pipeline:latest
-`),
-			wantErr:   false,
-			wantName:  "test-pipeline",
-			wantImage: "myorg/pipeline:latest",
+  description: Test
+  owner: test
+  runtime: generic-go
+`
+				path := filepath.Join(dir, "dp.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				return path
+			},
+			wantErr:  false,
+			wantName: "file-test",
+			wantKind: contracts.KindModel,
 		},
 		{
-			name: "wrong kind",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: test
-`),
+			name: "file not found",
+			setup: func(t *testing.T, dir string) string {
+				return filepath.Join(dir, "nonexistent.yaml")
+			},
 			wantErr: true,
 		},
 		{
-			name:    "malformed YAML",
-			data:    []byte("not: valid: yaml:"),
+			name: "malformed file",
+			setup: func(t *testing.T, dir string) string {
+				path := filepath.Join(dir, "bad.yaml")
+				if err := os.WriteFile(path, []byte("not valid yaml ["), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				return path
+			},
 			wantErr: true,
 		},
 	}
 
-	p := NewParser()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pipeline, err := p.ParsePipeline(tt.data)
+			dir := t.TempDir()
+			path := tt.setup(t, dir)
+
+			m, kind, err := ParseManifestFile(path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParsePipeline() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseManifestFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr {
-				if pipeline.Metadata.Name != tt.wantName {
-					t.Errorf("ParsePipeline() name = %v, want %v", pipeline.Metadata.Name, tt.wantName)
+				if m.GetName() != tt.wantName {
+					t.Errorf("ParseManifestFile() name = %v, want %v", m.GetName(), tt.wantName)
 				}
-				if pipeline.Spec.Image != tt.wantImage {
-					t.Errorf("ParsePipeline() image = %v, want %v", pipeline.Spec.Image, tt.wantImage)
+				if kind != tt.wantKind {
+					t.Errorf("ParseManifestFile() kind = %v, want %v", kind, tt.wantKind)
 				}
 			}
 		})
+	}
+}
+
+func TestDefaultParser_ParseSource(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Source
+metadata:
+  name: aws-source
+  namespace: data-team
+  version: 1.0.0
+spec:
+  description: AWS source
+  owner: data-team
+  runtime: cloudquery
+  image: myorg/aws-source:v1
+`)
+
+	p := NewParser()
+	src, err := p.ParseSource(data)
+	if err != nil {
+		t.Fatalf("ParseSource() error = %v", err)
+	}
+	if src.Metadata.Name != "aws-source" {
+		t.Errorf("name = %v, want aws-source", src.Metadata.Name)
+	}
+	if src.Spec.Runtime != contracts.RuntimeCloudQuery {
+		t.Errorf("runtime = %v, want cloudquery", src.Spec.Runtime)
+	}
+}
+
+func TestDefaultParser_ParseDestination(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Destination
+metadata:
+  name: pg-dest
+  namespace: data-team
+  version: 1.0.0
+spec:
+  description: Postgres destination
+  owner: data-team
+  runtime: cloudquery
+  image: myorg/pg-dest:v1
+`)
+
+	p := NewParser()
+	dest, err := p.ParseDestination(data)
+	if err != nil {
+		t.Fatalf("ParseDestination() error = %v", err)
+	}
+	if dest.Metadata.Name != "pg-dest" {
+		t.Errorf("name = %v, want pg-dest", dest.Metadata.Name)
+	}
+}
+
+func TestDefaultParser_ParseModel(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Model
+metadata:
+  name: etl-model
+  namespace: data-team
+  version: 2.0.0
+spec:
+  description: ETL model
+  owner: data-team
+  runtime: generic-go
+  image: myorg/etl:v2
+  mode: batch
+  env:
+    - name: LOG_LEVEL
+      value: debug
+  outputs:
+    - name: processed-data
+      type: s3-prefix
+      binding: output-bucket
+`)
+
+	p := NewParser()
+	model, err := p.ParseModel(data)
+	if err != nil {
+		t.Fatalf("ParseModel() error = %v", err)
+	}
+	if model.Metadata.Name != "etl-model" {
+		t.Errorf("name = %v, want etl-model", model.Metadata.Name)
+	}
+	if model.Spec.Mode != contracts.ModeBatch {
+		t.Errorf("mode = %v, want batch", model.Spec.Mode)
+	}
+	if len(model.Spec.Env) != 1 {
+		t.Errorf("env count = %v, want 1", len(model.Spec.Env))
+	}
+	if len(model.Spec.Outputs) != 1 {
+		t.Errorf("outputs count = %v, want 1", len(model.Spec.Outputs))
 	}
 }
 
@@ -192,124 +343,6 @@ bindings: []
 	}
 }
 
-func TestParseDataPackageFile(t *testing.T) {
-	tests := []struct {
-		name     string
-		setup    func(t *testing.T, dir string) string
-		wantErr  bool
-		wantName string
-	}{
-		{
-			name: "valid file",
-			setup: func(t *testing.T, dir string) string {
-				content := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: file-test
-  namespace: test
-  version: 1.0.0
-spec:
-  type: pipeline
-  owner: test
-`
-				path := filepath.Join(dir, "dp.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-					t.Fatalf("failed to write file: %v", err)
-				}
-				return path
-			},
-			wantErr:  false,
-			wantName: "file-test",
-		},
-		{
-			name: "file not found",
-			setup: func(t *testing.T, dir string) string {
-				return filepath.Join(dir, "nonexistent.yaml")
-			},
-			wantErr: true,
-		},
-		{
-			name: "malformed file",
-			setup: func(t *testing.T, dir string) string {
-				path := filepath.Join(dir, "bad.yaml")
-				if err := os.WriteFile(path, []byte("not valid yaml ["), 0644); err != nil {
-					t.Fatalf("failed to write file: %v", err)
-				}
-				return path
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			path := tt.setup(t, dir)
-
-			pkg, err := ParseDataPackageFile(path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseDataPackageFile() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && pkg.Metadata.Name != tt.wantName {
-				t.Errorf("ParseDataPackageFile() name = %v, want %v", pkg.Metadata.Name, tt.wantName)
-			}
-		})
-	}
-}
-
-func TestParsePipelineFile(t *testing.T) {
-	tests := []struct {
-		name     string
-		setup    func(t *testing.T, dir string) string
-		wantErr  bool
-		wantName string
-	}{
-		{
-			name: "valid file",
-			setup: func(t *testing.T, dir string) string {
-				content := `apiVersion: data.infoblox.com/v1alpha1
-kind: Pipeline
-metadata:
-  name: pipeline-file-test
-spec:
-  image: myorg/app:v1
-`
-				path := filepath.Join(dir, "pipeline.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-					t.Fatalf("failed to write file: %v", err)
-				}
-				return path
-			},
-			wantErr:  false,
-			wantName: "pipeline-file-test",
-		},
-		{
-			name: "file not found",
-			setup: func(t *testing.T, dir string) string {
-				return filepath.Join(dir, "missing.yaml")
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			path := tt.setup(t, dir)
-
-			pipeline, err := ParsePipelineFile(path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParsePipelineFile() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && pipeline.Metadata.Name != tt.wantName {
-				t.Errorf("ParsePipelineFile() name = %v, want %v", pipeline.Metadata.Name, tt.wantName)
-			}
-		})
-	}
-}
-
 func TestParseBindingsFile(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -364,48 +397,46 @@ bindings:
 }
 
 func TestParser_ParseFromTestdata(t *testing.T) {
-	// Test parsing from actual testdata files
-	t.Run("valid datapackage", func(t *testing.T) {
-		pkg, err := ParseDataPackageFile("testdata/valid/datapackage.yaml")
+	t.Run("valid model", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/datapackage.yaml")
 		if err != nil {
-			t.Fatalf("ParseDataPackageFile() error = %v", err)
+			t.Fatalf("ParseManifestFile() error = %v", err)
 		}
-		if pkg.Metadata.Name != "valid-manifest" {
-			t.Errorf("name = %v, want valid-manifest", pkg.Metadata.Name)
+		if m.GetName() != "valid-manifest" {
+			t.Errorf("name = %v, want valid-manifest", m.GetName())
 		}
-		if pkg.Spec.Type != contracts.PackageTypePipeline {
-			t.Errorf("type = %v, want %v", pkg.Spec.Type, contracts.PackageTypePipeline)
+		if kind != contracts.KindModel {
+			t.Errorf("kind = %v, want Model", kind)
 		}
 	})
 
-	t.Run("valid pipeline", func(t *testing.T) {
-		pipeline, err := ParsePipelineFile("testdata/valid/pipeline.yaml")
+	t.Run("valid source", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/pipeline.yaml")
 		if err != nil {
-			t.Fatalf("ParsePipelineFile() error = %v", err)
+			t.Fatalf("ParseManifestFile() error = %v", err)
 		}
-		if pipeline.Metadata.Name != "sample-pipeline" {
-			t.Errorf("name = %v, want sample-pipeline", pipeline.Metadata.Name)
+		if m.GetName() != "sample-source" {
+			t.Errorf("name = %v, want sample-source", m.GetName())
 		}
-		if pipeline.Spec.Image != "docker.io/myorg/pipeline:latest" {
-			t.Errorf("image = %v, want docker.io/myorg/pipeline:latest", pipeline.Spec.Image)
+		if kind != contracts.KindSource {
+			t.Errorf("kind = %v, want Source", kind)
 		}
 	})
 
 	t.Run("malformed yaml", func(t *testing.T) {
-		_, err := ParseDataPackageFile("testdata/invalid/malformed.yaml")
+		_, _, err := ParseManifestFile("testdata/invalid/malformed.yaml")
 		if err == nil {
 			t.Error("expected error for malformed YAML")
 		}
 	})
 
 	t.Run("missing metadata", func(t *testing.T) {
-		pkg, err := ParseDataPackageFile("testdata/invalid/missing-metadata.yaml")
-		// This should parse successfully but have empty metadata
+		m, _, err := ParseManifestFile("testdata/invalid/missing-metadata.yaml")
 		if err != nil {
-			t.Fatalf("ParseDataPackageFile() unexpected error = %v", err)
+			t.Fatalf("ParseManifestFile() unexpected error = %v", err)
 		}
-		if pkg.Metadata.Name != "" {
-			t.Errorf("expected empty name for missing metadata, got %v", pkg.Metadata.Name)
+		if m.GetName() != "" {
+			t.Errorf("expected empty name for missing metadata, got %v", m.GetName())
 		}
 	})
 }
@@ -416,40 +447,18 @@ func TestParser_MalformedYAML(t *testing.T) {
 		name string
 		data []byte
 	}{
-		{
-			name: "unclosed bracket",
-			data: []byte("key: [value"),
-		},
-		{
-			name: "unclosed brace",
-			data: []byte("key: {nested: value"),
-		},
-		{
-			name: "bad indentation",
-			data: []byte("key:\n value\n  nested: bad"),
-		},
-		{
-			name: "duplicate keys",
-			data: []byte("key: value1\nkey: value2"),
-		},
-		{
-			name: "tabs instead of spaces",
-			data: []byte("key:\n\t- value"),
-		},
-		{
-			name: "invalid unicode",
-			data: []byte("key: \xff\xfe"),
-		},
-		{
-			name: "null bytes",
-			data: []byte("key: \x00value"),
-		},
+		{name: "unclosed bracket", data: []byte("key: [value")},
+		{name: "unclosed brace", data: []byte("key: {nested: value")},
+		{name: "bad indentation", data: []byte("key:\n value\n  nested: bad")},
+		{name: "duplicate keys", data: []byte("key: value1\nkey: value2")},
+		{name: "tabs instead of spaces", data: []byte("key:\n\t- value")},
+		{name: "invalid unicode", data: []byte("key: \xff\xfe")},
+		{name: "null bytes", data: []byte("key: \x00value")},
 	}
 
-	p := NewParser()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.ParseDataPackage(tt.data)
+			_, _, err := ParseManifest(tt.data)
 			// Some malformed YAML might parse, we're just checking no panic
 			_ = err
 		})
@@ -465,7 +474,7 @@ func TestParser_MissingRequiredFields(t *testing.T) {
 	}{
 		{
 			name: "missing apiVersion",
-			data: []byte(`kind: DataPackage
+			data: []byte(`kind: Model
 metadata:
   name: test
 `),
@@ -477,21 +486,21 @@ metadata:
 metadata:
   name: test
 `),
-			checkErr: true, // Should error on wrong/empty kind
+			checkErr: true, // Should error on empty kind
 		},
 		{
 			name: "missing metadata",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 spec:
-  type: pipeline
+  runtime: generic-go
 `),
 			checkErr: false, // Parses but has empty metadata
 		},
 		{
 			name: "missing spec",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test
 `),
@@ -500,7 +509,7 @@ metadata:
 		{
 			name: "empty metadata name",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: ""
 `),
@@ -508,10 +517,9 @@ metadata:
 		},
 	}
 
-	p := NewParser()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pkg, err := p.ParseDataPackage(tt.data)
+			m, _, err := ParseManifest(tt.data)
 			if tt.checkErr {
 				if err == nil {
 					t.Error("expected error but got none")
@@ -520,11 +528,46 @@ metadata:
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				// Package should exist even with missing fields
-				if pkg == nil {
-					t.Error("expected package to be returned")
+				if m == nil {
+					t.Error("expected manifest to be returned")
 				}
 			}
 		})
+	}
+}
+
+func TestManifestInterface(t *testing.T) {
+	src := &contracts.Source{
+		Kind: string(contracts.KindSource),
+		Metadata: contracts.ExtMetadata{
+			Name:      "test-src",
+			Namespace: "ns",
+			Version:   "1.0.0",
+		},
+		Spec: contracts.SourceSpec{
+			Description: "Test source",
+			Owner:       "team",
+		},
+	}
+
+	// Verify it satisfies the Manifest interface
+	var m Manifest = src
+	if m.GetKind() != contracts.KindSource {
+		t.Errorf("GetKind() = %v, want Source", m.GetKind())
+	}
+	if m.GetName() != "test-src" {
+		t.Errorf("GetName() = %v, want test-src", m.GetName())
+	}
+	if m.GetNamespace() != "ns" {
+		t.Errorf("GetNamespace() = %v, want ns", m.GetNamespace())
+	}
+	if m.GetVersion() != "1.0.0" {
+		t.Errorf("GetVersion() = %v, want 1.0.0", m.GetVersion())
+	}
+	if m.GetDescription() != "Test source" {
+		t.Errorf("GetDescription() = %v, want Test source", m.GetDescription())
+	}
+	if m.GetOwner() != "team" {
+		t.Errorf("GetOwner() = %v, want team", m.GetOwner())
 	}
 }

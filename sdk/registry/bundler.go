@@ -51,9 +51,6 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		return nil, fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Parse manifests
-	parser := manifest.NewParser()
-
 	// Read and parse dp.yaml
 	dpPath := filepath.Join(absDir, "dp.yaml")
 	dpData, err := os.ReadFile(dpPath)
@@ -61,7 +58,7 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
 	}
 
-	pkg, err := parser.ParseDataPackage(dpData)
+	m, kind, err := manifest.ParseManifest(dpData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
@@ -91,18 +88,19 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 
 	// Create artifact config
 	config := &ArtifactConfig{
-		Package:   pkg,
+		Manifest:  m,
+		Kind:      kind,
 		BuildInfo: buildInfo,
 	}
 
 	// Create artifact manifest annotations
 	annotations := map[string]string{
 		"org.opencontainers.image.created":     buildInfo.Timestamp,
-		"org.opencontainers.image.version":     pkg.Metadata.Version,
-		"org.opencontainers.image.title":       pkg.Metadata.Name,
-		"org.opencontainers.image.description": pkg.Spec.Description,
-		"io.infoblox.dp.namespace":             pkg.Metadata.Namespace,
-		"io.infoblox.dp.type":                  string(pkg.Spec.Type),
+		"org.opencontainers.image.version":     m.GetVersion(),
+		"org.opencontainers.image.title":       m.GetName(),
+		"org.opencontainers.image.description": m.GetDescription(),
+		"io.infoblox.dp.namespace":             m.GetNamespace(),
+		"io.infoblox.dp.kind":                  string(kind),
 	}
 
 	if opts.GitCommit != "" {
@@ -133,7 +131,6 @@ func (b *Bundler) createManifestLayer(packageDir string) (Layer, error) {
 	// Add manifest files
 	manifestFiles := []string{
 		"dp.yaml",
-		"pipeline.yaml",
 		"bindings.yaml",
 	}
 

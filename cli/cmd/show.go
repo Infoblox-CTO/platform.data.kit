@@ -24,8 +24,8 @@ var (
 // showCmd represents the show command
 var showCmd = &cobra.Command{
 	Use:   "show [path]",
-	Short: "Show the effective DataPackage manifest",
-	Long: `Show the effective DataPackage manifest after applying overrides.
+	Short: "Show the effective manifest",
+	Long: `Show the effective manifest after applying overrides.
 
 This command displays the merged manifest that would be used when running
 the pipeline. Use this to preview the effect of override files and --set flags.
@@ -38,10 +38,10 @@ Examples:
   dp show ./my-pipeline -f production.yaml
 
   # Show with inline overrides
-  dp show ./my-pipeline --set spec.runtime.image=myimage:v2
+  dp show ./my-pipeline --set spec.image=myimage:v2
 
   # Show combined overrides (file first, then --set)
-  dp show ./my-pipeline -f base.yaml --set spec.runtime.timeout=1h
+  dp show ./my-pipeline -f base.yaml --set spec.timeout=1h
 
   # Output as JSON
   dp show ./my-pipeline -o json

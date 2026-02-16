@@ -90,8 +90,11 @@ type Layer struct {
 
 // ArtifactConfig contains metadata about the artifact.
 type ArtifactConfig struct {
-	// Package is the data package metadata.
-	Package *contracts.DataPackage `json:"package"`
+	// Manifest is the parsed manifest (Source, Destination, or Model).
+	Manifest interface{} `json:"manifest"`
+
+	// Kind is the manifest kind.
+	Kind contracts.Kind `json:"kind"`
 
 	// BuildInfo contains build metadata.
 	BuildInfo *BuildInfo `json:"buildInfo"`

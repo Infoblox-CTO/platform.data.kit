@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/registry"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/validate"
@@ -28,20 +27,12 @@ var buildCmd = &cobra.Command{
 	Short: "Build a DP package artifact",
 	Long: `Build a DP data package into an OCI artifact.
 
-Supported package types: pipeline, cloudquery
-
 The build command validates the package manifests, bundles all files,
 and creates an OCI-compliant artifact ready for publishing.
-
-For cloudquery packages the build also produces a distroless Docker
-image for the plugin (Go or Python auto-detected).
 
 Examples:
   # Build package in current directory
   dp build
-
-  # Build a CloudQuery plugin
-  dp build ./my-source
 
   # Build with custom tag
   dp build --tag v1.0.0
@@ -109,30 +100,10 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// CloudQuery packages: build the Docker image
-	dp, parseErr := manifest.ParseDataPackageFile(dpPath)
-	if parseErr == nil && dp.Spec.Type == contracts.PackageTypeCloudQuery {
-		// Keep .datakit/Makefile.common in sync
-		if updated, err := syncMakefileCommon(absDir); err != nil {
-			fmt.Printf("Warning: failed to sync Makefile.common: %v\n", err)
-		} else if updated {
-			fmt.Println("✓ Updated .datakit/Makefile.common")
-		}
-
-		grpcPort := 7777
-		if dp.Spec.CloudQuery != nil && dp.Spec.CloudQuery.GRPCPort > 0 {
-			grpcPort = dp.Spec.CloudQuery.GRPCPort
-		}
-		lang := detectCloudQueryLanguage(absDir)
-		imageName := fmt.Sprintf("%s/%s:latest", dp.Metadata.Namespace, dp.Metadata.Name)
-		if buildTag != "" {
-			imageName = fmt.Sprintf("%s/%s:%s", dp.Metadata.Namespace, dp.Metadata.Name, buildTag)
-		}
-		fmt.Printf("\nBuilding CloudQuery plugin image: %s (lang=%s)\n", imageName, lang)
-		if err := buildDockerImage(absDir, imageName, lang, grpcPort, buildNoCache); err != nil {
-			return fmt.Errorf("failed to build plugin image: %w", err)
-		}
-		fmt.Println("✓ Docker image built")
+	// Parse the manifest for metadata
+	m, kind, parseErr := manifest.ParseManifestFile(dpPath)
+	if parseErr != nil {
+		return fmt.Errorf("failed to parse dp.yaml: %w", parseErr)
 	}
 
 	// Step 2: Gather git info
@@ -166,8 +137,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	// Get version from manifest or flag
 	version := buildTag
-	if version == "" && artifact.Config != nil && artifact.Config.Package != nil {
-		version = artifact.Config.Package.Metadata.Version
+	if version == "" {
+		version = m.GetVersion()
 	}
 	if version == "" {
 		version = "latest"
@@ -175,10 +146,10 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("\n✓ Build complete!\n")
 	fmt.Printf("\nArtifact Info:\n")
-	fmt.Printf("  Name:      %s\n", artifact.Config.Package.Metadata.Name)
-	fmt.Printf("  Namespace: %s\n", artifact.Config.Package.Metadata.Namespace)
+	fmt.Printf("  Name:      %s\n", m.GetName())
+	fmt.Printf("  Namespace: %s\n", m.GetNamespace())
 	fmt.Printf("  Version:   %s\n", version)
-	fmt.Printf("  Type:      %s\n", artifact.Config.Package.Spec.Type)
+	fmt.Printf("  Kind:      %s\n", kind)
 	fmt.Printf("  Layers:    %d\n", len(artifact.Layers))
 	fmt.Printf("  Size:      %s\n", formatSize(totalSize))
 
@@ -191,7 +162,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\nNext steps:\n")
 	fmt.Printf("  dp publish              # Push to OCI registry\n")
 	fmt.Printf("  dp promote %s %s --to dev  # Promote to dev environment\n",
-		artifact.Config.Package.Metadata.Name, version)
+		m.GetName(), version)
 
 	return nil
 }

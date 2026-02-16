@@ -21,11 +21,6 @@ var (
 	initNamespace string
 	initTeam      string
 	initOwner     string
-
-	// Legacy flags (deprecated but kept for backward compat)
-	initType     string
-	initLanguage string
-	initRole     string
 )
 
 // initCmd represents the init command
@@ -77,63 +72,10 @@ func init() {
 		"Team label")
 	initCmd.Flags().StringVar(&initOwner, "owner", "",
 		"Package owner (defaults to current user)")
-
-	// Legacy flags — hidden, mapped to new flags
-	initCmd.Flags().StringVarP(&initType, "type", "t", "",
-		"(deprecated) Package type — use --kind and --runtime instead")
-	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "",
-		"(deprecated) Language — use --runtime instead")
-	initCmd.Flags().StringVar(&initRole, "role", "",
-		"(deprecated) Plugin role — use --kind instead")
-	_ = initCmd.Flags().MarkHidden("type")
-	_ = initCmd.Flags().MarkHidden("language")
-	_ = initCmd.Flags().MarkHidden("role")
-}
-
-// mapLegacyFlags translates legacy --type/--language/--role flags to --kind/--runtime.
-func mapLegacyFlags(cmd *cobra.Command) {
-	// Map --type cloudquery + --role source → --kind source --runtime cloudquery
-	if cmd.Flags().Changed("type") && !cmd.Flags().Changed("kind") {
-		switch initType {
-		case "cloudquery":
-			if !cmd.Flags().Changed("runtime") {
-				initRuntime = "cloudquery"
-			}
-			if cmd.Flags().Changed("role") {
-				initKind = initRole // "source" or "destination"
-			} else {
-				initKind = "source"
-			}
-		case "pipeline":
-			initKind = "model"
-			if !cmd.Flags().Changed("runtime") {
-				// Map language to runtime
-				switch initLanguage {
-				case "python":
-					initRuntime = "generic-python"
-				case "go", "":
-					initRuntime = "generic-go"
-				}
-			}
-		}
-	}
-
-	// Map --language to --runtime if --runtime wasn't explicitly set
-	if cmd.Flags().Changed("language") && !cmd.Flags().Changed("runtime") {
-		switch initLanguage {
-		case "python":
-			initRuntime = "generic-python"
-		case "go":
-			initRuntime = "generic-go"
-		}
-	}
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
 	name := args[0]
-
-	// Map legacy flags
-	mapLegacyFlags(cmd)
 
 	// Validate name
 	if name != "." && !isValidPackageName(name) {
@@ -226,10 +168,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Runtime:     string(runtime),
 		Mode:        string(mode.Default()),
 		Version:     Version,
-		// Legacy fields for backward compat with old templates
-		Language: initLanguage,
-		Type:     initType,
-		Role:     initRole,
 	}
 
 	// Use kind-based directory rendering

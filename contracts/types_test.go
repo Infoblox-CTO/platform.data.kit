@@ -5,23 +5,87 @@ import (
 	"time"
 )
 
-func TestPackageType_Constants(t *testing.T) {
+func TestKind_Constants(t *testing.T) {
 	tests := []struct {
 		name     string
-		pkgType  PackageType
-		wantType string
+		kind     Kind
+		wantKind string
 	}{
-		{
-			name:     "pipeline",
-			pkgType:  PackageTypePipeline,
-			wantType: "pipeline",
-		},
+		{name: "source", kind: KindSource, wantKind: "Source"},
+		{name: "destination", kind: KindDestination, wantKind: "Destination"},
+		{name: "model", kind: KindModel, wantKind: "Model"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := string(tt.pkgType); got != tt.wantType {
-				t.Errorf("PackageType = %v, want %v", got, tt.wantType)
+			if got := string(tt.kind); got != tt.wantKind {
+				t.Errorf("Kind = %v, want %v", got, tt.wantKind)
+			}
+		})
+	}
+}
+
+func TestKind_IsValid(t *testing.T) {
+	tests := []struct {
+		name  string
+		kind  Kind
+		valid bool
+	}{
+		{name: "source is valid", kind: KindSource, valid: true},
+		{name: "destination is valid", kind: KindDestination, valid: true},
+		{name: "model is valid", kind: KindModel, valid: true},
+		{name: "empty is invalid", kind: "", valid: false},
+		{name: "unknown is invalid", kind: Kind("unknown"), valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.kind.IsValid(); got != tt.valid {
+				t.Errorf("Kind.IsValid() = %v, want %v", got, tt.valid)
+			}
+		})
+	}
+}
+
+func TestRuntime_Constants(t *testing.T) {
+	tests := []struct {
+		name        string
+		runtime     Runtime
+		wantRuntime string
+	}{
+		{name: "cloudquery", runtime: RuntimeCloudQuery, wantRuntime: "cloudquery"},
+		{name: "generic-go", runtime: RuntimeGenericGo, wantRuntime: "generic-go"},
+		{name: "generic-python", runtime: RuntimeGenericPython, wantRuntime: "generic-python"},
+		{name: "dbt", runtime: RuntimeDBT, wantRuntime: "dbt"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := string(tt.runtime); got != tt.wantRuntime {
+				t.Errorf("Runtime = %v, want %v", got, tt.wantRuntime)
+			}
+		})
+	}
+}
+
+func TestRuntime_IsValid(t *testing.T) {
+	tests := []struct {
+		name    string
+		runtime Runtime
+		valid   bool
+	}{
+		{name: "cloudquery is valid", runtime: RuntimeCloudQuery, valid: true},
+		{name: "generic-go is valid", runtime: RuntimeGenericGo, valid: true},
+		{name: "generic-python is valid", runtime: RuntimeGenericPython, valid: true},
+		{name: "dbt is valid", runtime: RuntimeDBT, valid: true},
+		{name: "empty is invalid", runtime: "", valid: false},
+		{name: "unknown is invalid", runtime: Runtime("unknown"), valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.runtime.IsValid(); got != tt.valid {
+				t.Errorf("Runtime.IsValid() = %v, want %v", got, tt.valid)
 			}
 		})
 	}
@@ -187,20 +251,20 @@ func TestRunRecord_Duration(t *testing.T) {
 	}
 }
 
-func TestPipelineMode_Constants(t *testing.T) {
+func TestMode_Constants(t *testing.T) {
 	tests := []struct {
 		name     string
-		mode     PipelineMode
+		mode     Mode
 		wantMode string
 	}{
 		{
 			name:     "batch",
-			mode:     PipelineModeBatch,
+			mode:     ModeBatch,
 			wantMode: "batch",
 		},
 		{
 			name:     "streaming",
-			mode:     PipelineModeStreaming,
+			mode:     ModeStreaming,
 			wantMode: "streaming",
 		},
 	}
@@ -208,26 +272,26 @@ func TestPipelineMode_Constants(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := string(tt.mode); got != tt.wantMode {
-				t.Errorf("PipelineMode = %v, want %v", got, tt.wantMode)
+				t.Errorf("Mode = %v, want %v", got, tt.wantMode)
 			}
 		})
 	}
 }
 
-func TestPipelineMode_IsValid(t *testing.T) {
+func TestMode_IsValid(t *testing.T) {
 	tests := []struct {
 		name  string
-		mode  PipelineMode
+		mode  Mode
 		valid bool
 	}{
 		{
 			name:  "batch is valid",
-			mode:  PipelineModeBatch,
+			mode:  ModeBatch,
 			valid: true,
 		},
 		{
 			name:  "streaming is valid",
-			mode:  PipelineModeStreaming,
+			mode:  ModeStreaming,
 			valid: true,
 		},
 		{
@@ -237,7 +301,7 @@ func TestPipelineMode_IsValid(t *testing.T) {
 		},
 		{
 			name:  "invalid mode",
-			mode:  PipelineMode("invalid"),
+			mode:  Mode("invalid"),
 			valid: false,
 		},
 	}
@@ -245,39 +309,39 @@ func TestPipelineMode_IsValid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.mode.IsValid(); got != tt.valid {
-				t.Errorf("PipelineMode.IsValid() = %v, want %v", got, tt.valid)
+				t.Errorf("Mode.IsValid() = %v, want %v", got, tt.valid)
 			}
 		})
 	}
 }
 
-func TestPipelineMode_Default(t *testing.T) {
+func TestMode_Default(t *testing.T) {
 	tests := []struct {
 		name     string
-		mode     PipelineMode
-		wantMode PipelineMode
+		mode     Mode
+		wantMode Mode
 	}{
 		{
 			name:     "empty defaults to batch",
 			mode:     "",
-			wantMode: PipelineModeBatch,
+			wantMode: ModeBatch,
 		},
 		{
 			name:     "batch stays batch",
-			mode:     PipelineModeBatch,
-			wantMode: PipelineModeBatch,
+			mode:     ModeBatch,
+			wantMode: ModeBatch,
 		},
 		{
 			name:     "streaming stays streaming",
-			mode:     PipelineModeStreaming,
-			wantMode: PipelineModeStreaming,
+			mode:     ModeStreaming,
+			wantMode: ModeStreaming,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.mode.Default(); got != tt.wantMode {
-				t.Errorf("PipelineMode.Default() = %v, want %v", got, tt.wantMode)
+				t.Errorf("Mode.Default() = %v, want %v", got, tt.wantMode)
 			}
 		})
 	}

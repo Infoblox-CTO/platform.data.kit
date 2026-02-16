@@ -56,15 +56,15 @@ func TestBindingToEnvVar(t *testing.T) {
 func TestMapBindingsToEnvVars(t *testing.T) {
 	tests := []struct {
 		name         string
-		pkg          *contracts.DataPackage
+		model        *contracts.Model
 		bindings     []contracts.Binding
 		wantEnvCount int
 		wantWarnings int
 	}{
 		{
 			name: "kafka input and s3 output mapping",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Inputs: []contracts.ArtifactContract{
 						{Name: "events", Binding: "input.events"},
 					},
@@ -96,8 +96,8 @@ func TestMapBindingsToEnvVars(t *testing.T) {
 		},
 		{
 			name: "missing binding",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Inputs: []contracts.ArtifactContract{
 						{Name: "events", Binding: "input.events"},
 					},
@@ -109,8 +109,8 @@ func TestMapBindingsToEnvVars(t *testing.T) {
 		},
 		{
 			name: "empty binding name",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Inputs: []contracts.ArtifactContract{
 						{Name: "events", Binding: ""},
 					},
@@ -122,8 +122,8 @@ func TestMapBindingsToEnvVars(t *testing.T) {
 		},
 		{
 			name: "postgres binding",
-			pkg: &contracts.DataPackage{
-				Spec: contracts.DataPackageSpec{
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
 					Outputs: []contracts.ArtifactContract{
 						{Name: "db", Binding: "output.db"},
 					},
@@ -148,7 +148,7 @@ func TestMapBindingsToEnvVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, warnings := MapBindingsToEnvVars(tt.pkg, tt.bindings)
+			result, warnings := MapBindingsToEnvVars(tt.model, contracts.KindModel, tt.bindings)
 			if len(result) != tt.wantEnvCount {
 				t.Errorf("MapBindingsToEnvVars() returned %d env vars, want %d", len(result), tt.wantEnvCount)
 			}
@@ -159,53 +159,78 @@ func TestMapBindingsToEnvVars(t *testing.T) {
 	}
 }
 
-func TestEnvVarsFromRuntime(t *testing.T) {
+func TestMapBindingsToEnvVars_NonModelKind(t *testing.T) {
+	src := &contracts.Source{
+		Spec: contracts.SourceSpec{},
+	}
+	result, warnings := MapBindingsToEnvVars(src, contracts.KindSource, nil)
+	if len(result) != 0 {
+		t.Errorf("expected 0 env vars for non-Model kind, got %d", len(result))
+	}
+	if len(warnings) != 0 {
+		t.Errorf("expected 0 warnings for non-Model kind, got %d", len(warnings))
+	}
+}
+
+func TestEnvVarsFromManifest(t *testing.T) {
 	tests := []struct {
-		name    string
-		runtime *contracts.RuntimeSpec
-		want    map[string]string
+		name  string
+		model *contracts.Model
+		kind  contracts.Kind
+		want  map[string]string
 	}{
 		{
 			name: "with env vars",
-			runtime: &contracts.RuntimeSpec{
-				Image: "test:latest",
-				Env: []contracts.EnvVar{
-					{Name: "LOG_LEVEL", Value: "debug"},
-					{Name: "DEBUG", Value: "true"},
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
+					Image: "test:latest",
+					Env: []contracts.EnvVar{
+						{Name: "LOG_LEVEL", Value: "debug"},
+						{Name: "DEBUG", Value: "true"},
+					},
 				},
 			},
+			kind: contracts.KindModel,
 			want: map[string]string{
 				"LOG_LEVEL": "debug",
 				"DEBUG":     "true",
 			},
 		},
 		{
-			name:    "nil runtime",
-			runtime: nil,
-			want:    map[string]string{},
-		},
-		{
 			name: "empty env",
-			runtime: &contracts.RuntimeSpec{
-				Image: "test:latest",
-				Env:   []contracts.EnvVar{},
+			model: &contracts.Model{
+				Spec: contracts.ModelSpec{
+					Image: "test:latest",
+					Env:   []contracts.EnvVar{},
+				},
 			},
+			kind: contracts.KindModel,
 			want: map[string]string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := EnvVarsFromRuntime(tt.runtime)
+			got := EnvVarsFromManifest(tt.model, tt.kind)
 			if len(got) != len(tt.want) {
-				t.Errorf("EnvVarsFromRuntime() returned %d vars, want %d", len(got), len(tt.want))
+				t.Errorf("EnvVarsFromManifest() returned %d vars, want %d", len(got), len(tt.want))
 			}
 			for k, v := range tt.want {
 				if got[k] != v {
-					t.Errorf("EnvVarsFromRuntime()[%q] = %q, want %q", k, got[k], v)
+					t.Errorf("EnvVarsFromManifest()[%q] = %q, want %q", k, got[k], v)
 				}
 			}
 		})
+	}
+}
+
+func TestEnvVarsFromManifest_NonModelKind(t *testing.T) {
+	src := &contracts.Source{
+		Spec: contracts.SourceSpec{},
+	}
+	got := EnvVarsFromManifest(src, contracts.KindSource)
+	if len(got) != 0 {
+		t.Errorf("expected 0 env vars for non-Model kind, got %d", len(got))
 	}
 }
 

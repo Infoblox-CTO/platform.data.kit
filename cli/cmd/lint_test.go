@@ -77,21 +77,20 @@ func TestLintCmd_DirectoryNotFound(t *testing.T) {
 	}
 }
 
-func TestLintCmd_ValidPackage(t *testing.T) {
+func TestLintCmd_ValidModel(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
   description: Test package
   owner: data-team
-  runtime:
-    image: myimage:v1
+  image: myimage:v1
   outputs:
     - name: output
       type: s3-prefix
@@ -119,11 +118,11 @@ func TestLintCmd_InvalidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: ""
 spec:
-  type: pipeline
+  runtime: generic-go
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -144,17 +143,16 @@ func TestLintCmd_StrictMode(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
   description: Test
   owner: data-team
-  runtime:
-    image: myimage:v1
+  image: myimage:v1
   outputs:
     - name: output
       type: s3-prefix
@@ -180,17 +178,16 @@ func TestLintCmd_SkipPII(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pkg
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
   description: Test
   owner: data-team
-  runtime:
-    image: myimage:v1
+  image: myimage:v1
   outputs:
     - name: output
       type: s3-prefix
@@ -253,15 +250,15 @@ func TestLintCmd_OverrideFlags(t *testing.T) {
 func TestLintCmd_WithOverrides(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create dp.yaml without runtime (will fail validation for pipelines)
+	// Create dp.yaml without image (may trigger validation warning)
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pipeline
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
   description: Test pipeline
   owner: data-team
   outputs:
@@ -277,10 +274,9 @@ spec:
 		t.Fatalf("failed to write dp.yaml: %v", err)
 	}
 
-	// Create override file that adds runtime
+	// Create override file that adds image
 	overrideContent := `spec:
-  runtime:
-    image: test:v1
+  image: test:v1
 `
 	overridePath := filepath.Join(tmpDir, "overrides.yaml")
 	if err := os.WriteFile(overridePath, []byte(overrideContent), 0644); err != nil {
@@ -308,7 +304,7 @@ spec:
 	cmd := &cobra.Command{}
 	err := runLint(cmd, []string{tmpDir})
 
-	// With runtime added via override, validation should pass
+	// With image added via override, validation should pass
 	if err != nil {
 		t.Errorf("runLint() with override error = %v, want nil", err)
 	}
@@ -323,19 +319,18 @@ spec:
 func TestLintCmd_WithSetOverride(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create valid pipeline dp.yaml
+	// Create valid Model dp.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pipeline
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
   description: Test pipeline
   owner: data-team
-  runtime:
-    image: original:v1
+  image: original:v1
   outputs:
     - name: output
       type: s3-prefix
@@ -363,7 +358,7 @@ spec:
 
 	// Apply --set override
 	lintValueFiles = []string{}
-	lintSet = []string{"spec.runtime.image=overridden:v2"}
+	lintSet = []string{"spec.image=overridden:v2"}
 	lintStrict = false
 	lintSkipPII = false
 
@@ -389,13 +384,12 @@ func TestLintCmd_InvalidOverridePath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: test-pipeline
 spec:
-  type: pipeline
-  runtime:
-    image: test:v1
+  runtime: generic-go
+  image: test:v1
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -441,30 +435,24 @@ func stringContains(s, substr string) bool {
 	return false
 }
 
-// --- CloudQuery Lint Integration Tests (T053) ---
-
-func TestLintCmd_CloudQueryValidManifest(t *testing.T) {
-	// A fully valid CloudQuery manifest should pass lint
+func TestLintCmd_ValidSource(t *testing.T) {
+	// A valid Source manifest should pass lint
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Source
 metadata:
   name: cq-test-source
   namespace: acme
   version: "0.1.0"
 spec:
-  type: cloudquery
+  runtime: cloudquery
   description: "Test CloudQuery plugin"
   owner: "acme-team"
-  cloudquery:
-    role: source
-    tables:
-      - example_resource
-    grpcPort: 7777
-    concurrency: 10000
-  runtime:
-    image: "acme/cq-test-source:latest"
+  image: "acme/cq-test-source:latest"
+  provides:
+    name: example_resource
+    type: table
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -479,194 +467,6 @@ spec:
 	err := runLint(cmd, []string{tmpDir})
 
 	if err != nil {
-		t.Errorf("runLint() error = %v, want nil for valid CloudQuery package", err)
-	}
-}
-
-func TestLintCmd_CloudQueryMissingCloudQuerySection(t *testing.T) {
-	// Missing spec.cloudquery should fail with E060
-	tmpDir := t.TempDir()
-
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: cq-missing-section
-  namespace: acme
-  version: "0.1.0"
-spec:
-  type: cloudquery
-  description: "Missing cloudquery section"
-  owner: "acme-team"
-  runtime:
-    image: "acme/cq-test:latest"
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	lintStrict = false
-	lintSkipPII = true
-
-	cmd := &cobra.Command{}
-	err := runLint(cmd, []string{tmpDir})
-
-	if err == nil {
-		t.Error("expected error for missing cloudquery section (E060)")
-	}
-}
-
-func TestLintCmd_CloudQueryMissingRole(t *testing.T) {
-	// Missing role should fail with E061
-	tmpDir := t.TempDir()
-
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: cq-missing-role
-  namespace: acme
-  version: "0.1.0"
-spec:
-  type: cloudquery
-  description: "Missing role"
-  owner: "acme-team"
-  cloudquery:
-    grpcPort: 7777
-  runtime:
-    image: "acme/cq-test:latest"
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	lintStrict = false
-	lintSkipPII = true
-
-	cmd := &cobra.Command{}
-	err := runLint(cmd, []string{tmpDir})
-
-	if err == nil {
-		t.Error("expected error for missing role (E061)")
-	}
-}
-
-func TestLintCmd_CloudQueryDestinationWarning(t *testing.T) {
-	// Destination role should produce warning W060 but not fail (unless strict)
-	tmpDir := t.TempDir()
-
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: cq-destination
-  namespace: acme
-  version: "0.1.0"
-spec:
-  type: cloudquery
-  description: "Destination plugin"
-  owner: "acme-team"
-  cloudquery:
-    role: destination
-    grpcPort: 7777
-    concurrency: 10000
-  runtime:
-    image: "acme/cq-dest:latest"
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	// Non-strict: warning only, should pass
-	lintStrict = false
-	lintSkipPII = true
-
-	cmd := &cobra.Command{}
-	err := runLint(cmd, []string{tmpDir})
-
-	if err != nil {
-		t.Errorf("non-strict mode should pass with W060 warning, got error: %v", err)
-	}
-
-	// Strict: warning becomes error, should fail
-	lintStrict = true
-
-	cmd2 := &cobra.Command{}
-	err2 := runLint(cmd2, []string{tmpDir})
-
-	if err2 == nil {
-		t.Error("strict mode should fail with W060 becoming an error")
-	}
-
-	// Reset
-	lintStrict = false
-}
-
-func TestLintCmd_CloudQueryInvalidGRPCPort(t *testing.T) {
-	// Invalid gRPC port should fail with E062
-	tmpDir := t.TempDir()
-
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: cq-bad-port
-  namespace: acme
-  version: "0.1.0"
-spec:
-  type: cloudquery
-  description: "Bad port"
-  owner: "acme-team"
-  cloudquery:
-    role: source
-    grpcPort: 99999
-    concurrency: 10000
-  runtime:
-    image: "acme/cq-test:latest"
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	lintStrict = false
-	lintSkipPII = true
-
-	cmd := &cobra.Command{}
-	err := runLint(cmd, []string{tmpDir})
-
-	if err == nil {
-		t.Error("expected error for invalid gRPC port (E062)")
-	}
-}
-
-func TestLintCmd_CloudQueryInvalidConcurrency(t *testing.T) {
-	// Invalid concurrency should fail with E063
-	tmpDir := t.TempDir()
-
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: cq-bad-concurrency
-  namespace: acme
-  version: "0.1.0"
-spec:
-  type: cloudquery
-  description: "Bad concurrency"
-  owner: "acme-team"
-  cloudquery:
-    role: source
-    grpcPort: 7777
-    concurrency: -1
-  runtime:
-    image: "acme/cq-test:latest"
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
-	}
-
-	lintStrict = false
-	lintSkipPII = true
-
-	cmd := &cobra.Command{}
-	err := runLint(cmd, []string{tmpDir})
-
-	if err == nil {
-		t.Error("expected error for invalid concurrency (E063)")
+		t.Errorf("runLint() error = %v, want nil for valid Source package", err)
 	}
 }

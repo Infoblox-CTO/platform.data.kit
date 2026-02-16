@@ -112,28 +112,3 @@ func TestCloudQuerySpec_Tables(t *testing.T) {
 		t.Errorf("Tables[0] = %v, want %v", spec.Tables[0], "users")
 	}
 }
-
-func TestDataPackageSpec_CloudQueryField(t *testing.T) {
-	// Verify the CloudQuery field is accessible on DataPackageSpec
-	spec := DataPackageSpec{
-		Type: PackageTypeCloudQuery,
-		CloudQuery: &CloudQuerySpec{
-			Role:     CloudQueryRoleSource,
-			GRPCPort: 7777,
-		},
-	}
-	if spec.CloudQuery == nil {
-		t.Fatal("CloudQuery field should not be nil")
-	}
-	if spec.CloudQuery.Role != CloudQueryRoleSource {
-		t.Errorf("CloudQuery.Role = %v, want %v", spec.CloudQuery.Role, CloudQueryRoleSource)
-	}
-
-	// Pipeline type should have nil CloudQuery
-	pipelineSpec := DataPackageSpec{
-		Type: PackageTypePipeline,
-	}
-	if pipelineSpec.CloudQuery != nil {
-		t.Error("Pipeline type should have nil CloudQuery")
-	}
-}

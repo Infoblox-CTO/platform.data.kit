@@ -1,17 +1,15 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
-  name: pipeline-missing-asset
+  name: model-missing-asset
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
-  description: A pipeline with a missing asset reference
+  description: A model referencing a missing asset
   owner: data-team
-  runtime:
-    image: myimage:v1
-  assets:
-    - non-existent-asset
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
   outputs:
     - name: customer-data
       type: s3-prefix
