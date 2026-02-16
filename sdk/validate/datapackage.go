@@ -130,9 +130,15 @@ func (v *DataPackageValidator) validateRequiredFields(errs *contracts.Validation
 
 	if v.pkg.Kind == "" {
 		errs.AddError(ErrMissingRequired, "kind", "kind is required")
-	} else if v.pkg.Kind != "DataPackage" {
-		errs.AddError(ErrInvalidFormat, "kind", "kind must be 'DataPackage'")
+	} else if !contracts.Kind(v.pkg.Kind).IsValid() {
+		errs.AddError(ErrInvalidFormat, "kind", "kind must be one of: DataPackage, Source, Destination, Model")
 	}
+}
+
+// isNewKind returns true if the manifest uses the revised taxonomy (Source/Destination/Model).
+func (v *DataPackageValidator) isNewKind() bool {
+	k := contracts.Kind(v.pkg.Kind)
+	return k == contracts.KindSource || k == contracts.KindDestination || k == contracts.KindModel
 }
 
 // validateAPIVersion validates the API version format.
@@ -196,7 +202,13 @@ func (v *DataPackageValidator) validateMetadata(errs *contracts.ValidationErrors
 func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 	spec := v.pkg.Spec
 
-	// Validate type
+	// New taxonomy kinds (Source/Destination/Model) don't use spec.type.
+	if v.isNewKind() {
+		v.validateNewKindSpec(errs)
+		return
+	}
+
+	// Legacy DataPackage validation: spec.type is required.
 	validTypes := []contracts.PackageType{
 		contracts.PackageTypePipeline,
 		contracts.PackageTypeCloudQuery,
@@ -235,6 +247,26 @@ func (v *DataPackageValidator) validateSpec(errs *contracts.ValidationErrors) {
 	}
 
 	// Validate schedule if present
+	if spec.Schedule != nil {
+		v.validateSchedule(errs, spec.Schedule)
+	}
+}
+
+// validateNewKindSpec validates spec for the revised taxonomy (Source/Destination/Model).
+func (v *DataPackageValidator) validateNewKindSpec(errs *contracts.ValidationErrors) {
+	spec := v.pkg.Spec
+
+	// Description is required for all kinds.
+	if spec.Description == "" {
+		errs.AddError(ErrMissingRequired, "spec.description", "spec.description is required")
+	}
+
+	// For Model kind, outputs are required.
+	if contracts.Kind(v.pkg.Kind) == contracts.KindModel && len(spec.Outputs) == 0 {
+		errs.AddError(contracts.ErrCodeOutputsRequired, "spec.outputs", "outputs are required for Model packages")
+	}
+
+	// Validate schedule if present.
 	if spec.Schedule != nil {
 		v.validateSchedule(errs, spec.Schedule)
 	}

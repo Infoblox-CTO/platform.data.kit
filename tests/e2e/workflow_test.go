@@ -75,7 +75,7 @@ func TestWorkflow_AllPackageTypes(t *testing.T) {
 
 			pkgDir := filepath.Join(tmpDir, pkgName)
 			assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-			assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "type: "+pkgType)
+			assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "kind: Model")
 
 			// Lint
 			result, err = runDP(t, "lint", pkgDir)

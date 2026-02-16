@@ -21,6 +21,15 @@ var templateFS embed.FS
 //go:embed all:cloudquery
 var cloudqueryFS embed.FS
 
+//go:embed all:source
+var sourceFS embed.FS
+
+//go:embed all:destination
+var destinationFS embed.FS
+
+//go:embed all:model
+var modelFS embed.FS
+
 // PackageConfig contains the configuration for rendering package templates.
 type PackageConfig struct {
 	Name        string
@@ -28,10 +37,12 @@ type PackageConfig struct {
 	Team        string
 	Description string
 	Owner       string
-	Language    string // go, python
+	Language    string // go, python (legacy)
 	Mode        string // batch, streaming
-	Type        string // pipeline, cloudquery
-	Role        string // source, destination (cloudquery)
+	Type        string // pipeline, cloudquery (legacy)
+	Role        string // source, destination (cloudquery, legacy)
+	Kind        string // Source, Destination, Model (new taxonomy)
+	Runtime     string // cloudquery, generic-go, generic-python, dbt (new taxonomy)
 	GRPCPort    int    // gRPC server port (cloudquery, default 7777)
 	Concurrency int    // max concurrent resolvers (cloudquery, default 10000)
 	Version     string // dp CLI version (for managed file stamps)
@@ -196,6 +207,90 @@ func (r *Renderer) RenderDirectory(outputDir, templateSubDir string, config *Pac
 
 		if err := tmpl.Execute(f, config); err != nil {
 			return fmt.Errorf("failed to render template %s: %w", path, err)
+		}
+
+		return nil
+	})
+}
+
+// kindFS returns the embedded filesystem for the given kind.
+func kindFS(kind string) (embed.FS, error) {
+	switch strings.ToLower(kind) {
+	case "source":
+		return sourceFS, nil
+	case "destination":
+		return destinationFS, nil
+	case "model":
+		return modelFS, nil
+	case "cloudquery":
+		return cloudqueryFS, nil
+	default:
+		return embed.FS{}, fmt.Errorf("unknown kind %q: must be source, destination, or model", kind)
+	}
+}
+
+// RenderKindDirectory renders templates from a kind/runtime subdirectory into outputDir.
+// It uses the Kind field in config to select the correct embedded filesystem,
+// then walks the runtime subdirectory (e.g., "cloudquery", "generic-go").
+func (r *Renderer) RenderKindDirectory(outputDir string, config *PackageConfig) error {
+	efs, err := kindFS(config.Kind)
+	if err != nil {
+		return err
+	}
+
+	// Template subdirectory is kind/runtime within the embedded FS.
+	// The embed directive uses the kind name as the root (e.g., //go:embed all:source).
+	// So the path within the FS is: <kind>/<runtime>/
+	templateSubDir := fmt.Sprintf("%s/%s", strings.ToLower(config.Kind), config.Runtime)
+
+	return fs.WalkDir(efs, templateSubDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(templateSubDir, path)
+		if err != nil {
+			return fmt.Errorf("failed to compute relative path: %w", err)
+		}
+
+		if relPath == "." {
+			return nil
+		}
+
+		outPath := filepath.Join(outputDir, relPath)
+
+		if d.IsDir() {
+			return os.MkdirAll(outPath, 0755)
+		}
+
+		if filepath.Ext(path) != ".tmpl" {
+			return nil
+		}
+
+		outPath = strings.TrimSuffix(outPath, ".tmpl")
+
+		data, readErr := efs.ReadFile(path)
+		if readErr != nil {
+			return fmt.Errorf("failed to read template %s: %w", path, readErr)
+		}
+
+		tmpl, parseErr := template.New(filepath.Base(path)).Funcs(templateFuncMap).Parse(string(data))
+		if parseErr != nil {
+			return fmt.Errorf("failed to parse template %s: %w", path, parseErr)
+		}
+
+		if mkErr := os.MkdirAll(filepath.Dir(outPath), 0755); mkErr != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", outPath, mkErr)
+		}
+
+		f, createErr := os.Create(outPath)
+		if createErr != nil {
+			return fmt.Errorf("failed to create file %s: %w", outPath, createErr)
+		}
+		defer f.Close()
+
+		if execErr := tmpl.Execute(f, config); execErr != nil {
+			return fmt.Errorf("failed to render template %s: %w", path, execErr)
 		}
 
 		return nil

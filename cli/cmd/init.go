@@ -6,20 +6,26 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/Infoblox-CTO/platform.data.kit/cli/internal/output"
 	"github.com/Infoblox-CTO/platform.data.kit/cli/internal/templates"
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/spf13/cobra"
 )
 
 var (
-	initType      string
+	initKind      string // Source, Destination, Model
+	initRuntime   string // cloudquery, generic-go, generic-python, dbt
+	initMode      string // batch, streaming (model only)
 	initNamespace string
 	initTeam      string
 	initOwner     string
-	initLanguage  string
-	initMode      string
-	initRole      string
+
+	// Legacy flags (deprecated but kept for backward compat)
+	initType     string
+	initLanguage string
+	initRole     string
 )
 
 // initCmd represents the init command
@@ -28,26 +34,30 @@ var initCmd = &cobra.Command{
 	Short: "Initialize a new data package",
 	Long: `Initialize a new data package with the required manifest files.
 
-Supported package types: pipeline, cloudquery
+Supported kinds: source, destination, model (default)
+Supported runtimes: cloudquery, generic-go, generic-python, dbt
 
 This command creates a new directory with dp.yaml and project
-files pre-configured with sensible defaults for the selected type.
+files pre-configured with sensible defaults for the selected kind and runtime.
 
 Examples:
-  # Create a new pipeline package (default)
-  dp init my-pipeline
+  # Create a new model with CloudQuery runtime (default kind)
+  dp init my-model --runtime cloudquery
 
-  # Create a CloudQuery source plugin (Python, default)
-  dp init my-source --type cloudquery
+  # Create a source extension (infra engineer)
+  dp init pg-cdc --kind source --runtime cloudquery
 
-  # Create a CloudQuery destination plugin in Go
-  dp init my-dest --type cloudquery --role destination --language go
+  # Create a destination extension in Go
+  dp init s3-writer --kind destination --runtime generic-go
+
+  # Create a dbt model
+  dp init user-aggregation --kind model --runtime dbt
+
+  # Create a Python model for streaming
+  dp init fraud-scorer --kind model --runtime generic-python --mode streaming
 
   # Create with custom namespace
-  dp init my-pipeline --namespace data-team
-
-  # Create in current directory
-  dp init . --type pipeline`,
+  dp init my-model --runtime cloudquery --namespace data-team`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInit,
 }
@@ -55,24 +65,75 @@ Examples:
 func init() {
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().StringVarP(&initType, "type", "t", "pipeline",
-		"Package type: pipeline, cloudquery")
+	initCmd.Flags().StringVarP(&initKind, "kind", "k", "model",
+		"Manifest kind: source, destination, model")
+	initCmd.Flags().StringVarP(&initRuntime, "runtime", "r", "",
+		"Runtime: cloudquery, generic-go, generic-python, dbt")
+	initCmd.Flags().StringVarP(&initMode, "mode", "m", "batch",
+		"Execution mode: batch, streaming (model only)")
 	initCmd.Flags().StringVarP(&initNamespace, "namespace", "n", "default",
 		"Package namespace")
 	initCmd.Flags().StringVar(&initTeam, "team", "my-team",
 		"Team label")
 	initCmd.Flags().StringVar(&initOwner, "owner", "",
 		"Package owner (defaults to current user)")
-	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "go",
-		"Language: go, python")
-	initCmd.Flags().StringVarP(&initMode, "mode", "m", "batch",
-		"Pipeline mode: batch, streaming (pipeline only)")
-	initCmd.Flags().StringVar(&initRole, "role", "source",
-		"Plugin role: source, destination (cloudquery only)")
+
+	// Legacy flags — hidden, mapped to new flags
+	initCmd.Flags().StringVarP(&initType, "type", "t", "",
+		"(deprecated) Package type — use --kind and --runtime instead")
+	initCmd.Flags().StringVarP(&initLanguage, "language", "l", "",
+		"(deprecated) Language — use --runtime instead")
+	initCmd.Flags().StringVar(&initRole, "role", "",
+		"(deprecated) Plugin role — use --kind instead")
+	_ = initCmd.Flags().MarkHidden("type")
+	_ = initCmd.Flags().MarkHidden("language")
+	_ = initCmd.Flags().MarkHidden("role")
+}
+
+// mapLegacyFlags translates legacy --type/--language/--role flags to --kind/--runtime.
+func mapLegacyFlags(cmd *cobra.Command) {
+	// Map --type cloudquery + --role source → --kind source --runtime cloudquery
+	if cmd.Flags().Changed("type") && !cmd.Flags().Changed("kind") {
+		switch initType {
+		case "cloudquery":
+			if !cmd.Flags().Changed("runtime") {
+				initRuntime = "cloudquery"
+			}
+			if cmd.Flags().Changed("role") {
+				initKind = initRole // "source" or "destination"
+			} else {
+				initKind = "source"
+			}
+		case "pipeline":
+			initKind = "model"
+			if !cmd.Flags().Changed("runtime") {
+				// Map language to runtime
+				switch initLanguage {
+				case "python":
+					initRuntime = "generic-python"
+				case "go", "":
+					initRuntime = "generic-go"
+				}
+			}
+		}
+	}
+
+	// Map --language to --runtime if --runtime wasn't explicitly set
+	if cmd.Flags().Changed("language") && !cmd.Flags().Changed("runtime") {
+		switch initLanguage {
+		case "python":
+			initRuntime = "generic-python"
+		case "go":
+			initRuntime = "generic-go"
+		}
+	}
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
 	name := args[0]
+
+	// Map legacy flags
+	mapLegacyFlags(cmd)
 
 	// Validate name
 	if name != "." && !isValidPackageName(name) {
@@ -100,33 +161,47 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Validate package type
-	if !isValidPackageType(initType) {
-		return fmt.Errorf("invalid package type %q: must be pipeline or cloudquery", initType)
+	// Normalize and validate kind
+	initKind = strings.ToLower(initKind)
+	kind := contracts.Kind(titleCase(initKind))
+	if initKind == "datapackage" {
+		kind = contracts.KindModel // treat legacy DataPackage as Model
+	}
+	switch kind {
+	case contracts.KindSource, contracts.KindDestination, contracts.KindModel:
+		// valid
+	default:
+		return fmt.Errorf("invalid kind %q: must be source, destination, or model", initKind)
 	}
 
-	// For cloudquery type, default language to python if not explicitly set
-	if initType == "cloudquery" && !cmd.Flags().Changed("language") {
-		initLanguage = "python"
+	// Validate runtime is provided
+	if initRuntime == "" {
+		return fmt.Errorf("--runtime is required: cloudquery, generic-go, generic-python, dbt")
 	}
 
-	// Validate language
-	if !isValidLanguage(initLanguage) {
-		return fmt.Errorf("invalid language %q: must be go or python", initLanguage)
+	// Validate runtime
+	runtime := contracts.Runtime(initRuntime)
+	if !runtime.IsValid() {
+		return fmt.Errorf("invalid runtime %q: must be cloudquery, generic-go, generic-python, or dbt", initRuntime)
 	}
 
-	// Validate mode (only for pipeline type)
-	if initType == "pipeline" && !isValidMode(initMode) {
-		return fmt.Errorf("invalid mode %q: must be batch or streaming", initMode)
-	}
-
-	// Validate role for cloudquery type
-	if initType == "cloudquery" {
-		if initRole == "destination" {
-			return fmt.Errorf("destination plugins are not yet supported; only 'source' is currently available")
+	// Validate mode (only meaningful for model kind)
+	mode := contracts.Mode(initMode)
+	if kind == contracts.KindModel {
+		if !mode.IsValid() {
+			return fmt.Errorf("invalid mode %q: must be batch or streaming", initMode)
 		}
-		if initRole != "source" {
-			return fmt.Errorf("invalid role %q: must be source", initRole)
+	}
+
+	// Validate kind-runtime combinations
+	if kind == contracts.KindModel && runtime == contracts.RuntimeDBT && mode == contracts.ModeStreaming {
+		return fmt.Errorf("dbt runtime does not support streaming mode")
+	}
+
+	// Source and Destination only support cloudquery and generic-go runtimes
+	if kind == contracts.KindSource || kind == contracts.KindDestination {
+		if runtime != contracts.RuntimeCloudQuery && runtime != contracts.RuntimeGenericGo {
+			return fmt.Errorf("%s runtime is only supported for model kind; use cloudquery or generic-go for %s", runtime, kind)
 		}
 	}
 
@@ -145,124 +220,28 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Name:        name,
 		Namespace:   initNamespace,
 		Team:        initTeam,
-		Description: fmt.Sprintf("A %s package", initType),
+		Description: fmt.Sprintf("A %s %s package", initRuntime, strings.ToLower(string(kind))),
 		Owner:       initOwner,
-		Language:    initLanguage,
-		Mode:        initMode,
-		Type:        initType,
-		Role:        initRole,
-		GRPCPort:    7777,
-		Concurrency: 10000,
+		Kind:        strings.ToLower(string(kind)),
+		Runtime:     string(runtime),
+		Mode:        string(mode.Default()),
 		Version:     Version,
+		// Legacy fields for backward compat with old templates
+		Language: initLanguage,
+		Type:     initType,
+		Role:     initRole,
 	}
 
-	// CloudQuery packages use directory-based scaffolding
-	if initType == "cloudquery" {
-		templateSubDir := fmt.Sprintf("cloudquery/%s", initLanguage)
-		if err := renderer.RenderDirectory(targetDir, templateSubDir, config); err != nil {
-			return fmt.Errorf("failed to scaffold cloudquery project: %w", err)
-		}
-		output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Scaffolded CloudQuery %s plugin in %s", initLanguage, targetDir))
-
-		// Write the Makefile.common hash so build/run can detect freshness
-		if _, err := syncMakefileCommon(targetDir); err != nil {
-			cmd.PrintErrf("Warning: failed to write Makefile.common hash: %v\n", err)
-		}
-
-		// Go projects: resolve dependencies and format source
-		if initLanguage == "go" {
-			if err := goPostScaffold(cmd, targetDir); err != nil {
-				cmd.PrintErrf("Warning: go post-scaffold failed: %v\n", err)
-			}
-		}
-
-		cmd.Printf("\nPackage %q initialized successfully!\n", name)
-		cmd.Printf("\nNext steps:\n")
-		cmd.Printf("  1. Edit dp.yaml to configure your package\n")
-		cmd.Printf("  2. Implement your tables in plugin/tables/\n")
-		cmd.Printf("  3. Run 'dp lint' to validate\n")
-		cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
-		cmd.Printf("  5. Run 'dp run' to sync data\n")
-		return nil
+	// Use kind-based directory rendering
+	if err := renderer.RenderKindDirectory(targetDir, config); err != nil {
+		return fmt.Errorf("failed to scaffold %s/%s project: %w", kind, runtime, err)
 	}
 
-	// Pipeline packages use single-file templates
-	dpPath := filepath.Join(targetDir, "dp.yaml")
-	dpTemplate := templates.GetDPTemplate(initType)
-	if err := renderer.RenderToFile(dpPath, dpTemplate, config); err != nil {
-		return fmt.Errorf("failed to create dp.yaml: %w", err)
-	}
-	output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", dpPath))
+	output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Scaffolded %s (%s) in %s", kind, runtime, targetDir))
 
-	// Create src directory for pipeline
-	if initType == "pipeline" {
-		srcDir := filepath.Join(targetDir, "src")
-		if err := os.MkdirAll(srcDir, 0755); err != nil {
-			return fmt.Errorf("failed to create src directory: %w", err)
-		}
-
-		// Create language-specific files
-		switch initLanguage {
-		case "python":
-			// Create requirements.txt
-			reqPath := filepath.Join(srcDir, "requirements.txt")
-			reqContent := "# Add your dependencies here\n"
-			if err := os.WriteFile(reqPath, []byte(reqContent), 0644); err != nil {
-				return fmt.Errorf("failed to create requirements.txt: %w", err)
-			}
-			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", reqPath))
-
-			// Create main.py
-			mainPath := filepath.Join(srcDir, "main.py")
-			mainContent := fmt.Sprintf(`#!/usr/bin/env python3
-"""
-%s pipeline
-"""
-
-def main():
-    print("Hello from %s pipeline!")
-
-if __name__ == "__main__":
-    main()
-`, name, name)
-			if err := os.WriteFile(mainPath, []byte(mainContent), 0644); err != nil {
-				return fmt.Errorf("failed to create main.py: %w", err)
-			}
-			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", mainPath))
-
-		default: // go
-			// Create go.mod
-			goModPath := filepath.Join(srcDir, "go.mod")
-			goModContent := fmt.Sprintf("module %s\n\ngo 1.21\n", name)
-			if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
-				return fmt.Errorf("failed to create go.mod: %w", err)
-			}
-			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", goModPath))
-
-			// Create main.go
-			mainPath := filepath.Join(srcDir, "main.go")
-			mainContent := fmt.Sprintf(`package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("Hello from %s pipeline!")
-}
-`, name)
-			if err := os.WriteFile(mainPath, []byte(mainContent), 0644); err != nil {
-				return fmt.Errorf("failed to create main.go: %w", err)
-			}
-			output.PrintSuccess(cmd.OutOrStdout(), fmt.Sprintf("Created %s", mainPath))
-		}
-	}
-
-	// Go projects: resolve dependencies and format source
-	if initLanguage == "go" {
-		goDir := targetDir
-		if initType == "pipeline" {
-			goDir = filepath.Join(targetDir, "src")
-		}
-		if err := goPostScaffold(cmd, goDir); err != nil {
+	// Go runtimes: run go mod tidy + go fmt
+	if runtime == contracts.RuntimeGenericGo {
+		if err := goPostScaffold(cmd, targetDir); err != nil {
 			cmd.PrintErrf("Warning: go post-scaffold failed: %v\n", err)
 		}
 	}
@@ -270,10 +249,23 @@ func main() {
 	cmd.Printf("\nPackage %q initialized successfully!\n", name)
 	cmd.Printf("\nNext steps:\n")
 	cmd.Printf("  1. Edit dp.yaml to configure your package\n")
-	if initType == "pipeline" {
-		cmd.Printf("  2. Implement your pipeline in src/\n")
+
+	switch kind {
+	case contracts.KindSource:
+		cmd.Printf("  2. Configure your source in dp.yaml (provides, configSchema)\n")
+		cmd.Printf("  3. Run 'dp lint' to validate\n")
+		cmd.Printf("  4. Run 'dp build' to bundle\n")
+		cmd.Printf("  5. Run 'dp publish' to publish to extension registry\n")
+	case contracts.KindDestination:
+		cmd.Printf("  2. Configure your destination in dp.yaml (accepts, configSchema)\n")
+		cmd.Printf("  3. Run 'dp lint' to validate\n")
+		cmd.Printf("  4. Run 'dp build' to bundle\n")
+		cmd.Printf("  5. Run 'dp publish' to publish to extension registry\n")
+	case contracts.KindModel:
+		cmd.Printf("  2. Configure source/destination references and schedule\n")
 		cmd.Printf("  3. Run 'dp lint' to validate\n")
 		cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
+		cmd.Printf("  5. Run 'dp run' to execute locally\n")
 	}
 
 	return nil
@@ -318,32 +310,10 @@ func isValidPackageName(name string) bool {
 	return matched
 }
 
-// isValidPackageType checks if a package type is valid
-func isValidPackageType(t string) bool {
-	switch t {
-	case "pipeline", "cloudquery":
-		return true
-	default:
-		return false
+// titleCase capitalizes the first letter of a string.
+func titleCase(s string) string {
+	if len(s) == 0 {
+		return s
 	}
-}
-
-// isValidLanguage checks if a language is valid
-func isValidLanguage(lang string) bool {
-	switch lang {
-	case "go", "python":
-		return true
-	default:
-		return false
-	}
-}
-
-// isValidMode checks if a pipeline mode is valid
-func isValidMode(mode string) bool {
-	switch mode {
-	case "batch", "streaming":
-		return true
-	default:
-		return false
-	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }

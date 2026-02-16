@@ -1,0 +1,26 @@
+# CloudQuery sync configuration for {{ .Name }}
+# See https://docs.cloudquery.io/docs/reference/source-spec
+kind: source
+spec:
+  name: my-source
+  registry: cloudquery
+  path: cloudquery/postgresql
+  version: "v7.4.1"
+  tables: ["public.my_table"]
+  destinations: ["my-destination"]
+  spec:
+    connection_string: "${CONNECTION_STRING}"
+
+---
+# See https://docs.cloudquery.io/docs/reference/destination-spec
+kind: destination
+spec:
+  name: my-destination
+  registry: cloudquery
+  path: cloudquery/s3
+  version: "v4.7.1"
+  spec:
+    bucket: "my-data-lake"
+    region: "us-east-1"
+    path: "raw/{{ .Name }}/{{`{{TABLE}}`}}/{{`{{UUID}}`}}.parquet"
+    format: parquet

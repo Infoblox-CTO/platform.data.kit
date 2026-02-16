@@ -1,0 +1,12 @@
+# CloudQuery source plugin configuration for {{ .Name }}
+# See https://docs.cloudquery.io/docs/reference/source-spec
+kind: source
+spec:
+  name: {{ .Name }}
+  registry: local
+  path: plugin
+  tables: ["*"]
+  destinations: ["output"]
+  spec:
+    # Add your source-specific configuration here
+    connection_string: "${CONNECTION_STRING}"

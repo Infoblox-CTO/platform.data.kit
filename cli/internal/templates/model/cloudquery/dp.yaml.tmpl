@@ -1,0 +1,55 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Model
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  version: 0.1.0
+  labels:
+    team: {{ .Team }}
+spec:
+  runtime: cloudquery
+  mode: {{ .Mode }}
+  description: "{{ .Description }}"
+  owner: {{ .Owner }}
+
+  source:
+    name: my-source
+    namespace: platform
+    version: ">=1.0.0"
+
+  destination:
+    name: my-destination
+    namespace: platform
+    version: ">=1.0.0"
+
+  config:
+    source:
+      connection_string: "${CONNECTION_STRING}"
+      tables:
+        - public.my_table
+    destination:
+      bucket: "my-data-lake"
+      prefix: "raw/{{ .Name }}/"
+
+  inputs:
+    - name: {{ .Name }}-input
+      type: postgres-table
+      binding: input.main
+
+  outputs:
+    - name: {{ .Name }}-output
+      type: s3-prefix
+      binding: output.main
+      classification:
+        pii: false
+        sensitivity: internal
+
+  schedule:
+    cron: "0 */6 * * *"
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"
+
+  timeout: 1h
+  retries: 2

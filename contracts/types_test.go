@@ -231,9 +231,9 @@ func TestPipelineMode_IsValid(t *testing.T) {
 			valid: true,
 		},
 		{
-			name:  "empty is valid (defaults to batch)",
+			name:  "empty is invalid (use Default() to get batch)",
 			mode:  "",
-			valid: true,
+			valid: false,
 		},
 		{
 			name:  "invalid mode",

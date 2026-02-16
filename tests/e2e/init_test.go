@@ -10,7 +10,7 @@ func TestInit_CreatesPackageStructure(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "init", "my-package")
+	result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "my-package")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestInit_ValidatesPackageName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := createTempDir(t)
 
-			result, err := runDPInDir(t, tmpDir, "init", tt.packageName)
+			result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", tt.packageName)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -92,7 +92,7 @@ func TestInit_WithNamespaceFlag(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "init", "--namespace", "custom-namespace", "my-package")
+	result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "--namespace", "custom-namespace", "my-package")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestInit_WithOwnerFlag(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "init", "--owner", "platform-team", "my-package")
+	result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "--owner", "platform-team", "my-package")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

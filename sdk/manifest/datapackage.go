@@ -8,14 +8,19 @@ import (
 )
 
 // DataPackageFromBytes parses a dp.yaml file content into a DataPackage.
+// For backward compatibility, this accepts kind "DataPackage" as well as
+// the new kinds "Source", "Destination", and "Model" (populating the Kind field).
 func DataPackageFromBytes(data []byte) (*contracts.DataPackage, error) {
 	var pkg contracts.DataPackage
 	if err := yaml.Unmarshal(data, &pkg); err != nil {
 		return nil, fmt.Errorf("failed to parse DataPackage: %w", err)
 	}
 
-	if pkg.Kind != "DataPackage" {
-		return nil, fmt.Errorf("expected kind 'DataPackage', got '%s'", pkg.Kind)
+	switch contracts.Kind(pkg.Kind) {
+	case contracts.KindDataPackage, contracts.KindModel, contracts.KindSource, contracts.KindDestination:
+		// All accepted
+	default:
+		return nil, fmt.Errorf("expected kind 'DataPackage', 'Model', 'Source', or 'Destination', got '%s'", pkg.Kind)
 	}
 
 	return &pkg, nil

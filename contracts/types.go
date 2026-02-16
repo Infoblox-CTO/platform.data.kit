@@ -2,16 +2,96 @@ package contracts
 
 import "time"
 
-// PackageType represents the type of data package.
+// PackageType represents the type of data package (legacy, kept for backward compat).
 type PackageType string
 
 const (
-	// PackageTypePipeline is a data processing pipeline.
+	// PackageTypePipeline is a data processing pipeline (legacy).
 	PackageTypePipeline PackageType = "pipeline"
 
-	// PackageTypeCloudQuery is a CloudQuery source or destination plugin.
+	// PackageTypeCloudQuery is a CloudQuery source or destination plugin (legacy).
 	PackageTypeCloudQuery PackageType = "cloudquery"
 )
+
+// Kind identifies the manifest kind.
+type Kind string
+
+const (
+	// KindSource is a platform extension that ingests data (infra engineer).
+	KindSource Kind = "Source"
+
+	// KindDestination is a platform extension that writes data (infra engineer).
+	KindDestination Kind = "Destination"
+
+	// KindModel is a data workload (data engineer).
+	KindModel Kind = "Model"
+
+	// KindDataPackage is the legacy manifest kind (backward compat).
+	KindDataPackage Kind = "DataPackage"
+)
+
+// IsValid checks if the kind is a recognized value.
+func (k Kind) IsValid() bool {
+	switch k {
+	case KindSource, KindDestination, KindModel, KindDataPackage:
+		return true
+	}
+	return false
+}
+
+// Runtime identifies how the extension or workload executes.
+type Runtime string
+
+const (
+	// RuntimeCloudQuery uses the CloudQuery SDK.
+	RuntimeCloudQuery Runtime = "cloudquery"
+
+	// RuntimeGenericGo is a generic Go container.
+	RuntimeGenericGo Runtime = "generic-go"
+
+	// RuntimeGenericPython is a generic Python container.
+	RuntimeGenericPython Runtime = "generic-python"
+
+	// RuntimeDBT uses the dbt transformation engine.
+	RuntimeDBT Runtime = "dbt"
+)
+
+// IsValid checks if the runtime is a recognized value.
+func (r Runtime) IsValid() bool {
+	switch r {
+	case RuntimeCloudQuery, RuntimeGenericGo, RuntimeGenericPython, RuntimeDBT:
+		return true
+	}
+	return false
+}
+
+// Mode identifies the execution pattern.
+type Mode string
+
+const (
+	// ModeBatch is a finite execution that processes data and exits.
+	ModeBatch Mode = "batch"
+
+	// ModeStreaming is a long-running process that continuously processes data.
+	ModeStreaming Mode = "streaming"
+)
+
+// IsValid checks if the mode is a valid value.
+func (m Mode) IsValid() bool {
+	switch m {
+	case ModeBatch, ModeStreaming:
+		return true
+	}
+	return false
+}
+
+// Default returns the default mode if empty.
+func (m Mode) Default() Mode {
+	if m == "" {
+		return ModeBatch
+	}
+	return m
+}
 
 // RunStatus represents the status of a pipeline run.
 type RunStatus string
@@ -83,30 +163,11 @@ type RunRecord struct {
 	Metadata map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
-// PipelineMode represents the execution mode for a pipeline.
-type PipelineMode string
+// PipelineMode is an alias for Mode (backward compat).
+type PipelineMode = Mode
 
+// Legacy constants pointing to the new Mode values.
 const (
-	// PipelineModeBatch is a batch pipeline that runs to completion.
-	PipelineModeBatch PipelineMode = "batch"
-
-	// PipelineModeStreaming is a long-running streaming pipeline.
-	PipelineModeStreaming PipelineMode = "streaming"
+	PipelineModeBatch     = ModeBatch
+	PipelineModeStreaming = ModeStreaming
 )
-
-// IsValid checks if the pipeline mode is a valid value.
-func (m PipelineMode) IsValid() bool {
-	switch m {
-	case PipelineModeBatch, PipelineModeStreaming, "":
-		return true
-	}
-	return false
-}
-
-// Default returns the default pipeline mode if empty.
-func (m PipelineMode) Default() PipelineMode {
-	if m == "" {
-		return PipelineModeBatch
-	}
-	return m
-}
