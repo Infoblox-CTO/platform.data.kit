@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
@@ -156,42 +158,77 @@ func (m *K3dManager) Status(ctx context.Context) (*StackStatus, error) {
 	return status, nil
 }
 
-// WaitForHealthy waits for all services to become healthy.
+// WaitForHealthy waits for all services to become healthy concurrently.
+// Each chart's health check runs in its own goroutine. If any service fails,
+// all errors are collected and returned together.
 func (m *K3dManager) WaitForHealthy(ctx context.Context, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Derive health check targets from chart definitions
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(charts.DefaultCharts))
+
+	// Launch health checks for all charts concurrently
 	for _, def := range charts.DefaultCharts {
-		for labelKey, labelVal := range def.HealthLabels {
-			// First wait for pod to exist (with polling)
-			if err := m.waitForPodToExist(ctx, labelVal, def.HealthTimeout); err != nil {
-				return fmt.Errorf("service %s pod not created: %w", def.Name, err)
+		wg.Add(1)
+		go func(d charts.ChartDefinition) {
+			defer wg.Done()
+			if err := m.waitForChartHealthy(ctx, d); err != nil {
+				errCh <- err
 			}
+		}(def)
+	}
 
-			// Then wait for pod to be ready
-			cmd := exec.CommandContext(ctx, "kubectl",
-				"--context", m.kubeContext,
-				"wait", "--for=condition=ready", "pod",
-				"-l", fmt.Sprintf("%s=%s", labelKey, labelVal),
-				"-n", m.namespace,
-				"--timeout", fmt.Sprintf("%ds", int(def.HealthTimeout.Seconds())),
-			)
+	wg.Wait()
+	close(errCh)
 
-			var stderr bytes.Buffer
-			cmd.Stderr = &stderr
+	// Collect errors
+	var errs []string
+	for err := range errCh {
+		errs = append(errs, err.Error())
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("services not ready: %s", strings.Join(errs, "; "))
+	}
 
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("service %s not ready: %s", def.Name, stderr.String())
-			}
+	return nil
+}
+
+// waitForChartHealthy waits for all pods of a single chart to exist and become ready.
+func (m *K3dManager) waitForChartHealthy(ctx context.Context, def charts.ChartDefinition) error {
+	for labelKey, labelVal := range def.HealthLabels {
+		labelSelector := fmt.Sprintf("%s=%s", labelKey, labelVal)
+
+		// First wait for pod to exist (with polling)
+		if err := m.waitForPodToExist(ctx, labelSelector, def.HealthTimeout); err != nil {
+			return fmt.Errorf("service %s pod not created: %w", def.Name, err)
+		}
+
+		// Wait for running pods to be ready.
+		// We use a field selector to exclude Succeeded pods (e.g. completed Jobs
+		// like redpanda-configuration) since they will never reach condition=ready.
+		cmd := exec.CommandContext(ctx, "kubectl",
+			"--context", m.kubeContext,
+			"wait", "--for=condition=ready", "pod",
+			"-l", labelSelector,
+			"--field-selector", "status.phase!=Succeeded",
+			"-n", m.namespace,
+			"--timeout", fmt.Sprintf("%ds", int(def.HealthTimeout.Seconds())),
+		)
+
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("service %s not ready: %s", def.Name, stderr.String())
 		}
 	}
 
 	return nil
 }
 
-// waitForPodToExist polls until a pod with the given app label exists.
-func (m *K3dManager) waitForPodToExist(ctx context.Context, appLabel string, timeout time.Duration) error {
+// waitForPodToExist polls until a pod matching the given label selector exists.
+func (m *K3dManager) waitForPodToExist(ctx context.Context, labelSelector string, timeout time.Duration) error {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
@@ -203,13 +240,13 @@ func (m *K3dManager) waitForPodToExist(ctx context.Context, appLabel string, tim
 			return ctx.Err()
 		case <-ticker.C:
 			if time.Now().After(deadline) {
-				return fmt.Errorf("timeout waiting for pod with app=%s to exist", appLabel)
+				return fmt.Errorf("timeout waiting for pod with %s to exist", labelSelector)
 			}
 
 			cmd := exec.CommandContext(ctx, "kubectl",
 				"--context", m.kubeContext,
 				"get", "pods",
-				"-l", fmt.Sprintf("app=%s", appLabel),
+				"-l", labelSelector,
 				"-n", m.namespace,
 				"-o", "name",
 			)
