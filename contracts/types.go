@@ -168,6 +168,6 @@ type PipelineMode = Mode
 
 // Legacy constants pointing to the new Mode values.
 const (
-	PipelineModeBatch    = ModeBatch
+	PipelineModeBatch     = ModeBatch
 	PipelineModeStreaming = ModeStreaming
 )

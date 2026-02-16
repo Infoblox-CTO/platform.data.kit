@@ -1,5 +1,7 @@
 package contracts
 
+import "gopkg.in/yaml.v3"
+
 // DataPackage represents the root manifest (dp.yaml) declaring package identity, type, and contracts.
 type DataPackage struct {
 	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1")
@@ -64,10 +66,82 @@ type DataPackageSpec struct {
 	Lineage *LineageSpec `json:"lineage,omitempty" yaml:"lineage,omitempty"`
 
 	// Runtime is the container runtime configuration (previously in pipeline.yaml)
-	Runtime *RuntimeSpec `json:"runtime,omitempty" yaml:"runtime,omitempty"`
+	Runtime *RuntimeSpec `json:"runtime,omitempty" yaml:"-"`
+
+	// RuntimeName is the simple runtime identifier used by the new taxonomy
+	// (e.g., "cloudquery", "generic-go", "dbt"). When dp.yaml has runtime as a
+	// plain string, it populates this field; when it is an object, it populates
+	// the Runtime struct field.
+	RuntimeName string `json:"-" yaml:"-"`
 
 	// CloudQuery is the CloudQuery plugin configuration (required when type=cloudquery)
 	CloudQuery *CloudQuerySpec `json:"cloudquery,omitempty" yaml:"cloudquery,omitempty"`
+
+	// Mode is the pipeline execution mode (new taxonomy, top-level in spec).
+	Mode PipelineMode `json:"mode,omitempty" yaml:"mode,omitempty"`
+
+	// Image is the container image (new taxonomy, top-level in spec).
+	Image string `json:"image,omitempty" yaml:"image,omitempty"`
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling for DataPackageSpec.
+// It handles the "runtime" field being either a string (new taxonomy) or an
+// object (legacy DataPackage format).
+func (s *DataPackageSpec) UnmarshalYAML(value *yaml.Node) error {
+	// Decode a helper struct that captures runtime as a raw interface.
+	// All other fields use their normal yaml tags.
+	type specFields struct {
+		Type        PackageType        `yaml:"type"`
+		Description string             `yaml:"description"`
+		Owner       string             `yaml:"owner"`
+		Inputs      []ArtifactContract `yaml:"inputs,omitempty"`
+		Outputs     []ArtifactContract `yaml:"outputs,omitempty"`
+		Assets      []string           `yaml:"assets,omitempty"`
+		Schedule    *ScheduleSpec      `yaml:"schedule,omitempty"`
+		Resources   *ResourceSpec      `yaml:"resources,omitempty"`
+		Lineage     *LineageSpec       `yaml:"lineage,omitempty"`
+		CloudQuery  *CloudQuerySpec    `yaml:"cloudquery,omitempty"`
+		Mode        PipelineMode       `yaml:"mode,omitempty"`
+		Image       string             `yaml:"image,omitempty"`
+		RawRuntime  interface{}        `yaml:"runtime,omitempty"`
+	}
+
+	var raw specFields
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	s.Type = raw.Type
+	s.Description = raw.Description
+	s.Owner = raw.Owner
+	s.Inputs = raw.Inputs
+	s.Outputs = raw.Outputs
+	s.Assets = raw.Assets
+	s.Schedule = raw.Schedule
+	s.Resources = raw.Resources
+	s.Lineage = raw.Lineage
+	s.CloudQuery = raw.CloudQuery
+	s.Mode = raw.Mode
+	s.Image = raw.Image
+
+	switch rt := raw.RawRuntime.(type) {
+	case string:
+		// runtime is a plain string (new taxonomy: "cloudquery", "generic-go", etc.)
+		s.RuntimeName = rt
+	case map[string]interface{}:
+		// runtime is an object (legacy DataPackage RuntimeSpec) — re-marshal and decode.
+		rtBytes, err := yaml.Marshal(rt)
+		if err != nil {
+			return err
+		}
+		var spec RuntimeSpec
+		if err := yaml.Unmarshal(rtBytes, &spec); err != nil {
+			return err
+		}
+		s.Runtime = &spec
+	}
+
+	return nil
 }
 
 // RuntimeSpec defines the container runtime configuration for executing a pipeline.

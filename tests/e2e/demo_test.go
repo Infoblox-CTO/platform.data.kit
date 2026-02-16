@@ -44,7 +44,7 @@ func TestDemo_Quickstart(t *testing.T) {
 	}
 
 	// Verify pipeline actually executed and produced output
-	if !strings.Contains(result.Stdout, "Hello from quickstart-demo pipeline!") {
+	if !strings.Contains(result.Stdout, "Hello from quickstart-demo model!") {
 		t.Errorf("expected pipeline output in stdout\nstdout:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Pipeline completed successfully") {

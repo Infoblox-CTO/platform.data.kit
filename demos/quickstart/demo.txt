@@ -11,7 +11,7 @@ SAY: First, let's create a temporary working directory
 CMD: export DEMO_ORIGIN="$PWD" DEMO_DIR=$(mktemp -d) && echo "Working in $DEMO_DIR"
 
 SAY: Now let's create a new data package
-CMD: cd "$DEMO_DIR" && dp init quickstart-demo
+CMD: cd "$DEMO_DIR" && dp init --type pipeline quickstart-demo
 
 SAY: Let's look at the generated project structure
 CMD: ls "$DEMO_DIR/quickstart-demo/"
@@ -19,7 +19,7 @@ CMD: ls "$DEMO_DIR/quickstart-demo/"
 WAIT: 1
 
 SAY: Here's the pipeline source code — a simple Go program
-CMD: cat "$DEMO_DIR/quickstart-demo/src/main.go"
+CMD: cat "$DEMO_DIR/quickstart-demo/main.go"
 
 WAIT: 1
 

@@ -162,6 +162,8 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 	pipelineMode := "batch"
 	if dp.Spec.Runtime != nil && dp.Spec.Runtime.Mode.IsValid() {
 		pipelineMode = string(dp.Spec.Runtime.Mode)
+	} else if dp.Spec.Mode.IsValid() {
+		pipelineMode = string(dp.Spec.Mode)
 	}
 
 	// Apply overrides if specified

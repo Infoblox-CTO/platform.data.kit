@@ -1,0 +1,31 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Model
+metadata:
+  name: quickstart-demo
+  namespace: default
+  version: 0.1.0
+  labels:
+    team: my-team
+spec:
+  runtime: generic-go
+  mode: batch
+  description: "A generic-go model package"
+  owner: default-team
+  image: "${REGISTRY}/quickstart-demo:${VERSION}"
+
+  inputs:
+    - name: quickstart-demo-input
+      type: kafka-topic
+      binding: input.main
+
+  outputs:
+    - name: quickstart-demo-output
+      type: kafka-topic
+      binding: output.main
+      classification:
+        pii: false
+        sensitivity: internal
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"
