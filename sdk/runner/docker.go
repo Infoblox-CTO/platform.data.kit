@@ -127,7 +127,7 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	if image == "" {
 		// Detect language and generate Dockerfile internally
 		lang := detectPipelineLanguage(opts.PackageDir)
-		dockerfileContent := generateDockerfile(lang)
+		dockerfileContent := generateDockerfile(lang, opts.PackageDir)
 
 		// Create temp directory for build context
 		tempDir, err := os.MkdirTemp("", "dp-build-*")
@@ -441,22 +441,35 @@ func getGitVersion(dir string) string {
 }
 
 // detectPipelineLanguage detects the programming language of a pipeline package.
+// It checks both the legacy src/ directory layout and the new root-level layout.
 func detectPipelineLanguage(packageDir string) string {
 	srcDir := filepath.Join(packageDir, "src")
 
-	// Check for Python
+	// Check for Python (src/ layout first, then root)
 	if _, err := os.Stat(filepath.Join(srcDir, "main.py")); err == nil {
 		return "python"
 	}
 	if _, err := os.Stat(filepath.Join(srcDir, "requirements.txt")); err == nil {
 		return "python"
 	}
+	if _, err := os.Stat(filepath.Join(packageDir, "main.py")); err == nil {
+		return "python"
+	}
+	if _, err := os.Stat(filepath.Join(packageDir, "requirements.txt")); err == nil {
+		return "python"
+	}
 
-	// Check for Go
+	// Check for Go (src/ layout first, then root)
 	if _, err := os.Stat(filepath.Join(srcDir, "main.go")); err == nil {
 		return "go"
 	}
 	if _, err := os.Stat(filepath.Join(srcDir, "go.mod")); err == nil {
+		return "go"
+	}
+	if _, err := os.Stat(filepath.Join(packageDir, "main.go")); err == nil {
+		return "go"
+	}
+	if _, err := os.Stat(filepath.Join(packageDir, "go.mod")); err == nil {
 		return "go"
 	}
 
@@ -464,11 +477,21 @@ func detectPipelineLanguage(packageDir string) string {
 	return "go"
 }
 
+// hasSrcDir checks if the package directory has a legacy src/ subdirectory.
+func hasSrcDir(packageDir string) bool {
+	info, err := os.Stat(filepath.Join(packageDir, "src"))
+	return err == nil && info.IsDir()
+}
+
 // generateDockerfile generates a Dockerfile for the given language.
-func generateDockerfile(lang string) string {
+// It detects whether the project uses the legacy src/ layout or the new root-level layout.
+func generateDockerfile(lang, packageDir string) string {
+	useSrcLayout := hasSrcDir(packageDir)
+
 	switch lang {
 	case "python":
-		return `# DP Pipeline Image (auto-generated)
+		if useSrcLayout {
+			return `# DP Pipeline Image (auto-generated)
 ARG DP_BASE_IMAGE=python:3.11-slim
 
 FROM python:3.11-slim AS builder
@@ -484,13 +507,48 @@ COPY src/ /app/src/
 COPY dp.yaml /app/
 ENTRYPOINT ["python", "/app/src/main.py"]
 `
-	default: // go
+		}
 		return `# DP Pipeline Image (auto-generated)
+ARG DP_BASE_IMAGE=python:3.11-slim
+
+FROM python:3.11-slim AS builder
+WORKDIR /build
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --target=/deps -r requirements.txt || true
+
+FROM ${DP_BASE_IMAGE}
+WORKDIR /app
+COPY --from=builder /deps /app/deps
+ENV PYTHONPATH=/app/deps
+COPY . /app/
+COPY dp.yaml /app/
+ENTRYPOINT ["python", "/app/main.py"]
+`
+	default: // go
+		if useSrcLayout {
+			return `# DP Pipeline Image (auto-generated)
 ARG DP_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
 
 FROM golang:1.25-alpine AS builder
 WORKDIR /build
 COPY src/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline .
+
+FROM ${DP_BASE_IMAGE}
+WORKDIR /app
+COPY --from=builder /pipeline /app/pipeline
+COPY dp.yaml /app/
+ENTRYPOINT ["/app/pipeline"]
+`
+		}
+		return `# DP Pipeline Image (auto-generated)
+ARG DP_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
+
+FROM golang:1.25-alpine AS builder
+WORKDIR /build
+COPY go.mod go.sum* ./
+RUN go mod download || true
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline .
 
 FROM ${DP_BASE_IMAGE}
