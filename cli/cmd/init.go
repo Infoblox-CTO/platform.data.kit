@@ -106,9 +106,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Normalize and validate kind
 	initKind = strings.ToLower(initKind)
 	kind := contracts.Kind(titleCase(initKind))
-	if initKind == "datapackage" {
-		kind = contracts.KindModel // treat legacy DataPackage as Model
-	}
 	switch kind {
 	case contracts.KindSource, contracts.KindDestination, contracts.KindModel:
 		// valid

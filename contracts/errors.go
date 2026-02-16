@@ -145,11 +145,11 @@ const (
 	ErrCodeInvalidSemVer        = "E020"
 	ErrCodeVersionAlreadyExists = "E021"
 
-	// PipelineManifest validation errors (E030-E031)
+	// Image and timeout validation errors (E030-E031)
 	ErrCodeInvalidImageRef = "E030"
 	ErrCodeInvalidTimeout  = "E031"
 
-	// RuntimeSpec validation errors (E040-E041)
+	// Runtime validation errors (E040-E041)
 	ErrCodeRuntimeRequired      = "E040"
 	ErrCodeRuntimeImageRequired = "E041"
 )
@@ -157,8 +157,8 @@ const (
 // Error message templates.
 var errorMessages = map[string]string{
 	ErrCodeNameNotDNSSafe:         "name must be DNS-safe (lowercase, alphanumeric, hyphens)",
-	ErrCodeInvalidPackageType:     "type must be one of: pipeline, model, dataset",
-	ErrCodeOutputsRequired:        "outputs are required for pipeline type packages",
+	ErrCodeInvalidPackageType:     "kind must be one of: Source, Destination, Model",
+	ErrCodeOutputsRequired:        "outputs are required for Model kind packages",
 	ErrCodeClassificationRequired: "classification is required for output artifacts",
 	ErrCodeInvalidSchemaType:      "schema type must be one of: parquet, avro, json, csv",
 	ErrCodeBindingNotFound:        "binding reference not found in environment",
@@ -167,8 +167,8 @@ var errorMessages = map[string]string{
 	ErrCodeVersionAlreadyExists:   "version already exists and cannot be overwritten",
 	ErrCodeInvalidImageRef:        "image must be a valid container image reference",
 	ErrCodeInvalidTimeout:         "timeout must be a positive duration",
-	ErrCodeRuntimeRequired:        "spec.runtime is required for pipeline type packages",
-	ErrCodeRuntimeImageRequired:   "spec.runtime.image is required",
+	ErrCodeRuntimeRequired:        "spec.runtime is required",
+	ErrCodeRuntimeImageRequired:   "spec.image is required for generic-* runtimes",
 }
 
 // NewValidationError creates a new validation error with the standard message.

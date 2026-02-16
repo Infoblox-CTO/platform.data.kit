@@ -468,5 +468,3 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 		t.Error("dp.yaml was not created in current directory")
 	}
 }
-
-

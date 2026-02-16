@@ -18,15 +18,15 @@ import (
 )
 
 var (
-	runEnv         []string
-	runBindings    string
-	runNetwork     string
-	runTimeout     time.Duration
-	runDryRun      bool
-	runDetach      bool
-	runAttach      bool     // Explicitly attach to logs (for streaming)
-	runSet         []string // --set flags for inline overrides
-	runValueFiles  []string // -f flags for override files
+	runEnv        []string
+	runBindings   string
+	runNetwork    string
+	runTimeout    time.Duration
+	runDryRun     bool
+	runDetach     bool
+	runAttach     bool     // Explicitly attach to logs (for streaming)
+	runSet        []string // --set flags for inline overrides
+	runValueFiles []string // -f flags for override files
 )
 
 // runCmd executes a pipeline locally
@@ -352,4 +352,3 @@ func networkExists(name string) bool {
 	cmd := exec.Command("docker", "network", "inspect", name)
 	return cmd.Run() == nil
 }
-

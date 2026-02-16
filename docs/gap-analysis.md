@@ -44,12 +44,12 @@ These principles govern all implementation decisions for the revised taxonomy. T
 | `Model` struct | ✅ | `contracts/model.go` — `ModelSpec`, `ExtensionRef`, full field set |
 | `ExtensionRef` struct | ✅ | Name/Namespace/Version for referencing published extensions |
 | `ConfigSchema` / `ConfigProperty` | ✅ | Defined for extension config validation |
-| Delete `DataPackage` struct | ❌ | `contracts/datapackage.go` still exists. The `DataPackage` struct, `DataPackageSpec`, custom `UnmarshalYAML` dual-format handler, and `RuntimeSpec` object must all be deleted. All code using `DataPackage` must be migrated to use `Source`, `Destination`, or `Model` directly |
-| Delete `PipelineManifest` | ❌ | `contracts/pipeline.go` still present and actively imported. Shared types (`EnvVar`, `Probe`, `EnvFromSource`, etc.) must be extracted to a `contracts/shared.go` or similar, then `pipeline.go` deleted entirely |
-| Delete `PackageType` | ❌ | `PackageType` (`pipeline`, `cloudquery`) still defined in `contracts/types.go`. Must be deleted along with all code paths that reference `spec.type` |
-| Delete `KindDataPackage` constant | ❌ | `KindDataPackage = "DataPackage"` still in `contracts/types.go` and accepted by `Kind.IsValid()`. Must be removed — only Source/Destination/Model are valid |
-| Delete `PipelineMode` alias | ❌ | `PipelineMode = Mode` alias and `PipelineModeBatch`/`PipelineModeStreaming` constants still in `contracts/types.go`. Must be removed |
-| Delete legacy JSON schemas | ❌ | `contracts/schemas/dp-manifest.schema.json` and `contracts/schemas/pipeline-manifest.schema.json` still hardcode `kind: DataPackage`. Must be deleted |
+| Delete `DataPackage` struct | ✅ | `contracts/datapackage.go` deleted. `DataPackage`, `DataPackageSpec`, custom `UnmarshalYAML`, and `RuntimeSpec` removed. All callers migrated to `Source`, `Destination`, or `Model` |
+| Delete `PipelineManifest` | ✅ | `contracts/pipeline.go` renamed to `contracts/shared.go`. Shared types (`EnvVar`, `Probe`, `EnvFromSource`, etc.) preserved; `PipelineManifest` struct deleted |
+| Delete `PackageType` | ✅ | `PackageType` and all `spec.type` references deleted from `contracts/types.go` and all CLI/SDK code |
+| Delete `KindDataPackage` constant | ✅ | Removed from `contracts/types.go`. `Kind.IsValid()` only accepts Source/Destination/Model |
+| Delete `PipelineMode` alias | ✅ | `PipelineMode` alias and `PipelineModeBatch`/`PipelineModeStreaming` constants removed from `contracts/types.go` |
+| Delete legacy JSON schemas | ✅ | `dp-manifest.schema.json` and `pipeline-manifest.schema.json` deleted |
 | New JSON schemas for Source/Destination/Model | ❌ | No JSON schemas exist for the new taxonomy kinds. Need `source.schema.json`, `destination.schema.json`, `model.schema.json` |
 
 ---
@@ -98,11 +98,11 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 | Item | Status | Details |
 |------|--------|---------|
-| Route on `Kind` (Source/Destination/Model) | ❌ | Only checks `spec.type` (legacy `PackageType`). All `spec.type` checks must be replaced with `Kind`-based dispatch |
-| Source kind build (Docker image + OCI bundle) | ❌ | No Source-specific build logic exists |
-| Destination kind build | ❌ | No Destination-specific build logic exists |
-| Model kind build | ❌ | Works accidentally via legacy DataPackage path. Must be explicitly routed via `Kind` |
-| Delete `spec.type` checks | ❌ | Build command still references `PackageType`. All such references must be removed |
+| Route on `Kind` (Source/Destination/Model) | ⚠️ | Uses `manifest.ParseManifestFile()` which returns `Kind` via `DetectKind()`. Displays Kind in output. No `spec.type` checks remain. But no kind-specific build paths yet (all kinds follow the same validate→bundle flow) |
+| Source kind build (Docker image + OCI bundle) | ❌ | No Source-specific build logic exists — P1 item |
+| Destination kind build | ❌ | No Destination-specific build logic exists — P1 item |
+| Model kind build | ✅ | Works via generic validate→bundle path. No legacy `DataPackage` path |
+| Delete `spec.type` checks | ✅ | All `spec.type` and `PackageType` references deleted from `build.go` |
 
 ---
 
@@ -110,12 +110,12 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 | Item | Status | Details |
 |------|--------|---------|
-| Route on `Kind` + `Runtime` | ❌ | Routes on `spec.type == cloudquery` (legacy). Must be replaced with `Kind`/`Runtime`-based dispatch. All `spec.type` checks must be deleted |
-| Read `Mode` from `spec.mode` directly | ❌ | Still checks `runtime.mode` (legacy `RuntimeSpec` object) first, then falls back to `spec.mode`. The fallback chain must be removed — `spec.mode` is the only source |
-| Delete `RuntimeSpec` mode/image reads | ❌ | Runner reads image and mode from `Spec.Runtime.*` (legacy object). Must read from `Spec.Image` and `Spec.Mode` directly |
-| Source kind execution | ❌ | No Source-specific run logic |
-| Destination kind execution | ❌ | No Destination-specific run logic |
-| Model kind execution with ExtensionRef composition | ❌ | Doesn't compose Source + Destination from ExtensionRefs |
+| Route on `Kind` + `Runtime` | ⚠️ | Uses `manifest.ParseManifestFile()` which returns `Kind`. No `spec.type` checks remain. But no Kind-specific run dispatch yet (all kinds follow same Docker path) — P1 item |
+| Read `Mode` from `spec.mode` directly | ✅ | Reads from `model.Spec.Mode` (flat field). No `RuntimeSpec` fallback chain. No legacy `runtime.mode` path |
+| Delete `RuntimeSpec` mode/image reads | ✅ | All `RuntimeSpec` references deleted from `run.go` and `runner.go`. Mode and Image read from top-level spec fields |
+| Source kind execution | ❌ | No Source-specific run logic — P1 item |
+| Destination kind execution | ❌ | No Destination-specific run logic — P1 item |
+| Model kind execution with ExtensionRef composition | ❌ | Doesn't compose Source + Destination from ExtensionRefs — P2 item |
 
 ---
 
@@ -147,8 +147,8 @@ These principles govern all implementation decisions for the revised taxonomy. T
 | `ParseDestination()` | ✅ | In `sdk/manifest/destination.go` |
 | `ParseModel()` | ✅ | In `sdk/manifest/model.go` |
 | `DetectKind()` from raw YAML | ✅ | In `sdk/manifest/parser.go` |
-| Delete `ParseDataPackage()` | ❌ | Still exists as a backward-compat funnel that accepts all kinds via the `DataPackage` struct. Must be deleted — callers should use `DetectKind()` → `ParseSource()`/`ParseDestination()`/`ParseModel()` |
-| Delete `ParsePipeline()` | ❌ | Still exists for legacy `pipeline.yaml`. Must be deleted along with `contracts/pipeline.go` |
+| Delete `ParseDataPackage()` | ✅ | Deleted. `ParseManifest()` now uses `DetectKind()` → `ParseSource()`/`ParseDestination()`/`ParseModel()`. Parser test confirms `kind: DataPackage` returns an error |
+| Delete `ParsePipeline()` | ✅ | Deleted along with `contracts/pipeline.go` (renamed to `contracts/shared.go`). No legacy pipeline parsing path exists |
 
 ---
 
@@ -156,11 +156,11 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 | Item | Status | Details |
 |------|--------|---------|
-| DockerRunner works for Model (batch/streaming) | ❌ | Works accidentally via legacy pipeline path. Must be rewritten to use `Kind`/`Runtime`/`Mode` directly, not `spec.type` or `RuntimeSpec` |
-| Kind-aware runner dispatch | ❌ | Runner doesn't check `Kind`, only `spec.type`. All `spec.type` references must be replaced |
-| Source-specific runner | ❌ | No logic to run a Source extension standalone |
-| Destination-specific runner | ❌ | No logic to run a Destination extension standalone |
-| Model runner with extension composition | ❌ | No logic to pull Source+Destination from refs and compose |
+| DockerRunner works for Model (batch/streaming) | ✅ | `runner.go` uses `contracts.Mode` for mode, `RunOptions.Mode` field. No `spec.type` or `RuntimeSpec` references |
+| Kind-aware runner dispatch | ⚠️ | Runner accepts `Kind` via `MapBindingsToEnvVars()`. No `spec.type` references. But no Kind-specific run strategies yet — P1 item |
+| Source-specific runner | ❌ | No logic to run a Source extension standalone — P1 item |
+| Destination-specific runner | ❌ | No logic to run a Destination extension standalone — P1 item |
+| Model runner with extension composition | ❌ | No logic to pull Source+Destination from refs and compose — P2 item |
 
 ---
 
@@ -168,14 +168,14 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 | Item | Status | Details |
 |------|--------|---------|
-| `Kind.IsValid()` tests | ❌ | No unit tests |
-| `Runtime.IsValid()` tests | ❌ | No unit tests |
-| `Mode.IsValid()` / `Mode.Default()` tests | ❌ | No unit tests |
-| `Source` / `Destination` / `Model` parsing tests | ❌ | No `ParseSource`/`ParseDestination`/`ParseModel` tests |
-| `SourceValidator` / `DestinationValidator` / `ModelValidator` tests | ❌ | No test cases for kind-specific validation |
-| E2E tests with Source/Destination kinds | ❌ | All e2e tests use `--type pipeline` (legacy) or Model kind. Legacy flags must be removed from all tests |
-| Template rendering tests for new kinds | ❌ | No tests for `source/`, `destination/`, `model/` templates |
-| Delete all legacy test fixtures | ❌ | Any test that creates a `DataPackage` manifest or uses `--type` flag must be rewritten |
+| `Kind.IsValid()` tests | ✅ | `contracts/types_test.go` — `TestKind_Constants`, `TestKind_IsValid` |
+| `Runtime.IsValid()` tests | ✅ | `contracts/types_test.go` — `TestRuntime_Constants`, `TestRuntime_IsValid` |
+| `Mode.IsValid()` / `Mode.Default()` tests | ✅ | `contracts/types_test.go` — `TestMode_IsValid`, `TestMode_Default` |
+| `Source` / `Destination` / `Model` parsing tests | ✅ | `sdk/manifest/parser_test.go` — tests for all three kinds via `ParseManifest` and `ParseManifestFile`. `DataPackage` kind confirmed to return error |
+| `ManifestValidator` tests (Source/Destination/Model) | ✅ | `sdk/validate/manifest_test.go` — tests `ManifestValidator` with kind-dispatch to `validateSource()`, `validateDestination()`, `validateModel()` |
+| E2E tests with Source/Destination kinds | ❌ | E2E tests in `tests/e2e/` still use `--type pipeline` (legacy). Must be rewritten — P1 item |
+| Template rendering tests for new kinds | ✅ | `cli/internal/templates/renderer_test.go` — tests for `source/`, `destination/`, `model/` template rendering |
+| Delete all legacy test fixtures | ⚠️ | CLI testdata updated (Model kind). SDK testdata updated. E2E testdata still uses `DataPackage` kind in `tests/e2e/` |
 
 ---
 
@@ -198,29 +198,30 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 ## Priority Summary
 
-### P0 — Legacy Removal (do first, unblocks everything else)
+### P0 — Legacy Removal ✅ COMPLETE
 
-1. **Delete `DataPackage` struct and all references** — `contracts/datapackage.go` (the struct, `DataPackageSpec`, `RuntimeSpec` object, custom `UnmarshalYAML`), `KindDataPackage` constant, `PackageType`, `PipelineMode` alias. Migrate shared types (`EnvVar`, `Probe`, etc.) from `contracts/pipeline.go` to `contracts/shared.go`, then delete `pipeline.go`.
-2. **Delete legacy code paths in CLI** — remove `spec.type` checks in `build.go` and `run.go`, remove `--type`/`--language`/`--role` flags from `init.go`, remove `ParseDataPackage()`/`ParsePipeline()` from SDK.
-3. **Delete legacy templates and schemas** — root `dp.yaml.tmpl`, `cloudquery/` template dir, `dp-manifest.schema.json`, `pipeline-manifest.schema.json`.
-4. **Rewrite all tests** — purge every test that uses `DataPackage`, `--type pipeline`, or legacy fixtures.
+1. ✅ **Delete `DataPackage` struct and all references** — `contracts/datapackage.go` deleted (`DataPackage`, `DataPackageSpec`, `RuntimeSpec`, `UnmarshalYAML`). `KindDataPackage`, `PackageType`, `PipelineMode` alias all removed. `contracts/pipeline.go` renamed to `contracts/shared.go` (shared types preserved).
+2. ✅ **Delete legacy code paths in CLI** — `spec.type` checks deleted from `build.go` and `run.go`. `--type`/`--language`/`--role` flags deleted from `init.go`. `datapackage` compat shim deleted. `ParseDataPackage()`/`ParsePipeline()` deleted from SDK. `root.go` example text fixed.
+3. ✅ **Delete legacy templates and schemas** — root `dp.yaml.tmpl` deleted, `cloudquery/` template dir deleted, `dp-manifest.schema.json` and `pipeline-manifest.schema.json` deleted.
+4. ✅ **Rewrite all tests** — all unit tests purged of `DataPackage`, `--type pipeline`, `spec.type`, legacy fixtures. CLI testdata updated. SDK testdata updated. E2E tests still need rewrite (separate P1 item).
+5. ✅ **Fix error messages/comments** — `contracts/errors.go` comments and message templates updated from legacy `PipelineManifest`/`RuntimeSpec`/`PackageType` references.
 
 ### P1 — New Taxonomy Implementation (core functionality)
 
-5. **Kind-specific validators** — `SourceValidator`, `DestinationValidator`, `ModelValidator` implementing all E1xx/E2xx rules from the design doc.
-6. **Kind-aware `dp build`** — route on `Kind`, not `spec.type`.
-7. **Kind-aware `dp run`** — route on `Kind`/`Runtime`, read `Mode` and `Image` from top-level spec fields only.
-8. **Test coverage** — unit tests for all new types, parsers, validators. E2E tests for Source and Destination kinds.
+6. **Kind-specific validators** — `validateSource()`, `validateDestination()`, `validateModel()` exist but missing E102/E103/E208/E209 rules.
+7. **Kind-aware `dp build`** — Legacy removed, Kind detected. No kind-specific build routing yet.
+8. **Kind-aware `dp run`** — Legacy removed, Mode read correctly. No kind-specific run dispatch yet.
+9. **Test coverage** — Unit tests exist for types, parsers, validators, templates. E2E tests need rewrite.
 
 ### P2 — Feature Completion
 
-9. **Extension Registry** — `dp publish`, ExtensionRef resolution, extension discovery.
-10. Missing templates — `source/generic-python/`, `destination/generic-python/`.
-11. New JSON schemas — `source.schema.json`, `destination.schema.json`, `model.schema.json`.
-12. Classification *required* on all outputs.
+10. **Extension Registry** — `dp publish`, ExtensionRef resolution, extension discovery.
+11. Missing templates — `source/generic-python/`, `destination/generic-python/`.
+12. New JSON schemas — `source.schema.json`, `destination.schema.json`, `model.schema.json`.
+13. Classification *required* on all outputs.
 
 ### P3 — Polish
 
-13. Lineage auto-derivation from extension contracts.
-14. Docs rewrite around two personas.
-15. `dp show` enrichment with ExtensionRef/configSchema display.
+14. Lineage auto-derivation from extension contracts.
+15. Docs rewrite around two personas.
+16. `dp show` enrichment with ExtensionRef/configSchema display.

@@ -309,4 +309,3 @@ func runStreamingTest(ctx context.Context, r runner.Runner, opts runner.RunOptio
 
 	return result, nil
 }
-

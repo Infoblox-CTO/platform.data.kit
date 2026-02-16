@@ -22,18 +22,18 @@ var modelFS embed.FS
 
 // templateFuncMap provides helper functions available in templates.
 var templateFuncMap = template.FuncMap{
-	"lower":     strings.ToLower,
-	"upper":     strings.ToUpper,
-	"title":     strings.Title,
-	"snake":     snakeCase,
-	"snakeCase": snakeCase,
-	"pascal":    pascalCase,
+	"lower":      strings.ToLower,
+	"upper":      strings.ToUpper,
+	"title":      strings.Title,
+	"snake":      snakeCase,
+	"snakeCase":  snakeCase,
+	"pascal":     pascalCase,
 	"pascalCase": pascalCase,
-	"contains":  strings.Contains,
-	"hasPrefix": strings.HasPrefix,
-	"hasSuffix": strings.HasSuffix,
-	"replace":   strings.ReplaceAll,
-	"trimSpace": strings.TrimSpace,
+	"contains":   strings.Contains,
+	"hasPrefix":  strings.HasPrefix,
+	"hasSuffix":  strings.HasSuffix,
+	"replace":    strings.ReplaceAll,
+	"trimSpace":  strings.TrimSpace,
 }
 
 // snakeCase converts a string to snake_case.

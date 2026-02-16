@@ -1,8 +1,8 @@
 # Invalid YAML - missing required fields
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   # missing name
 spec:
-  # missing type
-  version: v1.0.0
+  # missing required fields
+  runtime: generic-go

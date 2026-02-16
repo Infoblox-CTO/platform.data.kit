@@ -27,8 +27,8 @@ a complete developer workflow.
 Workflow: init -> dev -> run -> lint -> test -> build -> publish -> promote
 
 Example:
-  # Create a new pipeline package
-  dp init my-pipeline --type pipeline
+  # Create a new model package
+  dp init my-model --kind model --runtime cloudquery
 
   # Start local development environment
   dp dev up

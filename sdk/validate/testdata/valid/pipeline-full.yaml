@@ -1,5 +1,5 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: sample-pipeline
   namespace: data-team
@@ -10,18 +10,22 @@ metadata:
   annotations:
     description: Sample pipeline for testing
 spec:
-  type: pipeline
+  runtime: generic-go
+  mode: batch
   description: A sample data processing pipeline for testing validation
   owner: data-team
+  image: myimage:v1
   inputs:
     - name: raw-events
       type: s3-prefix
+      binding: raw-events-bucket
       schema:
         type: avro
         path: schemas/events.avsc
   outputs:
     - name: processed-events
       type: s3-prefix
+      binding: processed-events-bucket
       schema:
         type: parquet
         path: schemas/output.parquet
