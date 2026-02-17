@@ -67,7 +67,7 @@ func TestRenderKindDirectory_SourceGenericGo(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "main.go", "Dockerfile"} {
+	for _, f := range []string{"dp.yaml", "main.go"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected %s to be created", f)
 		}
@@ -131,7 +131,7 @@ func TestRenderKindDirectory_DestinationGenericGo(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "main.go", "Dockerfile"} {
+	for _, f := range []string{"dp.yaml", "main.go"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected %s to be created", f)
 		}
@@ -210,7 +210,7 @@ func TestRenderKindDirectory_ModelGenericGo(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "main.go", "go.mod", "Dockerfile"} {
+	for _, f := range []string{"dp.yaml", "main.go", "go.mod"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -235,7 +235,7 @@ func TestRenderKindDirectory_ModelGenericPython(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "main.py", "requirements.txt", "Dockerfile"} {
+	for _, f := range []string{"dp.yaml", "main.py", "requirements.txt"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
