@@ -468,11 +468,14 @@ func detectPipelineLanguage(packageDir string) string {
 		return "python"
 	}
 
-	// Check for Go (src/ layout first, then root)
+	// Check for Go (src/ layout first, then cmd/ layout, then root)
 	if _, err := os.Stat(filepath.Join(srcDir, "main.go")); err == nil {
 		return "go"
 	}
 	if _, err := os.Stat(filepath.Join(srcDir, "go.mod")); err == nil {
+		return "go"
+	}
+	if _, err := os.Stat(filepath.Join(packageDir, "cmd", "main.go")); err == nil {
 		return "go"
 	}
 	if _, err := os.Stat(filepath.Join(packageDir, "main.go")); err == nil {
@@ -492,8 +495,43 @@ func hasSrcDir(packageDir string) bool {
 	return err == nil && info.IsDir()
 }
 
+// readModulePath reads the module path from go.mod in the given directory.
+// Returns the module path (e.g. "my-model") or empty string if go.mod is missing.
+func readModulePath(packageDir string) string {
+	data, err := os.ReadFile(filepath.Join(packageDir, "go.mod"))
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module "))
+		}
+	}
+	return ""
+}
+
+// detectGoBuildTarget determines the correct `go build` target path for a Go
+// project. It inspects the directory structure to distinguish between:
+//   - Cobra-style layout:  main.go at root, cmd/ is a library package → "."
+//   - cmd/ entrypoint:     cmd/main.go is package main, root has no main.go → "./cmd"
+//   - flat layout:         main.go at root, no cmd/ → "."
+func detectGoBuildTarget(packageDir string) string {
+	// Root main.go always wins — this is the standard Go / Cobra convention.
+	if _, err := os.Stat(filepath.Join(packageDir, "main.go")); err == nil {
+		return "."
+	}
+	// Check for a main.go inside cmd/ as the entrypoint.
+	if _, err := os.Stat(filepath.Join(packageDir, "cmd", "main.go")); err == nil {
+		return "./cmd"
+	}
+	// Fallback: build from root.
+	return "."
+}
+
 // generateDockerfile generates a Dockerfile for the given language.
-// It detects whether the project uses the legacy src/ layout or the new root-level layout.
+// It detects the project layout (src/, cmd/, or flat) and reads go.mod
+// to determine the correct build target so imports resolve properly.
 func generateDockerfile(lang, packageDir string) string {
 	useSrcLayout := hasSrcDir(packageDir)
 
@@ -550,7 +588,8 @@ COPY dp.yaml /app/
 ENTRYPOINT ["/app/pipeline"]
 `
 		}
-		return `# DP Pipeline Image (auto-generated)
+		buildTarget := detectGoBuildTarget(packageDir)
+		return fmt.Sprintf(`# DP Pipeline Image (auto-generated)
 ARG DP_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
 
 FROM golang:1.25-alpine AS builder
@@ -558,14 +597,14 @@ WORKDIR /build
 COPY go.mod go.sum* ./
 RUN go mod download || true
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline %s
 
 FROM ${DP_BASE_IMAGE}
 WORKDIR /app
 COPY --from=builder /pipeline /app/pipeline
 COPY dp.yaml /app/
 ENTRYPOINT ["/app/pipeline"]
-`
+`, buildTarget)
 	}
 }
 

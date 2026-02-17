@@ -1,8 +1,7 @@
 package main
 
-import "fmt"
+import "quickstart-demo/cmd"
 
 func main() {
-	fmt.Println("Hello from quickstart-demo model!")
-	// TODO: Implement your data processing logic here
+	cmd.Execute()
 }

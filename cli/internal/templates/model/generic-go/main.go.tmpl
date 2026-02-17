@@ -1,8 +1,7 @@
 package main
 
-import "fmt"
+import "{{ .Name }}/cmd"
 
 func main() {
-	fmt.Println("Hello from {{ .Name }} model!")
-	// TODO: Implement your data processing logic here
+	cmd.Execute()
 }
