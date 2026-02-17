@@ -152,6 +152,15 @@ const (
 	// Runtime validation errors (E040-E041)
 	ErrCodeRuntimeRequired      = "E040"
 	ErrCodeRuntimeImageRequired = "E041"
+
+	// Source/Destination validation errors (E102-E104)
+	ErrCodeSourceProvidesRequired = "E102" // Source must declare provides
+	ErrCodeDestAcceptsRequired    = "E103" // Destination must declare accepts
+	ErrCodeImageRequiredGeneric   = "E104" // spec.image required for generic-* runtimes
+
+	// Model validation warnings (W200-W209)
+	WarnCodeConfigSchemaMissing = "W104" // configSchema recommended for extensions
+	WarnCodeScheduleBatchMode   = "W209" // schedule recommended for batch mode
 )
 
 // Error message templates.
@@ -169,6 +178,11 @@ var errorMessages = map[string]string{
 	ErrCodeInvalidTimeout:         "timeout must be a positive duration",
 	ErrCodeRuntimeRequired:        "spec.runtime is required",
 	ErrCodeRuntimeImageRequired:   "spec.image is required for generic-* runtimes",
+	ErrCodeSourceProvidesRequired: "source must declare spec.provides",
+	ErrCodeDestAcceptsRequired:    "destination must declare spec.accepts",
+	ErrCodeImageRequiredGeneric:   "spec.image is required for generic-* runtimes",
+	WarnCodeConfigSchemaMissing:   "configSchema is recommended so data engineers can validate config",
+	WarnCodeScheduleBatchMode:     "schedule is recommended for batch mode models",
 }
 
 // NewValidationError creates a new validation error with the standard message.

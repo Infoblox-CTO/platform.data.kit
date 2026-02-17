@@ -222,6 +222,11 @@ spec:
   owner: data-team
   runtime: cloudquery
   image: my-cq-source:latest
+  provides:
+    name: cloud-resources
+    type: s3-prefix
+  configSchema:
+    format: json
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -257,6 +262,11 @@ spec:
   owner: data-team
   runtime: cloudquery
   image: cq-source:latest
+  provides:
+    name: cloud-resources
+    type: s3-prefix
+  configSchema:
+    format: json
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)

@@ -64,11 +64,13 @@ func TestManifestValidator_Validate(t *testing.T) {
 					Runtime:     contracts.RuntimeGenericGo,
 					Image:       "myimage:v1",
 					Mode:        contracts.ModeBatch,
+					Schedule:    &contracts.ScheduleSpec{Cron: "0 * * * *"},
 					Outputs: []contracts.ArtifactContract{
 						{
-							Name:    "output-data",
-							Type:    contracts.ArtifactTypeS3Prefix,
-							Binding: "output-bucket",
+							Name:           "output-data",
+							Type:           contracts.ArtifactTypeS3Prefix,
+							Binding:        "output-bucket",
+							Classification: &contracts.Classification{},
 						},
 					},
 				},
@@ -88,9 +90,11 @@ func TestManifestValidator_Validate(t *testing.T) {
 					Version:   "1.0.0",
 				},
 				Spec: contracts.SourceSpec{
-					Description: "A test source",
-					Owner:       "data-team",
-					Runtime:     contracts.RuntimeCloudQuery,
+					Description:  "A test source",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					Provides:     contracts.ArtifactContract{Name: "cloud-assets", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
 				},
 			},
 			kind:      contracts.KindSource,
@@ -108,9 +112,11 @@ func TestManifestValidator_Validate(t *testing.T) {
 					Version:   "1.0.0",
 				},
 				Spec: contracts.DestinationSpec{
-					Description: "A test destination",
-					Owner:       "data-team",
-					Runtime:     contracts.RuntimeCloudQuery,
+					Description:  "A test destination",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					Accepts:      contracts.ArtifactContract{Name: "cloud-assets", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
 				},
 			},
 			kind:      contracts.KindDestination,
@@ -251,6 +257,7 @@ func TestManifestValidator_ModelValidation(t *testing.T) {
 					Runtime:     contracts.RuntimeGenericGo,
 					Image:       "myimage:v1",
 					Mode:        contracts.ModeBatch,
+					Schedule:    &contracts.ScheduleSpec{Cron: "0 * * * *"},
 				},
 			},
 			wantValid:    false,
@@ -273,6 +280,7 @@ func TestManifestValidator_ModelValidation(t *testing.T) {
 					Runtime:     contracts.RuntimeGenericGo,
 					Image:       "myimage:v1",
 					Mode:        contracts.ModeBatch,
+					Schedule:    &contracts.ScheduleSpec{Cron: "0 * * * *"},
 					Outputs: []contracts.ArtifactContract{
 						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data", Classification: &contracts.Classification{}},
 					},
@@ -297,7 +305,7 @@ func TestManifestValidator_ModelValidation(t *testing.T) {
 					Image:       "myimage:v1",
 					Mode:        contracts.Mode("invalid"),
 					Outputs: []contracts.ArtifactContract{
-						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data"},
+						{Name: "output1", Type: contracts.ArtifactTypeS3Prefix, Binding: "output.data", Classification: &contracts.Classification{}},
 					},
 				},
 			},
@@ -352,9 +360,11 @@ func TestManifestValidator_SourceValidation(t *testing.T) {
 					Version:   "1.0.0",
 				},
 				Spec: contracts.SourceSpec{
-					Description: "A CloudQuery source",
-					Owner:       "data-team",
-					Runtime:     contracts.RuntimeCloudQuery,
+					Description:  "A CloudQuery source",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					Provides:     contracts.ArtifactContract{Name: "cloud-assets", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
 				},
 			},
 			wantValid: true,
@@ -391,5 +401,323 @@ func TestManifestValidator_SourceValidation(t *testing.T) {
 				t.Error("expected errors, got valid")
 			}
 		})
+	}
+}
+
+func TestManifestValidator_SourceProvidesRequired(t *testing.T) {
+	tests := []struct {
+		name        string
+		source      *contracts.Source
+		wantErr     bool
+		wantErrCode string
+	}{
+		{
+			name: "source without provides triggers E102",
+			source: &contracts.Source{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindSource),
+				Metadata:   contracts.ExtMetadata{Name: "my-source", Namespace: "data-team", Version: "1.0.0"},
+				Spec: contracts.SourceSpec{
+					Description:  "No provides",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			wantErr:     true,
+			wantErrCode: contracts.ErrCodeSourceProvidesRequired,
+		},
+		{
+			name: "source with provides is valid",
+			source: &contracts.Source{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindSource),
+				Metadata:   contracts.ExtMetadata{Name: "my-source", Namespace: "data-team", Version: "1.0.0"},
+				Spec: contracts.SourceSpec{
+					Description:  "Has provides",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					Provides:     contracts.ArtifactContract{Name: "cloud-assets", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := NewManifestValidator(tt.source, contracts.KindSource, "/path")
+			errs := v.Validate(context.Background())
+			found := hasErrorCode(errs, tt.wantErrCode)
+			if tt.wantErr && !found {
+				t.Errorf("expected error %s, got: %v", tt.wantErrCode, errs)
+			}
+			if !tt.wantErr && found {
+				t.Errorf("did not expect error %s, got: %v", tt.wantErrCode, errs)
+			}
+		})
+	}
+}
+
+func TestManifestValidator_DestAcceptsRequired(t *testing.T) {
+	tests := []struct {
+		name        string
+		dest        *contracts.Destination
+		wantErr     bool
+		wantErrCode string
+	}{
+		{
+			name: "destination without accepts triggers E103",
+			dest: &contracts.Destination{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindDestination),
+				Metadata:   contracts.ExtMetadata{Name: "my-dest", Namespace: "data-team", Version: "1.0.0"},
+				Spec: contracts.DestinationSpec{
+					Description:  "No accepts",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			wantErr:     true,
+			wantErrCode: contracts.ErrCodeDestAcceptsRequired,
+		},
+		{
+			name: "destination with accepts is valid",
+			dest: &contracts.Destination{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindDestination),
+				Metadata:   contracts.ExtMetadata{Name: "my-dest", Namespace: "data-team", Version: "1.0.0"},
+				Spec: contracts.DestinationSpec{
+					Description:  "Has accepts",
+					Owner:        "data-team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					Accepts:      contracts.ArtifactContract{Name: "cloud-assets", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := NewManifestValidator(tt.dest, contracts.KindDestination, "/path")
+			errs := v.Validate(context.Background())
+			found := hasErrorCode(errs, tt.wantErrCode)
+			if tt.wantErr && !found {
+				t.Errorf("expected error %s, got: %v", tt.wantErrCode, errs)
+			}
+			if !tt.wantErr && found {
+				t.Errorf("did not expect error %s, got: %v", tt.wantErrCode, errs)
+			}
+		})
+	}
+}
+
+func TestManifestValidator_ImageRequiredForGeneric(t *testing.T) {
+	tests := []struct {
+		name     string
+		manifest manifest.Manifest
+		kind     contracts.Kind
+		wantErr  bool
+	}{
+		{
+			name: "generic-go source without image triggers E104",
+			manifest: &contracts.Source{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindSource),
+				Metadata:   contracts.ExtMetadata{Name: "my-source", Namespace: "ns", Version: "1.0.0"},
+				Spec: contracts.SourceSpec{
+					Description:  "Generic source",
+					Owner:        "team",
+					Runtime:      contracts.RuntimeGenericGo,
+					Provides:     contracts.ArtifactContract{Name: "data", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			kind:    contracts.KindSource,
+			wantErr: true,
+		},
+		{
+			name: "generic-go source with image is valid",
+			manifest: &contracts.Source{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindSource),
+				Metadata:   contracts.ExtMetadata{Name: "my-source", Namespace: "ns", Version: "1.0.0"},
+				Spec: contracts.SourceSpec{
+					Description:  "Generic source",
+					Owner:        "team",
+					Runtime:      contracts.RuntimeGenericGo,
+					Image:        "myimage:v1",
+					Provides:     contracts.ArtifactContract{Name: "data", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			kind:    contracts.KindSource,
+			wantErr: false,
+		},
+		{
+			name: "generic-python destination without image triggers E104",
+			manifest: &contracts.Destination{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindDestination),
+				Metadata:   contracts.ExtMetadata{Name: "my-dest", Namespace: "ns", Version: "1.0.0"},
+				Spec: contracts.DestinationSpec{
+					Description:  "Generic dest",
+					Owner:        "team",
+					Runtime:      contracts.RuntimeGenericPython,
+					Accepts:      contracts.ArtifactContract{Name: "data", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			kind:    contracts.KindDestination,
+			wantErr: true,
+		},
+		{
+			name: "cloudquery source without image is valid (not generic)",
+			manifest: &contracts.Source{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindSource),
+				Metadata:   contracts.ExtMetadata{Name: "my-source", Namespace: "ns", Version: "1.0.0"},
+				Spec: contracts.SourceSpec{
+					Description:  "CloudQuery source",
+					Owner:        "team",
+					Runtime:      contracts.RuntimeCloudQuery,
+					Provides:     contracts.ArtifactContract{Name: "data", Type: contracts.ArtifactTypeS3Prefix},
+					ConfigSchema: &contracts.ConfigSchema{},
+				},
+			},
+			kind:    contracts.KindSource,
+			wantErr: false,
+		},
+		{
+			name: "generic-go model without image triggers E104",
+			manifest: &contracts.Model{
+				APIVersion: string(contracts.APIVersionV1Alpha1),
+				Kind:       string(contracts.KindModel),
+				Metadata:   contracts.ModelMetadata{Name: "my-model", Namespace: "ns", Version: "1.0.0"},
+				Spec: contracts.ModelSpec{
+					Description: "Generic model",
+					Owner:       "team",
+					Runtime:     contracts.RuntimeGenericGo,
+					Mode:        contracts.ModeBatch,
+					Schedule:    &contracts.ScheduleSpec{Cron: "0 * * * *"},
+					Outputs: []contracts.ArtifactContract{
+						{Name: "out", Type: contracts.ArtifactTypeS3Prefix, Binding: "b", Classification: &contracts.Classification{}},
+					},
+				},
+			},
+			kind:    contracts.KindModel,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := NewManifestValidator(tt.manifest, tt.kind, "/path")
+			errs := v.Validate(context.Background())
+			found := hasErrorCode(errs, contracts.ErrCodeImageRequiredGeneric)
+			if tt.wantErr && !found {
+				t.Errorf("expected E104, got: %v", errs)
+			}
+			if !tt.wantErr && found {
+				t.Errorf("did not expect E104, got: %v", errs)
+			}
+		})
+	}
+}
+
+func TestManifestValidator_ConfigSchemaWarning(t *testing.T) {
+	// Source without configSchema should produce W104 warning.
+	source := &contracts.Source{
+		APIVersion: string(contracts.APIVersionV1Alpha1),
+		Kind:       string(contracts.KindSource),
+		Metadata:   contracts.ExtMetadata{Name: "my-source", Namespace: "ns", Version: "1.0.0"},
+		Spec: contracts.SourceSpec{
+			Description: "No config schema",
+			Owner:       "team",
+			Runtime:     contracts.RuntimeCloudQuery,
+			Provides:    contracts.ArtifactContract{Name: "data", Type: contracts.ArtifactTypeS3Prefix},
+		},
+	}
+
+	v := NewManifestValidator(source, contracts.KindSource, "/path")
+	errs := v.Validate(context.Background())
+
+	if errs.HasErrors() {
+		t.Errorf("expected no errors, got: %v", errs)
+	}
+	if !errs.HasWarnings() {
+		t.Error("expected W104 warning for missing configSchema")
+	}
+	if !hasErrorCode(errs, contracts.WarnCodeConfigSchemaMissing) {
+		t.Errorf("expected W104 code, got: %v", errs)
+	}
+}
+
+func TestManifestValidator_ClassificationRequired(t *testing.T) {
+	// Model output without classification should produce E004.
+	model := &contracts.Model{
+		APIVersion: string(contracts.APIVersionV1Alpha1),
+		Kind:       string(contracts.KindModel),
+		Metadata:   contracts.ModelMetadata{Name: "my-model", Namespace: "ns", Version: "1.0.0"},
+		Spec: contracts.ModelSpec{
+			Description: "Missing classification",
+			Owner:       "team",
+			Runtime:     contracts.RuntimeGenericGo,
+			Image:       "myimage:v1",
+			Mode:        contracts.ModeBatch,
+			Schedule:    &contracts.ScheduleSpec{Cron: "0 * * * *"},
+			Outputs: []contracts.ArtifactContract{
+				{Name: "out", Type: contracts.ArtifactTypeS3Prefix, Binding: "b"},
+			},
+		},
+	}
+
+	v := NewManifestValidator(model, contracts.KindModel, "/path")
+	errs := v.Validate(context.Background())
+
+	if !hasErrorCode(errs, contracts.ErrCodeClassificationRequired) {
+		t.Errorf("expected E004 for missing classification on output, got: %v", errs)
+	}
+}
+
+func TestManifestValidator_ScheduleBatchWarning(t *testing.T) {
+	// Batch model without schedule should produce W209 warning.
+	model := &contracts.Model{
+		APIVersion: string(contracts.APIVersionV1Alpha1),
+		Kind:       string(contracts.KindModel),
+		Metadata:   contracts.ModelMetadata{Name: "my-model", Namespace: "ns", Version: "1.0.0"},
+		Spec: contracts.ModelSpec{
+			Description: "Batch no schedule",
+			Owner:       "team",
+			Runtime:     contracts.RuntimeGenericGo,
+			Image:       "myimage:v1",
+			Mode:        contracts.ModeBatch,
+			Outputs: []contracts.ArtifactContract{
+				{Name: "out", Type: contracts.ArtifactTypeS3Prefix, Binding: "b", Classification: &contracts.Classification{}},
+			},
+		},
+	}
+
+	v := NewManifestValidator(model, contracts.KindModel, "/path")
+	errs := v.Validate(context.Background())
+
+	if errs.HasErrors() {
+		t.Errorf("expected no errors, got: %v", errs)
+	}
+	if !hasErrorCode(errs, contracts.WarnCodeScheduleBatchMode) {
+		t.Errorf("expected W209 warning for batch without schedule, got: %v", errs)
+	}
+
+	// Streaming model without schedule should NOT produce W209.
+	model.Spec.Mode = contracts.ModeStreaming
+	v2 := NewManifestValidator(model, contracts.KindModel, "/path")
+	errs2 := v2.Validate(context.Background())
+
+	if hasErrorCode(errs2, contracts.WarnCodeScheduleBatchMode) {
+		t.Errorf("streaming model should not get W209 warning, got: %v", errs2)
 	}
 }

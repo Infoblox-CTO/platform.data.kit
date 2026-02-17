@@ -74,23 +74,23 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 | Item | Status | Details |
 |------|--------|---------|
-| Delete `DataPackageValidator` | ❌ | All validation still funnels through `DataPackageValidator` with an `isNewKind()` branch. Must be replaced with `SourceValidator`, `DestinationValidator`, `ModelValidator` — no legacy validator wrapper |
-| **E100**: kind must be Source or Destination | ❌ | No Source/Destination-specific validator exists at all |
-| **E101**: `spec.runtime` must be known Runtime | ❌ | `validateNewKindSpec()` doesn't check runtime |
-| **E102**: Source requires `provides` / Dest requires `accepts` | ❌ | Not validated |
-| **E103**: `spec.image` required for generic-* runtimes | ❌ | Not validated |
-| **E104**: `configSchema` recommended (warning if missing) | ❌ | Not checked |
+| Delete `DataPackageValidator` | ✅ | Replaced with `ManifestValidator` with kind-dispatch to `validateSource()`, `validateDestination()`, `validateModel()` |
+| **E100**: kind must be Source or Destination | ✅ | Validated via `Kind.IsValid()` in manifest validator |
+| **E101**: `spec.runtime` must be known Runtime | ✅ | `Runtime.IsValid()` checked in `validateSource()`, `validateDestination()`, `validateModel()` |
+| **E102**: Source requires `provides` / Dest requires `accepts` | ✅ | E102 (Source provides) and E103 (Dest accepts) error codes implemented |
+| **E103**: `spec.image` required for generic-* runtimes | ✅ | E104 error code; `Runtime.IsGeneric()` helper checks `generic-go`/`generic-python` for Source, Destination, Model |
+| **E104**: `configSchema` recommended (warning if missing) | ✅ | W104 warning for Source and Destination when `ConfigSchema` is nil |
 | **E105**: `metadata.version` required + valid semver | ✅ | Covered by existing `validateMetadata()` |
-| **E200**: kind must be Model | ⚠️ | Kind is validated, but not routed to a Model-specific validator |
-| **E201**: `spec.runtime` must be known Runtime | ❌ | Not validated for Model |
-| **E202**: `spec.mode` must be batch/streaming | ❌ | Not validated |
-| **E203**: `spec.outputs` required | ✅ | Checked in `validateNewKindSpec()` for Model |
-| **E204**: Classification required on all outputs | ❌ | Only checked *if present*, not *required* |
-| **E205**: `spec.source` must resolve to published Source | ❌ | No ExtensionRef resolution |
-| **E206**: `spec.destination` must resolve to published Dest | ❌ | No ExtensionRef resolution |
-| **E207**: `spec.config` validated against configSchemas | ❌ | Only exists for Assets, not Model config |
-| **E208**: `spec.image` required for generic-* (unless ext provides it) | ❌ | Not validated |
-| **E209**: Schedule required for batch mode (warning) | ❌ | Not checked |
+| **E200**: kind must be Model | ✅ | Kind-dispatched via `ManifestValidator.Validate()` |
+| **E201**: `spec.runtime` must be known Runtime | ✅ | `Runtime.IsValid()` in `validateModel()` |
+| **E202**: `spec.mode` must be batch/streaming | ✅ | Validated when non-empty via `Mode.IsValid()` |
+| **E203**: `spec.outputs` required | ✅ | `ErrCodeOutputsRequired` in `validateModel()` |
+| **E204**: Classification required on all outputs | ✅ | `ErrCodeClassificationRequired` enforced on output artifacts via `requireClassification` flag |
+| **E205**: `spec.source` must resolve to published Source | ❌ | No ExtensionRef resolution (P2) |
+| **E206**: `spec.destination` must resolve to published Dest | ❌ | No ExtensionRef resolution (P2) |
+| **E207**: `spec.config` validated against configSchemas | ❌ | Only exists for Assets, not Model config (P2) |
+| **E208**: `spec.image` required for generic-* (unless ext provides it) | ✅ | Covered by E104; ext-check deferred to E205/E206 resolution |
+| **E209**: Schedule required for batch mode (warning) | ✅ | W209 warning when `Mode.Default() == batch` and `Schedule` is nil |
 
 ---
 

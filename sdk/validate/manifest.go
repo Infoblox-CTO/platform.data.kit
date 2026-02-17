@@ -137,8 +137,24 @@ func (v *ManifestValidator) validateSource(errs *contracts.ValidationErrors) {
 		return
 	}
 
+	// E101: Runtime must be a known value.
 	if !src.Spec.Runtime.IsValid() {
 		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
+	}
+
+	// E102: Source must declare what it provides.
+	if src.Spec.Provides.Name == "" && src.Spec.Provides.Type == "" {
+		errs.AddError(contracts.ErrCodeSourceProvidesRequired, "spec.provides", "source must declare spec.provides (what data this source produces)")
+	}
+
+	// E104: spec.image is required for generic-* runtimes.
+	if src.Spec.Runtime.IsGeneric() && src.Spec.Image == "" {
+		errs.AddError(contracts.ErrCodeImageRequiredGeneric, "spec.image", "spec.image is required for generic-* runtimes")
+	}
+
+	// W104: configSchema is recommended for extensions.
+	if src.Spec.ConfigSchema == nil {
+		errs.AddWarning(contracts.WarnCodeConfigSchemaMissing, "spec.configSchema", "configSchema is recommended so data engineers can validate config")
 	}
 }
 
@@ -149,8 +165,24 @@ func (v *ManifestValidator) validateDestination(errs *contracts.ValidationErrors
 		return
 	}
 
+	// E101: Runtime must be a known value.
 	if !dest.Spec.Runtime.IsValid() {
 		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
+	}
+
+	// E103: Destination must declare what it accepts.
+	if dest.Spec.Accepts.Name == "" && dest.Spec.Accepts.Type == "" {
+		errs.AddError(contracts.ErrCodeDestAcceptsRequired, "spec.accepts", "destination must declare spec.accepts (what data this destination consumes)")
+	}
+
+	// E104: spec.image is required for generic-* runtimes.
+	if dest.Spec.Runtime.IsGeneric() && dest.Spec.Image == "" {
+		errs.AddError(contracts.ErrCodeImageRequiredGeneric, "spec.image", "spec.image is required for generic-* runtimes")
+	}
+
+	// W104: configSchema is recommended for extensions.
+	if dest.Spec.ConfigSchema == nil {
+		errs.AddWarning(contracts.WarnCodeConfigSchemaMissing, "spec.configSchema", "configSchema is recommended so data engineers can validate config")
 	}
 }
 
@@ -161,12 +193,19 @@ func (v *ManifestValidator) validateModel(errs *contracts.ValidationErrors) {
 		return
 	}
 
+	// E101: Runtime must be a known value.
 	if !model.Spec.Runtime.IsValid() {
 		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
 	}
 
+	// E202: Mode must be batch or streaming (if specified).
 	if !model.Spec.Mode.IsValid() && model.Spec.Mode != "" {
 		errs.AddError(ErrInvalidFormat, "spec.mode", "spec.mode must be batch or streaming")
+	}
+
+	// E104/E208: spec.image is required for generic-* runtimes when no extension provides it.
+	if model.Spec.Runtime.IsGeneric() && model.Spec.Image == "" {
+		errs.AddError(contracts.ErrCodeImageRequiredGeneric, "spec.image", "spec.image is required for generic-* runtimes")
 	}
 
 	// Outputs are required for Model kind.
@@ -175,14 +214,23 @@ func (v *ManifestValidator) validateModel(errs *contracts.ValidationErrors) {
 	}
 
 	// Validate inputs if present.
-	v.validateArtifacts(errs, model.Spec.Inputs, "spec.inputs")
+	v.validateArtifacts(errs, model.Spec.Inputs, "spec.inputs", false)
 
-	// Validate outputs.
-	v.validateArtifacts(errs, model.Spec.Outputs, "spec.outputs")
+	// Validate outputs — classification is required on outputs.
+	v.validateArtifacts(errs, model.Spec.Outputs, "spec.outputs", true)
 
 	// Validate schedule if present.
 	if model.Spec.Schedule != nil {
 		v.validateSchedule(errs, model.Spec.Schedule)
+	}
+
+	// W209: Schedule recommended for batch mode.
+	effectiveMode := model.Spec.Mode
+	if effectiveMode == "" {
+		effectiveMode = effectiveMode.Default()
+	}
+	if effectiveMode == contracts.ModeBatch && model.Spec.Schedule == nil {
+		errs.AddWarning(contracts.WarnCodeScheduleBatchMode, "spec.schedule", "schedule is recommended for batch-mode models")
 	}
 
 	// Validate timeout format.
@@ -203,7 +251,8 @@ func (v *ManifestValidator) validateSchedule(errs *contracts.ValidationErrors, s
 }
 
 // validateArtifacts validates input or output artifacts.
-func (v *ManifestValidator) validateArtifacts(errs *contracts.ValidationErrors, artifacts []contracts.ArtifactContract, basePath string) {
+// If requireClassification is true, classification is required on each artifact (E204).
+func (v *ManifestValidator) validateArtifacts(errs *contracts.ValidationErrors, artifacts []contracts.ArtifactContract, basePath string, requireClassification bool) {
 	seen := make(map[string]bool)
 
 	for i := range artifacts {
@@ -224,6 +273,11 @@ func (v *ManifestValidator) validateArtifacts(errs *contracts.ValidationErrors, 
 
 		if artifact.Binding == "" {
 			errs.AddError(ErrMissingRequired, path+".binding", "artifact binding is required")
+		}
+
+		// E204: Classification is required on output artifacts.
+		if requireClassification && artifact.Classification == nil {
+			errs.AddError(contracts.ErrCodeClassificationRequired, path+".classification", "classification is required on output artifacts")
 		}
 
 		if artifact.Classification != nil {

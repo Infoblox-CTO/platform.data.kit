@@ -192,6 +192,9 @@ spec:
     - name: output
       type: s3-prefix
       binding: output-bucket
+      classification:
+        sensitivity: internal
+        pii: false
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)

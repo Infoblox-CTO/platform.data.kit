@@ -51,6 +51,12 @@ func (r Runtime) IsValid() bool {
 	return false
 }
 
+// IsGeneric returns true for generic-go and generic-python runtimes
+// that require a user-provided container image.
+func (r Runtime) IsGeneric() bool {
+	return r == RuntimeGenericGo || r == RuntimeGenericPython
+}
+
 // Mode identifies the execution pattern.
 type Mode string
 
