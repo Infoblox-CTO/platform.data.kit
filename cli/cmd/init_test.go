@@ -265,7 +265,7 @@ func TestInitCmd_ModelGenericGo(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go"} {
+	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
 		if _, err := os.Stat(filepath.Join(pkgDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -301,7 +301,7 @@ func TestInitCmd_SourceGenericGo(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go"} {
+	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
 		if _, err := os.Stat(filepath.Join(pkgDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -339,7 +339,7 @@ func TestInitCmd_DestinationGenericGo(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go"} {
+	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
 		if _, err := os.Stat(filepath.Join(pkgDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}

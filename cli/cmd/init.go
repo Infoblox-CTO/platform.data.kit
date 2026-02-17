@@ -208,15 +208,36 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 // goPostScaffold runs go mod tidy and go fmt on a scaffolded Go project so
 // the generated code compiles immediately (go.sum present, source formatted).
+// It also detects parent go.work files and creates a local go.work to isolate
+// the new module so `go build` works without GOWORK=off.
 func goPostScaffold(cmd *cobra.Command, dir string) error {
 	// Require the go toolchain
 	if _, err := exec.LookPath("go"); err != nil {
 		return fmt.Errorf("go toolchain not found: install Go from https://go.dev/dl/")
 	}
 
+	// If a parent go.work exists, create a local go.work to isolate this module.
+	// Without this, `go build` would fail because the new module isn't listed
+	// in the parent workspace.
+	if parentGoWork := findParentGoWork(dir); parentGoWork != "" {
+		cmd.Printf("Detected parent go.work at %s, creating local go.work...\n", parentGoWork)
+		localWork := filepath.Join(dir, "go.work")
+		// Read go directive from go.mod to keep versions consistent.
+		goVersion := readGoDirective(filepath.Join(dir, "go.mod"))
+		content := fmt.Sprintf("go %s\n\nuse .\n", goVersion)
+		if err := os.WriteFile(localWork, []byte(content), 0644); err != nil {
+			cmd.PrintErrf("Warning: failed to create local go.work: %v\n", err)
+		}
+	}
+
+	// Use GOWORK=off for tidy/fmt so they succeed even inside a parent workspace
+	// that doesn't list this module yet.
+	env := append(os.Environ(), "GOWORK=off")
+
 	cmd.Printf("Running go mod tidy...\n")
 	tidy := exec.Command("go", "mod", "tidy")
 	tidy.Dir = dir
+	tidy.Env = env
 	tidy.Stdout = os.Stdout
 	tidy.Stderr = os.Stderr
 	if err := tidy.Run(); err != nil {
@@ -226,6 +247,7 @@ func goPostScaffold(cmd *cobra.Command, dir string) error {
 	cmd.Printf("Running go fmt...\n")
 	gofmt := exec.Command("go", "fmt", "./...")
 	gofmt.Dir = dir
+	gofmt.Env = env
 	gofmt.Stdout = os.Stdout
 	gofmt.Stderr = os.Stderr
 	if err := gofmt.Run(); err != nil {
@@ -234,6 +256,45 @@ func goPostScaffold(cmd *cobra.Command, dir string) error {
 	}
 
 	return nil
+}
+
+// findParentGoWork walks up from dir looking for a go.work file in an ancestor
+// directory. Returns the path to go.work if found, or empty string.
+func findParentGoWork(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return ""
+	}
+	// Start from the parent of the scaffolded directory.
+	current := filepath.Dir(abs)
+	for {
+		candidate := filepath.Join(current, "go.work")
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return ""
+}
+
+// readGoDirective reads the "go X.Y" directive from a go.mod file.
+// Returns "1.21" as a fallback if the file can't be read.
+func readGoDirective(goModPath string) string {
+	data, err := os.ReadFile(goModPath)
+	if err != nil {
+		return "1.21"
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "go ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "go "))
+		}
+	}
+	return "1.21"
 }
 
 // isValidPackageName checks if a name is DNS-safe
