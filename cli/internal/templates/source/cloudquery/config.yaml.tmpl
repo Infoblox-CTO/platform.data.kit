@@ -1,12 +1,27 @@
 # CloudQuery source plugin configuration for {{ .Name }}
+# Plugins are pulled as OCI images from ghcr.io/infobloxopen/
+# Runs as a k8s Job inside the dp-local k3d cluster.
 # See https://docs.cloudquery.io/docs/reference/source-spec
 kind: source
 spec:
   name: {{ .Name }}
-  registry: local
-  path: plugin
+  registry: docker
+  path: ghcr.io/infobloxopen/cq-source-postgres:0.1.0
   tables: ["*"]
   destinations: ["output"]
   spec:
-    # Add your source-specific configuration here
-    connection_string: "${CONNECTION_STRING}"
+    # Uses the dp-local PostgreSQL deployed by `dp dev up`.
+    # Service: dp-postgres-postgresql in namespace dp-local.
+    connection_string: "postgresql://dpuser:dppassword@dp-postgres-postgresql.dp-local.svc.cluster.local:5432/dataplatform?sslmode=disable"
+
+---
+# Output destination — writes results to local files.
+# See https://docs.cloudquery.io/docs/reference/destination-spec
+kind: destination
+spec:
+  name: output
+  registry: docker
+  path: ghcr.io/infobloxopen/cloudquery-plugin-file:v5.5.1
+  spec:
+    path: "/tmp/cq-output/{{`{{TABLE}}`}}/{{`{{UUID}}`}}.json"
+    format: json

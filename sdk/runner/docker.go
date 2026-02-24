@@ -2,7 +2,9 @@ package runner
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +18,7 @@ import (
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/lineage"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
+	"gopkg.in/yaml.v3"
 )
 
 func init() {
@@ -263,21 +266,57 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	return result, runErr
 }
 
-// runCloudQuery executes a CloudQuery pipeline by invoking the cloudquery CLI
-// directly instead of building a Docker image. CloudQuery packages are
-// config-only (config.yaml) and do not contain source code.
-func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
-	cqBin, err := exec.LookPath("cloudquery")
-	if err != nil {
-		return nil, fmt.Errorf("cloudquery CLI not found in PATH: install it from https://www.cloudquery.io/docs/quickstart\n  %w", err)
-	}
+// DefaultCloudQueryImage is the OCI image used to run cloudquery sync.
+const DefaultCloudQueryImage = "ghcr.io/cloudquery/cloudquery:latest"
 
+// k3d cluster defaults (duplicated from localdev to avoid import cycle risk).
+const (
+	defaultClusterName = "dp-local"
+	defaultNamespace   = "dp-local"
+)
+
+// cqPlugin represents a CloudQuery plugin extracted from config.yaml.
+type cqPlugin struct {
+	Kind    string // "source" or "destination"
+	Name    string
+	Image   string // OCI image reference (from registry: docker)
+	Port    int    // assigned gRPC port for the sidecar container
+	Command string // binary path inside the container (resolved from ENTRYPOINT)
+}
+
+// runCloudQuery executes a CloudQuery pipeline as a Kubernetes Job in the
+// local k3d cluster. Each plugin from config.yaml runs as a native sidecar
+// container in the same pod, serving gRPC. The CloudQuery main container
+// connects to the plugins over localhost. This gives the pod native access
+// to cluster services (PostgreSQL, LocalStack S3, Redpanda, Marquez) without
+// needing a Docker daemon.
+func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
 	configPath := filepath.Join(opts.PackageDir, "config.yaml")
 	if _, err := os.Stat(configPath); err != nil {
 		return nil, fmt.Errorf("config.yaml not found in %s: %w", opts.PackageDir, err)
 	}
 
+	// Determine k3d cluster settings.
+	clusterName := defaultClusterName
+	namespace := defaultNamespace
+	kubeContext := fmt.Sprintf("k3d-%s", clusterName)
+
+	// Try loading user config for cluster name override.
+	if cfg, err := loadK3dClusterName(); err == nil && cfg != "" {
+		clusterName = cfg
+		kubeContext = fmt.Sprintf("k3d-%s", clusterName)
+	}
+
+	// Step 1: Parse config.yaml to discover plugin images.
+	plugins, err := parseCQPlugins(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config.yaml plugins: %w", err)
+	}
+
 	runID := GenerateRunID(m.GetName())
+	configMapName := fmt.Sprintf("cq-config-%s", runID)
+	jobName := fmt.Sprintf("cq-%s", runID)
+
 	result := &RunResult{
 		RunID:     runID,
 		Status:    contracts.RunStatusRunning,
@@ -288,16 +327,25 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 	r.runs[runID] = result
 	r.mu.Unlock()
 
+	cqImage := DefaultCloudQueryImage
+
 	if opts.DryRun {
 		result.Status = contracts.RunStatusCompleted
 		if opts.Output != nil {
-			fmt.Fprintf(opts.Output, "Dry run complete. Would run: %s sync config.yaml\n", cqBin)
+			fmt.Fprintf(opts.Output, "Dry run complete. Would create k8s Job %s in %s/%s\n",
+				jobName, kubeContext, namespace)
+			fmt.Fprintf(opts.Output, "  CloudQuery image: %s\n", cqImage)
+			for _, p := range plugins {
+				fmt.Fprintf(opts.Output, "  Plugin sidecar: %s (%s) → grpc://localhost:%d\n",
+					p.Name, p.Image, p.Port)
+			}
 		}
 		return result, nil
 	}
 
 	if opts.Output != nil {
-		fmt.Fprintf(opts.Output, "Running CloudQuery sync (%s)...\n", m.GetName())
+		fmt.Fprintf(opts.Output, "Running CloudQuery sync (%s) as k8s Job in cluster %s...\n",
+			m.GetName(), clusterName)
 	}
 
 	if opts.Timeout > 0 {
@@ -306,37 +354,445 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 		defer cancel()
 	}
 
-	cmd := exec.CommandContext(ctx, cqBin, "sync", "config.yaml")
-	cmd.Dir = opts.PackageDir
+	// Verify the k3d cluster is reachable.
+	if err := verifyCluster(ctx, kubeContext, namespace); err != nil {
+		return nil, fmt.Errorf("k3d cluster %q not reachable — is it running? (dp dev up): %w",
+			clusterName, err)
+	}
 
-	// Merge environment: inherit current env, add binding/opts env vars
-	cmd.Env = os.Environ()
-	for k, v := range opts.Env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	// Cleanup helper — removes ConfigMap and Job on exit.
+	cleanup := func() {
+		bg := context.Background()
+		exec.CommandContext(bg, "kubectl", "--context", kubeContext,
+			"delete", "job", jobName, "-n", namespace, "--ignore-not-found").Run()
+		exec.CommandContext(bg, "kubectl", "--context", kubeContext,
+			"delete", "configmap", configMapName, "-n", namespace, "--ignore-not-found").Run()
+	}
+
+	// Step 1b: Resolve the binary entrypoint for each plugin image.
+	// Different plugin images have different ENTRYPOINT structures:
+	//   - Destination plugins: ENTRYPOINT=["/entrypoint"] CMD=["serve", ...]
+	//   - Source plugins:      ENTRYPOINT=["/cq-source-postgres","serve",...] CMD=null
+	// We override command to just the binary, then supply consistent args.
+	for i := range plugins {
+		cmd, err := inspectPluginEntrypoint(ctx, plugins[i].Image)
+		if err != nil {
+			if opts.Output != nil {
+				fmt.Fprintf(opts.Output, "  Warning: could not inspect %s entrypoint: %v\n",
+					plugins[i].Image, err)
+			}
+		}
+		plugins[i].Command = cmd
+	}
+
+	// Step 2: Import all images into k3d (CQ + plugin sidecars).
+	images := []string{cqImage}
+	for _, p := range plugins {
+		images = append(images, p.Image)
+	}
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Importing %d image(s) into k3d cluster...\n", len(images))
+	}
+	importArgs := append([]string{"image", "import"}, images...)
+	importArgs = append(importArgs, "--cluster", clusterName)
+	importCmd := exec.CommandContext(ctx, "k3d", importArgs...)
+	if out, err := importCmd.CombinedOutput(); err != nil {
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "  Warning: image import: %s (images may already exist)\n",
+				strings.TrimSpace(string(out)))
+		}
+	}
+
+	// Step 3: Rewrite config.yaml — registry:docker → registry:grpc with localhost ports.
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config.yaml: %w", err)
+	}
+	rewritten, err := rewriteCQConfigForGRPC(configData, plugins)
+	if err != nil {
+		return nil, fmt.Errorf("failed to rewrite config for gRPC: %w", err)
 	}
 
 	if opts.Output != nil {
-		cmd.Stdout = opts.Output
-		cmd.Stderr = opts.Output
+		for _, p := range plugins {
+			fmt.Fprintf(opts.Output, "  Plugin sidecar: %s → %s (grpc://localhost:%d)\n",
+				p.Name, p.Image, p.Port)
+		}
 	}
 
-	runErr := cmd.Run()
+	// Step 4: Create ConfigMap from the rewritten config.
+	tmpFile, err := os.CreateTemp("", "cq-config-*.yaml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp config: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err := tmpFile.Write(rewritten); err != nil {
+		tmpFile.Close()
+		return nil, fmt.Errorf("failed to write temp config: %w", err)
+	}
+	tmpFile.Close()
+
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Creating ConfigMap %s...\n", configMapName)
+	}
+	cmCmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
+		"create", "configmap", configMapName,
+		"--from-file", fmt.Sprintf("config.yaml=%s", tmpFile.Name()),
+		"-n", namespace)
+	if out, err := cmCmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("failed to create ConfigMap: %s: %w",
+			strings.TrimSpace(string(out)), err)
+	}
+
+	// Inject LocalStack-compatible AWS credentials for k3d cluster.
+	// Sidecars (e.g. S3 plugin) require these to talk to LocalStack.
+	envMap := make(map[string]string, len(opts.Env)+3)
+	envMap["AWS_ACCESS_KEY_ID"] = "test"
+	envMap["AWS_SECRET_ACCESS_KEY"] = "test"
+	envMap["AWS_DEFAULT_REGION"] = "us-east-1"
+	for k, v := range opts.Env {
+		envMap[k] = v // user overrides take precedence
+	}
+
+	// Step 5: Build and apply k8s Job with plugin sidecars.
+	envYAML := buildJobEnvYAML(envMap)
+	jobYAML := buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, envYAML, plugins)
+
+	applyCmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
+		"apply", "-f", "-")
+	applyCmd.Stdin = strings.NewReader(jobYAML)
+	if out, err := applyCmd.CombinedOutput(); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("failed to create Job: %s: %w",
+			strings.TrimSpace(string(out)), err)
+	}
+
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Job %s created, waiting for pod...\n", jobName)
+	}
+
+	// Step 6: Wait for the Job's pod, then stream logs from all containers.
+	if err := waitForJobPod(ctx, kubeContext, namespace, runID); err != nil {
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Warning: %v\n", err)
+		}
+	}
+
+	logsCmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
+		"logs", "--follow", "--all-containers",
+		"-l", fmt.Sprintf("dp.io/run-id=%s", runID),
+		"-n", namespace)
+	if opts.Output != nil {
+		logsCmd.Stdout = opts.Output
+		logsCmd.Stderr = opts.Output
+	}
+	logsCmd.Run() // blocks until main container exits
+
+	// Step 7: Determine final Job status.
+	succeeded := jobSucceeded(ctx, kubeContext, namespace, jobName)
+
+	cleanup()
 
 	now := time.Now()
 	result.EndTime = &now
 	result.Duration = now.Sub(result.StartTime)
 
-	if runErr != nil {
-		result.Status = contracts.RunStatusFailed
-		result.Error = runErr.Error()
-		if exitErr, ok := runErr.(*exec.ExitError); ok {
-			result.ExitCode = exitErr.ExitCode()
-		}
-	} else {
+	if succeeded {
 		result.Status = contracts.RunStatusCompleted
+	} else {
+		result.Status = contracts.RunStatusFailed
+		result.Error = "CloudQuery sync job failed"
+		result.ExitCode = 1
+		return result, fmt.Errorf("cloudquery sync failed")
 	}
 
-	return result, runErr
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// CloudQuery config parsing & rewriting
+// ---------------------------------------------------------------------------
+
+// inspectPluginEntrypoint uses `docker inspect` to extract the binary path
+// (first element of ENTRYPOINT) from a plugin image. This is needed because
+// different plugin images package the binary differently:
+//   - Destination plugins: ENTRYPOINT=["/entrypoint"]
+//   - Source plugins:      ENTRYPOINT=["/cq-source-postgres","serve",...]
+//
+// By extracting just the binary, we can set `command: [<binary>]` in the k8s
+// pod spec and always supply consistent `args: ["serve", "--address", ...]`.
+func inspectPluginEntrypoint(ctx context.Context, image string) (string, error) {
+	cmd := exec.CommandContext(ctx, "docker", "inspect", image,
+		"--format", "{{json .Config.Entrypoint}}")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("docker inspect %s: %w", image, err)
+	}
+	var entrypoint []string
+	if err := json.Unmarshal(bytes.TrimSpace(out), &entrypoint); err != nil {
+		return "", fmt.Errorf("parsing entrypoint for %s: %w", image, err)
+	}
+	if len(entrypoint) == 0 {
+		return "", nil
+	}
+	return entrypoint[0], nil
+}
+
+// parseCQPlugins reads a CloudQuery config.yaml (multi-document YAML) and
+// extracts every plugin that uses `registry: docker`. Each plugin is assigned
+// a sequential gRPC port starting at 7777.
+func parseCQPlugins(configPath string) ([]cqPlugin, error) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var plugins []cqPlugin
+	port := 7777
+
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	for {
+		var doc map[string]any
+		if err := decoder.Decode(&doc); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("parsing config.yaml: %w", err)
+		}
+
+		kind, _ := doc["kind"].(string)
+		spec, _ := doc["spec"].(map[string]any)
+		if spec == nil {
+			continue
+		}
+
+		registry, _ := spec["registry"].(string)
+		path, _ := spec["path"].(string)
+		name, _ := spec["name"].(string)
+
+		if registry == "docker" && path != "" {
+			plugins = append(plugins, cqPlugin{
+				Kind:  kind,
+				Name:  name,
+				Image: path,
+				Port:  port,
+			})
+			port++
+		}
+	}
+
+	return plugins, nil
+}
+
+// rewriteCQConfigForGRPC takes raw config.yaml bytes and rewrites every
+// `registry: docker` / `path: <image>` entry to `registry: grpc` /
+// `path: localhost:<port>` so CloudQuery connects to sidecar containers in
+// the same pod over gRPC instead of pulling OCI images via Docker.
+func rewriteCQConfigForGRPC(configData []byte, plugins []cqPlugin) ([]byte, error) {
+	lookup := make(map[string]cqPlugin, len(plugins))
+	for _, p := range plugins {
+		lookup[p.Name] = p
+	}
+
+	var docs []map[string]any
+	decoder := yaml.NewDecoder(bytes.NewReader(configData))
+	for {
+		var doc map[string]any
+		if err := decoder.Decode(&doc); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		spec, _ := doc["spec"].(map[string]any)
+		if spec != nil {
+			name, _ := spec["name"].(string)
+			if p, ok := lookup[name]; ok {
+				spec["registry"] = "grpc"
+				spec["path"] = fmt.Sprintf("localhost:%d", p.Port)
+			}
+		}
+
+		docs = append(docs, doc)
+	}
+
+	var buf bytes.Buffer
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2)
+	for _, doc := range docs {
+		if err := encoder.Encode(doc); err != nil {
+			return nil, err
+		}
+	}
+	encoder.Close()
+
+	return buf.Bytes(), nil
+}
+
+// ---------------------------------------------------------------------------
+// Kubernetes helpers
+// ---------------------------------------------------------------------------
+
+// loadK3dClusterName reads the cluster name from the dp config hierarchy.
+// Returns empty string on any error.
+func loadK3dClusterName() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	cfgPath := filepath.Join(home, ".config", "dp", "config.yaml")
+	data, err := os.ReadFile(cfgPath)
+	if err != nil {
+		return "", err
+	}
+	var cfg struct {
+		Dev struct {
+			K3d struct {
+				ClusterName string `yaml:"clusterName"`
+			} `yaml:"k3d"`
+		} `yaml:"dev"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return "", err
+	}
+	return cfg.Dev.K3d.ClusterName, nil
+}
+
+// verifyCluster ensures the k3d cluster is running and the namespace exists.
+func verifyCluster(ctx context.Context, kubeContext, namespace string) error {
+	cmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
+		"get", "namespace", namespace, "-o", "name")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("kubectl get namespace: %s", strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// buildJobEnvYAML returns the YAML fragment for env vars in a Job container.
+func buildJobEnvYAML(envs map[string]string) string {
+	if len(envs) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("          env:\n")
+	for k, v := range envs {
+		sb.WriteString(fmt.Sprintf("            - name: %s\n              value: %q\n", k, v))
+	}
+	return sb.String()
+}
+
+// buildCloudQueryJobYAML generates the Kubernetes Job manifest for a CQ sync.
+// Each plugin runs as a native sidecar (initContainer with restartPolicy: Always)
+// serving gRPC on its assigned port. The CQ main container connects to the
+// plugins over localhost — no Docker daemon required.
+func buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, envYAML string, plugins []cqPlugin) string {
+	// Build sidecar initContainers for each plugin.
+	var sidecars strings.Builder
+	if len(plugins) > 0 {
+		sidecars.WriteString("      initContainers:\n")
+		for _, p := range plugins {
+			cmdLine := ""
+			if p.Command != "" {
+				cmdLine = fmt.Sprintf("          command: [%q]\n", p.Command)
+			}
+			sidecars.WriteString(fmt.Sprintf(`        - name: plugin-%s
+          image: %s
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+%s          args: ["serve", "--address", "0.0.0.0:%d", "--log-level", "info"]
+%s`, p.Name, p.Image, cmdLine, p.Port, envYAML))
+		}
+	}
+
+	return fmt.Sprintf(`apiVersion: batch/v1
+kind: Job
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    app.kubernetes.io/managed-by: dp-cli
+    dp.io/runtime: cloudquery
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        dp.io/run-id: %s
+        dp.io/runtime: cloudquery
+    spec:
+      restartPolicy: Never
+%s      containers:
+        - name: cloudquery
+          image: %s
+          imagePullPolicy: IfNotPresent
+          args: ["sync", "/config/config.yaml", "--log-console"]
+%s          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: %s
+`, jobName, namespace, runID, sidecars.String(), cqImage, envYAML, configMapName)
+}
+
+// waitForJobPod polls until a pod matching the run-id label is Running/Succeeded/Failed.
+func waitForJobPod(ctx context.Context, kubeContext, namespace, runID string) error {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	deadline := time.After(120 * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-deadline:
+			return fmt.Errorf("timeout waiting for pod to start")
+		case <-ticker.C:
+			cmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
+				"get", "pods",
+				"-l", fmt.Sprintf("dp.io/run-id=%s", runID),
+				"-n", namespace,
+				"-o", "jsonpath={.items[0].status.phase}")
+			out, err := cmd.Output()
+			if err != nil {
+				continue
+			}
+			phase := strings.TrimSpace(string(out))
+			if phase == "Running" || phase == "Succeeded" || phase == "Failed" {
+				return nil
+			}
+		}
+	}
+}
+
+// jobSucceeded polls Job status for up to 15 seconds, returning true once
+// status.succeeded == 1. With native sidecars the Job controller may need a
+// few seconds after the main container exits to mark the Job complete.
+func jobSucceeded(ctx context.Context, kubeContext, namespace, jobName string) bool {
+	deadline := time.After(15 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		cmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
+			"get", "job", jobName,
+			"-n", namespace,
+			"-o", "jsonpath={.status.succeeded}")
+		out, err := cmd.Output()
+		if err == nil && strings.TrimSpace(string(out)) == "1" {
+			return true
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-deadline:
+			return false
+		case <-ticker.C:
+		}
+	}
 }
 
 // runDBT executes a dbt pipeline by invoking the dbt CLI directly instead of

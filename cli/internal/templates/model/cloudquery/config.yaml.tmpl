@@ -1,26 +1,33 @@
 # CloudQuery sync configuration for {{ .Name }}
+# Plugins are pulled as OCI images from ghcr.io/infobloxopen/
+# Runs as a k8s Job inside the dp-local k3d cluster.
 # See https://docs.cloudquery.io/docs/reference/source-spec
 kind: source
 spec:
   name: my-source
-  registry: cloudquery
-  path: cloudquery/postgresql
-  version: "v7.4.1"
-  tables: ["public.my_table"]
+  registry: docker
+  path: ghcr.io/infobloxopen/cq-source-postgres:0.1.0
+  tables: ["*"]
   destinations: ["my-destination"]
   spec:
-    connection_string: "${CONNECTION_STRING}"
+    # Uses the dp-local PostgreSQL deployed by `dp dev up`.
+    # Service: dp-postgres-postgresql in namespace dp-local.
+    connection_string: "postgresql://dpuser:dppassword@dp-postgres-postgresql.dp-local.svc.cluster.local:5432/dataplatform?sslmode=disable"
 
 ---
+# Output destination — writes results to S3 via LocalStack.
+# Service: dp-localstack-localstack in namespace dp-local.
 # See https://docs.cloudquery.io/docs/reference/destination-spec
 kind: destination
 spec:
   name: my-destination
-  registry: cloudquery
-  path: cloudquery/s3
-  version: "v4.7.1"
+  registry: docker
+  path: ghcr.io/infobloxopen/cloudquery-plugin-s3:v7.10.2
+  write_mode: "append"
   spec:
-    bucket: "my-data-lake"
+    bucket: "cdpp-raw"
     region: "us-east-1"
     path: "raw/{{ .Name }}/{{`{{TABLE}}`}}/{{`{{UUID}}`}}.parquet"
     format: parquet
+    endpoint: "http://dp-localstack-localstack.dp-local.svc.cluster.local:4566"
+    use_path_style: true

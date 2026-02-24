@@ -318,6 +318,11 @@ func (m *K3dManager) createCluster(ctx context.Context, output io.Writer) error 
 		args = append(args, "--registry-config", m.registriesPath)
 	}
 
+	// Mount the host Docker socket into the k3d node so that pods
+	// (e.g. CloudQuery Jobs) can talk to the host Docker daemon for
+	// pulling OCI plugin images via `registry: docker`.
+	args = append(args, "--volume", "/var/run/docker.sock:/var/run/docker.sock@server:0")
+
 	cmd := exec.CommandContext(ctx, "k3d", args...)
 	cmd.Stdout = output
 	cmd.Stderr = output

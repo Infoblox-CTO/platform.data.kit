@@ -1,11 +1,22 @@
 # CloudQuery destination plugin configuration for {{ .Name }}
+# Plugins are pulled as OCI images from ghcr.io/infobloxopen/
+# Runs as a k8s Job inside the dp-local k3d cluster.
 # See https://docs.cloudquery.io/docs/reference/destination-spec
 kind: destination
 spec:
   name: {{ .Name }}
-  registry: local
-  path: plugin
+  registry: docker
+  path: ghcr.io/infobloxopen/cloudquery-plugin-s3:v7.10.2
+  write_mode: "append"
   spec:
-    # Add your destination-specific configuration here
-    bucket: "my-bucket"
+    # Uses LocalStack S3 deployed by `dp dev up`.
+    # Service: dp-localstack-localstack in namespace dp-local.
+    # Other destination plugins:
+    #   ghcr.io/infobloxopen/cloudquery-plugin-postgresql:v8.14.1
+    #   ghcr.io/infobloxopen/cloudquery-plugin-file:v5.5.1
+    bucket: "cdpp-raw"
     region: "us-east-1"
+    path: "data/{{`{{TABLE}}`}}/{{`{{UUID}}`}}.parquet"
+    format: parquet
+    endpoint: "http://dp-localstack-localstack.dp-local.svc.cluster.local:4566"
+    use_path_style: true

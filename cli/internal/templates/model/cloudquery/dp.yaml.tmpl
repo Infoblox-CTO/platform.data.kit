@@ -24,12 +24,11 @@ spec:
 
   config:
     source:
-      connection_string: "${CONNECTION_STRING}"
-      tables:
-        - public.my_table
+      # dp-local PostgreSQL (deployed by `dp dev up`).
+      connection_string: "postgresql://dpuser:dppassword@dp-postgres-postgresql.dp-local.svc.cluster.local:5432/dataplatform?sslmode=disable"
     destination:
-      bucket: "my-data-lake"
-      prefix: "raw/{{ .Name }}/"
+      bucket: "cdpp-raw"
+      region: "us-east-1"
 
   inputs:
     - name: {{ .Name }}-input
