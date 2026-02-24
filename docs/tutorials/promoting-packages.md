@@ -316,9 +316,8 @@ dp logs my-pipeline --env prod --tail 100
 
 ### View Lineage
 
-```bash
-dp lineage my-pipeline
-```
+<!-- dp lineage is not yet implemented -->
+Open the Marquez UI at http://localhost:3000 to view the lineage graph.
 
 Check Marquez for production lineage graph.
 

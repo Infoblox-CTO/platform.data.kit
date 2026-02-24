@@ -22,7 +22,7 @@ We'll build a real-time event aggregator that:
 Create a new streaming pipeline:
 
 ```bash
-dp init user-aggregator --mode streaming --lang go
+dp init user-aggregator --kind model --runtime generic-go --mode streaming
 cd user-aggregator
 ```
 

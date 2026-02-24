@@ -72,7 +72,7 @@ Complete CLI reference, manifest schemas, and configuration options.
 
 ```bash
 # 1. Create a new data package
-dp init my-pipeline --kind model --runtime cloudquery
+dp init my-pipeline --kind model --runtime generic-python
 
 # 2. Start local development environment
 dp dev up

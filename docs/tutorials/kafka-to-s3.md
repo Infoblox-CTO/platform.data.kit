@@ -24,7 +24,7 @@ In this tutorial, you'll build a production-ready data pipeline that reads event
 Initialize a new pipeline package:
 
 ```bash
-dp init kafka-to-s3-pipeline --type pipeline
+dp init kafka-to-s3-pipeline --kind model --runtime generic-python
 cd kafka-to-s3-pipeline
 ```
 
@@ -316,9 +316,8 @@ dp run
 
 ### View Lineage
 
-```bash
-dp lineage kafka-to-s3-pipeline
-```
+<!-- dp lineage is not yet implemented -->
+Open the Marquez UI at http://localhost:3000 to view the lineage graph.
 
 ### Check S3 Output
 

@@ -153,26 +153,19 @@ dp init my-pipeline
 
 ### CloudQuery
 
-A [CloudQuery](https://docs.cloudquery.io/) source plugin that extracts data from external systems using the CloudQuery SDK and gRPC protocol. CloudQuery plugins run as gRPC servers inside containers, and `dp run` orchestrates the full sync lifecycle.
+A [CloudQuery](https://docs.cloudquery.io/) model that uses the CloudQuery CLI to sync data between sources and destinations. CloudQuery models generate a `config.yaml` file that defines the sync configuration.
 
 ```bash
-# Create a Python CloudQuery source plugin (default)
-dp init my-source --type cloudquery
-
-# Create a Go CloudQuery source plugin
-dp init my-source --type cloudquery --lang go
+# Create a CloudQuery model
+dp init my-source --kind model --runtime cloudquery
 ```
 
-This creates a complete, immediately-runnable plugin project:
+This creates a config-based project:
 
 ```
 my-source/
 ├── dp.yaml                     # Package manifest with cloudquery config
-├── main.py                     # gRPC server entry point
-├── pyproject.toml              # Python project config
-├── requirements.txt            # Python dependencies
-├── plugin/
-│   ├── __init__.py
+└── config.yaml                 # CloudQuery sync configuration
 │   ├── plugin.py               # Plugin class (get_tables, sync)
 │   ├── client.py               # Client for API connections
 │   ├── spec.py                 # Plugin configuration spec
@@ -209,11 +202,9 @@ spec:
 #### CloudQuery Workflow
 
 ```bash
-dp init my-source --type cloudquery   # Scaffold plugin
-dp test                                # Run unit tests (pytest/go test)
+dp init my-source --kind model --runtime cloudquery   # Scaffold config
 dp dev up                              # Start local dev stack (PostgreSQL)
-dp run                                 # Build container → start gRPC → sync
-dp test --integration                  # Full sync integration test
+cloudquery sync config.yaml            # Run sync with CloudQuery CLI
 dp lint                                # Validate manifest
 dp build                               # Build OCI artifact
 dp publish                             # Publish to registry
@@ -246,7 +237,7 @@ dp promote my-source 0.1.0 --to dev   # Deploy
 Initialize a new package with templates:
 
 ```bash
-dp init analytics-pipeline --type pipeline
+dp init analytics-pipeline --kind model --runtime generic-python
 ```
 
 ### 2. Develop

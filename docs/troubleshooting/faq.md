@@ -68,7 +68,7 @@ export PATH=$PATH:$(pwd)/bin
 dp dev up
 
 # 3. Create a package
-dp init my-pipeline --type pipeline
+dp init my-pipeline --kind model --runtime generic-python
 
 # 4. Run locally
 dp run ./my-pipeline
@@ -141,18 +141,26 @@ dp dev down --volumes
 
 The `dp.yaml` file is a consolidated manifest that includes all configuration, including the `spec.runtime` section for pipeline execution settings (image, timeout, retries, env vars).
 
-### What package types are available?
+### What package kinds are available?
 
-| Type | Use Case |
+| Kind | Use Case |
 |------|----------|
-| `pipeline` | Data transformation (most common) |
-| `producer` | Data source/generator |
-| `consumer` | Data sink/loader |
-| `streaming` | Real-time streaming |
+| `model` | Data transformation (most common) |
+| `source` | Data source/extraction (CloudQuery) |
+| `destination` | Data sink/loading (CloudQuery) |
+
+Each kind supports multiple runtimes:
+
+| Runtime | Description |
+|---------|-------------|
+| `cloudquery` | CloudQuery SDK sync |
+| `generic-go` | Go container |
+| `generic-python` | Python container |
+| `dbt` | dbt transformations |
 
 ```bash
-dp init my-pkg --type pipeline
-dp init my-pkg --type producer
+dp init my-pkg --kind model --runtime generic-python
+dp init my-pkg --kind source --runtime cloudquery
 ```
 
 ### How do I version packages?
@@ -259,8 +267,8 @@ DP automatically emits [OpenLineage](https://openlineage.io/) events:
 
 ### Where can I view lineage?
 
-- **Local**: http://localhost:5000 (Marquez UI)
-- **CLI**: `dp lineage my-pipeline`
+- **Local**: http://localhost:3000 (Marquez Web UI)
+- **CLI**: `dp lineage my-pipeline` *(not yet implemented)*
 - **Production**: Your organization's lineage backend
 
 ### Can I use a different lineage backend?

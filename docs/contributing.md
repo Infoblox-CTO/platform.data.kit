@@ -295,7 +295,7 @@ Use title to show filename:
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 ```
 
 ### Placeholders
@@ -303,7 +303,7 @@ kind: DataPackage
 Use angle brackets for placeholders:
 
 ```bash
-dp init <package-name> --type <type>
+dp init <package-name> --kind <kind> --runtime <runtime>
 ```
 
 ### Variables

@@ -87,7 +87,11 @@ dp run ./my-package
 
 ### CLI Lineage Command
 
-View lineage from the command line:
+!!! warning "Not Yet Implemented"
+    The `dp lineage` CLI command is planned but not yet available.
+    Use the Marquez Web UI at http://localhost:3000 to view lineage graphs.
+
+Planned usage:
 
 ```bash
 dp lineage my-package
@@ -276,8 +280,8 @@ If upstream/downstream links are missing:
 If lineage shows old data:
 
 ```bash
-# Force refresh
-dp lineage my-package --refresh
+# Planned: dp lineage my-package --refresh
+# For now, check directly in the Marquez UI at http://localhost:3000
 ```
 
 ## Next Steps

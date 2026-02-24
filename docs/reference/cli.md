@@ -36,7 +36,7 @@ These flags apply to all commands:
 | [`dp status`](#dp-status) | Show package status |
 | [`dp logs`](#dp-logs) | Stream logs |
 | [`dp rollback`](#dp-rollback) | Rollback to previous version |
-| [`dp lineage`](#dp-lineage) | View data lineage |
+| [`dp lineage`](#dp-lineage) | View data lineage *(not yet implemented)* |
 | [`dp asset create`](#dp-asset-create) | Create a new asset from an extension |
 | [`dp asset validate`](#dp-asset-validate) | Validate asset configuration |
 | [`dp asset list`](#dp-asset-list) | List all assets in the project |
@@ -60,60 +60,63 @@ dp init <package-name> [flags]
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--type` | `-t` | Package type (pipeline, cloudquery) | pipeline |
-| `--mode` | `-m` | Pipeline execution mode (batch, streaming) | batch |
-| `--dir` | `-d` | Directory to create package in | . |
-| `--lang` | `-l` | Programming language (go, python) | go |
-| `--role` | | CloudQuery plugin role (source) | source |
+| `--kind` | `-k` | Manifest kind (source, destination, model) | model |
+| `--runtime` | `-r` | Runtime (cloudquery, generic-go, generic-python, dbt) | |
+| `--mode` | `-m` | Execution mode: batch, streaming (model only) | batch |
+| `--namespace` | `-n` | Package namespace | default |
+| `--owner` | | Package owner | current user |
+| `--team` | | Team label | my-team |
 
 ### Examples
 
 ```bash
-# Create a batch pipeline package
-dp init my-pipeline --type pipeline --mode batch
+# Create a model with CloudQuery runtime (default kind)
+dp init my-model --runtime cloudquery
 ```
 
 ```bash
-# Create a streaming pipeline
-dp init kafka-processor --mode streaming
+# Create a streaming Python model
+dp init kafka-processor --kind model --runtime generic-python --mode streaming
 ```
 
 ```bash
-# Create a Python pipeline
-dp init etl-job --lang python
+# Create a Go model
+dp init etl-job --kind model --runtime generic-go
 ```
 
 ```bash
-# Create in specific directory
-dp init kafka-processor --dir ./packages
+# Create a dbt model
+dp init user-aggregation --kind model --runtime dbt
 ```
 
 ```bash
-# Create a Python CloudQuery source plugin
-dp init my-source --type cloudquery
+# Create a CloudQuery source extension
+dp init my-source --kind source --runtime cloudquery
 ```
 
 ```bash
-# Create a Go CloudQuery source plugin
-dp init my-source --type cloudquery --lang go
+# Create a Go destination extension
+dp init s3-writer --kind destination --runtime generic-go
 ```
 
 ### Output
 
-Creates the following directory structure:
+Creates the following directory structure (varies by runtime):
 
 ```
-my-pipeline/
+my-model/
 ├── dp.yaml
-├── pipeline.yaml
-├── bindings.yaml
-└── src/
-    └── main.go (or main.py for Python)
+├── main.py (or main.go)
+└── requirements.txt (Python only)
 ```
 
-The generated `pipeline.yaml` includes mode-specific fields:
-- **Batch**: timeout, retries, backoffLimit
-- **Streaming**: replicas, livenessProbe, readinessProbe, terminationGracePeriodSeconds
+For CloudQuery runtime:
+
+```
+my-model/
+├── dp.yaml
+└── config.yaml
+```
 
 ---
 
@@ -921,13 +924,16 @@ dp rollback my-pipeline --to v1.0.0 --env prod
 
 ## dp lineage
 
+!!! warning "Not Yet Implemented"
+    The `dp lineage` command is planned but not yet available. For now, view lineage through the Marquez UI at http://localhost:3000 when the local dev stack is running (`dp dev up`).
+
 View data lineage for a package.
 
 ```bash
 dp lineage <package-name> [flags]
 ```
 
-### Flags
+### Planned Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|

@@ -136,8 +136,10 @@ Lineage enables impact analysis and compliance:
 
 Understand what's affected by changes:
 
+<!-- dp lineage is not yet implemented -->
 ```bash
-dp lineage my-source-package --downstream
+# Planned: dp lineage my-source-package --downstream
+# For now, use the Marquez UI at http://localhost:3000
 ```
 
 ```
@@ -310,7 +312,7 @@ Audit Log: my-package
 Add classification when creating packages:
 
 ```bash
-dp init my-package --type pipeline
+dp init my-package --kind model --runtime generic-python
 # Immediately update dp.yaml with classification
 ```
 
@@ -332,7 +334,8 @@ classification:
 Always check downstream impact:
 
 ```bash
-dp lineage my-package --downstream
+# Planned: dp lineage my-package --downstream
+# For now, use the Marquez UI at http://localhost:3000
 # Review affected packages before making changes
 ```
 

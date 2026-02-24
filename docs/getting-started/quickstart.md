@@ -11,62 +11,63 @@ This tutorial walks you through the complete DP workflow: from creating a new da
 
 ## What You'll Build
 
-A simple Kafka-to-S3 pipeline that:
+A simple data processing model that:
 
-1. Reads messages from a Kafka topic
+1. Processes input data
 2. Transforms the data
-3. Writes to an S3 bucket
+3. Outputs results
 
 ## Step 1: Create a New Package
 
 Initialize a new data package:
 
 ```bash
-dp init my-first-pipeline --kind model --runtime cloudquery
+dp init my-first-pipeline --kind model --runtime generic-python
 ```
 
 This creates the following structure:
 
 ```
 my-first-pipeline/
-├── dp.yaml           # Package manifest (includes runtime config)
-├── bindings.yaml     # Infrastructure bindings
-└── src/
-    └── main.py       # Your pipeline code
+├── dp.yaml           # Package manifest
+├── main.py           # Your pipeline code
+└── requirements.txt  # Python dependencies
 ```
 
 Let's look at the generated manifest:
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Model
 metadata:
   name: my-first-pipeline
   namespace: default
-  version: 1.0.0
+  version: 0.1.0
+  labels:
+    team: my-team
 spec:
-  type: pipeline
-  description: A sample data pipeline
-  owner: my-team
-  
-  # Runtime configuration (all in one file!)
-  runtime:
-    image: myorg/my-first-pipeline:v1.0.0
-    timeout: 30m
-    retries: 3
-  
+  runtime: generic-python
+  mode: batch
+  description: "A generic-python model package"
+  owner: default-team
+  image: "${REGISTRY}/my-first-pipeline:${VERSION}"
+
   inputs:
-    - name: events
+    - name: my-first-pipeline-input
       type: kafka-topic
-      binding: input.events
-      
+      binding: input.main
+
   outputs:
-    - name: processed
-      type: s3-prefix
-      binding: output.data
+    - name: my-first-pipeline-output
+      type: kafka-topic
+      binding: output.main
       classification:
         pii: false
         sensitivity: internal
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"
 ```
 
 ## Step 2: Start Local Development
@@ -289,80 +290,86 @@ Now that you understand the basics:
 
 ---
 
-## CloudQuery Plugin Quickstart
+## CloudQuery Model Quickstart
 
-This section walks you through creating and running a CloudQuery source plugin.
+This section walks you through creating and running a CloudQuery sync model.
+
+!!! info "What is a CloudQuery Model?"
+    CloudQuery models use the [CloudQuery CLI](https://cloudquery.io) to sync data between sources and destinations. The `dp init --runtime cloudquery` command generates a `config.yaml` file that you run with `cloudquery sync`.
 
 ### Prerequisites
 
 In addition to the standard prerequisites, you need:
 
 - **CloudQuery CLI** — Install with `brew install cloudquery/tap/cloudquery` (macOS) or see [CloudQuery docs](https://docs.cloudquery.io/docs/quickstart)
-- **Docker** — Required for building and running the plugin container
 
-### Step 1: Scaffold a Plugin
-
-```bash
-# Create a CloudQuery source plugin (Python runtime)
-dp init my-source --kind source --runtime cloudquery
-
-# Or a Go plugin
-dp init my-source --kind source --runtime generic-go
-```
-
-### Step 2: Explore the Generated Code
+### Step 1: Create a CloudQuery Model
 
 ```bash
-cd my-source
+dp init my-sync --kind model --runtime cloudquery
 ```
 
-The scaffolded project includes:
+This creates:
 
 - `dp.yaml` — Package manifest with CloudQuery configuration
-- `main.py` — gRPC server entry point
-- `plugin/` — Plugin implementation (tables, client, spec)
-- `tests/` — Unit tests
+- `config.yaml` — CloudQuery sync configuration
 
-### Step 3: Run Unit Tests
+### Step 2: Configure the Sync
 
-```bash
-dp test
+Edit `config.yaml` to configure your source and destination:
+
+```yaml title="config.yaml"
+kind: source
+spec:
+  name: my-source
+  registry: cloudquery
+  path: cloudquery/postgresql
+  tables: ["public.my_table"]
+  destinations: ["my-destination"]
+  spec:
+    connection_string: "${CONNECTION_STRING}"
+
+---
+kind: destination
+spec:
+  name: my-destination
+  registry: cloudquery
+  path: cloudquery/s3
+  spec:
+    bucket: "my-data-lake"
+    path: "raw/my-sync/{{TABLE}}/{{UUID}}.parquet"
 ```
 
-This runs `pytest` (Python) or `go test ./...` (Go) against the generated test suite.
-
-### Step 4: Start Local Dev Stack
+### Step 3: Start Local Dev Stack
 
 ```bash
 dp dev up
 ```
 
-This starts PostgreSQL (and other services) for the sync destination.
+This starts PostgreSQL and LocalStack for local testing.
 
-### Step 5: Run the Plugin
+### Step 4: Run the Sync
+
+CloudQuery models are run directly with the CloudQuery CLI:
 
 ```bash
-dp run
+export CONNECTION_STRING="postgres://postgres:postgres@localhost:5432/postgres"
+cloudquery sync config.yaml
 ```
 
-This will:
+!!! note "Why not `dp run`?"
+    CloudQuery models use configuration files rather than application code.
+    The CloudQuery CLI handles the actual sync execution.
 
-1. Build the plugin Docker image
-2. Start the container with gRPC port exposed
-3. Wait for the gRPC server to be ready
-4. Generate a CloudQuery sync configuration
-5. Run `cloudquery sync` to fetch data into PostgreSQL
-6. Display a sync summary
-
-### Step 6: Validate and Publish
+### Step 5: Validate and Publish
 
 ```bash
 dp lint           # Validate manifest
-dp build          # Build OCI artifact
+dp build          # Build OCI artifact  
 dp publish        # Push to registry
 ```
 
-### Step 7: Clean Up
+### Step 6: Clean Up
 
 ```bash
 dp dev down

@@ -60,6 +60,7 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	var runtimeEnv []contracts.EnvVar
 	var mode contracts.Mode
 	var timeout string
+	var runtime contracts.Runtime
 	var inputs, outputs []contracts.ArtifactContract
 
 	// Extract kind-specific fields
@@ -70,14 +71,26 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		runtimeEnv = model.Spec.Env
 		mode = model.Spec.Mode
 		timeout = model.Spec.Timeout
+		runtime = model.Spec.Runtime
 		inputs = model.Spec.Inputs
 		outputs = model.Spec.Outputs
 	case contracts.KindSource:
 		src := m.(*contracts.Source)
 		image = src.Spec.Image
+		runtime = src.Spec.Runtime
 	case contracts.KindDestination:
 		dst := m.(*contracts.Destination)
 		image = dst.Spec.Image
+		runtime = dst.Spec.Runtime
+	}
+
+	// Handle cloudquery runtime - run via cloudquery CLI instead of Docker
+	if runtime == contracts.RuntimeCloudQuery {
+		return r.runCloudQuery(ctx, opts, m)
+	}
+
+	if runtime == contracts.RuntimeDBT {
+		return r.runDBT(ctx, opts, m)
 	}
 
 	// Expand environment variables in image name
@@ -245,6 +258,152 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		emitLineage(lineage.EventTypeFail, runErr)
 	} else if result.Status == contracts.RunStatusCompleted {
 		emitLineage(lineage.EventTypeComplete, nil)
+	}
+
+	return result, runErr
+}
+
+// runCloudQuery executes a CloudQuery pipeline by invoking the cloudquery CLI
+// directly instead of building a Docker image. CloudQuery packages are
+// config-only (config.yaml) and do not contain source code.
+func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
+	cqBin, err := exec.LookPath("cloudquery")
+	if err != nil {
+		return nil, fmt.Errorf("cloudquery CLI not found in PATH: install it from https://www.cloudquery.io/docs/quickstart\n  %w", err)
+	}
+
+	configPath := filepath.Join(opts.PackageDir, "config.yaml")
+	if _, err := os.Stat(configPath); err != nil {
+		return nil, fmt.Errorf("config.yaml not found in %s: %w", opts.PackageDir, err)
+	}
+
+	runID := GenerateRunID(m.GetName())
+	result := &RunResult{
+		RunID:     runID,
+		Status:    contracts.RunStatusRunning,
+		StartTime: time.Now(),
+	}
+
+	r.mu.Lock()
+	r.runs[runID] = result
+	r.mu.Unlock()
+
+	if opts.DryRun {
+		result.Status = contracts.RunStatusCompleted
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Dry run complete. Would run: %s sync config.yaml\n", cqBin)
+		}
+		return result, nil
+	}
+
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Running CloudQuery sync (%s)...\n", m.GetName())
+	}
+
+	if opts.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
+		defer cancel()
+	}
+
+	cmd := exec.CommandContext(ctx, cqBin, "sync", "config.yaml")
+	cmd.Dir = opts.PackageDir
+
+	// Merge environment: inherit current env, add binding/opts env vars
+	cmd.Env = os.Environ()
+	for k, v := range opts.Env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	if opts.Output != nil {
+		cmd.Stdout = opts.Output
+		cmd.Stderr = opts.Output
+	}
+
+	runErr := cmd.Run()
+
+	now := time.Now()
+	result.EndTime = &now
+	result.Duration = now.Sub(result.StartTime)
+
+	if runErr != nil {
+		result.Status = contracts.RunStatusFailed
+		result.Error = runErr.Error()
+		if exitErr, ok := runErr.(*exec.ExitError); ok {
+			result.ExitCode = exitErr.ExitCode()
+		}
+	} else {
+		result.Status = contracts.RunStatusCompleted
+	}
+
+	return result, runErr
+}
+
+// runDBT executes a dbt pipeline by invoking the dbt CLI directly instead of
+// building a Docker image. dbt packages contain SQL/YAML transformations.
+func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
+	dbtBin, err := exec.LookPath("dbt")
+	if err != nil {
+		return nil, fmt.Errorf("dbt CLI not found in PATH: install it from https://docs.getdbt.com/docs/core/installation-overview\n  %w", err)
+	}
+
+	runID := GenerateRunID(m.GetName())
+	result := &RunResult{
+		RunID:     runID,
+		Status:    contracts.RunStatusRunning,
+		StartTime: time.Now(),
+	}
+
+	r.mu.Lock()
+	r.runs[runID] = result
+	r.mu.Unlock()
+
+	if opts.DryRun {
+		result.Status = contracts.RunStatusCompleted
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Dry run complete. Would run: %s run\n", dbtBin)
+		}
+		return result, nil
+	}
+
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Running dbt (%s)...\n", m.GetName())
+	}
+
+	if opts.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
+		defer cancel()
+	}
+
+	cmd := exec.CommandContext(ctx, dbtBin, "run")
+	cmd.Dir = opts.PackageDir
+
+	// Merge environment: inherit current env, add binding/opts env vars
+	cmd.Env = os.Environ()
+	for k, v := range opts.Env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	if opts.Output != nil {
+		cmd.Stdout = opts.Output
+		cmd.Stderr = opts.Output
+	}
+
+	runErr := cmd.Run()
+
+	now := time.Now()
+	result.EndTime = &now
+	result.Duration = now.Sub(result.StartTime)
+
+	if runErr != nil {
+		result.Status = contracts.RunStatusFailed
+		result.Error = runErr.Error()
+		if exitErr, ok := runErr.(*exec.ExitError); ok {
+			result.ExitCode = exitErr.ExitCode()
+		}
+	} else {
+		result.Status = contracts.RunStatusCompleted
 	}
 
 	return result, runErr

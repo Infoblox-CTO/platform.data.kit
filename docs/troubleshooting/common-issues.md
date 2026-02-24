@@ -543,10 +543,8 @@ dp dev up --runtime=k3d
 **Solution**:
 
 ```bash
-# Force refresh
-dp lineage my-pipeline --refresh
-
-# Check recent runs
+# Planned: dp lineage my-pipeline --refresh
+# For now, query Marquez directly:
 curl http://localhost:5000/api/v1/namespaces/default/jobs/my-pipeline/runs
 ```
 

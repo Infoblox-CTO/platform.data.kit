@@ -43,7 +43,7 @@ dp version
 
 ```bash
 # 1. Create a new data package
-dp init my-pipeline --kind model --runtime cloudquery
+dp init my-pipeline --kind model --runtime generic-python
 
 # 2. Start the local development stack
 dp dev up
