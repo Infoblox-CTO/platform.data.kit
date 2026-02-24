@@ -1,0 +1,123 @@
+# GoReleaser configuration for DP CLI
+# Documentation: https://goreleaser.com
+version: 2
+
+project_name: dp
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: dp
+    main: ./cli
+    binary: dp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: linux
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/Infoblox-CTO/platform.data.kit/cli/cmd.Version={{.Version}}
+      - -X github.com/Infoblox-CTO/platform.data.kit/cli/cmd.Commit={{.ShortCommit}}
+      - -X github.com/Infoblox-CTO/platform.data.kit/cli/cmd.BuildDate={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    formats_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: Infoblox-CTO
+    name: platform.data.kit
+  draft: false
+  prerelease: auto
+  name_template: "v{{.Version}}"
+  header: |
+    ## What's Changed
+    
+    See the [CHANGELOG](https://github.com/Infoblox-CTO/platform.data.kit/blob/main/CHANGELOG.md) for details.
+    
+    ## Installation
+    
+    ### macOS (Homebrew)
+    ```bash
+    brew install Infoblox-CTO/tap/dp
+    ```
+    
+    ### Linux
+    ```bash
+    curl -sSfL https://raw.githubusercontent.com/Infoblox-CTO/platform.data.kit/main/scripts/install.sh | bash
+    ```
+    
+    ### Windows (Scoop)
+    ```powershell
+    scoop bucket add infoblox https://github.com/Infoblox-CTO/scoop-bucket
+    scoop install dp
+    ```
+    
+    ### Manual Download
+    Download the appropriate archive for your platform below.
+
+brews:
+  - name: dp
+    repository:
+      owner: Infoblox-CTO
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/Infoblox-CTO/platform.data.kit
+    description: Data Platform CLI - Kubernetes-native data pipeline platform
+    license: Apache-2.0
+    install: |
+      bin.install "dp"
+    test: |
+      system "#{bin}/dp", "version"
+    # For private repos, users need to set HOMEBREW_GITHUB_API_TOKEN
+
+scoops:
+  - name: dp
+    repository:
+      owner: Infoblox-CTO
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
+    homepage: https://github.com/Infoblox-CTO/platform.data.kit
+    description: Data Platform CLI - Kubernetes-native data pipeline platform
+    license: Apache-2.0

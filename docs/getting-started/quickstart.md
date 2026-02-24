@@ -22,7 +22,7 @@ A simple Kafka-to-S3 pipeline that:
 Initialize a new data package:
 
 ```bash
-dp init my-first-pipeline --type pipeline
+dp init my-first-pipeline --kind model --runtime cloudquery
 ```
 
 This creates the following structure:
@@ -171,11 +171,19 @@ Run ID: run-abc123
 
 View the lineage for your run:
 
-```bash
-dp lineage my-first-pipeline
-```
+!!! warning "Not Yet Implemented"
+    The `dp lineage` command is planned but not yet implemented. For now, use the Marquez UI directly.
 
-Or open the Marquez UI at http://localhost:5000 to see a visual graph.
+Open the Marquez UI to view the lineage graph:
+
+- **Marquez Web UI**: http://localhost:3000 — Visual lineage graph
+- **Marquez API**: http://localhost:5000 — REST API for querying lineage
+
+You can also check the logs from your run:
+
+```bash
+dp logs my-first-pipeline --follow
+```
 
 ## Step 6: Build the Package
 
@@ -260,12 +268,13 @@ You've completed the full DP workflow:
 | 2 | `dp dev up` | Start local infrastructure |
 | 3 | `dp lint` | Validate manifests |
 | 4 | `dp run` | Execute locally |
-| 5 | `dp lineage` | View data lineage |
-| 6 | `dp build` | Create OCI artifact |
-| 7 | `dp publish` | Push to registry |
-| 8 | `dp promote` | Deploy to environment |
-| 9 | `dp status` | Check deployment status |
-| 10 | `dp dev down` | Stop local stack |
+| 5 | ~~`dp lineage`~~ | View data lineage *(not yet implemented — use Marquez UI)* |
+| 6 | `dp logs` | Stream logs from a run |
+| 7 | `dp build` | Create OCI artifact |
+| 8 | `dp publish` | Push to registry |
+| 9 | `dp promote` | Deploy to environment |
+| 10 | `dp status` | Check deployment status |
+| 11 | `dp dev down` | Stop local stack |
 
 ## Next Steps
 
@@ -294,11 +303,11 @@ In addition to the standard prerequisites, you need:
 ### Step 1: Scaffold a Plugin
 
 ```bash
-# Create a Python CloudQuery source plugin
-dp init my-source --type cloudquery
+# Create a CloudQuery source plugin (Python runtime)
+dp init my-source --kind source --runtime cloudquery
 
 # Or a Go plugin
-dp init my-source --type cloudquery --lang go
+dp init my-source --kind source --runtime generic-go
 ```
 
 ### Step 2: Explore the Generated Code
