@@ -1,67 +1,30 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 metadata:
   name: kafka-s3-pipeline
   namespace: analytics
+  version: 1.0.0
   labels:
     team: data-platform
     domain: events
 spec:
-  type: pipeline
+  runtime: generic-go
+  mode: batch
   description: Consumes events from Kafka, transforms, writes to S3
-  owner: data-platform-team
-  
-  # Runtime configuration
-  runtime:
-    image: "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
-    timeout: 2h
-    retries: 2
-    replicas: 1
-    env:
-      - name: LOG_LEVEL
-        value: info
-    envFrom:
-      - secretRef:
-          name: pipeline-credentials
-    successfulJobsHistoryLimit: 3
-    failedJobsHistoryLimit: 5
-  
+  image: "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
+  env:
+    - name: LOG_LEVEL
+      value: info
   inputs:
-    - name: events
-      type: kafka-topic
-      binding: input.events
-      # Lineage source information
-      lineage:
-        source: kafka-cluster
-        namespace: analytics
-      
+    - asset: kafka-events
   outputs:
-    - name: processed-events
-      type: s3-prefix
-      binding: output.lake
-      schema:
-        type: parquet
-        schemaRef: ./schemas/processed-events.avsc
-      classification:
-        pii: true
-        sensitivity: confidential
-        dataCategory: customer-behavior
-        retentionDays: 365
-      # Lineage destination and transformation info
-      lineage:
-        source: s3-lake
-        namespace: analytics
-        transformationType: TRANSFORMATION
-        transformationDescription: "Filters, enriches and aggregates raw events into processed format"
-        
+    - asset: processed-events
   schedule:
     cron: "0 */6 * * *"  # Every 6 hours
-    
+  timeout: 2h
   resources:
     cpu: "2"
     memory: "4Gi"
-
-  # Lineage configuration for the data package
   lineage:
     enabled: true
     emitter: marquez

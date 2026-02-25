@@ -180,8 +180,6 @@ func TestErrorCodes(t *testing.T) {
 		"ErrCodeOutputsRequired":        ErrCodeOutputsRequired,
 		"ErrCodeClassificationRequired": ErrCodeClassificationRequired,
 		"ErrCodeInvalidSchemaType":      ErrCodeInvalidSchemaType,
-		"ErrCodeBindingNotFound":        ErrCodeBindingNotFound,
-		"ErrCodeBindingTypeMismatch":    ErrCodeBindingTypeMismatch,
 		"ErrCodeInvalidSemVer":          ErrCodeInvalidSemVer,
 		"ErrCodeVersionAlreadyExists":   ErrCodeVersionAlreadyExists,
 		"ErrCodeInvalidImageRef":        ErrCodeInvalidImageRef,

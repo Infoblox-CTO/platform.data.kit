@@ -312,7 +312,7 @@ Audit Log: my-package
 Add classification when creating packages:
 
 ```bash
-dp init my-package --kind model --runtime generic-python
+dp init my-package --runtime generic-python
 # Immediately update dp.yaml with classification
 ```
 

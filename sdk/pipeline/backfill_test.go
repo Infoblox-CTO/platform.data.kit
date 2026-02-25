@@ -189,8 +189,8 @@ metadata:
 steps:
   - name: sync-data
     type: sync
-    source: aws-source
-    sink: postgres-sink
+    input: aws-source
+    output: postgres-sink
   - name: transform-data
     type: transform
     asset: dbt-transform

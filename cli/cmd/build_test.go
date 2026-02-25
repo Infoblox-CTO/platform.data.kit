@@ -98,24 +98,17 @@ func TestBuildCmd_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: data-team
-  version: 1.0.0
 spec:
-  description: Test package
-  owner: data-team
   runtime: generic-go
   image: myimage:v1
   mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -141,7 +134,7 @@ func TestBuildCmd_InvalidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: ""
 spec:
@@ -165,24 +158,17 @@ func TestBuildCmd_CustomTag(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: data-team
-  version: 1.0.0
 spec:
-  description: Test package
-  owner: data-team
   runtime: generic-go
   image: myimage:v1
   mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -212,21 +198,17 @@ func TestBuildCmd_CloudQueryPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Source
+kind: Transform
 metadata:
   name: my-cq-source
-  namespace: data-team
-  version: 0.1.0
 spec:
-  description: CloudQuery source plugin
-  owner: data-team
   runtime: cloudquery
   image: my-cq-source:latest
-  provides:
-    name: cloud-resources
-    type: s3-prefix
-  configSchema:
-    format: json
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: cloud-resources
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -247,26 +229,22 @@ spec:
 	}
 }
 
-func TestBuildCmd_SourcePackageValid(t *testing.T) {
-	// Test that dp build accepts a valid Source package
+func TestBuildCmd_CloudQueryPackageValid(t *testing.T) {
+	// Test that dp build accepts a valid CloudQuery Transform package
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Source
+kind: Transform
 metadata:
   name: cq-source
-  namespace: data-team
-  version: 0.1.0
 spec:
-  description: CloudQuery plugin
-  owner: data-team
   runtime: cloudquery
   image: cq-source:latest
-  provides:
-    name: cloud-resources
-    type: s3-prefix
-  configSchema:
-    format: json
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: cloud-resources
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -275,8 +253,8 @@ spec:
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
-	// Should succeed — Source is valid even without provides
+	// Should succeed — CloudQuery Transform is valid
 	if err != nil {
-		t.Errorf("runBuild() error = %v, want nil for valid Source package", err)
+		t.Errorf("runBuild() error = %v, want nil for valid CloudQuery Transform package", err)
 	}
 }

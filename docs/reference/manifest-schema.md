@@ -1,86 +1,82 @@
 ---
 title: Manifest Schema
-description: Complete reference for data package manifest schemas
+description: Complete reference for all manifest schemas (Transform, Asset, AssetGroup, Connector, Store)
 ---
 
 # Manifest Schema Reference
 
-This document provides the complete JSON Schema reference for all data package manifest files.
+This document provides the complete schema reference for all manifest kinds in the Data Platform Kit.
 
-## dp.yaml Schema
+The platform uses five manifest kinds, each with a clear ownership boundary:
 
-The main package manifest file.
+| Kind | Owner | Purpose |
+|------|-------|---------|
+| **Connector** | Platform team | Technology type catalog (postgres, s3, kafka) |
+| **Store** | Infra / SRE | Named instance of a Connector with connection details |
+| **Asset** | Data engineer | Data contract — table, prefix, or topic in a Store |
+| **AssetGroup** | Data engineer | Bundle of Assets produced by a single materialisation |
+| **Transform** | Data engineer | Unit of computation reading input Assets, producing output Assets |
+
+---
+
+## Transform Schema
+
+The Transform manifest (`dp.yaml`) defines a unit of computation.
+It is the **only manifest kind that runs** — Connectors, Stores, and Assets are declarative metadata.
 
 ### Full Schema
 
 ```yaml
 # dp.yaml
 apiVersion: data.infoblox.com/v1alpha1          # Required: API version
-kind: DataPackage                   # Required: Resource type
+kind: Transform                                 # Required: Resource type
 
-metadata:                           # Required: Package metadata
-  name: string                      # Required: Package name (1-63 chars, lowercase, hyphenated)
-  namespace: string                 # Optional: Logical grouping
+metadata:                           # Required: Transform metadata
+  name: string                      # Required: Transform name (1-63 chars, lowercase, hyphenated)
+  namespace: string                 # Optional: Team namespace
+  version: string                   # Optional: Semantic version (e.g., "0.1.0")
   labels:                           # Optional: Key-value labels
     key: value
   annotations:                      # Optional: Arbitrary metadata
     key: value
 
-spec:                               # Required: Package specification
-  type: string                      # Required: pipeline | producer | consumer | streaming
-  description: string               # Optional: Human-readable description
-  owner: string                     # Required: Owner email or team identifier
-  
-  runtime:                          # Required for pipeline type
-    image: string                   # Required: Container image to run
-    timeout: string                 # Optional: Execution timeout (e.g., "30m")
-    retries: integer                # Optional: Max retry attempts (default: 3)
-    env:                            # Optional: Environment variables
-      - name: string
-        value: string
-      - name: string
-        valueFrom:
-          secretRef:
-            name: string
-            key: string
-    envFrom:                        # Optional: Environment from secrets/configmaps
-      - secretRef:
-          name: string
-      - configMapRef:
-          name: string
-    resources:                      # Optional: Resource limits
-      cpu: string                   # e.g., "500m", "1", "2"
-      memory: string                # e.g., "512Mi", "2Gi"
-  
-  inputs:                           # Optional: Input declarations
-    - name: string                  # Required: Unique input name
-      type: string                  # Required: kafka-topic | s3-prefix | database-table | http-endpoint
-      binding: string               # Required: Reference to bindings.yaml key
-      description: string           # Optional: Human-readable description
-      schema: string                # Optional: Path to schema file
-      required: boolean             # Optional: Default true
-      config:                       # Optional: Type-specific configuration
-        key: value
-        
-  outputs:                          # Optional: Output declarations
-    - name: string                  # Required: Unique output name
-      type: string                  # Required: kafka-topic | s3-prefix | database-table | http-endpoint
-      binding: string               # Required: Reference to bindings.yaml key
-      description: string           # Optional: Human-readable description
-      schema: string                # Optional: Path to schema file
-      classification:               # Optional: Data classification
-        pii: boolean                # Does it contain PII?
-        sensitivity: string         # internal | confidential | restricted
-        retention:                  # Optional: Retention policy
-          days: integer             # Retention period in days
-          deletionPolicy: string    # delete | archive | notify
-        tags:                       # Optional: Custom classification tags
-          - string
-      config:                       # Optional: Type-specific configuration
-        key: value
+spec:                               # Required: Transform specification
+  runtime: string                   # Required: cloudquery | generic-go | generic-python | dbt
+  mode: string                      # Optional: batch | streaming (default: batch)
 
-  assets:                           # Optional: Asset references
-    - string                        # Asset name (DNS-safe, must match an asset under assets/)
+  inputs:                           # Required: Input Asset references
+    - asset: string                 # Required: Asset name (local or OCI ref)
+
+  outputs:                          # Required: Output Asset references
+    - asset: string                 # Required: Asset name (local or OCI ref)
+
+  image: string                     # Required for generic-go/generic-python/dbt runtimes
+  command: [string]                 # Optional: Override container entrypoint
+
+  env:                              # Optional: Environment variables
+    - name: string
+      value: string
+    - name: string
+      valueFrom:
+        secretRef:
+          name: string
+          key: string
+
+  schedule:                         # Optional: Cron scheduling (batch mode)
+    cron: string                    # Cron expression (e.g., "0 */6 * * *")
+    timezone: string                # IANA timezone (default: UTC)
+
+  timeout: string                   # Optional: Max execution time (e.g., "30m", "1h")
+
+  resources:                        # Optional: Kubernetes resource limits
+    cpu: string                     # e.g., "500m", "1", "2"
+    memory: string                  # e.g., "512Mi", "2Gi"
+
+  replicas: integer                 # Optional: Parallel workers (streaming mode, default: 1)
+
+  lineage:                          # Optional: Lineage configuration
+    enabled: boolean                # Enable OpenLineage events (default: false)
+    heartbeatInterval: string       # Heartbeat frequency (default: 30s)
 ```
 
 ### Field Reference
@@ -91,191 +87,66 @@ spec:                               # Required: Package specification
 |----------|-------|
 | Type | string |
 | Required | Yes |
-| Pattern | `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$` |
-| Description | Unique package identifier |
+| Pattern | `^[a-z][a-z0-9-]{0,62}$` |
+| Description | DNS-safe transform identifier. Must start with a lowercase letter. |
 
-#### metadata.namespace
+#### metadata.version
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Format | Semantic version (e.g., `0.1.0`) |
+| Description | Version of the transform package. Used in OCI artifact tags. |
+
+#### spec.runtime
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Enum | `cloudquery`, `generic-go`, `generic-python`, `dbt` |
+| Description | Execution engine for the transform. |
+
+**Runtime descriptions:**
+
+| Runtime | Use Case | Requirements |
+|---------|----------|-------------|
+| `cloudquery` | CQ source-to-destination syncs | No image — plugin images come from Connector |
+| `generic-go` | Custom Go containers | Requires `image` field |
+| `generic-python` | Custom Python containers | Requires `image` field |
+| `dbt` | dbt transformations | Requires `image` field |
+
+#### spec.mode
 
 | Property | Value |
 |----------|-------|
 | Type | string |
 | Required | No |
-| Default | `default` |
-| Pattern | `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$` |
-| Description | Logical grouping for packages |
+| Enum | `batch`, `streaming` |
+| Default | `batch` |
+| Description | Execution mode. Batch creates k8s Jobs; streaming creates Deployments. |
 
-#### spec.type
+#### spec.inputs / spec.outputs
 
 | Property | Value |
 |----------|-------|
-| Type | enum |
+| Type | array of `{ asset: string }` |
 | Required | Yes |
-| Values | `pipeline`, `cloudquery`, `producer`, `consumer`, `streaming` |
-| Description | Type of data package |
+| Description | Input/output Asset references. Each entry has an `asset` field naming an Asset manifest. |
 
-#### spec.inputs[].type
+At runtime, the runner resolves the chain: **Transform → Asset → Store → Connector** to obtain connection details and plugin images.
 
-| Property | Value |
-|----------|-------|
-| Type | enum |
-| Required | Yes |
-| Values | `kafka-topic`, `s3-prefix`, `database-table`, `http-endpoint` |
-| Description | Type of input data source |
-
-#### spec.outputs[].classification.sensitivity
-
-| Property | Value |
-|----------|-------|
-| Type | enum |
-| Required | When `pii: true` |
-| Values | `internal`, `confidential`, `restricted` |
-| Description | Data sensitivity level |
-
----
-
-## spec.cloudquery (CloudQuery Configuration)
-
-For packages with `type: cloudquery`, the `spec.cloudquery` section configures the CloudQuery plugin.
-
-### Full Schema
-
-```yaml
-spec:
-  type: cloudquery
-  cloudquery:
-    role: string                    # Required: Plugin role ("source")
-    tables:                         # Optional: List of table names
-      - string
-    grpcPort: integer               # Optional: gRPC server port (default: 7777)
-    concurrency: integer            # Optional: Max concurrent resolvers (default: 10000)
-  runtime:
-    image: string                   # Required: Container image for the plugin
-```
-
-### Field Reference
-
-#### spec.cloudquery.role
-
-| Property | Value |
-|----------|-------|
-| Type | enum |
-| Required | Yes |
-| Values | `source` |
-| Description | Plugin role. Currently only `source` is supported. `destination` is reserved for future use. |
-
-#### spec.cloudquery.tables
-
-| Property | Value |
-|----------|-------|
-| Type | array of strings |
-| Required | No |
-| Default | `["*"]` (all tables) |
-| Description | List of table names this plugin provides. Used in sync config generation. |
-
-#### spec.cloudquery.grpcPort
-
-| Property | Value |
-|----------|-------|
-| Type | integer |
-| Required | No |
-| Default | `7777` |
-| Range | 1024–65535 |
-| Description | Port the gRPC server listens on. Must not conflict with other services. |
-
-#### spec.cloudquery.concurrency
-
-| Property | Value |
-|----------|-------|
-| Type | integer |
-| Required | No |
-| Default | `10000` |
-| Minimum | 1 |
-| Description | Maximum number of concurrent table resolvers during sync. |
-
-### Validation Rules
-
-| Code | Rule | Severity |
-|------|------|----------|
-| E060 | `spec.cloudquery` is required when `type: cloudquery` | Error |
-| E061 | `spec.cloudquery.role` must be a valid, supported role | Error |
-| W060 | `role: destination` is recognized but not yet supported | Warning |
-| E062 | `spec.cloudquery.grpcPort` must be 1024–65535 | Error |
-| E063 | `spec.cloudquery.concurrency` must be > 0 | Error |
-
-### Example
-
-```yaml title="dp.yaml (CloudQuery source plugin)"
-apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: my-source
-  namespace: analytics
-  version: 0.1.0
-  labels:
-    team: data-engineering
-spec:
-  type: cloudquery
-  description: CloudQuery source plugin for internal API
-  owner: data-engineering@example.com
-  cloudquery:
-    role: source
-    tables:
-      - users
-      - orders
-      - products
-    grpcPort: 7777
-    concurrency: 10000
-  runtime:
-    image: analytics/my-source:v0.1.0
-```
-
----
-
-## spec.runtime (Pipeline Configuration)
-
-For packages with `type: pipeline`, the `spec.runtime` section configures container execution.
-
-### Full Schema
-
-```yaml
-spec:
-  runtime:
-    image: string                   # Required: Container image to run
-    timeout: string                 # Optional: Execution timeout (e.g., "30m", "1h")
-    retries: integer                # Optional: Max retry attempts (default: 3)
-    
-    env:                            # Optional: Environment variables
-      - name: string
-        value: string
-      - name: string
-        valueFrom:
-          secretRef:
-            name: string
-            key: string
-            
-    envFrom:                        # Optional: Environment from secrets/configmaps
-      - secretRef:
-          name: string
-      - configMapRef:
-          name: string
-          
-    resources:                      # Optional: Resource limits
-      cpu: string                   # e.g., "500m", "1", "2"
-      memory: string                # e.g., "512Mi", "2Gi"
-```
-
-### Field Reference
-
-#### spec.runtime.image
+#### spec.image
 
 | Property | Value |
 |----------|-------|
 | Type | string |
-| Required | Yes (for pipeline type) |
-| Examples | `myorg/my-pipeline:v1.0.0`, `python:3.11` |
-| Description | Container image to execute |
+| Required | Yes (for generic-go, generic-python, dbt) |
+| Examples | `my-team/enrich-users:latest`, `python:3.11` |
+| Description | Container image for non-CloudQuery runtimes. Not needed for `cloudquery` runtime. |
 
-#### spec.runtime.timeout
+#### spec.timeout
 
 | Property | Value |
 |----------|-------|
@@ -283,133 +154,27 @@ spec:
 | Required | No |
 | Default | `30m` |
 | Pattern | Go duration format (e.g., `30m`, `1h30m`, `2h`) |
-| Description | Maximum execution time before timeout |
+| Description | Maximum execution time before timeout. |
 
-#### spec.runtime.retries
-
-| Property | Value |
-|----------|-------|
-| Type | integer |
-| Required | No |
-| Default | 3 |
-| Range | 0-10 |
-| Description | Maximum number of retry attempts on failure |
-
-#### spec.runtime.resources
+#### spec.schedule
 
 | Property | Value |
 |----------|-------|
 | Type | object |
 | Required | No |
-| Description | Kubernetes-style resource limits |
+| Fields | `cron` (string, 5-field cron), `timezone` (string, IANA) |
+| Description | Cron schedule for batch transforms. |
 
----
-
-## Pipeline Mode Configuration
-
-Pipelines support two execution modes: `batch` (default) and `streaming`. The mode determines how the pipeline is deployed and executed.
-
-### Mode Field
-
-```yaml
-spec:
-  mode: string                      # Optional: batch | streaming (default: batch)
-```
-
-### Batch Mode Fields
-
-For `mode: batch` pipelines (the default):
-
-```yaml
-spec:
-  mode: batch
-  timeout: string                   # Required: Max execution time (e.g., "30m", "1h")
-  retries: integer                  # Optional: Retry count on failure (default: 3)
-  backoffLimit: integer             # Optional: Kubernetes backoff limit (default: 3)
-  schedule:                         # Optional: Cron scheduling
-    cron: string                    # Cron expression (e.g., "0 2 * * *")
-    timezone: string                # Timezone (default: UTC)
-```
-
-### Streaming Mode Fields
-
-For `mode: streaming` pipelines:
-
-```yaml
-spec:
-  mode: streaming
-  replicas: integer                 # Optional: Number of replicas (default: 1)
-  terminationGracePeriodSeconds: integer  # Optional: Shutdown grace period (default: 30)
-  
-  livenessProbe:                    # Optional: Liveness health check
-    httpGet:
-      path: string                  # Health endpoint path (e.g., "/healthz")
-      port: integer                 # Port number
-      scheme: string                # HTTP or HTTPS (default: HTTP)
-    initialDelaySeconds: integer    # Delay before first probe (default: 0)
-    periodSeconds: integer          # Probe interval (default: 10)
-    timeoutSeconds: integer         # Probe timeout (default: 1)
-    successThreshold: integer       # Successes for healthy (default: 1)
-    failureThreshold: integer       # Failures for unhealthy (default: 3)
-    
-  readinessProbe:                   # Optional: Readiness health check
-    httpGet:
-      path: string
-      port: integer
-      scheme: string
-    # Same timing fields as livenessProbe
-    
-  lineage:                          # Optional: Lineage configuration
-    enabled: boolean                # Enable OpenLineage events (default: false)
-    heartbeatInterval: string       # Heartbeat frequency (default: 30s)
-```
-
-### Probe Types
-
-Three types of probes are supported:
-
-#### HTTP Probe
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 8080
-    scheme: HTTP
-```
-
-#### Exec Probe
-
-```yaml
-livenessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -c
-      - "exit 0"
-```
-
-#### TCP Probe
-
-```yaml
-livenessProbe:
-  tcpSocket:
-    port: 8080
-```
-
-### Field Reference
-
-#### spec.mode
+#### spec.resources
 
 | Property | Value |
 |----------|-------|
-| Type | enum |
+| Type | object |
 | Required | No |
-| Values | `batch`, `streaming` |
-| Default | `batch` |
-| Description | Pipeline execution mode |
+| Fields | `cpu` (string), `memory` (string) |
+| Description | Kubernetes-style resource requests/limits. |
 
-#### spec.replicas (streaming)
+#### spec.replicas
 
 | Property | Value |
 |----------|-------|
@@ -417,194 +182,468 @@ livenessProbe:
 | Required | No |
 | Default | 1 |
 | Range | 1-100 |
-| Description | Number of concurrent replicas |
+| Description | Parallel workers for streaming mode. |
 
-#### spec.terminationGracePeriodSeconds (streaming)
-
-| Property | Value |
-|----------|-------|
-| Type | integer |
-| Required | No |
-| Default | 30 |
-| Range | 0-3600 |
-| Description | Seconds to wait for graceful shutdown |
-
-#### spec.lineage.heartbeatInterval (streaming)
-
-| Property | Value |
-|----------|-------|
-| Type | string |
-| Required | No |
-| Default | 30s |
-| Pattern | Go duration format |
-| Description | Interval for RUNNING lineage events |
-
----
-
-## bindings.yaml Schema
-
-Infrastructure binding references.
-
-```yaml
-# bindings.yaml
-apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
-
-spec:
-  bindings:
-    <binding-key>:                  # Key referenced in dp.yaml
-      type: string                  # Required: Same as input/output type
-      ref: string                   # Required: Infrastructure reference
-      config:                       # Optional: Connection configuration
-        key: value
-```
-
-### Binding Types
-
-#### kafka-topic
-
-```yaml
-bindings:
-  input.events:
-    type: kafka-topic
-    ref: cluster-name/topic-name
-    config:
-      bootstrap-servers: kafka:9092
-      consumer-group: my-pipeline-consumer
-      format: avro
-```
-
-#### s3-prefix
-
-```yaml
-bindings:
-  output.data:
-    type: s3-prefix
-    ref: bucket-name/path/prefix/
-    config:
-      endpoint: http://minio:9000
-      region: us-east-1
-```
-
-#### database-table
-
-```yaml
-bindings:
-  input.users:
-    type: database-table
-    ref: database-name/schema/table
-    config:
-      host: postgres:5432
-      driver: postgresql
-```
-
----
-
-## asset.yaml Schema
-
-Asset configuration file for extension instances. Located at `assets/<type>/<name>/asset.yaml`.
-
-### Full Schema
-
-```yaml
-# asset.yaml
-apiVersion: data.infoblox.com/v1alpha1        # Required: API version
-kind: Asset                          # Required: Always "Asset"
-name: string                         # Required: Asset name (DNS-safe, 3-63 chars)
-type: string                         # Required: source | sink | model-engine
-extension: string                    # Required: Extension FQN (vendor.kind.name)
-version: string                      # Required: Extension version (semver, e.g., v24.0.2)
-ownerTeam: string                    # Required: Owning team name
-description: string                  # Optional: Human-readable description
-binding: string                      # Optional: Reference to bindings.yaml entry name
-config:                              # Required: Extension-specific configuration
-  key: value                         #   Validated against the extension's JSON Schema
-labels:                              # Optional: Key-value labels
-  key: value
-```
-
-### Field Reference
-
-#### name
-
-| Property | Value |
-|----------|-------|
-| Type | string |
-| Required | Yes |
-| Pattern | `^[a-z][a-z0-9-]{2,62}$` |
-| Description | DNS-safe asset identifier. Must start with a lowercase letter. |
-
-#### type
-
-| Property | Value |
-|----------|-------|
-| Type | string |
-| Required | Yes |
-| Enum | `source`, `sink`, `model-engine` |
-| Description | Asset type, must match the `kind` segment of the extension FQN. |
-
-#### extension
-
-| Property | Value |
-|----------|-------|
-| Type | string |
-| Required | Yes |
-| Format | `<vendor>.<kind>.<name>` |
-| Description | Fully-qualified extension name identifying the runtime extension. |
-
-#### version
-
-| Property | Value |
-|----------|-------|
-| Type | string |
-| Required | Yes |
-| Format | Semantic version (e.g., `v24.0.2`) |
-| Description | Pinned extension version. |
-
-#### config
+#### spec.lineage
 
 | Property | Value |
 |----------|-------|
 | Type | object |
-| Required | Yes |
-| Description | Extension-specific configuration validated against the extension's JSON Schema. |
+| Required | No |
+| Fields | `enabled` (boolean), `heartbeatInterval` (string) |
+| Description | OpenLineage event configuration. |
 
-#### binding
+### Transform Validation Errors
+
+| Code | Message | Resolution |
+|------|---------|------------|
+| E001 | `metadata.name is required` | Add name field |
+| E002 | `spec.runtime is required` | Add runtime field |
+| E004 | `invalid name format` | Use lowercase and hyphens only |
+| E005 | `name too long` | Maximum 63 characters |
+
+### Examples
+
+#### CloudQuery Transform (no image needed)
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: pg-to-s3
+  namespace: default
+  version: 0.1.0
+  labels:
+    team: data-platform
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: users
+  outputs:
+    - asset: users-parquet
+  schedule:
+    cron: "0 */6 * * *"
+  timeout: 30m
+```
+
+#### Generic Python Transform
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: enrich-users
+  namespace: default
+  version: 0.2.0
+spec:
+  runtime: generic-python
+  mode: batch
+  inputs:
+    - asset: users-parquet
+  outputs:
+    - asset: users-enriched
+  image: my-team/enrich-users:latest
+  timeout: 15m
+```
+
+#### Streaming Transform
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: event-processor
+  namespace: default
+  version: 1.0.0
+spec:
+  runtime: generic-go
+  mode: streaming
+  inputs:
+    - asset: raw-events
+  outputs:
+    - asset: processed-events
+  image: my-team/event-processor:v1.0.0
+  replicas: 3
+  resources:
+    cpu: "1"
+    memory: 2Gi
+  lineage:
+    enabled: true
+    heartbeatInterval: 30s
+```
+
+---
+
+## Asset Schema
+
+An Asset is a **named data contract**: a table, S3 prefix, or Kafka topic that lives in a Store.
+It declares the schema (with optional column-level lineage via `from`) and data classification.
+
+### Full Schema
+
+```yaml
+# asset/<name>.yaml
+apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+kind: Asset                                     # Required: Resource type
+
+metadata:                           # Required: Asset metadata
+  name: string                      # Required: Asset name (1-63 chars, lowercase, hyphenated)
+  namespace: string                 # Optional: Team namespace
+  labels:                           # Optional: Key-value labels
+    key: value
+
+spec:                               # Required: Asset specification
+  store: string                     # Required: Name of the Store where this data lives
+  table: string                     # Optional: Fully-qualified table name (relational stores)
+  prefix: string                    # Optional: Object prefix (object stores like S3)
+  topic: string                     # Optional: Topic name (streaming stores like Kafka)
+  format: string                    # Optional: Data format (parquet, json, csv, avro)
+  classification: string            # Optional: public | internal | confidential | restricted
+
+  schema:                           # Optional: Field/column definitions
+    - name: string                  # Required: Field name
+      type: string                  # Required: Data type (integer, string, timestamp, boolean, float)
+      pii: boolean                  # Optional: Contains PII? (default: false)
+      from: string                  # Optional: Lineage source (e.g., "users.id")
+```
+
+### Field Reference
+
+#### metadata.name
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Pattern | `^[a-z][a-z0-9-]{0,62}$` |
+| Description | DNS-safe asset identifier. |
+
+#### spec.store
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Description | Name of the Store manifest this asset lives in. |
+
+#### spec.table / spec.prefix / spec.topic
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | At least one of `table`, `prefix`, or `topic` |
+| Description | Location within the Store. Use `table` for databases, `prefix` for S3, `topic` for Kafka. |
+
+#### spec.classification
 
 | Property | Value |
 |----------|-------|
 | Type | string |
 | Required | No |
-| Description | Name of a binding entry in `bindings.yaml`. Cross-validated by `dp validate`. |
+| Enum | `public`, `internal`, `confidential`, `restricted` |
+| Description | Data sensitivity level. |
 
-### Directory Structure
+#### spec.schema[].from
 
-Assets are placed in type-based directories under `assets/`:
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Format | `<asset-name>.<field-name>` |
+| Description | Declares column-level lineage. Links this field to its source in another Asset. |
 
-| Type | Directory |
-|------|-----------|
-| `source` | `assets/sources/<name>/asset.yaml` |
-| `sink` | `assets/sinks/<name>/asset.yaml` |
-| `model-engine` | `assets/models/<name>/asset.yaml` |
-
-### Asset Validation Error Codes
+### Asset Validation Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
-| E070 | Required field missing | Add the required field to asset.yaml |
-| E071 | Invalid extension FQN | Use `vendor.kind.name` format |
-| E072 | Invalid version format | Use semver format (e.g., `v1.0.0`) |
-| E073 | Type does not match extension kind | Ensure `type` matches the kind segment of the FQN |
-| E074 | Config fails schema validation | Fix config per the extension's JSON Schema |
-| E075 | Extension schema not found | Check extension FQN and version |
-| E076 | Asset referenced in dp.yaml not found | Run `dp asset create <name> --ext <extension>` |
-| E077 | Asset binding not found in bindings.yaml | Add the binding entry to bindings.yaml |
+| E025 | `pii=true requires classification` | Add classification level |
+| E026 | `confidential requires retention policy` | Add retention policy |
+
+### Examples
+
+#### Input Asset (database table)
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  namespace: default
+spec:
+  store: warehouse
+  table: public.users
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
+    - name: created_at
+      type: timestamp
+```
+
+#### Output Asset with column-level lineage
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users-parquet
+  namespace: default
+spec:
+  store: lake-raw
+  prefix: data/users/
+  format: parquet
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+      from: users.id
+    - name: email
+      type: string
+      pii: true
+      from: users.email
+    - name: created_at
+      type: timestamp
+      from: users.created_at
+```
+
+---
+
+## AssetGroup Schema
+
+An AssetGroup bundles multiple Assets produced by a single materialisation
+(e.g., a CloudQuery sync that snapshots several tables at once).
+
+### Full Schema
+
+```yaml
+# asset-group/<name>.yaml
+apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+kind: AssetGroup                                # Required: Resource type
+
+metadata:                           # Required: AssetGroup metadata
+  name: string                      # Required: Group name (1-63 chars, lowercase, hyphenated)
+  namespace: string                 # Optional: Team namespace
+  labels:                           # Optional: Key-value labels
+    key: value
+
+spec:                               # Required: AssetGroup specification
+  store: string                     # Required: Common Store for all assets in the group
+  assets:                           # Required: List of Asset names
+    - string
+```
+
+### Example
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: AssetGroup
+metadata:
+  name: pg-snapshot
+  namespace: default
+spec:
+  store: lake-raw
+  assets:
+    - users-parquet
+    - orders-parquet
+    - products-parquet
+```
+
+---
+
+## Connector Schema
+
+A Connector describes a storage technology type (e.g., Postgres, S3, Kafka).
+Maintained by the **platform team** and rarely changes.
+
+### Full Schema
+
+```yaml
+# connector/<name>.yaml
+apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+kind: Connector                                 # Required: Resource type
+
+metadata:                           # Required: Connector metadata
+  name: string                      # Required: Connector name (e.g., "postgres", "s3", "kafka")
+  labels:                           # Optional: Key-value labels
+    key: value
+
+spec:                               # Required: Connector specification
+  type: string                      # Required: Technology identifier (postgres, s3, kafka, snowflake)
+  protocol: string                  # Optional: Wire protocol (postgresql, s3, kafka)
+  capabilities:                     # Required: Supported roles
+    - string                        # "source", "destination", or both
+
+  plugin:                           # Optional: CloudQuery plugin images
+    source: string                  # CQ source plugin image
+    destination: string             # CQ destination plugin image
+```
+
+### Field Reference
+
+#### spec.type
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Examples | `postgres`, `s3`, `kafka`, `snowflake` |
+| Description | Technology identifier. |
+
+#### spec.capabilities
+
+| Property | Value |
+|----------|-------|
+| Type | array of strings |
+| Required | Yes |
+| Values | `source`, `destination` |
+| Description | What roles this connector can serve. |
+
+#### spec.plugin
+
+| Property | Value |
+|----------|-------|
+| Type | object |
+| Required | No |
+| Fields | `source` (string), `destination` (string) |
+| Description | CloudQuery plugin images for the `cloudquery` runtime. |
+
+### Examples
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+spec:
+  type: postgres
+  protocol: postgresql
+  capabilities: [source, destination]
+  plugin:
+    source: ghcr.io/infobloxopen/cq-source-postgres:0.1.0
+    destination: ghcr.io/cloudquery/cq-destination-postgres:latest
+```
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: s3
+spec:
+  type: s3
+  protocol: s3
+  capabilities: [destination]
+  plugin:
+    destination: ghcr.io/infobloxopen/cloudquery-plugin-s3:v7.10.2
+```
+
+---
+
+## Store Schema
+
+A Store is a **named instance** of a Connector: a specific database, bucket, or cluster
+with its connection details and credentials. Secrets live **only** on the Store.
+
+### Full Schema
+
+```yaml
+# store/<name>.yaml
+apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+kind: Store                                     # Required: Resource type
+
+metadata:                           # Required: Store metadata
+  name: string                      # Required: Logical store name (e.g., "warehouse", "lake-raw")
+  namespace: string                 # Optional: Team namespace
+  labels:                           # Optional: Key-value labels
+    key: value
+
+spec:                               # Required: Store specification
+  connector: string                 # Required: Name of the Connector this store is an instance of
+  connection:                       # Required: Technology-specific connection parameters
+    key: value                      # e.g., host, port, bucket, region, endpoint
+  secrets:                          # Optional: Credential references using ${VAR} interpolation
+    key: string                     # e.g., username: ${PG_USER}
+```
+
+### Field Reference
+
+#### spec.connector
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | Yes |
+| Description | References a Connector by name (e.g., `postgres`, `s3`). |
+
+#### spec.connection
+
+| Property | Value |
+|----------|-------|
+| Type | map (string → any) |
+| Required | Yes |
+| Description | Technology-specific connection parameters. Structure depends on the Connector type. |
+
+#### spec.secrets
+
+| Property | Value |
+|----------|-------|
+| Type | map (string → string) |
+| Required | No |
+| Description | Credential references using `${VAR}` interpolation. Resolved from environment variables or a secret store at runtime. |
+
+### Examples
+
+#### Postgres Store
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+  namespace: default
+  labels:
+    team: data-platform
+spec:
+  connector: postgres
+  connection:
+    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    port: 5432
+    database: dataplatform
+    schema: public
+    sslmode: disable
+  secrets:
+    username: ${PG_USER}
+    password: ${PG_PASSWORD}
+```
+
+#### S3 Store
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: lake-raw
+  namespace: default
+spec:
+  connector: s3
+  connection:
+    bucket: cdpp-raw
+    region: us-east-1
+    endpoint: http://dp-localstack-localstack.dp-local.svc.cluster.local:4566
+  secrets:
+    accessKeyId: ${AWS_ACCESS_KEY_ID}
+    secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+```
 
 ---
 
 ## pipeline.yaml Schema
 
 The pipeline workflow manifest defines ordered execution steps for multi-step data pipelines.
+This is a separate concept from Transform — it orchestrates multiple steps.
 
 ### Full Schema
 
@@ -636,8 +675,8 @@ steps:                                  # Required: Ordered list of steps
     # Publish step fields
     promote: boolean                    # Optional: Trigger promotion
     notify:                             # Optional: Notification config
-      channels: [string]               # Notification channels
-      recipients: [string]             # Direct recipients
+      channels: [string]
+      recipients: [string]
 
     # Custom step fields
     image: string                       # Required for custom: Container image
@@ -665,7 +704,7 @@ steps:                                  # Required: Ordered list of steps
 | `publish` | — | Notification and promotion |
 | `custom` | `image` | Arbitrary container execution |
 
-### Validation Error Codes
+### Pipeline Validation Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
@@ -712,7 +751,7 @@ suspend: boolean                        # Optional: Pause execution (default: fa
 * * * * *
 ```
 
-### Examples
+### Schedule Examples
 
 | Expression | Description |
 |-----------|-------------|
@@ -721,120 +760,176 @@ suspend: boolean                        # Optional: Pause execution (default: fa
 | `0 0 * * 1` | Every Monday at midnight |
 | `0 8 1 * *` | First day of each month at 8:00 AM |
 
-### Validation Error Codes
+### Schedule Validation Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
 | E100 | `cron expression is required` | Add a cron field |
 | E101 | `invalid cron expression` | Use valid 5-field cron syntax |
 | E102 | `invalid timezone` | Use a valid IANA timezone (e.g., America/New_York) |
-| E103 | `schedule has no actionable fields` | Add cron expression |
 
 ---
 
-## Validation Rules
+## Validation Rules Summary
 
-### Required Field Errors
+### Common Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
 | E001 | `metadata.name is required` | Add name field |
-| E002 | `spec.type is required` | Add type field |
-| E003 | `spec.owner is required` | Add owner field |
-
-### Format Errors
-
-| Code | Message | Resolution |
-|------|---------|------------|
+| E002 | `spec.runtime is required` | Add runtime field (Transform) |
 | E004 | `invalid name format` | Use lowercase and hyphens only |
 | E005 | `name too long` | Maximum 63 characters |
-
-### Reference Errors
-
-| Code | Message | Resolution |
-|------|---------|------------|
-| E010 | `binding not found: <key>` | Add binding to bindings.yaml |
-| E011 | `schema file not found: <path>` | Create schema file |
+| E011 | `schema file not found: <path>` | Create the referenced schema file |
 
 ### Classification Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
-| E025 | `pii=true requires sensitivity` | Add sensitivity level |
+| E025 | `pii=true requires classification` | Add classification level on Asset |
 | E026 | `confidential requires retention` | Add retention policy |
 
 ### CloudQuery Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
-| E060 | `spec.cloudquery is required when type is cloudquery` | Add `spec.cloudquery` section |
-| E061 | `spec.cloudquery.role is required and must be valid` | Set `role: source` |
-| W060 | `role: destination is not yet supported` | Use `role: source` (warning in normal mode, error in strict) |
-| E062 | `spec.cloudquery.grpcPort must be between 1024 and 65535` | Use a valid port number |
-| E063 | `spec.cloudquery.concurrency must be greater than 0` | Set concurrency ≥ 1 |
+| E060 | `cloudquery runtime requires Connector with plugin` | Ensure referenced Connector has plugin images |
+| E061 | `Connector role is required and must be valid` | Set valid capability on Connector |
+| E062 | `grpcPort must be between 1024 and 65535` | Use a valid port number |
+| E063 | `concurrency must be greater than 0` | Set concurrency ≥ 1 |
 
 ---
 
-## Example: Complete Package
+## Example: Complete Pipeline Package
 
-### dp.yaml
+A complete pipeline that syncs Postgres tables to S3:
 
-```yaml
-apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: user-events-processor
-  namespace: analytics
-  labels:
-    team: data-engineering
-    domain: events
-spec:
-  type: pipeline
-  description: Processes user events from Kafka to S3
-  owner: data-engineering@example.com
-  
-  inputs:
-    - name: events
-      type: kafka-topic
-      binding: input.events
-      schema: schemas/event.avsc
-      
-  outputs:
-    - name: processed
-      type: s3-prefix
-      binding: output.data
-      schema: schemas/output.avsc
-      classification:
-        pii: false
-        sensitivity: internal
+### Directory structure
+
+```
+my-pipeline/
+├── connector/
+│   ├── postgres.yaml
+│   └── s3.yaml
+├── store/
+│   ├── warehouse.yaml
+│   └── lake-raw.yaml
+├── asset/
+│   ├── users.yaml
+│   ├── users-parquet.yaml
+│   ├── orders.yaml
+│   └── orders-parquet.yaml
+├── asset-group/
+│   └── pg-snapshot.yaml
+└── dp.yaml                  # Transform manifest
 ```
 
-### bindings.yaml
+### dp.yaml (Transform)
 
 ```yaml
 apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
+kind: Transform
+metadata:
+  name: pg-to-s3
+  namespace: analytics
+  version: 0.1.0
+  labels:
+    team: data-engineering
 spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: analytics/user-events
-      config:
-        format: avro
-        consumer-group: user-events-processor
-        
-    output.data:
-      type: s3-prefix
-      ref: analytics-bucket/processed/events/
-      config:
-        format: parquet
-        compression: snappy
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: users
+    - asset: orders
+  outputs:
+    - asset: users-parquet
+    - asset: orders-parquet
+  schedule:
+    cron: "0 2 * * *"
+  timeout: 30m
+```
+
+### connector/postgres.yaml
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+spec:
+  type: postgres
+  protocol: postgresql
+  capabilities: [source, destination]
+  plugin:
+    source: ghcr.io/infobloxopen/cq-source-postgres:0.1.0
+```
+
+### store/warehouse.yaml
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+  namespace: analytics
+spec:
+  connector: postgres
+  connection:
+    host: dp-postgres.svc.cluster.local
+    port: 5432
+    database: analytics
+  secrets:
+    username: ${PG_USER}
+    password: ${PG_PASSWORD}
+```
+
+### asset/users.yaml (input)
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  namespace: analytics
+spec:
+  store: warehouse
+  table: public.users
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
+```
+
+### asset/users-parquet.yaml (output with lineage)
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users-parquet
+  namespace: analytics
+spec:
+  store: lake-raw
+  prefix: data/users/
+  format: parquet
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+      from: users.id
+    - name: email
+      type: string
+      pii: true
+      from: users.email
 ```
 
 ---
 
 ## See Also
 
-- [CLI Reference](cli.md) - dp lint command
-- [Concepts: Manifests](../concepts/manifests.md) - Conceptual overview
-- [Concepts: Data Packages](../concepts/data-packages.md) - Package structure
+- [CLI Reference](cli.md) — `dp lint` and `dp init` commands
+- [Concepts: Manifests](../concepts/manifests.md) — Conceptual overview of all manifest kinds
+- [Concepts: Data Packages](../concepts/data-packages.md) — Package structure and runtimes

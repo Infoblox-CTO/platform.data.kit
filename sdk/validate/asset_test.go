@@ -5,187 +5,145 @@ import (
 	"testing"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestAssetValidator_ValidateAsset(t *testing.T) {
-	tests := []struct {
-		name       string
-		asset      *contracts.AssetManifest
-		offline    bool
-		wantErrors int
-		wantCodes  []string
-	}{
-		{
-			name: "valid asset",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "aws-security",
-				Type:       contracts.AssetTypeSource,
-				Extension:  "cloudquery.source.aws",
-				Version:    "v24.0.2",
-				OwnerTeam:  "security-data",
-				Config: map[string]any{
-					"accounts": []any{"123456789012"},
-					"regions":  []any{"us-east-1"},
-					"tables":   []any{"aws_s3_buckets"},
-				},
-			},
-			wantErrors: 0,
+func validAsset() *contracts.AssetManifest {
+	return &contracts.AssetManifest{
+		APIVersion: "data.infoblox.com/v1alpha1",
+		Kind:       "Asset",
+		Metadata: contracts.AssetMetadata{
+			Name: "aws-security",
 		},
-		{
-			name:       "nil asset",
-			asset:      nil,
-			wantErrors: 1,
-			wantCodes:  []string{ErrAssetRequired},
+		Spec: contracts.AssetSpec{
+			Store: "my-s3",
+			Table: "security_findings",
 		},
-		{
-			name: "missing required config field",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "aws-missing",
-				Type:       contracts.AssetTypeSource,
-				Extension:  "cloudquery.source.aws",
-				Version:    "v24.0.2",
-				OwnerTeam:  "team",
-				Config:     map[string]any{"accounts": []any{"123456789012"}},
-				// Missing "regions" and "tables" required fields
-			},
-			wantErrors: 1, // Schema validation catches multiple missing fields as one error tree
-			wantCodes:  []string{ErrAssetSchemaValidation},
-		},
-		{
-			name: "wrong config type",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "aws-wrong-type",
-				Type:       contracts.AssetTypeSource,
-				Extension:  "cloudquery.source.aws",
-				Version:    "v24.0.2",
-				OwnerTeam:  "team",
-				Config: map[string]any{
-					"accounts": "not-an-array", // Should be array
-					"regions":  []any{"us-east-1"},
-					"tables":   []any{"aws_s3_buckets"},
-				},
-			},
-			wantErrors: 1,
-			wantCodes:  []string{ErrAssetSchemaValidation},
-		},
-		{
-			name: "invalid FQN",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "bad-fqn",
-				Type:       contracts.AssetTypeSource,
-				Extension:  "bad-fqn",
-				Version:    "v1.0.0",
-				OwnerTeam:  "team",
-				Config:     map[string]any{"k": "v"},
-			},
-			offline:    true,
-			wantErrors: 1,
-			wantCodes:  []string{ErrAssetInvalidFQN},
-		},
-		{
-			name: "invalid version",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "bad-version",
-				Type:       contracts.AssetTypeSource,
-				Extension:  "cloudquery.source.aws",
-				Version:    "not-semver",
-				OwnerTeam:  "team",
-				Config:     map[string]any{"k": "v"},
-			},
-			offline:    true,
-			wantErrors: 1,
-			wantCodes:  []string{ErrAssetInvalidVersion},
-		},
-		{
-			name: "type mismatch with FQN kind",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "type-mismatch",
-				Type:       contracts.AssetTypeSink, // FQN says "source"
-				Extension:  "cloudquery.source.aws",
-				Version:    "v1.0.0",
-				OwnerTeam:  "team",
-				Config:     map[string]any{"k": "v"},
-			},
-			offline:    true,
-			wantErrors: 1,
-			wantCodes:  []string{ErrAssetTypeMismatch},
-		},
-		{
-			name: "empty config with no required fields (offline)",
-			asset: &contracts.AssetManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
-				Kind:       "Asset",
-				Name:       "empty-config",
-				Type:       contracts.AssetTypeSource,
-				Extension:  "cloudquery.source.aws",
-				Version:    "v1.0.0",
-				OwnerTeam:  "team",
-				Config:     map[string]any{},
-			},
-			offline:    true,
-			wantErrors: 0,
-		},
-		{
-			name:       "all required fields missing",
-			asset:      &contracts.AssetManifest{},
-			offline:    true,
-			wantErrors: 6, // apiVersion, kind (invalid), name, extension, version, ownerTeam, config
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var v *AssetValidator
-			if tt.offline {
-				v = NewOfflineAssetValidator()
-			} else {
-				v = NewAssetValidator(asset.NewEmbeddedResolver())
-			}
-
-			errs := v.ValidateAsset(context.Background(), tt.asset)
-
-			if tt.wantErrors > 0 && len(errs) == 0 {
-				t.Fatalf("expected %d+ errors, got 0", tt.wantErrors)
-			}
-
-			if tt.wantErrors == 0 && len(errs) > 0 {
-				t.Fatalf("expected no errors, got %d: %v", len(errs), errs)
-			}
-
-			if tt.wantCodes != nil {
-				for _, code := range tt.wantCodes {
-					found := false
-					for _, e := range errs {
-						if e.Code == code {
-							found = true
-							break
-						}
-					}
-					if !found {
-						t.Errorf("expected error code %s not found in errors: %v", code, errs)
-					}
-				}
-			}
-		})
 	}
 }
 
-func TestAssetValidator_Name(t *testing.T) {
-	v := NewAssetValidator(nil)
-	if v.Name() != "asset" {
-		t.Errorf("Name() = %q, want %q", v.Name(), "asset")
+func TestValidateAsset_Valid(t *testing.T) {
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), validAsset())
+	assert.Empty(t, []*contracts.ValidationError(errs), "expected no errors for a valid asset")
+}
+
+func TestValidateAsset_Nil(t *testing.T) {
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), nil)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
+}
+
+func TestValidateAsset_MissingAPIVersion(t *testing.T) {
+	a := validAsset()
+	a.APIVersion = ""
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
+}
+
+func TestValidateAsset_MissingKind(t *testing.T) {
+	a := validAsset()
+	a.Kind = ""
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
+}
+
+func TestValidateAsset_WrongKind(t *testing.T) {
+	a := validAsset()
+	a.Kind = "Store"
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrInvalidFormat))
+}
+
+func TestValidateAsset_MissingName(t *testing.T) {
+	a := validAsset()
+	a.Metadata.Name = ""
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
+}
+
+func TestValidateAsset_InvalidName(t *testing.T) {
+	a := validAsset()
+	a.Metadata.Name = "AB"
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrInvalidFormat))
+}
+
+func TestValidateAsset_MissingStore(t *testing.T) {
+	a := validAsset()
+	a.Spec.Store = ""
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
+}
+
+func TestValidateAsset_NoLocator_Warning(t *testing.T) {
+	a := validAsset()
+	a.Spec.Table = ""
+	a.Spec.Prefix = ""
+	a.Spec.Topic = ""
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	// Should produce a warning, not an error
+	found := false
+	for _, e := range errs {
+		if e.Code == ErrAssetRequired && e.Severity == contracts.SeverityWarning {
+			found = true
+		}
 	}
+	assert.True(t, found, "expected a warning about missing locator")
+}
+
+func TestValidateAsset_InvalidClassification(t *testing.T) {
+	a := validAsset()
+	a.Spec.Classification = "top-secret"
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrInvalidFormat))
+}
+
+func TestValidateAsset_ValidClassification(t *testing.T) {
+	for _, c := range []string{"public", "internal", "confidential", "restricted"} {
+		a := validAsset()
+		a.Spec.Classification = c
+		v := NewOfflineAssetValidator()
+		errs := v.ValidateAsset(context.Background(), a)
+		assert.Empty(t, []*contracts.ValidationError(errs), "expected no errors for classification=%s", c)
+	}
+}
+
+func TestValidateAsset_DuplicateSchemaFieldName(t *testing.T) {
+	a := validAsset()
+	a.Spec.Schema = []contracts.SchemaField{
+		{Name: "id", Type: "integer"},
+		{Name: "id", Type: "string"},
+	}
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrInvalidFormat))
+}
+
+func TestValidateAsset_SchemaFieldMissingName(t *testing.T) {
+	a := validAsset()
+	a.Spec.Schema = []contracts.SchemaField{
+		{Name: "", Type: "integer"},
+	}
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
+}
+
+func TestValidateAsset_SchemaFieldMissingType(t *testing.T) {
+	a := validAsset()
+	a.Spec.Schema = []contracts.SchemaField{
+		{Name: "id", Type: ""},
+	}
+	v := NewOfflineAssetValidator()
+	errs := v.ValidateAsset(context.Background(), a)
+	assert.True(t, hasErrorCode(errs, ErrAssetRequired))
 }

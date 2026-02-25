@@ -40,9 +40,6 @@ type EnvironmentSpec struct {
 	// Namespace is the Kubernetes namespace.
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 
-	// Bindings is the name of the bindings to use.
-	Bindings string `json:"bindings,omitempty" yaml:"bindings,omitempty"`
-
 	// ApprovalRequired indicates if promotion requires approval.
 	ApprovalRequired bool `json:"approvalRequired,omitempty" yaml:"approvalRequired,omitempty"`
 }

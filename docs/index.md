@@ -25,7 +25,7 @@ A Kubernetes-native data pipeline platform enabling teams to contribute reusable
 
 DP (Data Platform) is a developer-first platform for building, testing, and deploying data pipelines. It provides:
 
-- **📦 Data Packages**: Self-contained units of data processing with manifests, pipelines, and bindings
+- **📦 Data Packages**: Self-contained units of data processing with Transforms, Assets, Stores, and Connectors
 - **🔄 GitOps Workflow**: PR-based promotion through dev → int → prod environments
 - **📊 Data Lineage**: Automatic OpenLineage tracking with Marquez integration
 - **🔒 Governance**: Built-in PII classification and compliance metadata
@@ -72,7 +72,7 @@ Complete CLI reference, manifest schemas, and configuration options.
 
 ```bash
 # 1. Create a new data package
-dp init my-pipeline --kind model --runtime generic-python
+dp init my-pipeline --runtime generic-python
 
 # 2. Start local development environment
 dp dev up

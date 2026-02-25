@@ -29,57 +29,84 @@ func TestParseManifest(t *testing.T) {
 		wantName string
 	}{
 		{
-			name: "valid source",
+			name: "valid connector",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Source
+kind: Connector
 metadata:
-  name: my-source
-  namespace: data-team
-  version: 1.0.0
+  name: postgres
 spec:
-  description: A test source
-  owner: data-team
-  runtime: cloudquery
+  type: postgres
+  capabilities:
+    - source
+    - destination
 `),
 			wantErr:  false,
-			wantKind: contracts.KindSource,
-			wantName: "my-source",
+			wantKind: contracts.KindConnector,
+			wantName: "postgres",
 		},
 		{
-			name: "valid destination",
+			name: "valid store",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Destination
+kind: Store
 metadata:
-  name: my-dest
+  name: warehouse
   namespace: data-team
-  version: 1.0.0
 spec:
-  description: A test destination
-  owner: data-team
-  runtime: cloudquery
+  connector: postgres
+  connection:
+    host: db.example.com
 `),
 			wantErr:  false,
-			wantKind: contracts.KindDestination,
-			wantName: "my-dest",
+			wantKind: contracts.KindStore,
+			wantName: "warehouse",
 		},
 		{
-			name: "valid model",
+			name: "valid asset",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Asset
 metadata:
-  name: my-model
-  namespace: data-team
-  version: 1.0.0
+  name: users
 spec:
-  description: A test model
-  owner: data-team
-  runtime: generic-go
-  image: myimage:v1
-  mode: batch
+  store: warehouse
+  table: public.users
 `),
 			wantErr:  false,
-			wantKind: contracts.KindModel,
-			wantName: "my-model",
+			wantKind: contracts.KindAsset,
+			wantName: "users",
+		},
+		{
+			name: "valid asset group",
+			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: AssetGroup
+metadata:
+  name: pg-snapshot
+spec:
+  store: warehouse
+  assets:
+    - users
+    - orders
+`),
+			wantErr:  false,
+			wantKind: contracts.KindAssetGroup,
+			wantName: "pg-snapshot",
+		},
+		{
+			name: "valid transform",
+			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: pg-to-s3
+  version: 1.0.0
+spec:
+  runtime: cloudquery
+  inputs:
+    - asset: users
+  outputs:
+    - asset: users-parquet
+`),
+			wantErr:  false,
+			wantKind: contracts.KindTransform,
+			wantName: "pg-to-s3",
 		},
 		{
 			name: "unsupported kind returns error",
@@ -130,18 +157,16 @@ func TestParseManifestFile(t *testing.T) {
 		wantKind contracts.Kind
 	}{
 		{
-			name: "valid model file",
+			name: "valid connector file",
 			setup: func(t *testing.T, dir string) string {
 				content := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Connector
 metadata:
   name: file-test
-  namespace: test
-  version: 1.0.0
 spec:
-  description: Test
-  owner: test
-  runtime: generic-go
+  type: postgres
+  capabilities:
+    - source
 `
 				path := filepath.Join(dir, "dp.yaml")
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -151,7 +176,7 @@ spec:
 			},
 			wantErr:  false,
 			wantName: "file-test",
-			wantKind: contracts.KindModel,
+			wantKind: contracts.KindConnector,
 		},
 		{
 			name: "file not found",
@@ -195,234 +220,7 @@ spec:
 	}
 }
 
-func TestDefaultParser_ParseSource(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Source
-metadata:
-  name: aws-source
-  namespace: data-team
-  version: 1.0.0
-spec:
-  description: AWS source
-  owner: data-team
-  runtime: cloudquery
-  image: myorg/aws-source:v1
-`)
-
-	p := NewParser()
-	src, err := p.ParseSource(data)
-	if err != nil {
-		t.Fatalf("ParseSource() error = %v", err)
-	}
-	if src.Metadata.Name != "aws-source" {
-		t.Errorf("name = %v, want aws-source", src.Metadata.Name)
-	}
-	if src.Spec.Runtime != contracts.RuntimeCloudQuery {
-		t.Errorf("runtime = %v, want cloudquery", src.Spec.Runtime)
-	}
-}
-
-func TestDefaultParser_ParseDestination(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Destination
-metadata:
-  name: pg-dest
-  namespace: data-team
-  version: 1.0.0
-spec:
-  description: Postgres destination
-  owner: data-team
-  runtime: cloudquery
-  image: myorg/pg-dest:v1
-`)
-
-	p := NewParser()
-	dest, err := p.ParseDestination(data)
-	if err != nil {
-		t.Fatalf("ParseDestination() error = %v", err)
-	}
-	if dest.Metadata.Name != "pg-dest" {
-		t.Errorf("name = %v, want pg-dest", dest.Metadata.Name)
-	}
-}
-
-func TestDefaultParser_ParseModel(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Model
-metadata:
-  name: etl-model
-  namespace: data-team
-  version: 2.0.0
-spec:
-  description: ETL model
-  owner: data-team
-  runtime: generic-go
-  image: myorg/etl:v2
-  mode: batch
-  env:
-    - name: LOG_LEVEL
-      value: debug
-  outputs:
-    - name: processed-data
-      type: s3-prefix
-      binding: output-bucket
-`)
-
-	p := NewParser()
-	model, err := p.ParseModel(data)
-	if err != nil {
-		t.Fatalf("ParseModel() error = %v", err)
-	}
-	if model.Metadata.Name != "etl-model" {
-		t.Errorf("name = %v, want etl-model", model.Metadata.Name)
-	}
-	if model.Spec.Mode != contracts.ModeBatch {
-		t.Errorf("mode = %v, want batch", model.Spec.Mode)
-	}
-	if len(model.Spec.Env) != 1 {
-		t.Errorf("env count = %v, want 1", len(model.Spec.Env))
-	}
-	if len(model.Spec.Outputs) != 1 {
-		t.Errorf("outputs count = %v, want 1", len(model.Spec.Outputs))
-	}
-}
-
-func TestDefaultParser_ParseBindings(t *testing.T) {
-	tests := []struct {
-		name      string
-		data      []byte
-		wantErr   bool
-		wantCount int
-	}{
-		{
-			name: "valid bindings",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
-bindings:
-  - name: data-bucket
-    type: s3-prefix
-    s3:
-      bucket: my-bucket
-      prefix: data/
-  - name: events-topic
-    type: kafka-topic
-    kafka:
-      topic: events
-`),
-			wantErr:   false,
-			wantCount: 2,
-		},
-		{
-			name: "empty bindings",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
-bindings: []
-`),
-			wantErr:   false,
-			wantCount: 0,
-		},
-		{
-			name:    "malformed YAML",
-			data:    []byte("not valid yaml ["),
-			wantErr: true,
-		},
-	}
-
-	p := NewParser()
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			bindings, err := p.ParseBindings(tt.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseBindings() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && len(bindings) != tt.wantCount {
-				t.Errorf("ParseBindings() count = %v, want %v", len(bindings), tt.wantCount)
-			}
-		})
-	}
-}
-
-func TestParseBindingsFile(t *testing.T) {
-	tests := []struct {
-		name      string
-		setup     func(t *testing.T, dir string) string
-		wantErr   bool
-		wantCount int
-	}{
-		{
-			name: "valid file",
-			setup: func(t *testing.T, dir string) string {
-				content := `apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
-bindings:
-  - name: test-bucket
-    type: s3-prefix
-    s3:
-      bucket: test
-`
-				path := filepath.Join(dir, "bindings.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-					t.Fatalf("failed to write file: %v", err)
-				}
-				return path
-			},
-			wantErr:   false,
-			wantCount: 1,
-		},
-		{
-			name: "file not found",
-			setup: func(t *testing.T, dir string) string {
-				return filepath.Join(dir, "missing.yaml")
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			path := tt.setup(t, dir)
-
-			bindings, err := ParseBindingsFile(path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseBindingsFile() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && len(bindings) != tt.wantCount {
-				t.Errorf("ParseBindingsFile() count = %v, want %v", len(bindings), tt.wantCount)
-			}
-		})
-	}
-}
-
 func TestParser_ParseFromTestdata(t *testing.T) {
-	t.Run("valid model", func(t *testing.T) {
-		m, kind, err := ParseManifestFile("testdata/valid/datapackage.yaml")
-		if err != nil {
-			t.Fatalf("ParseManifestFile() error = %v", err)
-		}
-		if m.GetName() != "valid-manifest" {
-			t.Errorf("name = %v, want valid-manifest", m.GetName())
-		}
-		if kind != contracts.KindModel {
-			t.Errorf("kind = %v, want Model", kind)
-		}
-	})
-
-	t.Run("valid source", func(t *testing.T) {
-		m, kind, err := ParseManifestFile("testdata/valid/pipeline.yaml")
-		if err != nil {
-			t.Fatalf("ParseManifestFile() error = %v", err)
-		}
-		if m.GetName() != "sample-source" {
-			t.Errorf("name = %v, want sample-source", m.GetName())
-		}
-		if kind != contracts.KindSource {
-			t.Errorf("kind = %v, want Source", kind)
-		}
-	})
-
 	t.Run("malformed yaml", func(t *testing.T) {
 		_, _, err := ParseManifestFile("testdata/invalid/malformed.yaml")
 		if err == nil {
@@ -474,9 +272,11 @@ func TestParser_MissingRequiredFields(t *testing.T) {
 	}{
 		{
 			name: "missing apiVersion",
-			data: []byte(`kind: Model
+			data: []byte(`kind: Connector
 metadata:
   name: test
+spec:
+  type: postgres
 `),
 			checkErr: false, // Parses but validation should catch
 		},
@@ -491,16 +291,16 @@ metadata:
 		{
 			name: "missing metadata",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Connector
 spec:
-  runtime: generic-go
+  type: postgres
 `),
 			checkErr: false, // Parses but has empty metadata
 		},
 		{
 			name: "missing spec",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Connector
 metadata:
   name: test
 `),
@@ -509,7 +309,7 @@ metadata:
 		{
 			name: "empty metadata name",
 			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Connector
 metadata:
   name: ""
 `),
@@ -537,37 +337,596 @@ metadata:
 }
 
 func TestManifestInterface(t *testing.T) {
-	src := &contracts.Source{
-		Kind: string(contracts.KindSource),
-		Metadata: contracts.ExtMetadata{
-			Name:      "test-src",
-			Namespace: "ns",
-			Version:   "1.0.0",
-		},
-		Spec: contracts.SourceSpec{
-			Description: "Test source",
-			Owner:       "team",
-		},
+	// Test new kinds satisfy Manifest interface
+	t.Run("Connector", func(t *testing.T) {
+		var m Manifest = &contracts.Connector{
+			Kind:     string(contracts.KindConnector),
+			Metadata: contracts.ConnectorMetadata{Name: "pg"},
+		}
+		if m.GetKind() != contracts.KindConnector {
+			t.Errorf("GetKind() = %v, want Connector", m.GetKind())
+		}
+		if m.GetName() != "pg" {
+			t.Errorf("GetName() = %v, want pg", m.GetName())
+		}
+	})
+
+	t.Run("Store", func(t *testing.T) {
+		var m Manifest = &contracts.Store{
+			Kind:     string(contracts.KindStore),
+			Metadata: contracts.StoreMetadata{Name: "warehouse", Namespace: "data-team"},
+		}
+		if m.GetKind() != contracts.KindStore {
+			t.Errorf("GetKind() = %v, want Store", m.GetKind())
+		}
+		if m.GetName() != "warehouse" {
+			t.Errorf("GetName() = %v, want warehouse", m.GetName())
+		}
+		if m.GetNamespace() != "data-team" {
+			t.Errorf("GetNamespace() = %v, want data-team", m.GetNamespace())
+		}
+	})
+
+	t.Run("Asset", func(t *testing.T) {
+		var m Manifest = &contracts.AssetManifest{
+			Kind:     string(contracts.KindAsset),
+			Metadata: contracts.AssetMetadata{Name: "users", Namespace: "data-team"},
+		}
+		if m.GetKind() != contracts.KindAsset {
+			t.Errorf("GetKind() = %v, want Asset", m.GetKind())
+		}
+		if m.GetName() != "users" {
+			t.Errorf("GetName() = %v, want users", m.GetName())
+		}
+	})
+
+	t.Run("AssetGroup", func(t *testing.T) {
+		var m Manifest = &contracts.AssetGroupManifest{
+			Kind:     string(contracts.KindAssetGroup),
+			Metadata: contracts.AssetGroupMetadata{Name: "pg-snap"},
+		}
+		if m.GetKind() != contracts.KindAssetGroup {
+			t.Errorf("GetKind() = %v, want AssetGroup", m.GetKind())
+		}
+		if m.GetName() != "pg-snap" {
+			t.Errorf("GetName() = %v, want pg-snap", m.GetName())
+		}
+	})
+
+	t.Run("Transform", func(t *testing.T) {
+		var m Manifest = &contracts.Transform{
+			Kind:     string(contracts.KindTransform),
+			Metadata: contracts.TransformMetadata{Name: "pg-to-s3", Namespace: "ns", Version: "1.0.0"},
+		}
+		if m.GetKind() != contracts.KindTransform {
+			t.Errorf("GetKind() = %v, want Transform", m.GetKind())
+		}
+		if m.GetName() != "pg-to-s3" {
+			t.Errorf("GetName() = %v, want pg-to-s3", m.GetName())
+		}
+		if m.GetVersion() != "1.0.0" {
+			t.Errorf("GetVersion() = %v, want 1.0.0", m.GetVersion())
+		}
+	})
+
+}
+
+// --- Tests for new kind parser methods ---
+
+func TestDefaultParser_ParseConnector(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+spec:
+  type: postgres
+  protocol: postgresql
+  capabilities:
+    - source
+    - destination
+  plugin:
+    source: ghcr.io/cloudquery/cq-source-postgresql:v8.0.0
+    destination: ghcr.io/cloudquery/cq-destination-postgresql:v8.0.0
+`)
+
+	p := NewParser()
+	c, err := p.ParseConnector(data)
+	if err != nil {
+		t.Fatalf("ParseConnector() error = %v", err)
+	}
+	if c.Metadata.Name != "postgres" {
+		t.Errorf("name = %v, want postgres", c.Metadata.Name)
+	}
+	if c.Spec.Type != "postgres" {
+		t.Errorf("type = %v, want postgres", c.Spec.Type)
+	}
+	if len(c.Spec.Capabilities) != 2 {
+		t.Errorf("capabilities count = %v, want 2", len(c.Spec.Capabilities))
+	}
+	if c.Spec.Plugin == nil {
+		t.Fatal("plugin is nil")
+	}
+	if c.Spec.Plugin.Source != "ghcr.io/cloudquery/cq-source-postgresql:v8.0.0" {
+		t.Errorf("plugin.source = %v", c.Spec.Plugin.Source)
+	}
+}
+
+func TestDefaultParser_ParseConnector_WrongKind(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: test
+spec:
+  connector: postgres
+  connection:
+    host: localhost
+`)
+
+	p := NewParser()
+	_, err := p.ParseConnector(data)
+	if err == nil {
+		t.Error("expected error for wrong kind")
+	}
+}
+
+func TestDefaultParser_ParseStore(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+  namespace: data-team
+spec:
+  connector: postgres
+  connection:
+    host: db.example.com
+    port: 5432
+    database: analytics
+  secrets:
+    username: ${PG_USER}
+    password: ${PG_PASS}
+`)
+
+	p := NewParser()
+	s, err := p.ParseStore(data)
+	if err != nil {
+		t.Fatalf("ParseStore() error = %v", err)
+	}
+	if s.Metadata.Name != "warehouse" {
+		t.Errorf("name = %v, want warehouse", s.Metadata.Name)
+	}
+	if s.Metadata.Namespace != "data-team" {
+		t.Errorf("namespace = %v, want data-team", s.Metadata.Namespace)
+	}
+	if s.Spec.Connector != "postgres" {
+		t.Errorf("connector = %v, want postgres", s.Spec.Connector)
+	}
+	if len(s.Spec.Connection) != 3 {
+		t.Errorf("connection fields = %v, want 3", len(s.Spec.Connection))
+	}
+	if s.Spec.Secrets["username"] != "${PG_USER}" {
+		t.Errorf("secrets.username = %v", s.Spec.Secrets["username"])
+	}
+}
+
+func TestDefaultParser_ParseAsset(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  namespace: data-team
+spec:
+  store: warehouse
+  table: public.users
+  classification: internal
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
+`)
+
+	p := NewParser()
+	a, err := p.ParseAsset(data)
+	if err != nil {
+		t.Fatalf("ParseAsset() error = %v", err)
+	}
+	if a.Metadata.Name != "users" {
+		t.Errorf("name = %v, want users", a.Metadata.Name)
+	}
+	if a.Spec.Store != "warehouse" {
+		t.Errorf("store = %v, want warehouse", a.Spec.Store)
+	}
+	if a.Spec.Table != "public.users" {
+		t.Errorf("table = %v, want public.users", a.Spec.Table)
+	}
+	if len(a.Spec.Schema) != 2 {
+		t.Errorf("schema fields = %v, want 2", len(a.Spec.Schema))
+	}
+	if !a.Spec.Schema[1].PII {
+		t.Error("expected email field to have PII=true")
+	}
+}
+
+func TestDefaultParser_ParseAssetGroup(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: AssetGroup
+metadata:
+  name: pg-snapshot
+  namespace: data-team
+spec:
+  store: warehouse
+  assets:
+    - users
+    - orders
+    - products
+`)
+
+	p := NewParser()
+	ag, err := p.ParseAssetGroup(data)
+	if err != nil {
+		t.Fatalf("ParseAssetGroup() error = %v", err)
+	}
+	if ag.Metadata.Name != "pg-snapshot" {
+		t.Errorf("name = %v, want pg-snapshot", ag.Metadata.Name)
+	}
+	if ag.Spec.Store != "warehouse" {
+		t.Errorf("store = %v, want warehouse", ag.Spec.Store)
+	}
+	if len(ag.Spec.Assets) != 3 {
+		t.Errorf("assets count = %v, want 3", len(ag.Spec.Assets))
+	}
+}
+
+func TestDefaultParser_ParseTransform(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: pg-to-s3
+  namespace: data-team
+  version: 1.0.0
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: users
+  outputs:
+    - asset: users-parquet
+  timeout: 30m
+`)
+
+	p := NewParser()
+	tr, err := p.ParseTransform(data)
+	if err != nil {
+		t.Fatalf("ParseTransform() error = %v", err)
+	}
+	if tr.Metadata.Name != "pg-to-s3" {
+		t.Errorf("name = %v, want pg-to-s3", tr.Metadata.Name)
+	}
+	if tr.Metadata.Version != "1.0.0" {
+		t.Errorf("version = %v, want 1.0.0", tr.Metadata.Version)
+	}
+	if tr.Spec.Runtime != contracts.RuntimeCloudQuery {
+		t.Errorf("runtime = %v, want cloudquery", tr.Spec.Runtime)
+	}
+	if tr.Spec.Mode != contracts.ModeBatch {
+		t.Errorf("mode = %v, want batch", tr.Spec.Mode)
+	}
+	if len(tr.Spec.Inputs) != 1 {
+		t.Errorf("inputs count = %v, want 1", len(tr.Spec.Inputs))
+	}
+	if len(tr.Spec.Outputs) != 1 {
+		t.Errorf("outputs count = %v, want 1", len(tr.Spec.Outputs))
+	}
+	if tr.Spec.Timeout != "30m" {
+		t.Errorf("timeout = %v, want 30m", tr.Spec.Timeout)
+	}
+}
+
+// --- FromBytes/ToBytes round-trip tests ---
+
+func TestConnectorFromBytes_RoundTrip(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: s3
+spec:
+  type: s3
+  protocol: s3
+  capabilities:
+    - destination
+`)
+
+	c, err := ConnectorFromBytes(data)
+	if err != nil {
+		t.Fatalf("ConnectorFromBytes() error = %v", err)
 	}
 
-	// Verify it satisfies the Manifest interface
-	var m Manifest = src
-	if m.GetKind() != contracts.KindSource {
-		t.Errorf("GetKind() = %v, want Source", m.GetKind())
+	out, err := ConnectorToBytes(c)
+	if err != nil {
+		t.Fatalf("ConnectorToBytes() error = %v", err)
 	}
-	if m.GetName() != "test-src" {
-		t.Errorf("GetName() = %v, want test-src", m.GetName())
+
+	c2, err := ConnectorFromBytes(out)
+	if err != nil {
+		t.Fatalf("re-parse error = %v", err)
 	}
-	if m.GetNamespace() != "ns" {
-		t.Errorf("GetNamespace() = %v, want ns", m.GetNamespace())
+	if c2.Metadata.Name != "s3" {
+		t.Errorf("round-trip name = %v, want s3", c2.Metadata.Name)
 	}
-	if m.GetVersion() != "1.0.0" {
-		t.Errorf("GetVersion() = %v, want 1.0.0", m.GetVersion())
+	if c2.Spec.Type != "s3" {
+		t.Errorf("round-trip type = %v, want s3", c2.Spec.Type)
 	}
-	if m.GetDescription() != "Test source" {
-		t.Errorf("GetDescription() = %v, want Test source", m.GetDescription())
+}
+
+func TestStoreFromBytes_RoundTrip(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: lake-raw
+spec:
+  connector: s3
+  connection:
+    bucket: my-data-lake
+    region: us-east-1
+`)
+
+	s, err := StoreFromBytes(data)
+	if err != nil {
+		t.Fatalf("StoreFromBytes() error = %v", err)
 	}
-	if m.GetOwner() != "team" {
-		t.Errorf("GetOwner() = %v, want team", m.GetOwner())
+
+	out, err := StoreToBytes(s)
+	if err != nil {
+		t.Fatalf("StoreToBytes() error = %v", err)
 	}
+
+	s2, err := StoreFromBytes(out)
+	if err != nil {
+		t.Fatalf("re-parse error = %v", err)
+	}
+	if s2.Metadata.Name != "lake-raw" {
+		t.Errorf("round-trip name = %v, want lake-raw", s2.Metadata.Name)
+	}
+}
+
+func TestAssetFromBytes_RoundTrip(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: orders
+spec:
+  store: warehouse
+  table: public.orders
+  format: parquet
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: amount
+      type: float
+`)
+
+	a, err := AssetFromBytes(data)
+	if err != nil {
+		t.Fatalf("AssetFromBytes() error = %v", err)
+	}
+
+	out, err := AssetToBytes(a)
+	if err != nil {
+		t.Fatalf("AssetToBytes() error = %v", err)
+	}
+
+	a2, err := AssetFromBytes(out)
+	if err != nil {
+		t.Fatalf("re-parse error = %v", err)
+	}
+	if a2.Metadata.Name != "orders" {
+		t.Errorf("round-trip name = %v, want orders", a2.Metadata.Name)
+	}
+	if len(a2.Spec.Schema) != 2 {
+		t.Errorf("round-trip schema = %v, want 2", len(a2.Spec.Schema))
+	}
+}
+
+func TestAssetGroupFromBytes_RoundTrip(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: AssetGroup
+metadata:
+  name: snapshot
+spec:
+  store: warehouse
+  assets:
+    - users
+    - orders
+`)
+
+	ag, err := AssetGroupFromBytes(data)
+	if err != nil {
+		t.Fatalf("AssetGroupFromBytes() error = %v", err)
+	}
+
+	out, err := AssetGroupToBytes(ag)
+	if err != nil {
+		t.Fatalf("AssetGroupToBytes() error = %v", err)
+	}
+
+	ag2, err := AssetGroupFromBytes(out)
+	if err != nil {
+		t.Fatalf("re-parse error = %v", err)
+	}
+	if ag2.Metadata.Name != "snapshot" {
+		t.Errorf("round-trip name = %v, want snapshot", ag2.Metadata.Name)
+	}
+	if len(ag2.Spec.Assets) != 2 {
+		t.Errorf("round-trip assets = %v, want 2", len(ag2.Spec.Assets))
+	}
+}
+
+func TestTransformFromBytes_RoundTrip(t *testing.T) {
+	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: enrich
+  version: 2.0.0
+spec:
+  runtime: generic-python
+  mode: batch
+  image: myorg/enrich:v2
+  command:
+    - python
+    - -m
+    - enrich
+  inputs:
+    - asset: raw-events
+  outputs:
+    - asset: enriched-events
+  env:
+    - name: LOG_LEVEL
+      value: debug
+  timeout: 1h
+`)
+
+	tr, err := TransformFromBytes(data)
+	if err != nil {
+		t.Fatalf("TransformFromBytes() error = %v", err)
+	}
+
+	out, err := TransformToBytes(tr)
+	if err != nil {
+		t.Fatalf("TransformToBytes() error = %v", err)
+	}
+
+	tr2, err := TransformFromBytes(out)
+	if err != nil {
+		t.Fatalf("re-parse error = %v", err)
+	}
+	if tr2.Metadata.Name != "enrich" {
+		t.Errorf("round-trip name = %v, want enrich", tr2.Metadata.Name)
+	}
+	if tr2.Spec.Image != "myorg/enrich:v2" {
+		t.Errorf("round-trip image = %v, want myorg/enrich:v2", tr2.Spec.Image)
+	}
+	if len(tr2.Spec.Command) != 3 {
+		t.Errorf("round-trip command = %v, want 3", len(tr2.Spec.Command))
+	}
+}
+
+// --- File parsing tests for new kinds ---
+
+func TestParseConnectorFile(t *testing.T) {
+	c, err := ParseConnectorFile("testdata/valid/connector.yaml")
+	if err != nil {
+		t.Fatalf("ParseConnectorFile() error = %v", err)
+	}
+	if c.Metadata.Name != "postgres" {
+		t.Errorf("name = %v, want postgres", c.Metadata.Name)
+	}
+}
+
+func TestParseStoreFile(t *testing.T) {
+	s, err := ParseStoreFile("testdata/valid/store.yaml")
+	if err != nil {
+		t.Fatalf("ParseStoreFile() error = %v", err)
+	}
+	if s.Metadata.Name != "warehouse" {
+		t.Errorf("name = %v, want warehouse", s.Metadata.Name)
+	}
+}
+
+func TestParseAssetFile(t *testing.T) {
+	a, err := ParseAssetFile("testdata/valid/asset.yaml")
+	if err != nil {
+		t.Fatalf("ParseAssetFile() error = %v", err)
+	}
+	if a.Metadata.Name != "users" {
+		t.Errorf("name = %v, want users", a.Metadata.Name)
+	}
+}
+
+func TestParseAssetGroupFile(t *testing.T) {
+	ag, err := ParseAssetGroupFile("testdata/valid/asset-group.yaml")
+	if err != nil {
+		t.Fatalf("ParseAssetGroupFile() error = %v", err)
+	}
+	if ag.Metadata.Name != "pg-snapshot" {
+		t.Errorf("name = %v, want pg-snapshot", ag.Metadata.Name)
+	}
+}
+
+func TestParseTransformFile(t *testing.T) {
+	tr, err := ParseTransformFile("testdata/valid/transform.yaml")
+	if err != nil {
+		t.Fatalf("ParseTransformFile() error = %v", err)
+	}
+	if tr.Metadata.Name != "pg-to-s3" {
+		t.Errorf("name = %v, want pg-to-s3", tr.Metadata.Name)
+	}
+}
+
+func TestParser_ParseFromTestdata_NewKinds(t *testing.T) {
+	t.Run("valid connector", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/connector.yaml")
+		if err != nil {
+			t.Fatalf("ParseManifestFile() error = %v", err)
+		}
+		if m.GetName() != "postgres" {
+			t.Errorf("name = %v, want postgres", m.GetName())
+		}
+		if kind != contracts.KindConnector {
+			t.Errorf("kind = %v, want Connector", kind)
+		}
+	})
+
+	t.Run("valid store", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/store.yaml")
+		if err != nil {
+			t.Fatalf("ParseManifestFile() error = %v", err)
+		}
+		if m.GetName() != "warehouse" {
+			t.Errorf("name = %v, want warehouse", m.GetName())
+		}
+		if kind != contracts.KindStore {
+			t.Errorf("kind = %v, want Store", kind)
+		}
+	})
+
+	t.Run("valid asset", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/asset.yaml")
+		if err != nil {
+			t.Fatalf("ParseManifestFile() error = %v", err)
+		}
+		if m.GetName() != "users" {
+			t.Errorf("name = %v, want users", m.GetName())
+		}
+		if kind != contracts.KindAsset {
+			t.Errorf("kind = %v, want Asset", kind)
+		}
+	})
+
+	t.Run("valid asset group", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/asset-group.yaml")
+		if err != nil {
+			t.Fatalf("ParseManifestFile() error = %v", err)
+		}
+		if m.GetName() != "pg-snapshot" {
+			t.Errorf("name = %v, want pg-snapshot", m.GetName())
+		}
+		if kind != contracts.KindAssetGroup {
+			t.Errorf("kind = %v, want AssetGroup", kind)
+		}
+	})
+
+	t.Run("valid transform", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/transform.yaml")
+		if err != nil {
+			t.Fatalf("ParseManifestFile() error = %v", err)
+		}
+		if m.GetName() != "pg-to-s3" {
+			t.Errorf("name = %v, want pg-to-s3", m.GetName())
+		}
+		if kind != contracts.KindTransform {
+			t.Errorf("kind = %v, want Transform", kind)
+		}
+	})
 }

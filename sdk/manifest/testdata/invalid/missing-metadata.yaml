@@ -1,7 +1,7 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Connector
 # metadata is completely missing - should parse with empty metadata
 spec:
-  description: Missing metadata section
-  owner: data-team
-  runtime: generic-go
+  type: generic
+  capabilities:
+    - source

@@ -24,9 +24,9 @@ func TestAssetList(t *testing.T) {
 			name: "table output with 3 assets",
 			args: []string{},
 			setup: func(dir string) {
-				writeListAsset(t, dir, "sources", "aws-security", contracts.AssetTypeSource, "cloudquery.source.aws", "v24.0.2", "team-a")
-				writeListAsset(t, dir, "sinks", "raw-output", contracts.AssetTypeSink, "cloudquery.sink.s3", "v1.2.0", "team-b")
-				writeListAsset(t, dir, "sources", "gcp-infra", contracts.AssetTypeSource, "cloudquery.source.gcp", "v10.0.0", "team-c")
+				writeListAsset(t, dir, "aws-security", "my-s3")
+				writeListAsset(t, dir, "raw-output", "my-pg")
+				writeListAsset(t, dir, "gcp-infra", "my-s3")
 			},
 			wantOutput: "aws-security",
 		},
@@ -39,14 +39,14 @@ func TestAssetList(t *testing.T) {
 			name: "json output with assets",
 			args: []string{"--output", "json"},
 			setup: func(dir string) {
-				writeListAsset(t, dir, "sources", "my-source", contracts.AssetTypeSource, "cloudquery.source.aws", "v1.0.0", "data-team")
+				writeListAsset(t, dir, "my-source", "my-s3")
 			},
 		},
 		{
 			name: "table includes header columns",
 			args: []string{},
 			setup: func(dir string) {
-				writeListAsset(t, dir, "sources", "my-source", contracts.AssetTypeSource, "cloudquery.source.aws", "v1.0.0", "data-team")
+				writeListAsset(t, dir, "my-source", "my-s3")
 			},
 			wantOutput: "NAME",
 		},
@@ -101,9 +101,9 @@ func TestAssetList(t *testing.T) {
 func TestAssetListTableFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	writeListAsset(t, tmpDir, "sources", "aws-security", contracts.AssetTypeSource, "cloudquery.source.aws", "v24.0.2", "team-a")
-	writeListAsset(t, tmpDir, "sinks", "raw-output", contracts.AssetTypeSink, "cloudquery.sink.s3", "v1.2.0", "team-b")
-	writeListAsset(t, tmpDir, "sources", "gcp-infra", contracts.AssetTypeSource, "cloudquery.source.gcp", "v10.0.0", "team-c")
+	writeListAsset(t, tmpDir, "aws-security", "my-s3")
+	writeListAsset(t, tmpDir, "raw-output", "my-pg")
+	writeListAsset(t, tmpDir, "gcp-infra", "my-s3")
 
 	origDir, _ := os.Getwd()
 	if err := os.Chdir(tmpDir); err != nil {
@@ -125,21 +125,12 @@ func TestAssetListTableFormat(t *testing.T) {
 
 	output := buf.String()
 
-	// Verify table header
+	// Verify table headers
 	if !strings.Contains(output, "NAME") {
 		t.Error("table should contain NAME header")
 	}
-	if !strings.Contains(output, "TYPE") {
-		t.Error("table should contain TYPE header")
-	}
-	if !strings.Contains(output, "EXTENSION") {
-		t.Error("table should contain EXTENSION header")
-	}
-	if !strings.Contains(output, "VERSION") {
-		t.Error("table should contain VERSION header")
-	}
-	if !strings.Contains(output, "OWNER") {
-		t.Error("table should contain OWNER header")
+	if !strings.Contains(output, "STORE") {
+		t.Error("table should contain STORE header")
 	}
 
 	// Verify each asset appears
@@ -157,7 +148,7 @@ func TestAssetListTableFormat(t *testing.T) {
 func TestAssetListJSONFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	writeListAsset(t, tmpDir, "sources", "my-source", contracts.AssetTypeSource, "cloudquery.source.aws", "v1.0.0", "data-team")
+	writeListAsset(t, tmpDir, "my-source", "my-s3")
 
 	origDir, _ := os.Getwd()
 	if err := os.Chdir(tmpDir); err != nil {
@@ -191,25 +182,16 @@ func TestAssetListJSONFormat(t *testing.T) {
 	if entry.Name != "my-source" {
 		t.Errorf("expected name 'my-source', got %q", entry.Name)
 	}
-	if entry.Type != "source" {
-		t.Errorf("expected type 'source', got %q", entry.Type)
-	}
-	if entry.Extension != "cloudquery.source.aws" {
-		t.Errorf("expected extension 'cloudquery.source.aws', got %q", entry.Extension)
-	}
-	if entry.Version != "v1.0.0" {
-		t.Errorf("expected version 'v1.0.0', got %q", entry.Version)
-	}
-	if entry.OwnerTeam != "data-team" {
-		t.Errorf("expected ownerTeam 'data-team', got %q", entry.OwnerTeam)
+	if entry.Store != "my-s3" {
+		t.Errorf("expected store 'my-s3', got %q", entry.Store)
 	}
 }
 
 // writeListAsset creates an asset.yaml for use in list tests.
-func writeListAsset(t *testing.T, projectDir, typeDir, name string, assetType contracts.AssetType, ext, version, owner string) {
+func writeListAsset(t *testing.T, projectDir, name, store string) {
 	t.Helper()
 
-	assetDir := filepath.Join(projectDir, "assets", typeDir, name)
+	assetDir := filepath.Join(projectDir, "assets", name)
 	if err := os.MkdirAll(assetDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -217,16 +199,8 @@ func writeListAsset(t *testing.T, projectDir, typeDir, name string, assetType co
 	a := &contracts.AssetManifest{
 		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
-		Name:       name,
-		Type:       assetType,
-		Extension:  ext,
-		Version:    version,
-		OwnerTeam:  owner,
-		Config: map[string]any{
-			"accounts": []any{"123456789012"},
-			"regions":  []any{"us-east-1"},
-			"tables":   []any{"aws_s3_buckets"},
-		},
+		Metadata:   contracts.AssetMetadata{Name: name},
+		Spec:       contracts.AssetSpec{Store: store},
 	}
 	data, _ := yaml.Marshal(a)
 	if err := os.WriteFile(filepath.Join(assetDir, "asset.yaml"), data, 0644); err != nil {

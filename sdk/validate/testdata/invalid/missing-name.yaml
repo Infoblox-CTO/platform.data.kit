@@ -1,12 +1,14 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   # name is missing - this should fail validation
   namespace: data-team
   version: 1.0.0
 spec:
-  description: A package with missing required name field
-  owner: data-team
   runtime: generic-go
   image: myimage:v1
   mode: batch
+  inputs:
+    - asset: raw-data
+  outputs:
+    - asset: out-data

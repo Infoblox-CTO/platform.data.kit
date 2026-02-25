@@ -13,7 +13,7 @@ func TestWorkflow_InitLintBuild(t *testing.T) {
 
 	// Step 1: Initialize a new package
 	t.Run("init", func(t *testing.T) {
-		result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "test-workflow")
+		result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-workflow")
 		if err != nil {
 			t.Fatalf("init failed: %v", err)
 		}
@@ -52,51 +52,51 @@ func TestWorkflow_InitLintBuild(t *testing.T) {
 	})
 }
 
-func TestWorkflow_AllPackageTypes(t *testing.T) {
+func TestWorkflow_AllRuntimes(t *testing.T) {
 	skipIfShort(t)
 
-	packageTypes := []string{"pipeline"}
+	runtimes := []string{"generic-go", "generic-python", "dbt", "cloudquery"}
 
-	for _, pkgType := range packageTypes {
-		t.Run(pkgType, func(t *testing.T) {
+	for _, runtime := range runtimes {
+		t.Run(runtime, func(t *testing.T) {
 			tmpDir := createTempDir(t)
-			pkgName := "test-" + pkgType
+			pkgName := "test-" + runtime
 
 			// Init
-			result, err := runDPInDir(t, tmpDir, "init", "--type", pkgType, pkgName)
+			result, err := runDPInDir(t, tmpDir, "init", "--runtime", runtime, pkgName)
 			if err != nil {
-				t.Fatalf("init failed for type %s: %v", pkgType, err)
+				t.Fatalf("init failed for runtime %s: %v", runtime, err)
 			}
 
 			if result.ExitCode != 0 {
-				t.Fatalf("init returned non-zero exit code for type %s: %d\nstderr: %s",
-					pkgType, result.ExitCode, result.Stderr)
+				t.Fatalf("init returned non-zero exit code for runtime %s: %d\nstderr: %s",
+					runtime, result.ExitCode, result.Stderr)
 			}
 
 			pkgDir := filepath.Join(tmpDir, pkgName)
 			assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-			assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "kind: Model")
+			assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "kind: Transform")
 
 			// Lint
 			result, err = runDP(t, "lint", pkgDir)
 			if err != nil {
-				t.Fatalf("lint failed for type %s: %v", pkgType, err)
+				t.Fatalf("lint failed for runtime %s: %v", runtime, err)
 			}
 
 			if result.ExitCode != 0 {
-				t.Fatalf("lint returned non-zero exit code for type %s: %d\nstderr: %s",
-					pkgType, result.ExitCode, result.Stderr)
+				t.Fatalf("lint returned non-zero exit code for runtime %s: %d\nstderr: %s",
+					runtime, result.ExitCode, result.Stderr)
 			}
 
 			// Build (dry-run)
 			result, err = runDP(t, "build", "--dry-run", pkgDir)
 			if err != nil {
-				t.Fatalf("build failed for type %s: %v", pkgType, err)
+				t.Fatalf("build failed for runtime %s: %v", runtime, err)
 			}
 
 			if result.ExitCode != 0 {
-				t.Fatalf("build returned non-zero exit code for type %s: %d\nstderr: %s",
-					pkgType, result.ExitCode, result.Stderr)
+				t.Fatalf("build returned non-zero exit code for runtime %s: %d\nstderr: %s",
+					runtime, result.ExitCode, result.Stderr)
 			}
 		})
 	}

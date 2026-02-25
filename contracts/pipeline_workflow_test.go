@@ -60,8 +60,8 @@ metadata:
 steps:
   - name: sync-data
     type: sync
-    source: aws-security
-    sink: raw-output
+    input: aws-security
+    output: raw-output
   - name: transform-data
     type: transform
     asset: dbt-transform
@@ -105,11 +105,11 @@ steps:
 	if s.Type != StepTypeSync {
 		t.Errorf("step[0].Type = %q, want %q", s.Type, StepTypeSync)
 	}
-	if s.Source != "aws-security" {
-		t.Errorf("step[0].Source = %q, want %q", s.Source, "aws-security")
+	if s.Input != "aws-security" {
+		t.Errorf("step[0].Input = %q, want %q", s.Input, "aws-security")
 	}
-	if s.Sink != "raw-output" {
-		t.Errorf("step[0].Sink = %q, want %q", s.Sink, "raw-output")
+	if s.Output != "raw-output" {
+		t.Errorf("step[0].Output = %q, want %q", s.Output, "raw-output")
 	}
 
 	// Verify transform step

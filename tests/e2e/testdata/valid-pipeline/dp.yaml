@@ -1,27 +1,15 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 metadata:
   name: valid-pipeline
   namespace: data-team
   version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
+  mode: batch
   description: A valid pipeline package for E2E testing
-  owner: data-team
-
-  runtime:
-    image: "python:3.11"
-    timeout: 30m
-    retries: 2
-
+  image: "python:3.11"
   inputs:
-    - name: source-events
-      type: kafka-topic
-      binding: input.events
+    - asset: source-events
   outputs:
-    - name: processed-data
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: internal
-        pii: false
+    - asset: processed-data

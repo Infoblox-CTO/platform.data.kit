@@ -1,0 +1,10 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: output-store
+  namespace: data-team
+spec:
+  connector: s3
+  connection:
+    bucket: data-bucket
+    region: us-east-1

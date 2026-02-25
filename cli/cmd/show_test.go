@@ -55,10 +55,9 @@ func TestShowCmd_OutputYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  version: 1.0.0
 spec:
   runtime: generic-go
   image: test:v1
@@ -106,10 +105,9 @@ func TestShowCmd_OutputJSON(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  version: 1.0.0
 spec:
   runtime: generic-go
   image: test:v1
@@ -153,10 +151,9 @@ func TestShowCmd_WithOverrides(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  version: 1.0.0
 spec:
   runtime: generic-go
   image: original:v1
@@ -225,14 +222,17 @@ func TestShowCmd_DisplaysSchedule(t *testing.T) {
 
 	// Write a minimal dp.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: test
 spec:
   runtime: generic-go
-  description: "Test"
-  owner: "team"
+  image: myimage:v1
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
@@ -284,14 +284,17 @@ func TestShowCmd_NoSchedule(t *testing.T) {
 
 	// Write dp.yaml only, no schedule.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: test
 spec:
   runtime: generic-go
-  description: "Test"
-  owner: "team"
+  image: myimage:v1
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)

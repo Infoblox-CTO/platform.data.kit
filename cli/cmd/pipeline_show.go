@@ -124,11 +124,11 @@ func stepDetails(step contracts.Step) string {
 
 	switch step.Type {
 	case "sync":
-		if step.Source != "" {
-			parts = append(parts, "source="+step.Source)
+		if step.Input != "" {
+			parts = append(parts, "input="+step.Input)
 		}
-		if step.Sink != "" {
-			parts = append(parts, "sink="+step.Sink)
+		if step.Output != "" {
+			parts = append(parts, "output="+step.Output)
 		}
 	case "transform", "test":
 		if step.Asset != "" {

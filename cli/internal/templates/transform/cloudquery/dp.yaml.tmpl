@@ -1,0 +1,54 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  version: 0.1.0
+  labels:
+    team: {{ .Team }}
+spec:
+  runtime: cloudquery
+  mode: {{ .Mode }}
+  description: "{{ .Description }}"
+  owner: {{ .Owner }}
+
+  source:
+    name: my-source
+    namespace: platform
+    version: ">=1.0.0"
+
+  destination:
+    name: my-destination
+    namespace: platform
+    version: ">=1.0.0"
+
+  config:
+    source:
+      # dp-local PostgreSQL (deployed by `dp dev up`).
+      connection_string: "postgresql://dpuser:dppassword@dp-postgres-postgresql.dp-local.svc.cluster.local:5432/dataplatform?sslmode=disable"
+    destination:
+      bucket: "cdpp-raw"
+      region: "us-east-1"
+
+  inputs:
+    - name: {{ .Name }}-input
+      type: postgres-table
+      binding: input.main
+
+  outputs:
+    - name: {{ .Name }}-output
+      type: s3-prefix
+      binding: output.main
+      classification:
+        pii: false
+        sensitivity: internal
+
+  schedule:
+    cron: "0 */6 * * *"
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"
+
+  timeout: 1h
+  retries: 2

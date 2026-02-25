@@ -46,10 +46,6 @@ type PackageDeploymentSpec struct {
 	// +optional
 	Resources *ResourceSpec `json:"resources,omitempty"`
 
-	// Bindings is a reference to the binding configuration.
-	// +optional
-	Bindings string `json:"bindings,omitempty"`
-
 	// ServiceAccountName is the ServiceAccount to use for runs.
 	// +kubebuilder:default=default
 	// +optional

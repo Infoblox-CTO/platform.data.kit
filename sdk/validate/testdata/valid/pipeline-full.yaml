@@ -1,5 +1,5 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: sample-pipeline
   namespace: data-team
@@ -12,30 +12,18 @@ metadata:
 spec:
   runtime: generic-go
   mode: batch
-  description: A sample data processing pipeline for testing validation
-  owner: data-team
   image: myimage:v1
   inputs:
-    - name: raw-events
-      type: s3-prefix
-      binding: raw-events-bucket
-      schema:
-        type: avro
-        path: schemas/events.avsc
+    - asset: raw-events
   outputs:
-    - name: processed-events
-      type: s3-prefix
-      binding: processed-events-bucket
-      schema:
-        type: parquet
-        path: schemas/output.parquet
-      classification:
-        sensitivity: internal
-        pii: false
-        retention: 90d
+    - asset: processed-events
   schedule:
     cron: "0 */6 * * *"
-    timezone: UTC
+  timeout: 1h
   resources:
-    cpu: "2"
-    memory: 4Gi
+    requests:
+      cpu: "2"
+      memory: 4Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi

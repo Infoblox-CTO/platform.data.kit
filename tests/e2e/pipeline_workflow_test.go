@@ -13,7 +13,7 @@ func TestPipelineWorkflow_CreateAndShow(t *testing.T) {
 
 	// Step 1: Initialize a package
 	t.Run("init", func(t *testing.T) {
-		result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "test-pipeline-wf")
+		result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-pipeline-wf")
 		if err != nil {
 			t.Fatalf("init failed: %v", err)
 		}

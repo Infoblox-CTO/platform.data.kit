@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"gopkg.in/yaml.v3"
@@ -105,7 +104,7 @@ func FindAssetByName(projectDir, name string) (*contracts.AssetManifest, error) 
 	}
 
 	for _, a := range assets {
-		if a.Name == name {
+		if a.Metadata.Name == name {
 			return a, nil
 		}
 	}
@@ -113,34 +112,27 @@ func FindAssetByName(projectDir, name string) (*contracts.AssetManifest, error) 
 	return nil, fmt.Errorf("asset %q not found in %s", name, filepath.Join(projectDir, "assets"))
 }
 
-// AssetPath returns the expected filesystem path for an asset based on its type and name.
-func AssetPath(projectDir string, assetType contracts.AssetType, name string) string {
-	typeDir := contracts.AssetTypeDirName(assetType)
-	return filepath.Join(projectDir, "assets", typeDir, name, "asset.yaml")
+// AssetPath returns the expected filesystem path for an asset based on its name.
+// Layout: assets/<name>/asset.yaml
+func AssetPath(projectDir string, name string) string {
+	return filepath.Join(projectDir, "assets", name, "asset.yaml")
 }
 
-// AssetDir returns the expected directory path for an asset based on its type and name.
-func AssetDir(projectDir string, assetType contracts.AssetType, name string) string {
-	typeDir := contracts.AssetTypeDirName(assetType)
-	return filepath.Join(projectDir, "assets", typeDir, name)
+// AssetDir returns the expected directory path for an asset based on its name.
+// Layout: assets/<name>/
+func AssetDir(projectDir string, name string) string {
+	return filepath.Join(projectDir, "assets", name)
 }
 
-// validateDirectoryPlacement checks that an asset's type matches the directory it's in.
+// validateDirectoryPlacement checks that an asset is in the expected directory.
+// With the new AssetManifest structure, assets are identified by metadata.name
+// and the type-based directory layout (sources/sinks/models) is deprecated.
+// This function is kept for backward compatibility but performs minimal validation.
 func validateDirectoryPlacement(asset *contracts.AssetManifest, relPath string) error {
-	// relPath is relative to assets/ dir, e.g., "sources/my-source/asset.yaml"
-	parts := strings.SplitN(filepath.ToSlash(relPath), "/", 3)
-	if len(parts) < 2 {
-		return nil // Can't determine placement, skip check
-	}
-
-	dirType := parts[0]
-	expectedDir := contracts.AssetTypeDirName(asset.Type)
-
-	if expectedDir != "" && dirType != expectedDir {
-		return fmt.Errorf("asset %q has type %q but is in %q directory (expected %q)",
-			asset.Name, asset.Type, dirType, expectedDir)
-	}
-
+	// New AssetManifest doesn't have a Type field — skip type-based directory validation.
+	// Directory placement will be fully reworked in step 20.
+	_ = asset
+	_ = relPath
 	return nil
 }
 

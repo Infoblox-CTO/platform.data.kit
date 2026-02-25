@@ -255,30 +255,42 @@ When you run `dp run`, these events are emitted:
 dp run ./my-pipeline
 ```
 
-### With Custom Bindings
+### With Local Store Overrides
 
-Use local bindings for development:
+Create environment-specific Store manifests for local development:
 
-```yaml title="bindings.local.yaml"
+```yaml title="store/local-events.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: local-events
 spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: local/test-events
-      config:
-        bootstrap-servers: localhost:9092
-        
-    output.data:
-      type: s3-prefix
-      ref: test-bucket/output/
-      config:
-        endpoint: http://localhost:9000
-        access-key: minioadmin
-        secret-key: minioadmin
+  connector: kafka
+  connection:
+    bootstrapServers: localhost:9092
+
+  secrets:
+    groupId: my-pipeline-dev
+```
+
+```yaml title="store/local-output.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: local-output
+spec:
+  connector: s3
+  connection:
+    bucket: test-bucket
+    endpoint: http://localhost:9000
+    region: us-east-1
+  secrets:
+    accessKeyId: minioadmin
+    secretAccessKey: minioadmin
 ```
 
 ```bash
-dp run ./my-pipeline --bindings bindings.local.yaml
+dp run ./my-pipeline
 ```
 
 ### With Environment Variables
@@ -407,15 +419,15 @@ Removes all data (topics, objects, lineage).
 
 ## Best Practices
 
-### 1. Use Local Bindings
+### 1. Use Local Store Configurations
 
-Always create `bindings.local.yaml` for development:
+Create environment-specific Store manifests for development:
 
 ```bash
-# Development
-dp run --bindings bindings.local.yaml
+# Development — uses local store manifests
+dp run
 
-# Will use bindings.yaml for production
+# Production builds use environment-specific stores
 dp build && dp publish
 ```
 

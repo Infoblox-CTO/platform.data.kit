@@ -1,0 +1,33 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: main-db
+  labels:
+    environment: local
+spec:
+  connector: postgres
+  connection:
+    host: localhost
+    port: 5432
+    database: dp
+    schema: public
+  secrets:
+    username: dp
+    password: dp_local_dev
+---
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: test-db
+  labels:
+    environment: local
+spec:
+  connector: postgres
+  connection:
+    host: localhost
+    port: 5432
+    database: dp
+    schema: test
+  secrets:
+    username: dp
+    password: dp_local_dev

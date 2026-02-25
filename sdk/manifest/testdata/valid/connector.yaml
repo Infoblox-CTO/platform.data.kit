@@ -1,0 +1,15 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+  labels:
+    team: platform
+spec:
+  type: postgres
+  protocol: postgresql
+  capabilities:
+    - source
+    - destination
+  plugin:
+    source: ghcr.io/cloudquery/cq-source-postgresql:v8.0.0
+    destination: ghcr.io/cloudquery/cq-destination-postgresql:v8.0.0

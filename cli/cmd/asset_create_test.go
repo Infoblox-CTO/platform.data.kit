@@ -20,39 +20,28 @@ func TestAssetCreate(t *testing.T) {
 		wantFile  string // relative to project dir
 	}{
 		{
-			name:     "success - create source asset",
-			args:     []string{"aws-security", "--ext", "cloudquery.source.aws", "--version", "v24.0.2"},
-			wantFile: "assets/sources/aws-security/asset.yaml",
-		},
-		{
-			name:    "missing --ext flag",
-			args:    []string{"my-asset"},
-			wantErr: true,
-		},
-		{
-			name:      "invalid FQN",
-			args:      []string{"my-asset", "--ext", "bad-fqn"},
-			wantErr:   true,
-			errSubstr: "invalid extension FQN",
+			name:     "success - create asset",
+			args:     []string{"aws-security", "--store", "my-s3"},
+			wantFile: "assets/aws-security/asset.yaml",
 		},
 		{
 			name:      "invalid name",
-			args:      []string{"AB", "--ext", "cloudquery.source.aws"},
+			args:      []string{"AB"},
 			wantErr:   true,
 			errSubstr: "invalid asset name",
 		},
 		{
 			name: "duplicate asset",
-			args: []string{"existing", "--ext", "cloudquery.source.aws"},
+			args: []string{"existing"},
 			setup: func(dir string) {
-				assetDir := filepath.Join(dir, "assets", "sources", "existing")
+				assetDir := filepath.Join(dir, "assets", "existing")
 				if err := os.MkdirAll(assetDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				data, _ := yaml.Marshal(&contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "existing",
-					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "existing"},
+					Spec:     contracts.AssetSpec{Store: "my-s3"},
 				})
 				if err := os.WriteFile(filepath.Join(assetDir, "asset.yaml"), data, 0644); err != nil {
 					t.Fatal(err)
@@ -63,22 +52,22 @@ func TestAssetCreate(t *testing.T) {
 		},
 		{
 			name: "force overwrite existing",
-			args: []string{"existing", "--ext", "cloudquery.source.aws", "--force"},
+			args: []string{"existing", "--force"},
 			setup: func(dir string) {
-				assetDir := filepath.Join(dir, "assets", "sources", "existing")
+				assetDir := filepath.Join(dir, "assets", "existing")
 				if err := os.MkdirAll(assetDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				data, _ := yaml.Marshal(&contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "existing",
-					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "existing"},
+					Spec:     contracts.AssetSpec{Store: "old-store"},
 				})
 				if err := os.WriteFile(filepath.Join(assetDir, "asset.yaml"), data, 0644); err != nil {
 					t.Fatal(err)
 				}
 			},
-			wantFile: "assets/sources/existing/asset.yaml",
+			wantFile: "assets/existing/asset.yaml",
 		},
 	}
 
@@ -98,10 +87,8 @@ func TestAssetCreate(t *testing.T) {
 			defer os.Chdir(origDir)
 
 			// Reset global flags to avoid state leaking between tests
-			assetCreateExt = ""
 			assetCreateForce = false
-			assetCreateInteractive = false
-			assetCreateVersion = ""
+			assetCreateStore = ""
 
 			// Execute command
 			buf := new(bytes.Buffer)

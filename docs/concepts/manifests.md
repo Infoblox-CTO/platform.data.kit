@@ -5,34 +5,57 @@ description: Complete reference for data package manifest files
 
 # Manifests
 
-The manifest (`dp.yaml`) is the central configuration file for every data package. It defines metadata, inputs, outputs, and governance requirements.
+The manifest (`dp.yaml`) is the central configuration file for every data package. It defines metadata, runtime, inputs, outputs, and governance requirements.
 
-## Manifest Structure
+## Manifest Kinds
+
+The platform defines five manifest kinds:
+
+| Kind | Purpose | Who creates |
+|------|---------|-------------|
+| **Transform** | Computation — reads inputs, produces outputs | Data engineer |
+| **Asset** | Data contract — schema, classification, lineage | Data engineer |
+| **AssetGroup** | Bundle of Assets produced by one Transform | Data engineer |
+| **Connector** | Technology type — Postgres, S3, Kafka, etc. | Platform team |
+| **Store** | Named instance of a Connector with credentials | Infra / SRE |
+
+## Transform Manifest
+
+The Transform is the primary manifest kind for data packages:
 
 ```yaml title="dp.yaml"
-apiVersion: data.infoblox.com/v1alpha1    # API version
-kind: DataPackage             # Resource type
-metadata:                     # Package metadata
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
   name: my-package
   namespace: default
-spec:                         # Package specification
-  type: pipeline
-  description: Description
+  version: 0.1.0
+spec:
+  runtime: generic-python       # cloudquery | generic-go | generic-python | dbt
+  mode: batch                   # batch | streaming
+  description: Description of what this transform does
   owner: team@example.com
-  inputs: []
-  outputs: []
-```
+  image: myorg/my-package:v0.1.0
+  timeout: 30m
 
-## Full Schema
+  inputs:
+    - asset: source-data
+
+  outputs:
+    - asset: output-data
+      classification:
+        pii: false
+        sensitivity: internal
+```
 
 ### Required Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `apiVersion` | string | Always `data.infoblox.com/v1alpha1` |
-| `kind` | string | Always `DataPackage` |
+| `kind` | string | `Transform`, `Asset`, `AssetGroup`, `Connector`, or `Store` |
 | `metadata.name` | string | Package name (lowercase, hyphenated) |
-| `spec.type` | string | One of: `pipeline`, `producer`, `consumer`, `streaming` |
+| `spec.runtime` | string | One of: `cloudquery`, `generic-go`, `generic-python`, `dbt` |
 | `spec.owner` | string | Owner email or team identifier |
 
 ### metadata
@@ -41,6 +64,7 @@ spec:                         # Package specification
 metadata:
   name: my-kafka-pipeline          # Required: unique package name
   namespace: analytics             # Optional: logical grouping
+  version: 1.0.0                   # Semantic version
   labels:                          # Optional: key-value labels
     team: data-engineering
     domain: events
@@ -57,88 +81,76 @@ metadata:
 
 ### spec.inputs
 
-Define what data the package consumes:
+Inputs declare which Assets a Transform reads:
 
 ```yaml
 spec:
   inputs:
-    - name: user-events          # Unique name within package
-      type: kafka-topic          # Data source type
-      binding: input.events      # Reference to bindings.yaml
-      description: "Raw user event stream"
-      schema: schemas/events.avsc    # Optional: schema file path
-      required: true             # Default: true
-      config:                    # Type-specific configuration
-        format: avro
-        consumer-group: my-pipeline-consumer
+    - asset: raw-events            # Asset name to read from
+    - asset: user-metadata         # Multiple inputs supported
 ```
-
-#### Input Properties
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Unique identifier for this input |
-| `type` | string | Yes | Type of data source |
-| `binding` | string | Yes | Reference to binding key |
-| `description` | string | No | Human-readable description |
-| `schema` | string | No | Path to schema file |
-| `required` | boolean | No | Whether input is required (default: true) |
-| `config` | object | No | Type-specific configuration |
 
 ### spec.outputs
 
-Define what data the package produces:
+Outputs declare which Assets a Transform produces:
 
 ```yaml
 spec:
   outputs:
-    - name: processed-events     # Unique name within package
-      type: s3-prefix            # Data destination type
-      binding: output.data       # Reference to bindings.yaml
-      description: "Processed events in Parquet format"
-      schema: schemas/output.avsc
-      classification:            # Data classification
-        pii: false
-        sensitivity: internal
-      config:
-        format: parquet
-        partitioning: date
+    - asset: enriched-events       # Asset name to write to
+      classification:              # Data classification
+        pii: true
+        sensitivity: confidential
 ```
 
-#### Output Properties
+## Asset Manifest
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Unique identifier for this output |
-| `type` | string | Yes | Type of data destination |
-| `binding` | string | Yes | Reference to binding key |
-| `description` | string | No | Human-readable description |
-| `schema` | string | No | Path to schema file |
-| `classification` | object | No | Data classification metadata |
-| `config` | object | No | Type-specific configuration |
+An Asset declares a data contract — a table, S3 prefix, or topic that lives in a Store:
 
-### spec.classification
-
-Data governance classification:
-
-```yaml
+```yaml title="asset/users.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  namespace: default
 spec:
-  outputs:
-    - name: customer-data
-      type: s3-prefix
-      binding: output.customers
-      classification:
-        pii: true                  # Contains personally identifiable info
-        sensitivity: confidential  # internal, confidential, restricted
-        retention:
-          days: 365
-          deletionPolicy: archive
-        tags:
-          - gdpr
-          - customer-data
+  store: warehouse
+  table: public.users
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
+    - name: created_at
+      type: timestamp
 ```
 
-#### Classification Fields
+Output Assets can use `from` for column-level lineage:
+
+```yaml title="asset/users-parquet.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users-parquet
+  namespace: default
+spec:
+  store: lake-raw
+  prefix: data/users/
+  format: parquet
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+      from: users.id
+    - name: email
+      type: string
+      pii: true
+      from: users.email
+```
+
+### Classification Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -148,65 +160,48 @@ spec:
 | `retention.deletionPolicy` | string | `delete` or `archive` |
 | `tags` | array | Custom classification tags |
 
-### Complete Example
+## Connector Manifest
 
-```yaml title="dp.yaml"
+A Connector describes a storage technology type:
+
+```yaml title="connector/postgres.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Connector
 metadata:
-  name: user-events-processor
-  namespace: analytics
-  labels:
-    team: data-engineering
-    domain: user-behavior
-    cost-center: CC-ANALYTICS-001
-  annotations:
-    dp.io/docs: https://wiki.example.com/user-events
-    dp.io/runbook: https://wiki.example.com/runbooks/user-events
-    
+  name: postgres
 spec:
-  type: pipeline
-  description: |
-    Processes raw user events from Kafka, enriches with user metadata,
-    and writes to S3 in Parquet format for analytics consumption.
-  owner: data-engineering@example.com
-  
-  inputs:
-    - name: raw-events
-      type: kafka-topic
-      binding: input.events
-      description: Raw user event stream from web application
-      schema: schemas/raw-event.avsc
-      config:
-        format: avro
-        consumer-group: user-events-processor
-        
-    - name: user-metadata
-      type: database-table
-      binding: input.users
-      description: User metadata for enrichment
-      required: false
-      
-  outputs:
-    - name: enriched-events
-      type: s3-prefix
-      binding: output.events
-      description: Enriched events in Parquet format
-      schema: schemas/enriched-event.avsc
-      classification:
-        pii: true
-        sensitivity: confidential
-        retention:
-          days: 730
-          deletionPolicy: archive
-        tags:
-          - user-data
-          - gdpr
-      config:
-        format: parquet
-        partitioning: date
-        compression: snappy
+  type: postgres
+  protocol: postgresql
+  capabilities: [source, destination]
+  plugin:
+    source: ghcr.io/infobloxopen/cq-source-postgres:0.1.0
+    destination: ghcr.io/cloudquery/cq-destination-postgres:latest
 ```
+
+## Store Manifest
+
+A Store is a named instance of a Connector with connection details and credentials:
+
+```yaml title="store/warehouse.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+  namespace: default
+spec:
+  connector: postgres
+  connection:
+    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    port: 5432
+    database: dataplatform
+    schema: public
+  secrets:
+    username: ${PG_USER}
+    password: ${PG_PASSWORD}
+```
+
+!!! note "Secrets on Stores only"
+    Credentials live **only** on Store manifests — never on Assets or Transforms.
 
 ## Validation
 
@@ -220,7 +215,7 @@ The linter checks:
 
 - ✓ Required fields present
 - ✓ Valid names (lowercase, hyphenated)
-- ✓ Binding references match bindings.yaml
+- ✓ Valid kind and runtime values
 - ✓ Schema files exist if specified
 - ✓ Classification is valid for outputs
 
@@ -229,7 +224,7 @@ The linter checks:
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `invalid name` | Uppercase or special chars | Use lowercase and hyphens only |
-| `missing binding` | Binding key not in bindings.yaml | Add binding definition |
+| `unsupported kind` | Kind not one of the five valid kinds | Use Transform, Asset, AssetGroup, Connector, or Store |
 | `schema not found` | Schema file doesn't exist | Create file or remove reference |
 | `pii without sensitivity` | PII true but no sensitivity level | Add sensitivity classification |
 

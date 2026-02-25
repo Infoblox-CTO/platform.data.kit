@@ -21,20 +21,20 @@ In this tutorial, you'll build a production-ready data pipeline that reads event
 
 ## Step 1: Create the Package
 
-Initialize a new pipeline package:
+Initialize a new Transform package:
 
 ```bash
-dp init kafka-to-s3-pipeline --kind model --runtime generic-python
+dp init kafka-to-s3-pipeline --runtime generic-python
 cd kafka-to-s3-pipeline
 ```
 
-## Step 2: Define the Manifest
+## Step 2: Define the Transform Manifest
 
-Edit `dp.yaml` with your pipeline configuration:
+Edit `dp.yaml` with your Transform configuration:
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 metadata:
   name: kafka-to-s3-pipeline
   namespace: tutorials
@@ -42,74 +42,86 @@ metadata:
   labels:
     team: data-engineering
     domain: events
-    
+
 spec:
-  type: pipeline
-  description: |
-    Reads user events from Kafka, applies transformations,
-    and writes to S3 in Parquet format with date partitioning.
-  owner: tutorials@example.com
-  
-  # Runtime configuration (all in one file!)
-  runtime:
-    image: myorg/kafka-to-s3-pipeline:v1.0.0
-    timeout: 1h
-    retries: 3
-    env:
-      - name: LOG_LEVEL
-        value: info
-    resources:
-      cpu: "500m"
-      memory: "2Gi"
-  
+  runtime: generic-python
+  mode: batch
+  image: myorg/kafka-to-s3-pipeline:v1.0.0
+  timeout: 1h
+
   inputs:
-    - name: user-events
-      type: kafka-topic
-      binding: input.events
-      description: Raw user events from web application
-      config:
-        format: json
-        consumer-group: kafka-to-s3-consumer
-        
+    - asset: user-events
+
   outputs:
-    - name: processed-events
-      type: s3-prefix
-      binding: output.events
-      description: Processed events in Parquet format
-      classification:
-        pii: false
-        sensitivity: internal
-      config:
-        format: parquet
-        partitioning: date
-        compression: snappy
+    - asset: processed-events
+
+  env:
+    - name: LOG_LEVEL
+      value: info
+  resources:
+    cpu: "500m"
+    memory: "2Gi"
 ```
 
-## Step 3: Set Up Bindings
+## Step 3: Define Assets and Stores
 
-Configure your infrastructure bindings:
+Create the input Asset referencing a Kafka Store:
 
-```yaml title="bindings.yaml"
+```yaml title="asset/user-events.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
-
+kind: Asset
+metadata:
+  name: user-events
+  namespace: tutorials
 spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: local/user-events
-      config:
-        bootstrap-servers: localhost:9092
-        group-id: kafka-to-s3-consumer
-        auto-offset-reset: earliest
-        
-    output.events:
-      type: s3-prefix
-      ref: local-bucket/processed/events/
-      config:
-        endpoint: http://localhost:9000
-        access-key: minioadmin
-        secret-key: minioadmin
+  store: local-kafka
+  topic: user-events
+  format: json
+```
+
+Create the output Asset referencing an S3 Store:
+
+```yaml title="asset/processed-events.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: processed-events
+  namespace: tutorials
+spec:
+  store: local-s3
+  prefix: processed/events/
+  format: parquet
+  classification: internal
+```
+
+Create the Stores with connection details:
+
+```yaml title="store/local-kafka.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: local-kafka
+spec:
+  connector: kafka
+  connection:
+    bootstrap-servers: localhost:9092
+    consumer-group: kafka-to-s3-consumer
+    auto-offset-reset: earliest
+```
+
+```yaml title="store/local-s3.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: local-s3
+spec:
+  connector: s3
+  connection:
+    endpoint: http://localhost:9000
+    region: us-east-1
+  secrets:
+    accessKeyId: ${AWS_ACCESS_KEY_ID}
+    secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
 ```
 
 ## Step 4: Write the Pipeline Code

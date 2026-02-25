@@ -57,7 +57,7 @@ func runAssetList(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(w, "No assets found.")
 		fmt.Fprintln(w, "")
 		fmt.Fprintln(w, "Get started:")
-		fmt.Fprintln(w, "  dp asset create <name> --ext <vendor.kind.name>")
+		fmt.Fprintln(w, "  dp asset create <name>")
 		return nil
 	}
 
@@ -73,22 +73,18 @@ func runAssetList(cmd *cobra.Command, args []string) error {
 
 // assetListEntry is the JSON representation of an asset in the list.
 type assetListEntry struct {
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	Extension string `json:"extension"`
-	Version   string `json:"version"`
-	OwnerTeam string `json:"ownerTeam"`
+	Name           string `json:"name"`
+	Store          string `json:"store"`
+	Classification string `json:"classification,omitempty"`
 }
 
 func renderAssetListJSON(w io.Writer, assets []*contracts.AssetManifest) error {
 	entries := make([]assetListEntry, 0, len(assets))
 	for _, a := range assets {
 		entries = append(entries, assetListEntry{
-			Name:      a.Name,
-			Type:      string(a.Type),
-			Extension: a.Extension,
-			Version:   a.Version,
-			OwnerTeam: a.OwnerTeam,
+			Name:           a.Metadata.Name,
+			Store:          a.Spec.Store,
+			Classification: a.Spec.Classification,
 		})
 	}
 
@@ -103,10 +99,10 @@ func renderAssetListJSON(w io.Writer, assets []*contracts.AssetManifest) error {
 
 func renderAssetListTable(w io.Writer, assets []*contracts.AssetManifest) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "NAME\tTYPE\tEXTENSION\tVERSION\tOWNER")
+	fmt.Fprintln(tw, "NAME\tSTORE\tCLASSIFICATION")
 	for _, a := range assets {
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-			a.Name, a.Type, a.Extension, a.Version, a.OwnerTeam)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n",
+			a.Metadata.Name, a.Spec.Store, a.Spec.Classification)
 	}
 	return tw.Flush()
 }

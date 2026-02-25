@@ -90,7 +90,7 @@ func TestBundle_ValidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
   namespace: data-team
@@ -146,7 +146,7 @@ func TestBundle_WithExcludePatterns(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
   namespace: data-team

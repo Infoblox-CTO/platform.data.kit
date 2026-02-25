@@ -490,8 +490,8 @@ func TestBuildStepArgs_SyncStep(t *testing.T) {
 	step := contracts.Step{
 		Name:   "sync-data",
 		Type:   contracts.StepTypeSync,
-		Source: "aws-source",
-		Sink:   "postgres-sink",
+		Input:  "aws-source",
+		Output: "postgres-sink",
 	}
 
 	args, err := buildStepArgs(step, nil)
@@ -500,11 +500,11 @@ func TestBuildStepArgs_SyncStep(t *testing.T) {
 	}
 
 	argsStr := strings.Join(args, " ")
-	if !strings.Contains(argsStr, "DP_SOURCE=aws-source") {
-		t.Errorf("expected DP_SOURCE, got %q", argsStr)
+	if !strings.Contains(argsStr, "DP_INPUT=aws-source") {
+		t.Errorf("expected DP_INPUT, got %q", argsStr)
 	}
-	if !strings.Contains(argsStr, "DP_SINK=postgres-sink") {
-		t.Errorf("expected DP_SINK, got %q", argsStr)
+	if !strings.Contains(argsStr, "DP_OUTPUT=postgres-sink") {
+		t.Errorf("expected DP_OUTPUT, got %q", argsStr)
 	}
 }
 

@@ -11,9 +11,12 @@ func TestKind_Constants(t *testing.T) {
 		kind     Kind
 		wantKind string
 	}{
-		{name: "source", kind: KindSource, wantKind: "Source"},
-		{name: "destination", kind: KindDestination, wantKind: "Destination"},
-		{name: "model", kind: KindModel, wantKind: "Model"},
+		// New kinds
+		{name: "connector", kind: KindConnector, wantKind: "Connector"},
+		{name: "store", kind: KindStore, wantKind: "Store"},
+		{name: "asset", kind: KindAsset, wantKind: "Asset"},
+		{name: "asset-group", kind: KindAssetGroup, wantKind: "AssetGroup"},
+		{name: "transform", kind: KindTransform, wantKind: "Transform"},
 	}
 
 	for _, tt := range tests {
@@ -31,9 +34,13 @@ func TestKind_IsValid(t *testing.T) {
 		kind  Kind
 		valid bool
 	}{
-		{name: "source is valid", kind: KindSource, valid: true},
-		{name: "destination is valid", kind: KindDestination, valid: true},
-		{name: "model is valid", kind: KindModel, valid: true},
+		// New kinds
+		{name: "connector is valid", kind: KindConnector, valid: true},
+		{name: "store is valid", kind: KindStore, valid: true},
+		{name: "asset is valid", kind: KindAsset, valid: true},
+		{name: "asset-group is valid", kind: KindAssetGroup, valid: true},
+		{name: "transform is valid", kind: KindTransform, valid: true},
+		// Invalid kinds
 		{name: "empty is invalid", kind: "", valid: false},
 		{name: "unknown is invalid", kind: Kind("unknown"), valid: false},
 	}
@@ -44,6 +51,19 @@ func TestKind_IsValid(t *testing.T) {
 				t.Errorf("Kind.IsValid() = %v, want %v", got, tt.valid)
 			}
 		})
+	}
+}
+
+func TestAllKinds(t *testing.T) {
+	kinds := AllKinds()
+	expected := []Kind{KindConnector, KindStore, KindAsset, KindAssetGroup, KindTransform}
+	if len(kinds) != len(expected) {
+		t.Fatalf("AllKinds() returned %d kinds, want %d", len(kinds), len(expected))
+	}
+	for i, k := range kinds {
+		if k != expected[i] {
+			t.Errorf("AllKinds()[%d] = %v, want %v", i, k, expected[i])
+		}
 	}
 }
 

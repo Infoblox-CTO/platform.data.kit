@@ -64,28 +64,20 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	var mode contracts.Mode
 	var timeout string
 	var runtime contracts.Runtime
-	var inputs, outputs []contracts.ArtifactContract
+	var inputs, outputs []contracts.AssetRef
 
-	// Extract kind-specific fields
-	switch kind {
-	case contracts.KindModel:
-		model := m.(*contracts.Model)
-		image = model.Spec.Image
-		runtimeEnv = model.Spec.Env
-		mode = model.Spec.Mode
-		timeout = model.Spec.Timeout
-		runtime = model.Spec.Runtime
-		inputs = model.Spec.Inputs
-		outputs = model.Spec.Outputs
-	case contracts.KindSource:
-		src := m.(*contracts.Source)
-		image = src.Spec.Image
-		runtime = src.Spec.Runtime
-	case contracts.KindDestination:
-		dst := m.(*contracts.Destination)
-		image = dst.Spec.Image
-		runtime = dst.Spec.Runtime
+	// Only Transform manifests carry runtime/image fields.
+	if kind != contracts.KindTransform {
+		return nil, fmt.Errorf("only Transform manifests can be executed; got %s", kind)
 	}
+	t := m.(*contracts.Transform)
+	image = t.Spec.Image
+	runtimeEnv = t.Spec.Env
+	mode = t.Spec.Mode
+	timeout = t.Spec.Timeout
+	runtime = t.Spec.Runtime
+	inputs = t.Spec.Inputs
+	outputs = t.Spec.Outputs
 
 	// Handle cloudquery runtime - run via cloudquery CLI instead of Docker
 	if runtime == contracts.RuntimeCloudQuery {
@@ -134,13 +126,13 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 
 		// Add input datasets
 		for _, input := range inputs {
-			dataset := lineage.NewDataset(jobNamespace, input.Name)
+			dataset := lineage.NewDataset(jobNamespace, input.Asset)
 			event.AddInput(dataset)
 		}
 
 		// Add output datasets
 		for _, output := range outputs {
-			dataset := lineage.NewDataset(jobNamespace, output.Name)
+			dataset := lineage.NewDataset(jobNamespace, output.Asset)
 			event.AddOutput(dataset)
 		}
 
@@ -213,16 +205,16 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		args = append(args, "--network", opts.Network)
 	}
 
-	// Add binding-derived env vars
+	// Add package-derived env vars
 	bindingEnvs, err := r.buildEnvVarsFromPackage(opts.PackageDir)
 	if err != nil && opts.Output != nil {
-		fmt.Fprintf(opts.Output, "Warning: failed to map bindings to env vars: %v\n", err)
+		fmt.Fprintf(opts.Output, "Warning: failed to map package env vars: %v\n", err)
 	}
 	for k, v := range bindingEnvs {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Add runtime env vars (override bindings)
+	// Add runtime env vars (override package env)
 	for _, env := range runtimeEnv {
 		if env.Value != "" {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", env.Name, env.Value))
@@ -835,7 +827,7 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 	cmd := exec.CommandContext(ctx, dbtBin, "run")
 	cmd.Dir = opts.PackageDir
 
-	// Merge environment: inherit current env, add binding/opts env vars
+	// Merge environment: inherit current env, add opts env vars
 	cmd.Env = os.Environ()
 	for k, v := range opts.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
@@ -961,8 +953,8 @@ func (r *DockerRunner) buildImage(ctx context.Context, dir, imageName string, ou
 	return cmd.Run()
 }
 
-// buildEnvVarsFromPackage reads the package and bindings, then maps binding properties
-// to environment variables automatically.
+// buildEnvVarsFromPackage reads the package manifest and returns
+// explicit environment variables defined in the spec.
 func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]string, error) {
 	dpPath := filepath.Join(packageDir, "dp.yaml")
 	dpData, err := os.ReadFile(dpPath)
@@ -975,24 +967,10 @@ func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]st
 		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
 
-	// Read bindings if they exist
-	bindingsPath := filepath.Join(packageDir, "bindings.yaml")
-	var bindings []contracts.Binding
-	if _, err := os.Stat(bindingsPath); err == nil {
-		bindings, err = manifest.ParseBindingsFile(bindingsPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse bindings.yaml: %w", err)
-		}
-	}
-
-	// Map bindings to env vars (only Model has inputs/outputs)
-	bindingProps, _ := MapBindingsToEnvVars(m, kind, bindings)
-
 	// Get explicit env vars from manifest
 	explicitEnvs := EnvVarsFromManifest(m, kind)
 
-	// Merge: explicit env vars override binding-derived ones
-	return MergeEnvVars(bindingProps, explicitEnvs), nil
+	return explicitEnvs, nil
 }
 
 // isValidImageReference checks if an image reference is valid for docker run.

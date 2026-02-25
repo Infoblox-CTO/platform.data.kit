@@ -1,0 +1,16 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: pg-to-s3
+  namespace: data-team
+  version: 1.0.0
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: users
+    - asset: orders
+  outputs:
+    - asset: users-parquet
+    - asset: orders-parquet
+  timeout: 30m

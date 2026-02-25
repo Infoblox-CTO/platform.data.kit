@@ -120,8 +120,7 @@ func validateAllAssets(ctx context.Context, w io.Writer, validator *validate.Ass
 	hasErrors := false
 	for _, a := range assets {
 		errs := validator.ValidateAsset(ctx, a)
-		displayPath := fmt.Sprintf("assets/%s/%s/asset.yaml",
-			contracts.AssetTypeDirName(a.Type), a.Name)
+		displayPath := fmt.Sprintf("assets/%s/asset.yaml", a.Metadata.Name)
 		if err := reportAssetErrors(w, displayPath, errs); err != nil {
 			hasErrors = true
 		}

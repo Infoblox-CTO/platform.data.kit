@@ -18,7 +18,6 @@ import (
 var (
 	testData           string
 	testTimeout        time.Duration
-	testBindings       string
 	testDuration       time.Duration // For streaming: how long to run the test
 	testStartupTimeout time.Duration // For streaming: how long to wait for healthy
 	testIntegration    bool          // For cloudquery: run full sync integration test
@@ -56,7 +55,6 @@ func init() {
 	rootCmd.AddCommand(testCmd)
 	testCmd.Flags().StringVar(&testData, "data", "", "Path to test data file")
 	testCmd.Flags().DurationVar(&testTimeout, "timeout", 5*time.Minute, "Timeout for test execution (batch pipelines)")
-	testCmd.Flags().StringVarP(&testBindings, "bindings", "b", "", "Path to test bindings file")
 	testCmd.Flags().DurationVar(&testDuration, "duration", 30*time.Second, "How long to run streaming test before shutdown")
 	testCmd.Flags().DurationVar(&testStartupTimeout, "startup-timeout", 60*time.Second, "How long to wait for streaming pipeline to become healthy")
 	testCmd.Flags().BoolVar(&testIntegration, "integration", false, "Run CloudQuery integration test (full sync)")
@@ -101,11 +99,11 @@ func runTest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
 
-	// Detect pipeline mode from Model spec
+	// Detect pipeline mode from Transform spec
 	pipelineMode := contracts.ModeBatch // default
-	if kind == contracts.KindModel {
-		if model, ok := m.(*contracts.Model); ok && model.Spec.Mode.IsValid() {
-			pipelineMode = model.Spec.Mode
+	if kind == contracts.KindTransform {
+		if transform, ok := m.(*contracts.Transform); ok && transform.Spec.Mode.IsValid() {
+			pipelineMode = transform.Spec.Mode
 		}
 	}
 
@@ -148,37 +146,6 @@ func runTest(cmd *cobra.Command, args []string) error {
 		"DP_INPUT_TYPE": "test",
 	}
 
-	// Use test bindings if available
-	bindingsPath := testBindings
-	if bindingsPath == "" {
-		// Look for test bindings
-		testBindingsPaths := []string{
-			filepath.Join(absDir, "test", "bindings.yaml"),
-			filepath.Join(absDir, "bindings.test.yaml"),
-		}
-		for _, p := range testBindingsPaths {
-			if _, err := os.Stat(p); err == nil {
-				bindingsPath = p
-				break
-			}
-		}
-	}
-
-	// Look for local dev bindings as fallback
-	if bindingsPath == "" {
-		localBindings, _ := findComposeFile()
-		if localBindings != "" {
-			localBindingsPath := filepath.Join(filepath.Dir(localBindings), "bindings.local.yaml")
-			if _, err := os.Stat(localBindingsPath); err == nil {
-				bindingsPath = localBindingsPath
-			}
-		}
-	}
-
-	if bindingsPath != "" {
-		fmt.Printf("Using bindings from: %s\n", bindingsPath)
-	}
-
 	fmt.Println()
 	fmt.Println(strings.Repeat("-", 60))
 	fmt.Println("Test Execution")
@@ -204,15 +171,14 @@ func runTest(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := runner.RunOptions{
-		PackageDir:   absDir,
-		Env:          env,
-		BindingsFile: bindingsPath,
-		Network:      testNetwork,
-		Timeout:      timeout,
-		DryRun:       false,
-		Detach:       false,
-		Output:       os.Stdout,
-		Mode:         pipelineMode,
+		PackageDir: absDir,
+		Env:        env,
+		Network:    testNetwork,
+		Timeout:    timeout,
+		DryRun:     false,
+		Detach:     false,
+		Output:     os.Stdout,
+		Mode:       pipelineMode,
 	}
 
 	ctx := context.Background()

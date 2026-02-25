@@ -20,40 +20,37 @@ func TestAssetValidate(t *testing.T) {
 	}{
 		{
 			name: "valid single asset by path",
-			args: []string{"assets/sources/aws-security"},
+			args: []string{"assets/aws-security"},
 			setup: func(dir string) {
-				writeValidAsset(t, dir, "sources", "aws-security")
+				writeValidateAsset(t, dir, "aws-security", "s3://bucket")
 			},
 		},
 		{
 			name: "valid all assets in project",
 			args: []string{"--offline"},
 			setup: func(dir string) {
-				writeValidAsset(t, dir, "sources", "aws-security")
-				writeValidAsset(t, dir, "sinks", "raw-output")
+				writeValidateAsset(t, dir, "aws-security", "s3://bucket")
+				writeValidateAsset(t, dir, "raw-output", "pg://db")
 			},
 			wantOutput: "All 2 assets are valid",
 		},
 		{
-			name: "invalid asset - wrong config type",
-			args: []string{"assets/sources/bad-asset"},
+			name: "invalid asset - missing store",
+			args: []string{"assets/bad-asset"},
 			setup: func(dir string) {
-				assetDir := filepath.Join(dir, "assets", "sources", "bad-asset")
+				assetDir := filepath.Join(dir, "assets", "bad-asset")
 				if err := os.MkdirAll(assetDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				a := &contracts.AssetManifest{
 					APIVersion: "data.infoblox.com/v1alpha1",
 					Kind:       "Asset",
-					Name:       "bad-asset",
-					Type:       contracts.AssetTypeSource,
-					Extension:  "cloudquery.source.aws",
-					Version:    "v1.0.0",
-					OwnerTeam:  "team",
-					Config: map[string]any{
-						"accounts": "not-an-array", // wrong type
-						"regions":  []any{"us-east-1"},
-						"tables":   []any{"t"},
+					Metadata: contracts.AssetMetadata{
+						Name: "bad-asset",
+					},
+					Spec: contracts.AssetSpec{
+						// Store intentionally omitted
+						Table: "some_table",
 					},
 				}
 				data, _ := yaml.Marshal(a)
@@ -65,32 +62,14 @@ func TestAssetValidate(t *testing.T) {
 		},
 		{
 			name:    "non-existent path",
-			args:    []string{"assets/sources/ghost"},
+			args:    []string{"assets/ghost"},
 			wantErr: true,
 		},
 		{
 			name: "offline mode skips schema validation",
-			args: []string{"--offline", "assets/sources/aws-security"},
+			args: []string{"--offline", "assets/aws-security"},
 			setup: func(dir string) {
-				// Asset with incorrect config but offline mode won't catch it
-				assetDir := filepath.Join(dir, "assets", "sources", "aws-security")
-				if err := os.MkdirAll(assetDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				a := &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1",
-					Kind:       "Asset",
-					Name:       "aws-security",
-					Type:       contracts.AssetTypeSource,
-					Extension:  "cloudquery.source.aws",
-					Version:    "v1.0.0",
-					OwnerTeam:  "team",
-					Config:     map[string]any{"wrong": "config"},
-				}
-				data, _ := yaml.Marshal(a)
-				if err := os.WriteFile(filepath.Join(assetDir, "asset.yaml"), data, 0644); err != nil {
-					t.Fatal(err)
-				}
+				writeValidateAsset(t, dir, "aws-security", "s3://bucket")
 			},
 		},
 		{
@@ -146,38 +125,25 @@ func TestAssetValidate(t *testing.T) {
 	}
 }
 
-// writeValidAsset creates a valid asset.yaml in the appropriate type directory.
-func writeValidAsset(t *testing.T, projectDir, typeDir, name string) {
+// writeValidateAsset creates a valid asset.yaml in the flat assets/<name>/ layout.
+func writeValidateAsset(t *testing.T, projectDir, name, store string) {
 	t.Helper()
 
-	assetDir := filepath.Join(projectDir, "assets", typeDir, name)
+	assetDir := filepath.Join(projectDir, "assets", name)
 	if err := os.MkdirAll(assetDir, 0755); err != nil {
 		t.Fatal(err)
-	}
-
-	assetType := contracts.AssetTypeSource
-	ext := "cloudquery.source.aws"
-	switch typeDir {
-	case "sinks":
-		assetType = contracts.AssetTypeSink
-		ext = "cloudquery.sink.s3"
-	case "model-engines":
-		assetType = contracts.AssetTypeModelEngine
-		ext = "dp.model-engine.dbt"
 	}
 
 	a := &contracts.AssetManifest{
 		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
-		Name:       name,
-		Type:       assetType,
-		Extension:  ext,
-		Version:    "v1.0.0",
-		OwnerTeam:  "data-team",
-		Config: map[string]any{
-			"accounts": []any{"123456789012"},
-			"regions":  []any{"us-east-1"},
-			"tables":   []any{"aws_s3_buckets"},
+		Metadata: contracts.AssetMetadata{
+			Name: name,
+		},
+		Spec: contracts.AssetSpec{
+			Store:          store,
+			Table:          "default_table",
+			Classification: "internal",
 		},
 	}
 	data, _ := yaml.Marshal(a)

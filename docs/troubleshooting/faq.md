@@ -67,8 +67,8 @@ export PATH=$PATH:$(pwd)/bin
 # 2. Start local stack
 dp dev up
 
-# 3. Create a package
-dp init my-pipeline --kind model --runtime generic-python
+# 3. Create a Transform package
+dp init my-pipeline --runtime generic-python
 
 # 4. Run locally
 dp run ./my-pipeline
@@ -87,21 +87,20 @@ See the [Quickstart](../getting-started/quickstart.md) for details.
 
 ### Can I use my own Kafka/S3 locally?
 
-Yes! Override bindings in a local file:
+Yes! Override connection details in your Store manifests:
 
-```yaml title="bindings.local.yaml"
+```yaml title="store/my-kafka.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: my-kafka
 spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: my-kafka/events
-      config:
-        bootstrap-servers: my-kafka:9092
+  connector: kafka
+  connection:
+    bootstrap-servers: my-kafka:9092
 ```
 
-```bash
-dp run --bindings bindings.local.yaml
-```
+Assets reference the Store by name — no additional configuration is needed.
 
 ### How do I add custom services to the dev stack?
 
@@ -134,22 +133,17 @@ dp dev down --volumes
 
 ### What files are in a data package?
 
-| File | Purpose | Required |
+| File/Directory | Purpose | Required |
 |------|---------|----------|
-| `dp.yaml` | Package metadata, inputs/outputs, runtime config | Yes |
-| `bindings.yaml` | Infrastructure references | No |
+| `dp.yaml` | Transform manifest (runtime, inputs, outputs, schedule) | Yes |
+| `connector/` | Connector definitions (technology types) | No |
+| `store/` | Store definitions (instances with connection details) | No |
+| `asset/` | Asset definitions (data contracts with schema) | No |
+| `asset-group/` | AssetGroup definitions (bundled assets) | No |
 
-The `dp.yaml` file is a consolidated manifest that includes all configuration, including the `spec.runtime` section for pipeline execution settings (image, timeout, retries, env vars).
+The `dp.yaml` file is a Transform manifest that references Assets by name. Assets reference Stores, and Stores reference Connectors.
 
-### What package kinds are available?
-
-| Kind | Use Case |
-|------|----------|
-| `model` | Data transformation (most common) |
-| `source` | Data source/extraction (CloudQuery) |
-| `destination` | Data sink/loading (CloudQuery) |
-
-Each kind supports multiple runtimes:
+### What runtimes are available?
 
 | Runtime | Description |
 |---------|-------------|
@@ -159,8 +153,8 @@ Each kind supports multiple runtimes:
 | `dbt` | dbt transformations |
 
 ```bash
-dp init my-pkg --kind model --runtime generic-python
-dp init my-pkg --kind source --runtime cloudquery
+dp init my-pkg --runtime generic-python
+dp init my-pkg --runtime cloudquery
 ```
 
 ### How do I version packages?
@@ -303,12 +297,24 @@ Common causes:
 
 ### How do I mark data as containing PII?
 
-```yaml
-outputs:
-  - name: customer-data
-    classification:
+Use the `classification` and `pii` fields on Asset schemas:
+
+```yaml title="asset/customer-data.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: customer-data
+spec:
+  store: warehouse
+  table: public.customers
+  classification: confidential
+  schema:
+    - name: email
+      type: string
       pii: true
-      sensitivity: confidential
+    - name: name
+      type: string
+      pii: true
 ```
 
 ### Are classification policies enforced?

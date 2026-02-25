@@ -43,7 +43,7 @@ dp version
 
 ```bash
 # 1. Create a new data package
-dp init my-pipeline --kind model --runtime generic-python
+dp init my-pipeline --runtime generic-python
 
 # 2. Start the local development stack
 dp dev up
@@ -66,35 +66,28 @@ dp promote my-pipeline v0.1.0 --to dev
 
 A data package is a self-contained unit of data processing that includes:
 
-- **Manifest** (`dp.yaml`): Metadata, inputs, outputs, and classification
-- **Pipeline** (`pipeline.yaml`): Runtime configuration and execution details
-- **Bindings** (`bindings.yaml`): Environment-specific infrastructure mappings
-- **Code**: Your data processing logic (Python, Spark, etc.)
+- **Manifest** (`dp.yaml`): Transform definition with runtime, inputs, outputs, and schedule
+- **Connectors & Stores**: Infrastructure connection definitions
+- **Assets**: Data contracts with schema and lineage
+- **Code**: Your data processing logic (Python, Go, etc.)
 
 ```yaml
 # dp.yaml example
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 metadata:
   name: kafka-s3-pipeline
   namespace: analytics
+  version: 1.0.0
 spec:
-  type: pipeline
+  runtime: generic-go
+  mode: batch
   description: Processes events from Kafka to S3
-  owner: data-team
-  
+  image: "myimage:v1"
   inputs:
-    - name: events
-      type: kafka-topic
-      binding: input.events
-      
+    - asset: kafka-events
   outputs:
-    - name: processed-events
-      type: s3-prefix
-      binding: output.lake
-      classification:
-        pii: true
-        sensitivity: confidential
+    - asset: processed-events
 ```
 
 ## 🛠️ CLI Commands

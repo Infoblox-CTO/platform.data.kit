@@ -8,7 +8,7 @@ import (
 
 func TestLoadPipeline_ValidFile(t *testing.T) {
 	dir := t.TempDir()
-	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: test-pipeline\n  description: A test pipeline\nsteps:\n  - name: sync-data\n    type: sync\n    source: my-source\n    sink: my-sink\n  - name: transform-data\n    type: transform\n    asset: my-model\n"
+	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: test-pipeline\n  description: A test pipeline\nsteps:\n  - name: sync-data\n    type: sync\n    input: my-source\n    output: my-sink\n  - name: transform-data\n    type: transform\n    asset: my-model\n"
 	if err := os.WriteFile(filepath.Join(dir, "pipeline.yaml"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}

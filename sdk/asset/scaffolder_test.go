@@ -12,57 +12,27 @@ func TestScaffold(t *testing.T) {
 	tests := []struct {
 		name      string
 		opts      func(dir string) ScaffoldOpts
-		wantType  contracts.AssetType
 		wantDir   string // relative to project dir
 		wantErr   bool
 		errSubstr string
 	}{
 		{
-			name: "source asset from embedded schema",
+			name: "basic asset",
 			opts: func(dir string) ScaffoldOpts {
 				return ScaffoldOpts{
-					Name:         "aws-security",
-					ExtensionFQN: "cloudquery.source.aws",
-					ProjectDir:   dir,
-					Version:      "v24.0.2",
+					Name:       "aws-security",
+					ProjectDir: dir,
+					Store:      "my-s3",
 				}
 			},
-			wantType: contracts.AssetTypeSource,
-			wantDir:  "assets/sources/aws-security",
-		},
-		{
-			name: "sink asset placement",
-			opts: func(dir string) ScaffoldOpts {
-				return ScaffoldOpts{
-					Name:         "my-sink",
-					ExtensionFQN: "infoblox.sink.snowflake",
-					ProjectDir:   dir,
-					Version:      "v1.0.0",
-				}
-			},
-			wantType: contracts.AssetTypeSink,
-			wantDir:  "assets/sinks/my-sink",
-		},
-		{
-			name: "model-engine asset placement",
-			opts: func(dir string) ScaffoldOpts {
-				return ScaffoldOpts{
-					Name:         "dbt-transform",
-					ExtensionFQN: "dbt.model-engine.core",
-					ProjectDir:   dir,
-					Version:      "v2.0.0",
-				}
-			},
-			wantType: contracts.AssetTypeModelEngine,
-			wantDir:  "assets/models/dbt-transform",
+			wantDir: "assets/aws-security",
 		},
 		{
 			name: "invalid name - too short",
 			opts: func(dir string) ScaffoldOpts {
 				return ScaffoldOpts{
-					Name:         "ab",
-					ExtensionFQN: "cloudquery.source.aws",
-					ProjectDir:   dir,
+					Name:       "ab",
+					ProjectDir: dir,
 				}
 			},
 			wantErr:   true,
@@ -72,39 +42,25 @@ func TestScaffold(t *testing.T) {
 			name: "invalid name - uppercase",
 			opts: func(dir string) ScaffoldOpts {
 				return ScaffoldOpts{
-					Name:         "MyAsset",
-					ExtensionFQN: "cloudquery.source.aws",
-					ProjectDir:   dir,
+					Name:       "MyAsset",
+					ProjectDir: dir,
 				}
 			},
 			wantErr:   true,
 			errSubstr: "invalid asset name",
 		},
 		{
-			name: "invalid FQN",
-			opts: func(dir string) ScaffoldOpts {
-				return ScaffoldOpts{
-					Name:         "my-asset",
-					ExtensionFQN: "bad-fqn",
-					ProjectDir:   dir,
-				}
-			},
-			wantErr:   true,
-			errSubstr: "invalid extension FQN",
-		},
-		{
 			name: "duplicate name detection",
 			opts: func(dir string) ScaffoldOpts {
-				// Pre-create an asset
-				writeAssetYAML(t, filepath.Join(dir, "assets", "sources", "existing"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "existing",
-					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
+				// Pre-create an asset in flat layout
+				writeAssetYAML(t, filepath.Join(dir, "assets", "existing"), &contracts.AssetManifest{
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "existing"},
+					Spec:     contracts.AssetSpec{Store: "my-s3"},
 				})
 				return ScaffoldOpts{
-					Name:         "existing",
-					ExtensionFQN: "cloudquery.source.aws",
-					ProjectDir:   dir,
+					Name:       "existing",
+					ProjectDir: dir,
 				}
 			},
 			wantErr:   true,
@@ -113,22 +69,20 @@ func TestScaffold(t *testing.T) {
 		{
 			name: "force overwrite",
 			opts: func(dir string) ScaffoldOpts {
-				// Pre-create an asset
-				writeAssetYAML(t, filepath.Join(dir, "assets", "sources", "existing"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "existing",
-					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
+				// Pre-create an asset in flat layout
+				writeAssetYAML(t, filepath.Join(dir, "assets", "existing"), &contracts.AssetManifest{
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "existing"},
+					Spec:     contracts.AssetSpec{Store: "old-store"},
 				})
 				return ScaffoldOpts{
-					Name:         "existing",
-					ExtensionFQN: "cloudquery.source.aws",
-					ProjectDir:   dir,
-					Force:        true,
-					Version:      "v24.0.2",
+					Name:       "existing",
+					ProjectDir: dir,
+					Store:      "new-store",
+					Force:      true,
 				}
 			},
-			wantType: contracts.AssetTypeSource,
-			wantDir:  "assets/sources/existing",
+			wantDir: "assets/existing",
 		},
 	}
 
@@ -168,43 +122,13 @@ func TestScaffold(t *testing.T) {
 				t.Fatalf("failed to reload asset: %v", err)
 			}
 
-			if asset.Type != tt.wantType {
-				t.Errorf("Type = %q, want %q", asset.Type, tt.wantType)
+			if asset.Metadata.Name != opts.Name {
+				t.Errorf("Metadata.Name = %q, want %q", asset.Metadata.Name, opts.Name)
 			}
-			if asset.Name != opts.Name {
-				t.Errorf("Name = %q, want %q", asset.Name, opts.Name)
-			}
-			if asset.Extension != opts.ExtensionFQN {
-				t.Errorf("Extension = %q, want %q", asset.Extension, opts.ExtensionFQN)
+			if asset.Kind != "Asset" {
+				t.Errorf("Kind = %q, want %q", asset.Kind, "Asset")
 			}
 		})
-	}
-}
-
-func TestScaffold_PlaceholderConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	result, err := Scaffold(ScaffoldOpts{
-		Name:         "aws-security",
-		ExtensionFQN: "cloudquery.source.aws",
-		ProjectDir:   tmpDir,
-		Version:      "v24.0.2",
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// The embedded cloudquery.source schema has required: [accounts, regions, tables]
-	// These should appear as placeholder config entries
-	asset := result.Asset
-	if _, ok := asset.Config["accounts"]; !ok {
-		t.Error("config should contain 'accounts' placeholder from schema")
-	}
-	if _, ok := asset.Config["regions"]; !ok {
-		t.Error("config should contain 'regions' placeholder from schema")
-	}
-	if _, ok := asset.Config["tables"]; !ok {
-		t.Error("config should contain 'tables' placeholder from schema")
 	}
 }
 

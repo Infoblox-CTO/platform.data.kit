@@ -6,272 +6,210 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestAssetType_IsValid(t *testing.T) {
-	tests := []struct {
-		name  string
-		atype AssetType
-		want  bool
-	}{
-		{name: "source", atype: AssetTypeSource, want: true},
-		{name: "sink", atype: AssetTypeSink, want: true},
-		{name: "model-engine", atype: AssetTypeModelEngine, want: true},
-		{name: "invalid", atype: AssetType("invalid"), want: false},
-		{name: "empty", atype: AssetType(""), want: false},
-		{name: "SOURCE uppercase", atype: AssetType("SOURCE"), want: false},
+// ---------------------------------------------------------------------------
+// New Asset model tests
+// ---------------------------------------------------------------------------
+
+func TestAssetManifest_YAMLRoundTrip(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  namespace: default
+spec:
+  store: warehouse
+  table: public.users
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
+    - name: created_at
+      type: timestamp
+`
+
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.atype.IsValid(); got != tt.want {
-				t.Errorf("AssetType(%q).IsValid() = %v, want %v", tt.atype, got, tt.want)
-			}
-		})
+	if a.APIVersion != "data.infoblox.com/v1alpha1" {
+		t.Errorf("APIVersion = %q", a.APIVersion)
+	}
+	if a.Kind != "Asset" {
+		t.Errorf("Kind = %q", a.Kind)
+	}
+	if a.Metadata.Name != "users" {
+		t.Errorf("Metadata.Name = %q", a.Metadata.Name)
+	}
+	if a.Spec.Store != "warehouse" {
+		t.Errorf("Spec.Store = %q", a.Spec.Store)
+	}
+	if a.Spec.Table != "public.users" {
+		t.Errorf("Spec.Table = %q", a.Spec.Table)
+	}
+	if a.Spec.Classification != "confidential" {
+		t.Errorf("Spec.Classification = %q", a.Spec.Classification)
+	}
+	if len(a.Spec.Schema) != 3 {
+		t.Fatalf("Spec.Schema len = %d, want 3", len(a.Spec.Schema))
+	}
+	if a.Spec.Schema[0].Name != "id" || a.Spec.Schema[0].Type != "integer" {
+		t.Errorf("Schema[0] = %+v", a.Spec.Schema[0])
+	}
+	if !a.Spec.Schema[1].PII {
+		t.Error("Schema[1] (email) should have PII=true")
+	}
+
+	// Round-trip
+	out, err := yaml.Marshal(&a)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	var a2 AssetManifest
+	if err := yaml.Unmarshal(out, &a2); err != nil {
+		t.Fatalf("Unmarshal round-trip failed: %v", err)
+	}
+	if a2.Spec.Store != a.Spec.Store {
+		t.Errorf("round-trip Store mismatch")
 	}
 }
 
-func TestValidAssetTypes(t *testing.T) {
-	types := ValidAssetTypes()
-	if len(types) != 3 {
-		t.Errorf("ValidAssetTypes() returned %d types, want 3", len(types))
+func TestAssetManifest_OutputWithLineage(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users-parquet
+spec:
+  store: lake-raw
+  prefix: data/users/
+  format: parquet
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+      from: users.id
+    - name: email
+      type: string
+      pii: true
+      from: users.email
+    - name: created_at
+      type: timestamp
+      from: users.created_at
+`
+
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
 	}
-	expected := map[AssetType]bool{
-		AssetTypeSource:      true,
-		AssetTypeSink:        true,
-		AssetTypeModelEngine: true,
+
+	if a.Spec.Prefix != "data/users/" {
+		t.Errorf("Spec.Prefix = %q", a.Spec.Prefix)
 	}
-	for _, at := range types {
-		if !expected[at] {
-			t.Errorf("unexpected asset type: %s", at)
+	if a.Spec.Format != "parquet" {
+		t.Errorf("Spec.Format = %q", a.Spec.Format)
+	}
+	// Verify lineage from fields
+	for _, field := range a.Spec.Schema {
+		if field.From == "" {
+			t.Errorf("Schema field %q missing 'from' lineage", field.Name)
 		}
 	}
-}
-
-func TestParseExtensionFQN(t *testing.T) {
-	tests := []struct {
-		name       string
-		fqn        string
-		wantVendor string
-		wantKind   string
-		wantName   string
-		wantErr    bool
-	}{
-		{
-			name:       "valid source",
-			fqn:        "cloudquery.source.aws",
-			wantVendor: "cloudquery",
-			wantKind:   "source",
-			wantName:   "aws",
-		},
-		{
-			name:       "valid sink",
-			fqn:        "infoblox.sink.snowflake",
-			wantVendor: "infoblox",
-			wantKind:   "sink",
-			wantName:   "snowflake",
-		},
-		{
-			name:       "valid model-engine",
-			fqn:        "dbt.model-engine.transform",
-			wantVendor: "dbt",
-			wantKind:   "model-engine",
-			wantName:   "transform",
-		},
-		{
-			name:    "too few segments",
-			fqn:     "cloudquery.source",
-			wantErr: true,
-		},
-		{
-			name:    "single segment",
-			fqn:     "cloudquery",
-			wantErr: true,
-		},
-		{
-			name:    "empty string",
-			fqn:     "",
-			wantErr: true,
-		},
-		{
-			name:    "invalid kind",
-			fqn:     "cloudquery.database.postgres",
-			wantErr: true,
-		},
-		{
-			name:    "empty kind",
-			fqn:     "cloudquery..aws",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vendor, kind, name, err := ParseExtensionFQN(tt.fqn)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseExtensionFQN(%q) error = %v, wantErr %v", tt.fqn, err, tt.wantErr)
-				return
-			}
-			if tt.wantErr {
-				return
-			}
-			if vendor != tt.wantVendor {
-				t.Errorf("vendor = %q, want %q", vendor, tt.wantVendor)
-			}
-			if kind != tt.wantKind {
-				t.Errorf("kind = %q, want %q", kind, tt.wantKind)
-			}
-			if name != tt.wantName {
-				t.Errorf("name = %q, want %q", name, tt.wantName)
-			}
-		})
+	if a.Spec.Schema[0].From != "users.id" {
+		t.Errorf("Schema[0].From = %q, want %q", a.Spec.Schema[0].From, "users.id")
 	}
 }
 
-func TestAssetTypeFromFQN(t *testing.T) {
-	tests := []struct {
-		name    string
-		fqn     string
-		want    AssetType
-		wantErr bool
-	}{
-		{name: "source", fqn: "cloudquery.source.aws", want: AssetTypeSource},
-		{name: "sink", fqn: "infoblox.sink.snowflake", want: AssetTypeSink},
-		{name: "model-engine", fqn: "dbt.model-engine.transform", want: AssetTypeModelEngine},
-		{name: "invalid", fqn: "bad", wantErr: true},
-	}
+func TestAssetManifest_KafkaTopic(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: user-events
+spec:
+  store: events
+  topic: user.events.v1
+  format: json
+  classification: internal
+`
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := AssetTypeFromFQN(tt.fqn)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AssetTypeFromFQN(%q) error = %v, wantErr %v", tt.fqn, err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && got != tt.want {
-				t.Errorf("AssetTypeFromFQN(%q) = %v, want %v", tt.fqn, got, tt.want)
-			}
-		})
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if a.Spec.Topic != "user.events.v1" {
+		t.Errorf("Spec.Topic = %q", a.Spec.Topic)
 	}
 }
 
-func TestAssetTypeDirName(t *testing.T) {
-	tests := []struct {
-		name  string
-		atype AssetType
-		want  string
-	}{
-		{name: "source", atype: AssetTypeSource, want: "sources"},
-		{name: "sink", atype: AssetTypeSink, want: "sinks"},
-		{name: "model-engine", atype: AssetTypeModelEngine, want: "models"},
-		{name: "invalid", atype: AssetType("invalid"), want: ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := AssetTypeDirName(tt.atype); got != tt.want {
-				t.Errorf("AssetTypeDirName(%q) = %q, want %q", tt.atype, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestAssetManifest_YAML(t *testing.T) {
-	asset := AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
-		Kind:       "Asset",
-		Name:       "aws-security",
-		Type:       AssetTypeSource,
-		Extension:  "cloudquery.source.aws",
-		Version:    "v24.0.2",
-		OwnerTeam:  "security-data",
-		Binding:    "aws-raw-output",
-		Config: map[string]any{
-			"accounts": []any{"123456789012"},
-			"regions":  []any{"us-east-1"},
-			"tables":   []any{"aws_s3_buckets"},
-		},
-		Labels: map[string]string{
-			"domain": "security",
+func TestAssetManifest_ManifestInterface(t *testing.T) {
+	a := &AssetManifest{
+		Metadata: AssetMetadata{
+			Name:      "users",
+			Namespace: "analytics",
 		},
 	}
-
-	data, err := yaml.Marshal(&asset)
-	if err != nil {
-		t.Fatalf("Marshal() error = %v", err)
+	if a.GetKind() != KindAsset {
+		t.Errorf("GetKind() = %v, want %v", a.GetKind(), KindAsset)
 	}
-
-	var roundtrip AssetManifest
-	if err := yaml.Unmarshal(data, &roundtrip); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
+	if a.GetName() != "users" {
+		t.Errorf("GetName() = %q", a.GetName())
 	}
-
-	if roundtrip.APIVersion != asset.APIVersion {
-		t.Errorf("APIVersion = %q, want %q", roundtrip.APIVersion, asset.APIVersion)
-	}
-	if roundtrip.Kind != asset.Kind {
-		t.Errorf("Kind = %q, want %q", roundtrip.Kind, asset.Kind)
-	}
-	if roundtrip.Name != asset.Name {
-		t.Errorf("Name = %q, want %q", roundtrip.Name, asset.Name)
-	}
-	if roundtrip.Type != asset.Type {
-		t.Errorf("Type = %q, want %q", roundtrip.Type, asset.Type)
-	}
-	if roundtrip.Extension != asset.Extension {
-		t.Errorf("Extension = %q, want %q", roundtrip.Extension, asset.Extension)
-	}
-	if roundtrip.Version != asset.Version {
-		t.Errorf("Version = %q, want %q", roundtrip.Version, asset.Version)
-	}
-	if roundtrip.OwnerTeam != asset.OwnerTeam {
-		t.Errorf("OwnerTeam = %q, want %q", roundtrip.OwnerTeam, asset.OwnerTeam)
-	}
-	if roundtrip.Binding != asset.Binding {
-		t.Errorf("Binding = %q, want %q", roundtrip.Binding, asset.Binding)
-	}
-	if len(roundtrip.Config) == 0 {
-		t.Error("Config is empty after roundtrip")
-	}
-	if roundtrip.Labels["domain"] != "security" {
-		t.Errorf("Labels[domain] = %q, want %q", roundtrip.Labels["domain"], "security")
+	if a.GetNamespace() != "analytics" {
+		t.Errorf("GetNamespace() = %q", a.GetNamespace())
 	}
 }
 
-func TestAssetManifest_Omitempty(t *testing.T) {
-	// Minimal asset — optional fields should NOT appear in YAML output
-	asset := AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
-		Kind:       "Asset",
-		Name:       "minimal",
-		Type:       AssetTypeSource,
-		Extension:  "cloudquery.source.aws",
-		Version:    "v1.0.0",
-		OwnerTeam:  "team",
-		Config:     map[string]any{"tables": []any{"t1"}},
+func TestAssetGroupManifest_YAML(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: AssetGroup
+metadata:
+  name: pg-snapshot
+  namespace: default
+spec:
+  store: lake-raw
+  assets:
+    - users-parquet
+    - orders-parquet
+    - products-parquet
+`
+
+	var ag AssetGroupManifest
+	if err := yaml.Unmarshal([]byte(input), &ag); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	data, err := yaml.Marshal(&asset)
-	if err != nil {
-		t.Fatalf("Marshal() error = %v", err)
+	if ag.Kind != "AssetGroup" {
+		t.Errorf("Kind = %q", ag.Kind)
 	}
-
-	yamlStr := string(data)
-
-	// These optional fields should be omitted
-	if contains(yamlStr, "description:") {
-		t.Error("description should be omitted when empty")
+	if ag.Metadata.Name != "pg-snapshot" {
+		t.Errorf("Metadata.Name = %q", ag.Metadata.Name)
 	}
-	if contains(yamlStr, "binding:") {
-		t.Error("binding should be omitted when empty")
+	if ag.Spec.Store != "lake-raw" {
+		t.Errorf("Spec.Store = %q", ag.Spec.Store)
 	}
-	if contains(yamlStr, "labels:") {
-		t.Error("labels should be omitted when empty")
+	if len(ag.Spec.Assets) != 3 {
+		t.Fatalf("Spec.Assets len = %d, want 3", len(ag.Spec.Assets))
+	}
+	if ag.Spec.Assets[0] != "users-parquet" {
+		t.Errorf("Spec.Assets[0] = %q", ag.Spec.Assets[0])
 	}
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && containsSubstring(s, substr)
+func TestAssetGroupManifest_ManifestInterface(t *testing.T) {
+	ag := &AssetGroupManifest{
+		Metadata: AssetGroupMetadata{Name: "pg-snapshot", Namespace: "default"},
+	}
+	if ag.GetKind() != KindAssetGroup {
+		t.Errorf("GetKind() = %v, want %v", ag.GetKind(), KindAssetGroup)
+	}
+	if ag.GetName() != "pg-snapshot" {
+		t.Errorf("GetName() = %q", ag.GetName())
+	}
 }
 
+// containsSubstring is a test helper used across test files in this package.
 func containsSubstring(s, sub string) bool {
 	for i := 0; i <= len(s)-len(sub); i++ {
 		if s[i:i+len(sub)] == sub {

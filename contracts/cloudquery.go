@@ -25,7 +25,7 @@ func (r CloudQueryRole) IsSupported() bool {
 	return r == CloudQueryRoleSource
 }
 
-// CloudQuerySpec defines CloudQuery-specific configuration within a DataPackage manifest.
+// CloudQuerySpec defines CloudQuery-specific configuration within a manifest.
 type CloudQuerySpec struct {
 	// Role is the plugin role: "source" or "destination".
 	Role CloudQueryRole `yaml:"role" json:"role"`

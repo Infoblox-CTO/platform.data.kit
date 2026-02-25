@@ -34,7 +34,6 @@ Each asset lives in a type-based directory under `assets/`:
 ```
 my-package/
 ├── dp.yaml
-├── bindings.yaml
 └── assets/
     ├── sources/
     │   ├── aws-security/
@@ -59,7 +58,6 @@ extension: cloudquery.source.aws      # Extension FQN (vendor.kind.name)
 version: v24.0.2                      # Extension version (semver)
 ownerTeam: security-data              # Team that owns this asset
 description: "AWS security data"      # Optional description
-binding: aws-raw-output               # Optional binding reference
 config:                               # Validated against extension schema
   accounts:
     - "123456789012"
@@ -114,7 +112,6 @@ dp asset validate
 | E074 | Config block fails schema validation |
 | E075 | Extension schema not found |
 | E076 | Asset referenced in dp.yaml not found on disk |
-| E077 | Asset binding references non-existent binding |
 
 ## Lifecycle
 
@@ -154,27 +151,24 @@ spec:
 
 Assets are included in the normal `dp build → dp publish → dp promote` workflow.
 
-## Bindings
+## Store References
 
-Assets can optionally reference a named binding from `bindings.yaml`:
-
-```yaml
-# asset.yaml
-binding: aws-raw-output
-```
+Assets reference a Store by name via the `spec.store` field in the data package manifest. Store manifests define connection details for infrastructure:
 
 ```yaml
-# bindings.yaml
-bindings:
-  - name: aws-raw-output
-    asset: aws-security
-    type: s3-prefix
-    properties:
-      bucket: my-bucket
-      prefix: raw/security/
+# store.yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: aws-raw-output
+spec:
+  type: s3-prefix
+  connection:
+    bucket: my-bucket
+    prefix: raw/security/
 ```
 
-The `dp validate` command cross-validates that each asset's `binding` field resolves to an existing entry in `bindings.yaml`.
+The `dp validate` command cross-validates that each asset's store reference resolves to an existing Store manifest.
 
 ## CLI Commands
 
@@ -191,7 +185,7 @@ The `dp validate` command cross-validates that each asset's `binding` field reso
 Extension Schema (JSON Schema)
        │
        ▼
-  Asset (asset.yaml)  ←──→  Binding (bindings.yaml)
+  Asset (asset.yaml)  ←──→  Store (store.yaml)
        │
        ▼
   Data Package (dp.yaml)
@@ -202,11 +196,11 @@ Extension Schema (JSON Schema)
 
 - **Extensions** provide the runtime and schema; assets provide the configuration
 - **Data Packages** reference assets by name in their `spec.assets` list
-- **Bindings** provide infrastructure-specific configuration (buckets, topics, etc.)
+- **Stores** provide infrastructure-specific connection details (buckets, topics, etc.)
 
 ## See Also
 
 - [Data Packages](data-packages.md) — The container for assets
-- [Manifests](manifests.md) — dp.yaml and bindings.yaml reference
+- [Manifests](manifests.md) — dp.yaml and store manifest reference
 - [CLI Reference](../reference/cli.md) — Complete CLI documentation
 - [Manifest Schema](../reference/manifest-schema.md) — Schema reference

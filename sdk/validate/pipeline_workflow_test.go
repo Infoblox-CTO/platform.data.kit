@@ -13,7 +13,7 @@ func TestPipelineWorkflowValidator_ValidPipeline(t *testing.T) {
 		Kind:       "PipelineWorkflow",
 		Metadata:   contracts.PipelineWorkflowMetadata{Name: "my-pipeline"},
 		Steps: []contracts.Step{
-			{Name: "sync-data", Type: contracts.StepTypeSync, Source: "my-source", Sink: "my-sink"},
+			{Name: "sync-data", Type: contracts.StepTypeSync, Input: "my-source", Output: "my-sink"},
 			{Name: "transform-data", Type: contracts.StepTypeTransform, Asset: "my-model"},
 			{Name: "test-data", Type: contracts.StepTypeTest, Asset: "my-model", Command: []string{"dbt", "test"}},
 			{Name: "publish-results", Type: contracts.StepTypePublish},
@@ -183,13 +183,13 @@ func TestPipelineWorkflowValidator_MissingStepFields(t *testing.T) {
 		wantCode string
 	}{
 		{
-			name:     "sync missing source",
-			step:     contracts.Step{Name: "sync-step", Type: contracts.StepTypeSync, Sink: "my-sink"},
+			name:     "sync missing input",
+			step:     contracts.Step{Name: "sync-step", Type: contracts.StepTypeSync, Output: "my-sink"},
 			wantCode: ErrPipelineMissingStepField,
 		},
 		{
-			name:     "sync missing sink",
-			step:     contracts.Step{Name: "sync-step", Type: contracts.StepTypeSync, Source: "my-source"},
+			name:     "sync missing output",
+			step:     contracts.Step{Name: "sync-step", Type: contracts.StepTypeSync, Input: "my-source"},
 			wantCode: ErrPipelineMissingStepField,
 		},
 		{
@@ -241,15 +241,15 @@ func TestPipelineWorkflowValidator_Name(t *testing.T) {
 func TestValidateAssetReferences_Valid(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
 		Steps: []contracts.Step{
-			{Name: "sync-step", Type: contracts.StepTypeSync, Source: "my-source", Sink: "my-sink"},
+			{Name: "sync-step", Type: contracts.StepTypeSync, Input: "my-source", Output: "my-sink"},
 			{Name: "transform-step", Type: contracts.StepTypeTransform, Asset: "my-model"},
 			{Name: "test-step", Type: contracts.StepTypeTest, Asset: "my-source"},
 		},
 	}
 	assets := []*contracts.AssetManifest{
-		{Name: "my-source", Type: contracts.AssetTypeSource},
-		{Name: "my-sink", Type: contracts.AssetTypeSink},
-		{Name: "my-model", Type: contracts.AssetTypeModelEngine},
+		{Metadata: contracts.AssetMetadata{Name: "my-source"}},
+		{Metadata: contracts.AssetMetadata{Name: "my-sink"}},
+		{Metadata: contracts.AssetMetadata{Name: "my-model"}},
 	}
 	errs := ValidateAssetReferences(pw, assets)
 	if errs.HasErrors() {
@@ -260,59 +260,14 @@ func TestValidateAssetReferences_Valid(t *testing.T) {
 func TestValidateAssetReferences_NotFound(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
 		Steps: []contracts.Step{
-			{Name: "sync-step", Type: contracts.StepTypeSync, Source: "missing-source", Sink: "my-sink"},
+			{Name: "sync-step", Type: contracts.StepTypeSync, Input: "missing-source", Output: "my-sink"},
 		},
 	}
 	assets := []*contracts.AssetManifest{
-		{Name: "my-sink", Type: contracts.AssetTypeSink},
+		{Metadata: contracts.AssetMetadata{Name: "my-sink"}},
 	}
 	errs := ValidateAssetReferences(pw, assets)
 	if !hasErrorCode(errs, ErrPipelineAssetNotFound) {
 		t.Errorf("expected error code %s, got %v", ErrPipelineAssetNotFound, errs)
 	}
-}
-
-func TestValidateAssetReferences_TypeMismatch(t *testing.T) {
-	tests := []struct {
-		name  string
-		steps []contracts.Step
-	}{
-		{
-			name: "sync source is sink type",
-			steps: []contracts.Step{
-				{Name: "sync-step", Type: contracts.StepTypeSync, Source: "my-sink", Sink: "my-source"},
-			},
-		},
-		{
-			name: "transform asset is source type",
-			steps: []contracts.Step{
-				{Name: "transform-step", Type: contracts.StepTypeTransform, Asset: "my-source"},
-			},
-		},
-	}
-
-	assets := []*contracts.AssetManifest{
-		{Name: "my-source", Type: contracts.AssetTypeSource},
-		{Name: "my-sink", Type: contracts.AssetTypeSink},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pw := &contracts.PipelineWorkflow{Steps: tt.steps}
-			errs := ValidateAssetReferences(pw, assets)
-			if !hasErrorCode(errs, ErrPipelineAssetTypeMismatch) {
-				t.Errorf("expected error code %s, got %v", ErrPipelineAssetTypeMismatch, errs)
-			}
-		})
-	}
-}
-
-// hasErrorCode checks if the errors contain a specific code.
-func hasErrorCode(errs contracts.ValidationErrors, code string) bool {
-	for _, e := range errs {
-		if e.Code == code {
-			return true
-		}
-	}
-	return false
 }

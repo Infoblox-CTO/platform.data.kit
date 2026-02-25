@@ -274,11 +274,11 @@ func buildStepArgs(step contracts.Step, extraEnv map[string]string) ([]string, e
 
 	switch step.Type {
 	case contracts.StepTypeSync:
-		// Sync: docker run with source/sink env
+		// Sync: docker run with input/output env
 		args = append(args, "docker", "run", "--rm")
 		args = appendEnvArgs(args, step.Env, extraEnv)
-		args = append(args, "-e", fmt.Sprintf("DP_SOURCE=%s", step.Source))
-		args = append(args, "-e", fmt.Sprintf("DP_SINK=%s", step.Sink))
+		args = append(args, "-e", fmt.Sprintf("DP_INPUT=%s", step.Input))
+		args = append(args, "-e", fmt.Sprintf("DP_OUTPUT=%s", step.Output))
 		args = append(args, "dp-sync:latest")
 
 	case contracts.StepTypeTransform:

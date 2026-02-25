@@ -25,8 +25,7 @@ func TestAssetShow(t *testing.T) {
 			name: "valid asset name - yaml output",
 			args: []string{"aws-security"},
 			setup: func(dir string) {
-				writeShowAsset(t, dir, "sources", "aws-security", contracts.AssetTypeSource,
-					"cloudquery.source.aws", "v24.0.2", "security-team")
+				writeShowAsset(t, dir, "aws-security", "my-s3")
 			},
 			wantOutput: "aws-security",
 		},
@@ -40,8 +39,7 @@ func TestAssetShow(t *testing.T) {
 			name: "json output",
 			args: []string{"aws-security", "--output", "json"},
 			setup: func(dir string) {
-				writeShowAsset(t, dir, "sources", "aws-security", contracts.AssetTypeSource,
-					"cloudquery.source.aws", "v24.0.2", "security-team")
+				writeShowAsset(t, dir, "aws-security", "my-s3")
 			},
 			wantOutput: "aws-security",
 		},
@@ -99,8 +97,7 @@ func TestAssetShow(t *testing.T) {
 func TestAssetShowYAMLOutput(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	writeShowAsset(t, tmpDir, "sources", "aws-security", contracts.AssetTypeSource,
-		"cloudquery.source.aws", "v24.0.2", "security-team")
+	writeShowAsset(t, tmpDir, "aws-security", "my-s3")
 
 	origDir, _ := os.Getwd()
 	if err := os.Chdir(tmpDir); err != nil {
@@ -128,25 +125,18 @@ func TestAssetShowYAMLOutput(t *testing.T) {
 		t.Fatalf("output is not valid YAML: %v\nOutput: %s", err, output)
 	}
 
-	if parsed.Name != "aws-security" {
-		t.Errorf("expected name 'aws-security', got %q", parsed.Name)
+	if parsed.Metadata.Name != "aws-security" {
+		t.Errorf("expected name 'aws-security', got %q", parsed.Metadata.Name)
 	}
-	if parsed.Extension != "cloudquery.source.aws" {
-		t.Errorf("expected extension 'cloudquery.source.aws', got %q", parsed.Extension)
-	}
-	if parsed.Version != "v24.0.2" {
-		t.Errorf("expected version 'v24.0.2', got %q", parsed.Version)
-	}
-	if parsed.OwnerTeam != "security-team" {
-		t.Errorf("expected ownerTeam 'security-team', got %q", parsed.OwnerTeam)
+	if parsed.Spec.Store != "my-s3" {
+		t.Errorf("expected store 'my-s3', got %q", parsed.Spec.Store)
 	}
 }
 
 func TestAssetShowJSONOutput(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	writeShowAsset(t, tmpDir, "sources", "aws-security", contracts.AssetTypeSource,
-		"cloudquery.source.aws", "v24.0.2", "security-team")
+	writeShowAsset(t, tmpDir, "aws-security", "my-s3")
 
 	origDir, _ := os.Getwd()
 	if err := os.Chdir(tmpDir); err != nil {
@@ -172,22 +162,19 @@ func TestAssetShowJSONOutput(t *testing.T) {
 		t.Fatalf("output is not valid JSON: %v\nOutput: %s", err, buf.String())
 	}
 
-	if parsed.Name != "aws-security" {
-		t.Errorf("expected name 'aws-security', got %q", parsed.Name)
+	if parsed.Metadata.Name != "aws-security" {
+		t.Errorf("expected name 'aws-security', got %q", parsed.Metadata.Name)
 	}
-	if parsed.Extension != "cloudquery.source.aws" {
-		t.Errorf("expected extension 'cloudquery.source.aws', got %q", parsed.Extension)
-	}
-	if parsed.Version != "v24.0.2" {
-		t.Errorf("expected version 'v24.0.2', got %q", parsed.Version)
+	if parsed.Spec.Store != "my-s3" {
+		t.Errorf("expected store 'my-s3', got %q", parsed.Spec.Store)
 	}
 }
 
 // writeShowAsset creates an asset.yaml for use in show tests.
-func writeShowAsset(t *testing.T, projectDir, typeDir, name string, assetType contracts.AssetType, ext, version, owner string) {
+func writeShowAsset(t *testing.T, projectDir, name, store string) {
 	t.Helper()
 
-	assetDir := filepath.Join(projectDir, "assets", typeDir, name)
+	assetDir := filepath.Join(projectDir, "assets", name)
 	if err := os.MkdirAll(assetDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -195,16 +182,8 @@ func writeShowAsset(t *testing.T, projectDir, typeDir, name string, assetType co
 	a := &contracts.AssetManifest{
 		APIVersion: "data.infoblox.com/v1alpha1",
 		Kind:       "Asset",
-		Name:       name,
-		Type:       assetType,
-		Extension:  ext,
-		Version:    version,
-		OwnerTeam:  owner,
-		Config: map[string]any{
-			"accounts": []any{"123456789012"},
-			"regions":  []any{"us-east-1"},
-			"tables":   []any{"aws_s3_buckets"},
-		},
+		Metadata:   contracts.AssetMetadata{Name: name},
+		Spec:       contracts.AssetSpec{Store: store, Table: "public.events"},
 	}
 	data, _ := yaml.Marshal(a)
 	if err := os.WriteFile(filepath.Join(assetDir, "asset.yaml"), data, 0644); err != nil {

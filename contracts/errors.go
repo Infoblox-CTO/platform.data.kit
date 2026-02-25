@@ -128,18 +128,14 @@ func (e ValidationErrors) Warnings() ValidationErrors {
 
 // Error code constants per data-model.md validation rules.
 const (
-	// DataPackage validation errors (E001-E003)
+	// Manifest validation errors (E001-E003)
 	ErrCodeNameNotDNSSafe     = "E001"
 	ErrCodeInvalidPackageType = "E002"
 	ErrCodeOutputsRequired    = "E003"
 
-	// ArtifactContract validation errors (E004-E005)
+	// Asset/classification validation errors (E004-E005)
 	ErrCodeClassificationRequired = "E004"
 	ErrCodeInvalidSchemaType      = "E005"
-
-	// Binding validation errors (E010-E011)
-	ErrCodeBindingNotFound     = "E010"
-	ErrCodeBindingTypeMismatch = "E011"
 
 	// PackageVersion validation errors (E020-E021)
 	ErrCodeInvalidSemVer        = "E020"
@@ -153,36 +149,64 @@ const (
 	ErrCodeRuntimeRequired      = "E040"
 	ErrCodeRuntimeImageRequired = "E041"
 
-	// Source/Destination validation errors (E102-E104)
-	ErrCodeSourceProvidesRequired = "E102" // Source must declare provides
-	ErrCodeDestAcceptsRequired    = "E103" // Destination must declare accepts
-	ErrCodeImageRequiredGeneric   = "E104" // spec.image required for generic-* runtimes
-
 	// Model validation warnings (W200-W209)
-	WarnCodeConfigSchemaMissing = "W104" // configSchema recommended for extensions
-	WarnCodeScheduleBatchMode   = "W209" // schedule recommended for batch mode
+	WarnCodeScheduleBatchMode = "W209"
+
+	// --- New kind validation errors (E200+) ---
+
+	// Connector validation errors (E200-E209)
+	ErrCodeConnectorTypeRequired         = "E200" // spec.type is required
+	ErrCodeConnectorCapabilitiesRequired = "E201" // spec.capabilities must be non-empty
+
+	// Store validation errors (E210-E219)
+	ErrCodeStoreConnectorRequired  = "E210" // spec.connector is required
+	ErrCodeStoreConnectionRequired = "E211" // spec.connection must be non-empty
+	ErrCodeStoreSecretsInvalid     = "E212" // spec.secrets contains invalid interpolation syntax
+
+	// Asset validation errors (E220-E229)
+	ErrCodeAssetStoreRequired    = "E220" // spec.store is required
+	ErrCodeAssetLocationRequired = "E221" // at least one of table/prefix/topic is required
+	ErrCodeAssetSchemaInvalid    = "E222" // spec.schema contains invalid field definitions
+
+	// Transform validation errors (E230-E239)
+	ErrCodeTransformInputsRequired  = "E230" // spec.inputs must be non-empty
+	ErrCodeTransformOutputsRequired = "E231" // spec.outputs must be non-empty
+	ErrCodeTransformImageRequired   = "E232" // spec.image required for generic-* runtimes
+
+	// AssetGroup validation errors (E240-E249)
+	ErrCodeAssetGroupStoreRequired  = "E240" // spec.store is required
+	ErrCodeAssetGroupAssetsRequired = "E241" // spec.assets must be non-empty
 )
 
 // Error message templates.
 var errorMessages = map[string]string{
 	ErrCodeNameNotDNSSafe:         "name must be DNS-safe (lowercase, alphanumeric, hyphens)",
-	ErrCodeInvalidPackageType:     "kind must be one of: Source, Destination, Model",
-	ErrCodeOutputsRequired:        "outputs are required for Model kind packages",
+	ErrCodeInvalidPackageType:     "kind must be one of: Connector, Store, Asset, AssetGroup, Transform",
+	ErrCodeOutputsRequired:        "outputs are required for Transform kind packages",
 	ErrCodeClassificationRequired: "classification is required for output artifacts",
 	ErrCodeInvalidSchemaType:      "schema type must be one of: parquet, avro, json, csv",
-	ErrCodeBindingNotFound:        "binding reference not found in environment",
-	ErrCodeBindingTypeMismatch:    "binding type does not match artifact type",
 	ErrCodeInvalidSemVer:          "version must be a valid SemVer string",
 	ErrCodeVersionAlreadyExists:   "version already exists and cannot be overwritten",
 	ErrCodeInvalidImageRef:        "image must be a valid container image reference",
 	ErrCodeInvalidTimeout:         "timeout must be a positive duration",
 	ErrCodeRuntimeRequired:        "spec.runtime is required",
 	ErrCodeRuntimeImageRequired:   "spec.image is required for generic-* runtimes",
-	ErrCodeSourceProvidesRequired: "source must declare spec.provides",
-	ErrCodeDestAcceptsRequired:    "destination must declare spec.accepts",
-	ErrCodeImageRequiredGeneric:   "spec.image is required for generic-* runtimes",
-	WarnCodeConfigSchemaMissing:   "configSchema is recommended so data engineers can validate config",
-	WarnCodeScheduleBatchMode:     "schedule is recommended for batch mode models",
+	WarnCodeScheduleBatchMode:     "schedule is recommended for batch mode transforms",
+
+	// --- New kind error messages ---
+	ErrCodeConnectorTypeRequired:         "spec.type is required for Connector",
+	ErrCodeConnectorCapabilitiesRequired: "spec.capabilities must list at least one capability (source, destination)",
+	ErrCodeStoreConnectorRequired:        "spec.connector is required for Store",
+	ErrCodeStoreConnectionRequired:       "spec.connection must contain at least one connection parameter",
+	ErrCodeStoreSecretsInvalid:           "spec.secrets values must use ${VAR} interpolation syntax",
+	ErrCodeAssetStoreRequired:            "spec.store is required for Asset",
+	ErrCodeAssetLocationRequired:         "at least one of spec.table, spec.prefix, or spec.topic is required",
+	ErrCodeAssetSchemaInvalid:            "spec.schema contains invalid field definitions (name and type are required)",
+	ErrCodeTransformInputsRequired:       "spec.inputs must contain at least one asset reference",
+	ErrCodeTransformOutputsRequired:      "spec.outputs must contain at least one asset reference",
+	ErrCodeTransformImageRequired:        "spec.image is required for generic-go, generic-python, and dbt runtimes",
+	ErrCodeAssetGroupStoreRequired:       "spec.store is required for AssetGroup",
+	ErrCodeAssetGroupAssetsRequired:      "spec.assets must contain at least one asset name",
 }
 
 // NewValidationError creates a new validation error with the standard message.

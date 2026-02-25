@@ -131,7 +131,6 @@ func (b *Bundler) createManifestLayer(packageDir string) (Layer, error) {
 	// Add manifest files
 	manifestFiles := []string{
 		"dp.yaml",
-		"bindings.yaml",
 	}
 
 	for _, name := range manifestFiles {
@@ -221,7 +220,7 @@ func (b *Bundler) createContentLayer(packageDir string, excludePatterns []string
 
 		// Skip manifest files (they're in their own layer)
 		if relPath == "dp.yaml" || relPath == "pipeline.yaml" ||
-			relPath == "bindings.yaml" || filepath.HasPrefix(relPath, "schemas") {
+			filepath.HasPrefix(relPath, "schemas") {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}

@@ -27,14 +27,12 @@ var lintCmd = &cobra.Command{
 
 The lint command checks:
   - dp.yaml: Data package manifest validation
-  - bindings.yaml: Binding configuration validation
   - schemas/: Schema file validation
   - PII classification: Ensures outputs have required classifications
 
 Validation rules include:
   - Required fields (E001-E003)
   - Schema references (E004-E005)
-  - Binding configuration (E010-E011)
   - Runtime configuration (E030-E031, E040-E041)
   - PII classification (E025): Outputs must have classification
 
@@ -130,9 +128,6 @@ func runLint(cmd *cobra.Command, args []string) error {
 	files := []string{}
 	if _, err := os.Stat(filepath.Join(absDir, "dp.yaml")); err == nil {
 		files = append(files, "dp.yaml")
-	}
-	if _, err := os.Stat(filepath.Join(absDir, "bindings.yaml")); err == nil {
-		files = append(files, "bindings.yaml")
 	}
 	if entries, err := os.ReadDir(filepath.Join(absDir, "schemas")); err == nil {
 		for _, e := range entries {

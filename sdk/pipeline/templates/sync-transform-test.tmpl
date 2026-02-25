@@ -6,18 +6,18 @@ metadata:
 steps:
   - name: sync-data
     type: sync
-    source: "TODO-source-asset"
-    sink: "TODO-sink-asset"
-    description: "Sync data from source to sink"
+    input: "TODO-input-asset"
+    output: "TODO-output-asset"
+    description: "Sync data from input to output"
 
   - name: transform-data
     type: transform
-    asset: "TODO-model-engine-asset"
+    asset: "TODO-transform-asset"
     description: "Transform synced data"
 
   - name: test-output
     type: test
-    asset: "TODO-model-engine-asset"
+    asset: "TODO-transform-asset"
     command: ["dbt", "test"]
     description: "Validate transformed data"
 

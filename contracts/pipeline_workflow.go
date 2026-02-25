@@ -4,10 +4,10 @@ package contracts
 type StepType string
 
 const (
-	// StepTypeSync is a source-to-sink data movement step.
+	// StepTypeSync is an input-to-output data movement step.
 	StepTypeSync StepType = "sync"
 
-	// StepTypeTransform is a model engine execution step (e.g., dbt run).
+	// StepTypeTransform is a transform engine execution step (e.g., dbt run).
 	StepTypeTransform StepType = "transform"
 
 	// StepTypeTest is a validation/assertion step (e.g., dbt test).
@@ -77,11 +77,11 @@ type Step struct {
 
 	// Sync step fields
 
-	// Source is the name of the source asset (sync step only).
-	Source string `json:"source,omitempty" yaml:"source,omitempty"`
+	// Input is the name of the input asset (sync step only).
+	Input string `json:"input,omitempty" yaml:"input,omitempty"`
 
-	// Sink is the name of the sink asset (sync step only).
-	Sink string `json:"sink,omitempty" yaml:"sink,omitempty"`
+	// Output is the name of the output asset (sync step only).
+	Output string `json:"output,omitempty" yaml:"output,omitempty"`
 
 	// Transform / Test step fields
 

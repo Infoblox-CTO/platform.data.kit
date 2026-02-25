@@ -48,12 +48,11 @@ A data package is a self-contained unit containing:
 
 ```
 my-package/
-├── dp.yaml          # Package manifest (metadata, inputs, outputs, runtime)
-├── bindings.yaml    # Infrastructure binding references
+├── dp.yaml          # Transform manifest (metadata, runtime, inputs, outputs)
 └── src/             # Implementation code
 ```
 
-The `dp.yaml` manifest consolidates all configuration in a single file, including runtime configuration for pipeline packages.
+The `dp.yaml` manifest consolidates all configuration in a single file, including runtime, inputs, and outputs.
 
 !!! info "Learn More"
     See [Data Packages](data-packages.md) for detailed structure and fields.
@@ -126,23 +125,28 @@ All pipeline runs emit OpenLineage events:
 - **Custom backends**: Configurable OpenLineage endpoint
 - **Events**: START, RUNNING, COMPLETE, FAIL, ABORT
 
-### Infrastructure Bindings
+### Infrastructure: Stores & Connectors
 
-Data packages reference infrastructure through bindings:
+Data packages reference infrastructure through **Stores** (named instances of **Connectors**):
 
 ```yaml
-# bindings.yaml
-bindings:
-  input.events:
-    type: kafka-topic
-    ref: namespace/topic-name
-    
-  output.data:
-    type: s3-prefix
-    ref: bucket/prefix/
+# store/warehouse.yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+spec:
+  connector: postgres
+  connection:
+    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    port: 5432
+    database: dataplatform
+  secrets:
+    username: ${PG_USER}
+    password: ${PG_PASSWORD}
 ```
 
-Bindings are resolved per environment, allowing the same package to reference different infrastructure in dev vs. prod.
+Stores are resolved per environment, allowing the same Transform to reference different infrastructure in dev vs. prod.
 
 ## Security Model
 

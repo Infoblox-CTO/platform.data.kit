@@ -18,27 +18,39 @@ Think of a data package as a "container" for your data pipeline:
 | **Portable** | Same package runs locally and in production |
 | **Observable** | Built-in lineage tracking and metadata |
 
+## Core Concepts
+
+The data platform uses four core concepts to separate concerns:
+
+| Concept | What it represents | Who creates it |
+|---------|--------------------|----------------|
+| **Connector** | A technology type (Postgres, S3, Kafka) | Platform team |
+| **Store** | A named instance of a Connector with connection details | Infra / SRE |
+| **Asset** | A data contract (table, S3 prefix, topic) in a Store | Data engineer |
+| **Transform** | A unit of computation that reads/writes Assets | Data engineer |
+
 ## Package Structure
 
-Every data package follows this structure:
+A Transform package — the deployable unit — follows this structure:
 
 ```
-my-package/
-├── dp.yaml           # Package manifest with runtime config (required)
-├── bindings.yaml     # Infrastructure bindings (optional)
-├── src/              # Source code
+my-pipeline/
+├── dp.yaml           # Transform manifest (required)
+├── src/              # Source code (generic-go / generic-python)
 │   └── main.py
 └── tests/            # Tests (optional)
     └── test_pipeline.py
 ```
 
+For CloudQuery runtimes, no source code is needed — the Connector's plugin images handle execution.
+
 ### dp.yaml (Manifest)
 
-The manifest is the heart of every package. It includes all configuration in a single file:
+The manifest is the heart of every package:
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 metadata:
   name: my-kafka-pipeline
   namespace: analytics
@@ -47,33 +59,18 @@ metadata:
     team: data-engineering
     domain: events
 spec:
-  type: pipeline
+  runtime: generic-python       # cloudquery | generic-go | generic-python | dbt
+  mode: batch                   # batch | streaming
   description: Processes event data from Kafka to S3
   owner: data-engineering@example.com
-  
-  # Runtime configuration (required for pipeline type)
-  runtime:
-    image: myorg/my-pipeline:v1.0.0
-    timeout: 30m
-    retries: 3
-    env:
-      - name: LOG_LEVEL
-        value: info
-    resources:
-      cpu: "500m"
-      memory: "1Gi"
-  
-  # What this package consumes
+  image: myorg/my-pipeline:v1.0.0
+  timeout: 30m
+
   inputs:
-    - name: events
-      type: kafka-topic
-      binding: input.events
-      
-  # What this package produces
+    - asset: raw-events         # references an Asset by name
+
   outputs:
-    - name: processed-events
-      type: s3-prefix
-      binding: output.data
+    - asset: processed-events   # references an Asset by name
       classification:
         pii: false
         sensitivity: internal
@@ -84,23 +81,19 @@ spec:
 
 ### Runtime Configuration
 
-For pipeline packages, the `spec.runtime` section defines how the container runs:
+The `spec` section of a Transform defines how the container runs:
 
-```yaml title="dp.yaml (runtime section)"
+```yaml title="dp.yaml (spec section)"
 spec:
-  runtime:
-    image: myorg/my-pipeline:v1.0.0     # Required: container image
-    timeout: 30m                         # Max execution time
-    retries: 3                           # Max retry attempts
-    env:                                 # Environment variables
-      - name: LOG_LEVEL
-        value: info
-    envFrom:                             # Environment from secrets/configmaps
-      - secretRef:
-          name: db-credentials
-    resources:                           # Resource limits
-      cpu: "1"
-      memory: "2Gi"
+  runtime: generic-python
+  image: myorg/my-pipeline:v1.0.0       # Required: container image
+  timeout: 30m                           # Max execution time
+  env:                                   # Environment variables
+    - name: LOG_LEVEL
+      value: info
+  resources:                             # Resource limits
+    cpu: "1"
+    memory: "2Gi"
 ```
 
 #### Overriding at Runtime
@@ -109,106 +102,52 @@ You can override configuration values without modifying dp.yaml:
 
 ```bash
 # Override image for local testing
-dp run ./my-pipeline --set spec.runtime.image=local:dev
+dp run ./my-pipeline --set spec.image=local:dev
 
 # Apply environment-specific overrides
 dp run ./my-pipeline -f production.yaml
 
 # Combine both (--set takes precedence)
-dp run ./my-pipeline -f production.yaml --set spec.runtime.timeout=1h
+dp run ./my-pipeline -f production.yaml --set spec.timeout=1h
 
 # Preview merged configuration
-dp show ./my-pipeline -f production.yaml --set spec.runtime.image=new:v2
+dp show ./my-pipeline -f production.yaml --set spec.image=new:v2
 ```
 
-### bindings.yaml
+## Runtimes
 
-References to infrastructure resources:
+The DP CLI supports the following runtimes:
 
-```yaml title="bindings.yaml"
-apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
-spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: production/user-events
-      
-    output.data:
-      type: s3-prefix
-      ref: analytics-bucket/processed/events/
-```
+### Generic Python
 
-## Package Types
-
-The DP CLI supports the following package types:
-
-### Pipeline
-
-A data processing pipeline (e.g., Kafka → S3 ETL). This is the default package type.
+A containerised Python pipeline. This is the default runtime.
 
 ```bash
-dp init my-pipeline
+dp init my-pipeline --runtime generic-python
+```
+
+### Generic Go
+
+A containerised Go pipeline.
+
+```bash
+dp init my-pipeline --runtime generic-go
 ```
 
 ### CloudQuery
 
-A [CloudQuery](https://docs.cloudquery.io/) model that uses the CloudQuery CLI to sync data between sources and destinations. CloudQuery models generate a `config.yaml` file that defines the sync configuration.
+A [CloudQuery](https://docs.cloudquery.io/) sync that uses Connector plugin images to move data between Stores. No application code required.
 
 ```bash
-# Create a CloudQuery model
-dp init my-source --kind model --runtime cloudquery
+dp init my-sync --runtime cloudquery
 ```
 
-This creates a config-based project:
+### dbt
 
-```
-my-source/
-├── dp.yaml                     # Package manifest with cloudquery config
-└── config.yaml                 # CloudQuery sync configuration
-│   ├── plugin.py               # Plugin class (get_tables, sync)
-│   ├── client.py               # Client for API connections
-│   ├── spec.py                 # Plugin configuration spec
-│   └── tables/
-│       ├── __init__.py
-│       └── example_resource.py # Example table definition
-└── tests/
-    └── test_example_resource.py
-```
-
-The generated `dp.yaml` includes CloudQuery-specific configuration:
-
-```yaml title="dp.yaml (cloudquery type)"
-apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
-metadata:
-  name: my-source
-  namespace: default
-  version: 0.1.0
-spec:
-  type: cloudquery
-  description: A CloudQuery source plugin
-  owner: my-team
-  cloudquery:
-    role: source           # Plugin role (source only, for now)
-    tables:                # Tables this plugin provides
-      - example_resource
-    grpcPort: 7777         # gRPC server port
-    concurrency: 10000     # Max concurrent table resolvers
-  runtime:
-    image: my-source:latest
-```
-
-#### CloudQuery Workflow
+A [dbt](https://www.getdbt.com/) transformation project.
 
 ```bash
-dp init my-source --kind model --runtime cloudquery   # Scaffold config
-dp dev up                              # Start local dev stack (PostgreSQL)
-cloudquery sync config.yaml            # Run sync with CloudQuery CLI
-dp lint                                # Validate manifest
-dp build                               # Build OCI artifact
-dp publish                             # Publish to registry
-dp promote my-source 0.1.0 --to dev   # Deploy
+dp init my-transforms --runtime dbt
 ```
 
 ## Package Lifecycle
@@ -237,7 +176,7 @@ dp promote my-source 0.1.0 --to dev   # Deploy
 Initialize a new package with templates:
 
 ```bash
-dp init analytics-pipeline --kind model --runtime generic-python
+dp init analytics-pipeline --runtime generic-python
 ```
 
 ### 2. Develop
@@ -302,39 +241,35 @@ dp publish
 
 ### Declaring Inputs
 
-Inputs describe what data the package consumes:
+Inputs declare which Assets a Transform reads:
 
 ```yaml
 inputs:
-  - name: events           # Unique name within package
-    type: kafka-topic      # Type of data source
-    binding: input.events  # Reference to binding
-    schema: events.avsc    # Optional schema file
+  - asset: users              # references an Asset by name
 ```
 
 ### Declaring Outputs
 
-Outputs describe what data the package produces:
+Outputs declare which Assets a Transform produces:
 
 ```yaml
 outputs:
-  - name: processed
-    type: s3-prefix
-    binding: output.data
+  - asset: users-parquet      # references an Asset by name
     classification:
       pii: false
       sensitivity: internal
-    schema: output.avsc
 ```
 
-### Supported Types
+At execution time, the runner resolves each Asset → Store → Connector to obtain connection details and credentials.
 
-| Type | Description |
-|------|-------------|
-| `kafka-topic` | Kafka topic |
-| `s3-prefix` | S3 bucket prefix |
-| `database-table` | Database table |
-| `http-endpoint` | HTTP API endpoint |
+### Supported Runtimes
+
+| Runtime | Description |
+|---------|-------------|
+| `cloudquery` | CloudQuery SDK sync |
+| `generic-go` | Go container |
+| `generic-python` | Python container |
+| `dbt` | dbt transformations |
 
 ## Next Steps
 

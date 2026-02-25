@@ -51,12 +51,6 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		result.Merge(dpResult)
 	}
 
-	bindingsPath := filepath.Join(v.packageDir, "bindings.yaml")
-	if _, err := os.Stat(bindingsPath); err == nil {
-		bindingsResult := v.validateBindings(ctx, bindingsPath)
-		result.Merge(bindingsResult)
-	}
-
 	schemasDir := filepath.Join(v.packageDir, "schemas")
 	if _, err := os.Stat(schemasDir); err == nil {
 		schemasResult := v.validateSchemas(ctx, schemasDir)
@@ -101,39 +95,6 @@ func (v *AggregateValidator) validateManifest(ctx context.Context, path string) 
 	if errs.HasErrors() {
 		result.Valid = false
 		for _, e := range errs {
-			result.Errors.Add(e)
-		}
-	}
-
-	return result
-}
-
-// validateBindings validates the bindings.yaml file.
-func (v *AggregateValidator) validateBindings(ctx context.Context, path string) *ValidationResult {
-	result := NewValidationResult()
-
-	validator, err := NewBindingsValidatorFromFile(path)
-	if err != nil {
-		result.AddError(ErrParseError, "bindings.yaml", "failed to parse bindings.yaml: "+err.Error())
-		return result
-	}
-
-	errs := validator.Validate(ctx)
-	if errs.HasErrors() {
-		result.Valid = false
-		for _, e := range errs {
-			result.Errors.Add(e)
-		}
-	}
-
-	// Cross-validate asset-binding references
-	assets, loadErr := asset.LoadAllAssets(v.packageDir)
-	if loadErr == nil && len(assets) > 0 {
-		assetErrs := validator.ValidateAssetBindings(assets)
-		if assetErrs.HasErrors() {
-			result.Valid = false
-		}
-		for _, e := range assetErrs {
 			result.Errors.Add(e)
 		}
 	}

@@ -19,7 +19,6 @@ const (
 	ErrPipelineInvalidStepType   = "E086"
 	ErrPipelineMissingStepField  = "E087"
 	ErrPipelineAssetNotFound     = "E088"
-	ErrPipelineAssetTypeMismatch = "E089"
 	ErrPipelineCustomMissingImg  = "E090"
 	ErrPipelineInvalidName       = "E091"
 )
@@ -171,11 +170,11 @@ func (v *PipelineWorkflowValidator) validateStepTypeFields(errs *contracts.Valid
 	prefix := "steps[" + itoa(idx) + "]"
 	switch step.Type {
 	case contracts.StepTypeSync:
-		if step.Source == "" {
-			errs.AddError(ErrPipelineMissingStepField, prefix+".source", "source is required for sync step")
+		if step.Input == "" {
+			errs.AddError(ErrPipelineMissingStepField, prefix+".input", "input is required for sync step")
 		}
-		if step.Sink == "" {
-			errs.AddError(ErrPipelineMissingStepField, prefix+".sink", "sink is required for sync step")
+		if step.Output == "" {
+			errs.AddError(ErrPipelineMissingStepField, prefix+".output", "output is required for sync step")
 		}
 	case contracts.StepTypeTransform:
 		if step.Asset == "" {
@@ -197,15 +196,14 @@ func (v *PipelineWorkflowValidator) validateStepTypeFields(errs *contracts.Valid
 	}
 }
 
-// ValidateAssetReferences checks that all step asset references resolve to existing
-// assets and that asset types match the step type requirements.
+// ValidateAssetReferences checks that all step asset references resolve to existing assets.
 func ValidateAssetReferences(pw *contracts.PipelineWorkflow, assets []*contracts.AssetManifest) contracts.ValidationErrors {
 	var errs contracts.ValidationErrors
 
-	// Build asset lookup map
+	// Build asset lookup map by metadata.name
 	assetMap := make(map[string]*contracts.AssetManifest)
 	for _, a := range assets {
-		assetMap[a.Name] = a
+		assetMap[a.Metadata.Name] = a
 	}
 
 	for i, step := range pw.Steps {
@@ -213,27 +211,21 @@ func ValidateAssetReferences(pw *contracts.PipelineWorkflow, assets []*contracts
 
 		switch step.Type {
 		case contracts.StepTypeSync:
-			if step.Source != "" {
-				if a, ok := assetMap[step.Source]; !ok {
-					errs.AddError(ErrPipelineAssetNotFound, prefix+".source", "asset not found: "+step.Source)
-				} else if a.Type != contracts.AssetTypeSource {
-					errs.AddError(ErrPipelineAssetTypeMismatch, prefix+".source", "sync source must reference an asset of type 'source', got '"+string(a.Type)+"'")
+			if step.Input != "" {
+				if _, ok := assetMap[step.Input]; !ok {
+					errs.AddError(ErrPipelineAssetNotFound, prefix+".input", "asset not found: "+step.Input)
 				}
 			}
-			if step.Sink != "" {
-				if a, ok := assetMap[step.Sink]; !ok {
-					errs.AddError(ErrPipelineAssetNotFound, prefix+".sink", "asset not found: "+step.Sink)
-				} else if a.Type != contracts.AssetTypeSink {
-					errs.AddError(ErrPipelineAssetTypeMismatch, prefix+".sink", "sync sink must reference an asset of type 'sink', got '"+string(a.Type)+"'")
+			if step.Output != "" {
+				if _, ok := assetMap[step.Output]; !ok {
+					errs.AddError(ErrPipelineAssetNotFound, prefix+".output", "asset not found: "+step.Output)
 				}
 			}
 
 		case contracts.StepTypeTransform:
 			if step.Asset != "" {
-				if a, ok := assetMap[step.Asset]; !ok {
+				if _, ok := assetMap[step.Asset]; !ok {
 					errs.AddError(ErrPipelineAssetNotFound, prefix+".asset", "asset not found: "+step.Asset)
-				} else if a.Type != contracts.AssetTypeModelEngine {
-					errs.AddError(ErrPipelineAssetTypeMismatch, prefix+".asset", "transform asset must reference an asset of type 'model-engine', got '"+string(a.Type)+"'")
 				}
 			}
 
@@ -242,7 +234,6 @@ func ValidateAssetReferences(pw *contracts.PipelineWorkflow, assets []*contracts
 				if _, ok := assetMap[step.Asset]; !ok {
 					errs.AddError(ErrPipelineAssetNotFound, prefix+".asset", "asset not found: "+step.Asset)
 				}
-				// Test step accepts any asset type
 			}
 		}
 	}

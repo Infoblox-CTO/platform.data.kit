@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.infoblox.com/schemas/v1alpha1/connector.schema.json",
+  "title": "Connector Manifest",
+  "description": "Schema for a Connector — a storage technology type (e.g., Postgres, S3, Kafka)",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "data.infoblox.com/v1alpha1",
+      "description": "Schema version"
+    },
+    "kind": {
+      "type": "string",
+      "const": "Connector",
+      "description": "Resource kind"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "description": "Connector name (DNS-safe, lowercase)"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Key-value labels for filtering"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Arbitrary annotations"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "required": ["type", "capabilities"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Technology identifier (e.g., postgres, s3, kafka, snowflake)"
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Wire protocol (e.g., postgresql, s3, kafka)"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["source", "destination"]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Roles this connector can serve"
+        },
+        "plugin": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "description": "Container image for the source plugin"
+            },
+            "destination": {
+              "type": "string",
+              "description": "Container image for the destination plugin"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Optional CloudQuery plugin image references"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

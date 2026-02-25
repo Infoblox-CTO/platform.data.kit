@@ -1,19 +1,12 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
-  name: model-missing-asset
-  namespace: data-team
-  version: 1.0.0
+  name: transform-missing-asset
 spec:
-  description: A model referencing a missing asset
-  owner: data-team
   runtime: generic-go
   image: myimage:v1
   mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: customer-data
-      type: s3-prefix
-      binding: customer-data-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: missing-asset-ref

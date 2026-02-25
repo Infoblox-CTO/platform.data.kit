@@ -77,27 +77,21 @@ func TestLintCmd_DirectoryNotFound(t *testing.T) {
 	}
 }
 
-func TestLintCmd_ValidModel(t *testing.T) {
+func TestLintCmd_ValidTransform(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test package
-  owner: data-team
   image: myimage:v1
+  mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -118,7 +112,7 @@ func TestLintCmd_InvalidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: ""
 spec:
@@ -143,23 +137,17 @@ func TestLintCmd_StrictMode(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test
-  owner: data-team
   image: myimage:v1
+  mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -178,23 +166,17 @@ func TestLintCmd_SkipPII(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test
-  owner: data-team
   image: myimage:v1
+  mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: internal
-        pii: false
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -255,22 +237,16 @@ func TestLintCmd_WithOverrides(t *testing.T) {
 
 	// Create dp.yaml without image (may trigger validation warning)
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test pipeline
-  owner: data-team
+  mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -322,25 +298,19 @@ spec:
 func TestLintCmd_WithSetOverride(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create valid Model dp.yaml
+	// Create valid Transform dp.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test pipeline
-  owner: data-team
   image: original:v1
+  mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -387,7 +357,7 @@ func TestLintCmd_InvalidOverridePath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
 spec:
@@ -438,24 +408,22 @@ func stringContains(s, substr string) bool {
 	return false
 }
 
-func TestLintCmd_ValidSource(t *testing.T) {
-	// A valid Source manifest should pass lint
+func TestLintCmd_ValidTransformCloudQuery(t *testing.T) {
+	// A valid CloudQuery Transform manifest should pass lint
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Source
+kind: Transform
 metadata:
   name: cq-test-source
-  namespace: acme
-  version: "0.1.0"
 spec:
   runtime: cloudquery
-  description: "Test CloudQuery plugin"
-  owner: "acme-team"
   image: "acme/cq-test-source:latest"
-  provides:
-    name: example_resource
-    type: table
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: example-resource
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -470,6 +438,6 @@ spec:
 	err := runLint(cmd, []string{tmpDir})
 
 	if err != nil {
-		t.Errorf("runLint() error = %v, want nil for valid Source package", err)
+		t.Errorf("runLint() error = %v, want nil for valid CloudQuery Transform package", err)
 	}
 }

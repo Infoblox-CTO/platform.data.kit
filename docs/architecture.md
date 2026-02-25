@@ -75,7 +75,7 @@ The command-line interface for interacting with the platform.
 Core libraries used by the CLI and controller.
 
 #### 2.1 Validate (`sdk/validate/`)
-- Manifest validation (dp.yaml, bindings.yaml)
+- Manifest validation (dp.yaml, connector, store, asset manifests)
 - PII classification validation
 - Schema validation
 
@@ -101,23 +101,28 @@ Core libraries used by the CLI and controller.
 
 ### 3. Contracts (`contracts/`)
 
-Shared types and schemas.
+Shared types and schemas for the five manifest kinds.
 
 ```go
-// DataPackage represents the dp.yaml manifest
-type DataPackage struct {
+// Transform is a unit of computation that reads/writes Assets.
+type Transform struct {
     APIVersion string
     Kind       string
-    Metadata   Metadata
-    Spec       DataPackageSpec
+    Metadata   TransformMetadata
+    Spec       TransformSpec
 }
 
-// ArtifactContract defines inputs/outputs
-type ArtifactContract struct {
-    Name           string
-    Type           string
-    Binding        string
-    Classification *Classification
+// AssetRef is a reference to a named Asset.
+type AssetRef struct {
+    Asset string   // Asset name (local or OCI ref)
+}
+
+// AssetManifest represents a data contract in a Store.
+type AssetManifest struct {
+    APIVersion string
+    Kind       string
+    Metadata   AssetMetadata
+    Spec       AssetSpec
 }
 ```
 

@@ -15,7 +15,6 @@ func TestInitCmd_Flags(t *testing.T) {
 		flag     string
 		defValue string
 	}{
-		{"kind", "model"},
 		{"runtime", ""},
 		{"namespace", "default"},
 		{"team", "my-team"},
@@ -95,9 +94,9 @@ func TestTitleCase(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"source", "Source"},
-		{"destination", "Destination"},
-		{"model", "Model"},
+		{"transform", "Transform"},
+		{"connector", "Connector"},
+		{"store", "Store"},
 		{"", ""},
 	}
 	for _, tt := range tests {
@@ -112,10 +111,9 @@ func TestTitleCase(t *testing.T) {
 func saveAndRestoreInitFlags(t *testing.T) {
 	t.Helper()
 	saved := struct {
-		kind, runtime, mode, namespace, team, owner string
-	}{initKind, initRuntime, initMode, initNamespace, initTeam, initOwner}
+		runtime, mode, namespace, team, owner string
+	}{initRuntime, initMode, initNamespace, initTeam, initOwner}
 	t.Cleanup(func() {
-		initKind = saved.kind
 		initRuntime = saved.runtime
 		initMode = saved.mode
 		initNamespace = saved.namespace
@@ -132,7 +130,6 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 	saveAndRestoreInitFlags(t)
 
 	// Reset to defaults
-	initKind = "model"
 	initRuntime = ""
 	initMode = "batch"
 	initNamespace = "default"
@@ -142,8 +139,6 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 	// Apply flags to vars
 	for k, v := range flags {
 		switch k {
-		case "kind":
-			initKind = v
 		case "runtime":
 			initRuntime = v
 		case "mode":
@@ -165,11 +160,10 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 	// Create cobra command with flags matching init.go
 	cmd := &cobra.Command{}
 	cmd.SetOut(&bytes.Buffer{})
-	cmd.Flags().StringVarP(&initKind, "kind", "k", "model", "")
 	cmd.Flags().StringVarP(&initRuntime, "runtime", "r", "", "")
 	cmd.Flags().StringVarP(&initMode, "mode", "m", "batch", "")
 
-	// Mark flags as changed so mapLegacyFlags detects them
+	// Mark flags as changed
 	for k, v := range flags {
 		cmd.Flags().Set(k, v)
 	}
@@ -180,9 +174,9 @@ func runInitWithFlags(t *testing.T, name string, flags map[string]string) (strin
 
 // --- New Taxonomy Init Tests ---
 
-func TestInitCmd_ModelCloudQuery(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "my-model", map[string]string{
-		"kind": "model", "runtime": "cloudquery",
+func TestInitCmd_TransformCloudQuery(t *testing.T) {
+	pkgDir, err := runInitWithFlags(t, "my-transform", map[string]string{
+		"runtime": "cloudquery",
 	})
 	if err != nil {
 		t.Fatalf("runInit() error = %v", err)
@@ -193,8 +187,8 @@ func TestInitCmd_ModelCloudQuery(t *testing.T) {
 		t.Fatalf("dp.yaml not created: %v", err)
 	}
 	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Model") {
-		t.Error("dp.yaml should contain 'kind: Model'")
+	if !strings.Contains(dpStr, "kind: Transform") {
+		t.Error("dp.yaml should contain 'kind: Transform'")
 	}
 	if !strings.Contains(dpStr, "runtime: cloudquery") {
 		t.Error("dp.yaml should contain 'runtime: cloudquery'")
@@ -205,13 +199,13 @@ func TestInitCmd_ModelCloudQuery(t *testing.T) {
 
 	configPath := filepath.Join(pkgDir, "config.yaml")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Error("config.yaml should be created for model/cloudquery")
+		t.Error("config.yaml should be created for transform/cloudquery")
 	}
 }
 
-func TestInitCmd_ModelDBT(t *testing.T) {
+func TestInitCmd_TransformDBT(t *testing.T) {
 	pkgDir, err := runInitWithFlags(t, "user-aggregation", map[string]string{
-		"kind": "model", "runtime": "dbt",
+		"runtime": "dbt",
 	})
 	if err != nil {
 		t.Fatalf("runInit() error = %v", err)
@@ -219,8 +213,8 @@ func TestInitCmd_ModelDBT(t *testing.T) {
 
 	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
 	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Model") {
-		t.Error("dp.yaml should contain 'kind: Model'")
+	if !strings.Contains(dpStr, "kind: Transform") {
+		t.Error("dp.yaml should contain 'kind: Transform'")
 	}
 	if !strings.Contains(dpStr, "runtime: dbt") {
 		t.Error("dp.yaml should contain 'runtime: dbt'")
@@ -233,9 +227,9 @@ func TestInitCmd_ModelDBT(t *testing.T) {
 	}
 }
 
-func TestInitCmd_ModelGenericPython(t *testing.T) {
+func TestInitCmd_TransformGenericPython(t *testing.T) {
 	pkgDir, err := runInitWithFlags(t, "fraud-scorer", map[string]string{
-		"kind": "model", "runtime": "generic-python", "mode": "streaming",
+		"runtime": "generic-python", "mode": "streaming",
 	})
 	if err != nil {
 		t.Fatalf("runInit() error = %v", err)
@@ -243,8 +237,8 @@ func TestInitCmd_ModelGenericPython(t *testing.T) {
 
 	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
 	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Model") {
-		t.Error("dp.yaml should contain 'kind: Model'")
+	if !strings.Contains(dpStr, "kind: Transform") {
+		t.Error("dp.yaml should contain 'kind: Transform'")
 	}
 	if !strings.Contains(dpStr, "mode: streaming") {
 		t.Error("dp.yaml should contain 'mode: streaming'")
@@ -257,83 +251,9 @@ func TestInitCmd_ModelGenericPython(t *testing.T) {
 	}
 }
 
-func TestInitCmd_ModelGenericGo(t *testing.T) {
+func TestInitCmd_TransformGenericGo(t *testing.T) {
 	pkgDir, err := runInitWithFlags(t, "data-worker", map[string]string{
-		"kind": "model", "runtime": "generic-go",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
-		if _, err := os.Stat(filepath.Join(pkgDir, f)); os.IsNotExist(err) {
-			t.Errorf("expected file %q was not created", f)
-		}
-	}
-}
-
-func TestInitCmd_SourceCloudQuery(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "pg-cdc-source", map[string]string{
-		"kind": "source", "runtime": "cloudquery",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Source") {
-		t.Error("dp.yaml should contain 'kind: Source'")
-	}
-	if !strings.Contains(dpStr, "runtime: cloudquery") {
-		t.Error("dp.yaml should contain 'runtime: cloudquery'")
-	}
-	if !strings.Contains(dpStr, "provides:") {
-		t.Error("dp.yaml should contain 'provides:' for source")
-	}
-}
-
-func TestInitCmd_SourceGenericGo(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "http-poller", map[string]string{
-		"kind": "source", "runtime": "generic-go",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
-		if _, err := os.Stat(filepath.Join(pkgDir, f)); os.IsNotExist(err) {
-			t.Errorf("expected file %q was not created", f)
-		}
-	}
-
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	if !strings.Contains(string(content), "kind: Source") {
-		t.Error("dp.yaml should contain 'kind: Source'")
-	}
-}
-
-func TestInitCmd_DestinationCloudQuery(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "s3-parquet-dest", map[string]string{
-		"kind": "destination", "runtime": "cloudquery",
-	})
-	if err != nil {
-		t.Fatalf("runInit() error = %v", err)
-	}
-
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	dpStr := string(content)
-	if !strings.Contains(dpStr, "kind: Destination") {
-		t.Error("dp.yaml should contain 'kind: Destination'")
-	}
-	if !strings.Contains(dpStr, "accepts:") {
-		t.Error("dp.yaml should contain 'accepts:' for destination")
-	}
-}
-
-func TestInitCmd_DestinationGenericGo(t *testing.T) {
-	pkgDir, err := runInitWithFlags(t, "s3-writer-dest", map[string]string{
-		"kind": "destination", "runtime": "generic-go",
+		"runtime": "generic-go",
 	})
 	if err != nil {
 		t.Fatalf("runInit() error = %v", err)
@@ -349,9 +269,7 @@ func TestInitCmd_DestinationGenericGo(t *testing.T) {
 // --- Validation Tests ---
 
 func TestInitCmd_MissingRuntime(t *testing.T) {
-	_, err := runInitWithFlags(t, "test-no-runtime", map[string]string{
-		"kind": "model",
-	})
+	_, err := runInitWithFlags(t, "test-no-runtime", map[string]string{})
 	if err == nil {
 		t.Fatal("expected error when --runtime is not provided")
 	}
@@ -360,21 +278,9 @@ func TestInitCmd_MissingRuntime(t *testing.T) {
 	}
 }
 
-func TestInitCmd_InvalidKind(t *testing.T) {
-	_, err := runInitWithFlags(t, "test-bad-kind", map[string]string{
-		"kind": "widget", "runtime": "cloudquery",
-	})
-	if err == nil {
-		t.Fatal("expected error for invalid kind")
-	}
-	if !strings.Contains(err.Error(), "invalid kind") {
-		t.Errorf("error should mention 'invalid kind', got: %v", err)
-	}
-}
-
 func TestInitCmd_InvalidRuntime(t *testing.T) {
 	_, err := runInitWithFlags(t, "test-bad-runtime", map[string]string{
-		"kind": "model", "runtime": "spark",
+		"runtime": "spark",
 	})
 	if err == nil {
 		t.Fatal("expected error for invalid runtime")
@@ -386,7 +292,7 @@ func TestInitCmd_InvalidRuntime(t *testing.T) {
 
 func TestInitCmd_InvalidMode(t *testing.T) {
 	_, err := runInitWithFlags(t, "test-bad-mode", map[string]string{
-		"kind": "model", "runtime": "cloudquery", "mode": "real-time",
+		"runtime": "cloudquery", "mode": "real-time",
 	})
 	if err == nil {
 		t.Fatal("expected error for invalid mode")
@@ -398,7 +304,7 @@ func TestInitCmd_InvalidMode(t *testing.T) {
 
 func TestInitCmd_DBTStreamingRejected(t *testing.T) {
 	_, err := runInitWithFlags(t, "dbt-streaming", map[string]string{
-		"kind": "model", "runtime": "dbt", "mode": "streaming",
+		"runtime": "dbt", "mode": "streaming",
 	})
 	if err == nil {
 		t.Fatal("expected error for dbt + streaming")
@@ -408,19 +314,7 @@ func TestInitCmd_DBTStreamingRejected(t *testing.T) {
 	}
 }
 
-func TestInitCmd_DBTForSourceRejected(t *testing.T) {
-	_, err := runInitWithFlags(t, "source-dbt", map[string]string{
-		"kind": "source", "runtime": "dbt",
-	})
-	if err == nil {
-		t.Fatal("expected error for source + dbt")
-	}
-	if !strings.Contains(err.Error(), "only supported for model") {
-		t.Errorf("error should mention 'only supported for model', got: %v", err)
-	}
-}
-
-func TestInitCmd_DefaultKindIsModel(t *testing.T) {
+func TestInitCmd_DefaultKindIsTransform(t *testing.T) {
 	pkgDir, err := runInitWithFlags(t, "default-kind-test", map[string]string{
 		"runtime": "cloudquery",
 	})
@@ -428,8 +322,8 @@ func TestInitCmd_DefaultKindIsModel(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
-	if !strings.Contains(string(content), "kind: Model") {
-		t.Error("dp.yaml should default to 'kind: Model'")
+	if !strings.Contains(string(content), "kind: Transform") {
+		t.Error("dp.yaml should contain 'kind: Transform'")
 	}
 }
 
@@ -442,7 +336,6 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 
 	saveAndRestoreInitFlags(t)
 
-	initKind = "model"
 	initRuntime = "cloudquery"
 	initMode = "batch"
 	initNamespace = "default"
@@ -453,7 +346,6 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	cmd.SetOut(&bytes.Buffer{})
-	cmd.Flags().StringVarP(&initKind, "kind", "k", "model", "")
 	cmd.Flags().StringVarP(&initRuntime, "runtime", "r", "", "")
 	cmd.Flags().Set("runtime", "cloudquery")
 

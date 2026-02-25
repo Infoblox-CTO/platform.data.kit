@@ -1,0 +1,31 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  version: 0.1.0
+  labels:
+    team: {{ .Team }}
+spec:
+  runtime: generic-python
+  mode: {{ .Mode }}
+  description: "{{ .Description }}"
+  owner: {{ .Owner }}
+  image: "${REGISTRY}/{{ .Name }}:${VERSION}"
+
+  inputs:
+    - name: {{ .Name }}-input
+      type: kafka-topic
+      binding: input.main
+
+  outputs:
+    - name: {{ .Name }}-output
+      type: kafka-topic
+      binding: output.main
+      classification:
+        pii: false
+        sensitivity: internal
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"

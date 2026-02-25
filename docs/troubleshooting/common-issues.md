@@ -179,7 +179,7 @@ mc mb local/my-bucket
 |-------|-------|-----|
 | `E001: metadata.name is required` | Missing name | Add `metadata.name` to dp.yaml |
 | `E004: invalid name format` | Uppercase/special chars | Use lowercase and hyphens only |
-| `E010: binding not found` | Missing binding | Add binding to bindings.yaml |
+| `E010: store not found` | Missing store reference | Add a Store manifest with the referenced name |
 | `E025: pii=true requires sensitivity` | Missing classification | Add sensitivity level |
 
 **Example fixes**:
@@ -189,13 +189,17 @@ mc mb local/my-bucket
 metadata:
   name: my-pipeline  # lowercase, hyphens only
 
-# Fix E010 - add missing binding
-# bindings.yaml
+# Fix E010 - add missing store
+# store.yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: local-events
 spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: local/events
+  type: kafka-topic
+  connection:
+    brokers: localhost:9092
+    topic: events
 
 # Fix E025 - add sensitivity
 outputs:

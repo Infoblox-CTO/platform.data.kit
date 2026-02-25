@@ -1,21 +1,11 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
-  name: pii-violation-pkg
-  namespace: data-team
-  version: 1.0.0
+  name: transform-missing-outputs
 spec:
-  description: A model with outputs but no classification
-  owner: data-team
   runtime: generic-go
   image: myimage:v1
   mode: batch
-  outputs:
-    - name: customer-emails
-      type: s3-prefix
-      binding: emails-bucket
-      # classification is missing - this should fail PII validation
-    - name: user-addresses
-      type: s3-prefix
-      binding: addresses-bucket
-      # classification is missing - this should also fail
+  inputs:
+    - asset: source-data
+  # outputs is missing - this should fail validation (E231)

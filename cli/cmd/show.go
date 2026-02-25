@@ -187,11 +187,9 @@ func resolveAssetDetails(base map[string]any, packageDir string) {
 
 		a, err := asset.FindAssetByName(packageDir, name)
 		if err == nil && a != nil {
-			entry["extension"] = a.Extension
-			entry["version"] = a.Version
-			entry["type"] = string(a.Type)
-			if a.OwnerTeam != "" {
-				entry["ownerTeam"] = a.OwnerTeam
+			entry["store"] = a.Spec.Store
+			if a.Spec.Classification != "" {
+				entry["classification"] = a.Spec.Classification
 			}
 		} else {
 			entry["status"] = "not found"

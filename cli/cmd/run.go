@@ -19,7 +19,6 @@ import (
 
 var (
 	runEnv        []string
-	runBindings   string
 	runNetwork    string
 	runTimeout    time.Duration
 	runDryRun     bool
@@ -85,7 +84,6 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 
 	runCmd.Flags().StringArrayVarP(&runEnv, "env", "e", []string{}, "Environment variables (KEY=VALUE)")
-	runCmd.Flags().StringVarP(&runBindings, "bindings", "b", "", "Path to bindings file")
 	runCmd.Flags().StringVar(&runNetwork, "network", "", "Docker network to connect to (auto-detected from dev runtime if empty)")
 	runCmd.Flags().DurationVar(&runTimeout, "timeout", 30*time.Minute, "Timeout for pipeline execution")
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Validate and build only, don't execute")
@@ -120,12 +118,12 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse dp.yaml: %w", err)
 	}
 
-	// Read pipeline mode from Model spec (defaults to batch)
+	// Read pipeline mode from Transform spec (defaults to batch)
 	pipelineMode := "batch"
-	if kind == contracts.KindModel {
-		if model, ok := m.(*contracts.Model); ok {
-			if model.Spec.Mode.IsValid() {
-				pipelineMode = string(model.Spec.Mode)
+	if kind == contracts.KindTransform {
+		if transform, ok := m.(*contracts.Transform); ok {
+			if transform.Spec.Mode.IsValid() {
+				pipelineMode = string(transform.Spec.Mode)
 			}
 		}
 	}
@@ -168,14 +166,13 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 
 	// Build run options
 	opts := runner.RunOptions{
-		PackageDir:   absDir,
-		Env:          env,
-		BindingsFile: runBindings,
-		Network:      network,
-		Timeout:      runTimeout,
-		DryRun:       runDryRun,
-		Detach:       runDetach,
-		Output:       os.Stdout,
+		PackageDir: absDir,
+		Env:        env,
+		Network:    network,
+		Timeout:    runTimeout,
+		DryRun:     runDryRun,
+		Detach:     runDetach,
+		Output:     os.Stdout,
 	}
 
 	fmt.Printf("Running pipeline from: %s\n", packageDir)

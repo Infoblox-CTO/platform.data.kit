@@ -158,13 +158,6 @@ metadata:
 spec:
   version: v1.0.0
   artifact: ghcr.io/myorg/my-pipeline:v1.0.0
-  
-  # Environment-specific bindings
-  bindings:
-    input.events:
-      ref: dev-kafka/user-events
-    output.data:
-      ref: dev-bucket/processed/
 ```
 
 ### Auto-Merge

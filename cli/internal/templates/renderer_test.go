@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestRenderKindDirectory_SourceCloudQuery(t *testing.T) {
+func TestRenderKindDirectory_TransformCloudQuery(t *testing.T) {
 	r, err := NewRenderer()
 	if err != nil {
 		t.Fatalf("NewRenderer() error: %v", err)
@@ -15,14 +15,15 @@ func TestRenderKindDirectory_SourceCloudQuery(t *testing.T) {
 
 	outputDir := t.TempDir()
 	config := &PackageConfig{
-		Name:        "my-source",
+		Name:        "my-transform",
 		Namespace:   "data-team",
-		Description: "CloudQuery source",
+		Description: "CloudQuery transform",
 		Owner:       "data-team",
-		Kind:        "source",
+		Kind:        "transform",
 		Runtime:     "cloudquery",
 		GRPCPort:    7777,
 		Concurrency: 10000,
+		Mode:        "batch",
 	}
 
 	if err := r.RenderKindDirectory(outputDir, config); err != nil {
@@ -40,159 +41,19 @@ func TestRenderKindDirectory_SourceCloudQuery(t *testing.T) {
 	}
 
 	content := string(data)
-	for _, want := range []string{"my-source", "data-team", "cloudquery", "Source"} {
+	for _, want := range []string{"my-transform", "data-team", "cloudquery", "Transform"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("dp.yaml should contain %q", want)
 		}
 	}
-}
-
-func TestRenderKindDirectory_SourceGenericGo(t *testing.T) {
-	r, err := NewRenderer()
-	if err != nil {
-		t.Fatalf("NewRenderer() error: %v", err)
-	}
-
-	outputDir := t.TempDir()
-	config := &PackageConfig{
-		Name:        "go-source",
-		Namespace:   "analytics",
-		Description: "Go source extension",
-		Owner:       "analytics",
-		Kind:        "source",
-		Runtime:     "generic-go",
-	}
-
-	if err := r.RenderKindDirectory(outputDir, config); err != nil {
-		t.Fatalf("RenderKindDirectory() error: %v", err)
-	}
-
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
-		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
-			t.Errorf("expected %s to be created", f)
-		}
-	}
-
-	data, err := os.ReadFile(filepath.Join(outputDir, "dp.yaml"))
-	if err != nil {
-		t.Fatalf("failed to read dp.yaml: %v", err)
-	}
-	if !strings.Contains(string(data), "go-source") {
-		t.Error("dp.yaml should contain package name 'go-source'")
-	}
-}
-
-func TestRenderKindDirectory_DestinationCloudQuery(t *testing.T) {
-	r, err := NewRenderer()
-	if err != nil {
-		t.Fatalf("NewRenderer() error: %v", err)
-	}
-
-	outputDir := t.TempDir()
-	config := &PackageConfig{
-		Name:        "pg-dest",
-		Namespace:   "data-team",
-		Description: "PostgreSQL destination",
-		Owner:       "data-team",
-		Kind:        "destination",
-		Runtime:     "cloudquery",
-	}
-
-	if err := r.RenderKindDirectory(outputDir, config); err != nil {
-		t.Fatalf("RenderKindDirectory() error: %v", err)
-	}
-
-	dpPath := filepath.Join(outputDir, "dp.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		t.Fatal("expected dp.yaml to be created")
-	}
-
-	data, _ := os.ReadFile(dpPath)
-	content := string(data)
-	if !strings.Contains(content, "Destination") {
-		t.Error("dp.yaml should contain 'Destination'")
-	}
-}
-
-func TestRenderKindDirectory_DestinationGenericGo(t *testing.T) {
-	r, err := NewRenderer()
-	if err != nil {
-		t.Fatalf("NewRenderer() error: %v", err)
-	}
-
-	outputDir := t.TempDir()
-	config := &PackageConfig{
-		Name:    "s3-writer",
-		Kind:    "destination",
-		Runtime: "generic-go",
-	}
-
-	if err := r.RenderKindDirectory(outputDir, config); err != nil {
-		t.Fatalf("RenderKindDirectory() error: %v", err)
-	}
-
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
-		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
-			t.Errorf("expected %s to be created", f)
-		}
-	}
-}
-
-func TestRenderKindDirectory_ModelCloudQuery(t *testing.T) {
-	r, err := NewRenderer()
-	if err != nil {
-		t.Fatalf("NewRenderer() error: %v", err)
-	}
-
-	outputDir := t.TempDir()
-	config := &PackageConfig{
-		Name:    "my-model",
-		Kind:    "model",
-		Runtime: "cloudquery",
-		Mode:    "batch",
-	}
-
-	if err := r.RenderKindDirectory(outputDir, config); err != nil {
-		t.Fatalf("RenderKindDirectory() error: %v", err)
-	}
-
-	dpPath := filepath.Join(outputDir, "dp.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		t.Fatal("expected dp.yaml to be created")
-	}
 
 	configPath := filepath.Join(outputDir, "config.yaml")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Error("expected config.yaml to be created for model/cloudquery")
+		t.Error("expected config.yaml to be created for transform/cloudquery")
 	}
 }
 
-func TestRenderKindDirectory_ModelDBT(t *testing.T) {
-	r, err := NewRenderer()
-	if err != nil {
-		t.Fatalf("NewRenderer() error: %v", err)
-	}
-
-	outputDir := t.TempDir()
-	config := &PackageConfig{
-		Name:    "user-agg",
-		Kind:    "model",
-		Runtime: "dbt",
-		Mode:    "batch",
-	}
-
-	if err := r.RenderKindDirectory(outputDir, config); err != nil {
-		t.Fatalf("RenderKindDirectory() error: %v", err)
-	}
-
-	for _, f := range []string{"dp.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
-		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
-			t.Errorf("expected dbt file %q was not created", f)
-		}
-	}
-}
-
-func TestRenderKindDirectory_ModelGenericGo(t *testing.T) {
+func TestRenderKindDirectory_TransformGenericGo(t *testing.T) {
 	r, err := NewRenderer()
 	if err != nil {
 		t.Fatalf("NewRenderer() error: %v", err)
@@ -201,7 +62,7 @@ func TestRenderKindDirectory_ModelGenericGo(t *testing.T) {
 	outputDir := t.TempDir()
 	config := &PackageConfig{
 		Name:    "data-worker",
-		Kind:    "model",
+		Kind:    "transform",
 		Runtime: "generic-go",
 		Mode:    "batch",
 	}
@@ -217,7 +78,32 @@ func TestRenderKindDirectory_ModelGenericGo(t *testing.T) {
 	}
 }
 
-func TestRenderKindDirectory_ModelGenericPython(t *testing.T) {
+func TestRenderKindDirectory_TransformDBT(t *testing.T) {
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer() error: %v", err)
+	}
+
+	outputDir := t.TempDir()
+	config := &PackageConfig{
+		Name:    "user-agg",
+		Kind:    "transform",
+		Runtime: "dbt",
+		Mode:    "batch",
+	}
+
+	if err := r.RenderKindDirectory(outputDir, config); err != nil {
+		t.Fatalf("RenderKindDirectory() error: %v", err)
+	}
+
+	for _, f := range []string{"dp.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
+		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
+			t.Errorf("expected dbt file %q was not created", f)
+		}
+	}
+}
+
+func TestRenderKindDirectory_TransformGenericPython(t *testing.T) {
 	r, err := NewRenderer()
 	if err != nil {
 		t.Fatalf("NewRenderer() error: %v", err)
@@ -226,7 +112,111 @@ func TestRenderKindDirectory_ModelGenericPython(t *testing.T) {
 	outputDir := t.TempDir()
 	config := &PackageConfig{
 		Name:    "fraud-scorer",
-		Kind:    "model",
+		Kind:    "transform",
+		Runtime: "generic-python",
+		Mode:    "streaming",
+	}
+
+	if err := r.RenderKindDirectory(outputDir, config); err != nil {
+		t.Fatalf("RenderKindDirectory() error: %v", err)
+	}
+
+	for _, f := range []string{"dp.yaml", "main.py", "requirements.txt"} {
+		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
+			t.Errorf("expected file %q was not created", f)
+		}
+	}
+}
+
+func TestRenderKindDirectory_TransformCloudQuery_Legacy(t *testing.T) {
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer() error: %v", err)
+	}
+
+	outputDir := t.TempDir()
+	config := &PackageConfig{
+		Name:    "my-transform",
+		Kind:    "transform",
+		Runtime: "cloudquery",
+		Mode:    "batch",
+	}
+
+	if err := r.RenderKindDirectory(outputDir, config); err != nil {
+		t.Fatalf("RenderKindDirectory() error: %v", err)
+	}
+
+	dpPath := filepath.Join(outputDir, "dp.yaml")
+	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+		t.Fatal("expected dp.yaml to be created")
+	}
+
+	configPath := filepath.Join(outputDir, "config.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Error("expected config.yaml to be created for transform/cloudquery")
+	}
+}
+
+func TestRenderKindDirectory_TransformDBT_Legacy(t *testing.T) {
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer() error: %v", err)
+	}
+
+	outputDir := t.TempDir()
+	config := &PackageConfig{
+		Name:    "user-agg",
+		Kind:    "transform",
+		Runtime: "dbt",
+		Mode:    "batch",
+	}
+
+	if err := r.RenderKindDirectory(outputDir, config); err != nil {
+		t.Fatalf("RenderKindDirectory() error: %v", err)
+	}
+
+	for _, f := range []string{"dp.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
+		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
+			t.Errorf("expected dbt file %q was not created", f)
+		}
+	}
+}
+
+func TestRenderKindDirectory_TransformGenericGo_Legacy(t *testing.T) {
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer() error: %v", err)
+	}
+
+	outputDir := t.TempDir()
+	config := &PackageConfig{
+		Name:    "data-worker",
+		Kind:    "transform",
+		Runtime: "generic-go",
+		Mode:    "batch",
+	}
+
+	if err := r.RenderKindDirectory(outputDir, config); err != nil {
+		t.Fatalf("RenderKindDirectory() error: %v", err)
+	}
+
+	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
+		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
+			t.Errorf("expected file %q was not created", f)
+		}
+	}
+}
+
+func TestRenderKindDirectory_TransformGenericPython_Legacy(t *testing.T) {
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer() error: %v", err)
+	}
+
+	outputDir := t.TempDir()
+	config := &PackageConfig{
+		Name:    "fraud-scorer",
+		Kind:    "transform",
 		Runtime: "generic-python",
 		Mode:    "streaming",
 	}
@@ -270,7 +260,7 @@ func TestRenderKindDirectory_InvalidRuntime(t *testing.T) {
 	outputDir := t.TempDir()
 	config := &PackageConfig{
 		Name:    "test",
-		Kind:    "source",
+		Kind:    "transform",
 		Runtime: "nonexistent",
 	}
 

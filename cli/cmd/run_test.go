@@ -16,7 +16,6 @@ func TestRunCmd_Flags(t *testing.T) {
 		defValue string
 	}{
 		{"env", "[]"},
-		{"bindings", ""},
 		{"network", ""},
 		{"timeout", "30m0s"},
 		{"dry-run", "false"},
@@ -115,26 +114,20 @@ func TestRunCmd_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test pipeline
-  owner: data-team
   image: python:3.11
+  mode: batch
   command:
     - python
     - main.py
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatalf("failed to write dp.yaml: %v", err)
@@ -284,24 +277,18 @@ func TestApplyOverrides_SetValues(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
-  namespace: data-team
-  version: 1.0.0
 spec:
   runtime: generic-go
-  description: Test pipeline
-  owner: data-team
   image: original:v1
   timeout: 30m
+  mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -354,7 +341,7 @@ func TestApplyOverrides_InvalidPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
 spec:
@@ -391,7 +378,7 @@ func TestApplyOverrides_ValueFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
 spec:
@@ -451,7 +438,7 @@ func TestApplyOverrides_Precedence(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
 spec:
@@ -513,19 +500,21 @@ func findSubstring(s, substr string) bool {
 	return false
 }
 
-func TestRunCmd_ModelWithBatchMode(t *testing.T) {
+func TestRunCmd_TransformWithBatchMode(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pkg
-  namespace: test
 spec:
   runtime: generic-go
   mode: batch
-  description: "Test"
-  owner: "team"
+  image: myimage:v1
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
@@ -547,23 +536,21 @@ spec:
 	}
 }
 
-func TestRunCmd_SourceKind(t *testing.T) {
+func TestRunCmd_TransformCloudQuery(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Source
+kind: Transform
 metadata:
   name: test-source
-  namespace: test
-  version: "0.1.0"
 spec:
   runtime: cloudquery
-  description: "Test Source"
-  owner: "test"
   image: "test/test-source:latest"
-  provides:
-    name: example
-    type: table
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: example-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
@@ -576,11 +563,11 @@ spec:
 	cmd := &cobra.Command{}
 	err := runPipeline(cmd, []string{tmpDir})
 
-	// Source kind should be parseable; may fail at Docker step
+	// Transform kind should be parseable; may fail at Docker step
 	if err != nil {
 		errMsg := err.Error()
 		if contains(errMsg, "failed to parse dp.yaml") {
-			t.Errorf("Source kind should be parseable, got: %v", err)
+			t.Errorf("Transform kind should be parseable, got: %v", err)
 		}
 	}
 }

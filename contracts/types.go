@@ -6,20 +6,31 @@ import "time"
 type Kind string
 
 const (
-	// KindSource is a platform extension that ingests data (infra engineer).
-	KindSource Kind = "Source"
+	// KindConnector is a storage technology type (platform team).
+	KindConnector Kind = "Connector"
 
-	// KindDestination is a platform extension that writes data (infra engineer).
-	KindDestination Kind = "Destination"
+	// KindStore is a named infrastructure instance with secrets (infra owner).
+	KindStore Kind = "Store"
 
-	// KindModel is a data workload (data engineer).
-	KindModel Kind = "Model"
+	// KindAsset is a named data contract with schema and lineage (data engineer).
+	KindAsset Kind = "Asset"
+
+	// KindAssetGroup bundles multiple assets from a single materialisation.
+	KindAssetGroup Kind = "AssetGroup"
+
+	// KindTransform is a unit of computation that reads/writes assets (data engineer).
+	KindTransform Kind = "Transform"
 )
+
+// AllKinds returns all current (non-deprecated) kind values.
+func AllKinds() []Kind {
+	return []Kind{KindConnector, KindStore, KindAsset, KindAssetGroup, KindTransform}
+}
 
 // IsValid checks if the kind is a recognized value.
 func (k Kind) IsValid() bool {
 	switch k {
-	case KindSource, KindDestination, KindModel:
+	case KindConnector, KindStore, KindAsset, KindAssetGroup, KindTransform:
 		return true
 	}
 	return false

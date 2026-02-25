@@ -27,14 +27,14 @@ Self-contained units of data processing with metadata and code.
 
 <div class="card" markdown>
 ### :page_facing_up: Manifests
-Configuration files that define your package: dp.yaml (with runtime config), bindings.yaml.
+Configuration files that define your package: Transform, Asset, Connector, and Store manifests.
 
 [Understand Manifests →](manifests.md)
 </div>
 
 <div class="card" markdown>
 ### :jigsaw: Assets
-Configured instances of extensions — config-only YAML files validated against schemas.
+Data contracts — tables, S3 prefixes, topics — with schema and column-level lineage.
 
 [Learn about Assets →](assets.md)
 </div>
@@ -90,6 +90,6 @@ The Data Platform is built on these principles:
 |-----------|-------------|
 | **Developer Experience First** | Simple happy path: bootstrap → run → validate → publish → promote |
 | **Immutability** | Released artifacts cannot be modified; versions are permanent |
-| **Separation of Concerns** | Infrastructure bindings are separate from pipeline logic |
+| **Separation of Concerns** | Connectors, Stores, Assets, and Transforms have distinct ownership |
 | **Security by Default** | PII classification is required, not optional |
 | **Observability** | Every operation emits metrics and lineage events |

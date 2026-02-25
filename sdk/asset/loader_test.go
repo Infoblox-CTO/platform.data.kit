@@ -14,50 +14,39 @@ func TestLoadAsset(t *testing.T) {
 		name      string
 		setup     func(dir string) string // returns path to pass to LoadAsset
 		wantName  string
-		wantType  contracts.AssetType
-		wantExt   string
+		wantStore string
 		wantErr   bool
 		errSubstr string
 	}{
 		{
 			name: "valid asset from directory",
 			setup: func(dir string) string {
-				assetDir := filepath.Join(dir, "assets", "sources", "my-source")
+				assetDir := filepath.Join(dir, "assets", "my-source")
 				writeAssetYAML(t, assetDir, &contracts.AssetManifest{
 					APIVersion: "data.infoblox.com/v1alpha1",
 					Kind:       "Asset",
-					Name:       "my-source",
-					Type:       contracts.AssetTypeSource,
-					Extension:  "cloudquery.source.aws",
-					Version:    "v24.0.2",
-					OwnerTeam:  "team-a",
-					Config:     map[string]any{"tables": []any{"t1"}},
+					Metadata:   contracts.AssetMetadata{Name: "my-source"},
+					Spec:       contracts.AssetSpec{Store: "my-s3", Prefix: "raw/"},
 				})
 				return assetDir
 			},
-			wantName: "my-source",
-			wantType: contracts.AssetTypeSource,
-			wantExt:  "cloudquery.source.aws",
+			wantName:  "my-source",
+			wantStore: "my-s3",
 		},
 		{
 			name: "valid asset from file path",
 			setup: func(dir string) string {
-				assetDir := filepath.Join(dir, "assets", "sinks", "my-sink")
+				assetDir := filepath.Join(dir, "assets", "my-sink")
 				writeAssetYAML(t, assetDir, &contracts.AssetManifest{
 					APIVersion: "data.infoblox.com/v1alpha1",
 					Kind:       "Asset",
-					Name:       "my-sink",
-					Type:       contracts.AssetTypeSink,
-					Extension:  "infoblox.sink.snowflake",
-					Version:    "v1.0.0",
-					OwnerTeam:  "team-b",
-					Config:     map[string]any{"database": "mydb"},
+					Metadata:   contracts.AssetMetadata{Name: "my-sink"},
+					Spec:       contracts.AssetSpec{Store: "my-pg", Table: "public.events"},
 				})
 				return filepath.Join(assetDir, "asset.yaml")
 			},
-			wantName: "my-sink",
-			wantType: contracts.AssetTypeSink,
-			wantExt:  "infoblox.sink.snowflake",
+			wantName:  "my-sink",
+			wantStore: "my-pg",
 		},
 		{
 			name: "missing file",
@@ -103,14 +92,11 @@ func TestLoadAsset(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if asset.Name != tt.wantName {
-				t.Errorf("Name = %q, want %q", asset.Name, tt.wantName)
+			if asset.Metadata.Name != tt.wantName {
+				t.Errorf("Metadata.Name = %q, want %q", asset.Metadata.Name, tt.wantName)
 			}
-			if asset.Type != tt.wantType {
-				t.Errorf("Type = %q, want %q", asset.Type, tt.wantType)
-			}
-			if asset.Extension != tt.wantExt {
-				t.Errorf("Extension = %q, want %q", asset.Extension, tt.wantExt)
+			if asset.Spec.Store != tt.wantStore {
+				t.Errorf("Spec.Store = %q, want %q", asset.Spec.Store, tt.wantStore)
 			}
 		})
 	}
@@ -126,22 +112,22 @@ func TestLoadAllAssets(t *testing.T) {
 		errSubstr string
 	}{
 		{
-			name: "three assets in different type directories",
+			name: "three assets in flat layout",
 			setup: func(dir string) {
-				writeAssetYAML(t, filepath.Join(dir, "assets", "sources", "src-a"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "src-a",
-					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
+				writeAssetYAML(t, filepath.Join(dir, "assets", "src-a"), &contracts.AssetManifest{
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "src-a"},
+					Spec:     contracts.AssetSpec{Store: "my-s3", Prefix: "raw/"},
 				})
-				writeAssetYAML(t, filepath.Join(dir, "assets", "sinks", "sink-b"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "sink-b",
-					Type: contracts.AssetTypeSink, Extension: "infoblox.sink.snowflake",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"db": "mydb"},
+				writeAssetYAML(t, filepath.Join(dir, "assets", "sink-b"), &contracts.AssetManifest{
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "sink-b"},
+					Spec:     contracts.AssetSpec{Store: "my-pg", Table: "public.events"},
 				})
-				writeAssetYAML(t, filepath.Join(dir, "assets", "models", "model-c"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "model-c",
-					Type: contracts.AssetTypeModelEngine, Extension: "dbt.model-engine.core",
-					Version: "v2.0.0", OwnerTeam: "team", Config: map[string]any{"target": "prod"},
+				writeAssetYAML(t, filepath.Join(dir, "assets", "model-c"), &contracts.AssetManifest{
+					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					Metadata: contracts.AssetMetadata{Name: "model-c"},
+					Spec:     contracts.AssetSpec{Store: "my-pg", Table: "public.enriched"},
 				})
 			},
 			wantCount: 3,
@@ -160,19 +146,6 @@ func TestLoadAllAssets(t *testing.T) {
 				}
 			},
 			wantCount: 0,
-		},
-		{
-			name: "misplaced asset type",
-			setup: func(dir string) {
-				// Source asset placed in sinks/ directory
-				writeAssetYAML(t, filepath.Join(dir, "assets", "sinks", "wrong"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "wrong",
-					Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-					Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
-				})
-			},
-			wantErr:   true,
-			errSubstr: "expected",
 		},
 	}
 
@@ -202,7 +175,7 @@ func TestLoadAllAssets(t *testing.T) {
 			if tt.wantNames != nil {
 				names := make(map[string]bool)
 				for _, a := range assets {
-					names[a.Name] = true
+					names[a.Metadata.Name] = true
 				}
 				for _, n := range tt.wantNames {
 					if !names[n] {
@@ -216,10 +189,10 @@ func TestLoadAllAssets(t *testing.T) {
 
 func TestFindAssetByName(t *testing.T) {
 	tmpDir := t.TempDir()
-	writeAssetYAML(t, filepath.Join(tmpDir, "assets", "sources", "my-source"), &contracts.AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset", Name: "my-source",
-		Type: contracts.AssetTypeSource, Extension: "cloudquery.source.aws",
-		Version: "v1.0.0", OwnerTeam: "team", Config: map[string]any{"tables": []any{"t1"}},
+	writeAssetYAML(t, filepath.Join(tmpDir, "assets", "my-source"), &contracts.AssetManifest{
+		APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+		Metadata: contracts.AssetMetadata{Name: "my-source"},
+		Spec:     contracts.AssetSpec{Store: "my-s3", Prefix: "raw/"},
 	})
 
 	// Found
@@ -227,8 +200,8 @@ func TestFindAssetByName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if asset.Name != "my-source" {
-		t.Errorf("Name = %q, want %q", asset.Name, "my-source")
+	if asset.Metadata.Name != "my-source" {
+		t.Errorf("Metadata.Name = %q, want %q", asset.Metadata.Name, "my-source")
 	}
 
 	// Not found
@@ -239,10 +212,18 @@ func TestFindAssetByName(t *testing.T) {
 }
 
 func TestAssetPath(t *testing.T) {
-	path := AssetPath("/project", contracts.AssetTypeSource, "my-source")
-	want := filepath.Join("/project", "assets", "sources", "my-source", "asset.yaml")
+	path := AssetPath("/project", "my-source")
+	want := filepath.Join("/project", "assets", "my-source", "asset.yaml")
 	if path != want {
 		t.Errorf("AssetPath = %q, want %q", path, want)
+	}
+}
+
+func TestAssetDir(t *testing.T) {
+	dir := AssetDir("/project", "my-source")
+	want := filepath.Join("/project", "assets", "my-source")
+	if dir != want {
+		t.Errorf("AssetDir = %q, want %q", dir, want)
 	}
 }
 
@@ -263,10 +244,6 @@ func writeAssetYAML(t *testing.T, dir string, asset *contracts.AssetManifest) {
 
 // containsString checks if s contains the substring sub.
 func containsString(s, sub string) bool {
-	return len(s) >= len(sub) && searchSubstring(s, sub)
-}
-
-func searchSubstring(s, sub string) bool {
 	for i := 0; i <= len(s)-len(sub); i++ {
 		if s[i:i+len(sub)] == sub {
 			return true

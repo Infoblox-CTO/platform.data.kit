@@ -104,9 +104,6 @@ spec:
                           type: string
                         memory:
                           type: string
-                bindings:
-                  type: string
-                  description: Reference to binding configuration
                 serviceAccountName:
                   type: string
                   description: ServiceAccount to use for runs

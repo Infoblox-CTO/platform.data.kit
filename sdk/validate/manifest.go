@@ -4,23 +4,23 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
 // ManifestValidator validates dp.yaml manifests for all supported kinds
-// (Source, Destination, Model).
+// (Connector, Store, Asset, AssetGroup, Transform).
 type ManifestValidator struct {
 	manifest manifest.Manifest
 	kind     contracts.Kind
 	pkgPath  string
 	// raw keeps the concrete type for kind-specific checks.
-	rawSource *contracts.Source
-	rawDest   *contracts.Destination
-	rawModel  *contracts.Model
+	rawConnector  *contracts.Connector
+	rawStore      *contracts.Store
+	rawAsset      *contracts.AssetManifest
+	rawAssetGroup *contracts.AssetGroupManifest
+	rawTransform  *contracts.Transform
 }
 
 // NewManifestValidatorFromFile creates a validator from a dp.yaml file.
@@ -42,12 +42,16 @@ func NewManifestValidatorFromFile(path string) (*ManifestValidator, error) {
 	}
 
 	switch kind {
-	case contracts.KindSource:
-		v.rawSource = m.(*contracts.Source)
-	case contracts.KindDestination:
-		v.rawDest = m.(*contracts.Destination)
-	case contracts.KindModel:
-		v.rawModel = m.(*contracts.Model)
+	case contracts.KindConnector:
+		v.rawConnector = m.(*contracts.Connector)
+	case contracts.KindStore:
+		v.rawStore = m.(*contracts.Store)
+	case contracts.KindAsset:
+		v.rawAsset = m.(*contracts.AssetManifest)
+	case contracts.KindAssetGroup:
+		v.rawAssetGroup = m.(*contracts.AssetGroupManifest)
+	case contracts.KindTransform:
+		v.rawTransform = m.(*contracts.Transform)
 	}
 
 	return v, nil
@@ -62,14 +66,20 @@ func (v *ManifestValidator) Kind() contracts.Kind { return v.kind }
 // Manifest returns the parsed manifest.
 func (v *ManifestValidator) Manifest() manifest.Manifest { return v.manifest }
 
-// Model returns the parsed Model (nil if kind is not Model).
-func (v *ManifestValidator) Model() *contracts.Model { return v.rawModel }
+// Connector returns the parsed Connector (nil if kind is not Connector).
+func (v *ManifestValidator) Connector() *contracts.Connector { return v.rawConnector }
 
-// Source returns the parsed Source (nil if kind is not Source).
-func (v *ManifestValidator) Source() *contracts.Source { return v.rawSource }
+// Store returns the parsed Store (nil if kind is not Store).
+func (v *ManifestValidator) Store() *contracts.Store { return v.rawStore }
 
-// Destination returns the parsed Destination (nil if kind is not Destination).
-func (v *ManifestValidator) Destination() *contracts.Destination { return v.rawDest }
+// Asset returns the parsed Asset (nil if kind is not Asset).
+func (v *ManifestValidator) Asset() *contracts.AssetManifest { return v.rawAsset }
+
+// AssetGroup returns the parsed AssetGroup (nil if kind is not AssetGroup).
+func (v *ManifestValidator) AssetGroup() *contracts.AssetGroupManifest { return v.rawAssetGroup }
+
+// Transform returns the parsed Transform (nil if kind is not Transform).
+func (v *ManifestValidator) Transform() *contracts.Transform { return v.rawTransform }
 
 // Validate validates the manifest.
 func (v *ManifestValidator) Validate(ctx context.Context) contracts.ValidationErrors {
@@ -83,15 +93,17 @@ func (v *ManifestValidator) Validate(ctx context.Context) contracts.ValidationEr
 	v.validateCommonFields(&errs)
 
 	switch v.kind {
-	case contracts.KindSource:
-		v.validateSource(&errs)
-	case contracts.KindDestination:
-		v.validateDestination(&errs)
-	case contracts.KindModel:
-		v.validateModel(&errs)
+	case contracts.KindConnector:
+		v.validateConnector(&errs)
+	case contracts.KindStore:
+		v.validateStore(&errs)
+	case contracts.KindAsset:
+		v.validateAsset(&errs)
+	case contracts.KindAssetGroup:
+		v.validateAssetGroup(&errs)
+	case contracts.KindTransform:
+		v.validateTransform(&errs)
 	}
-
-	v.validateAssetRefs(&errs)
 
 	return errs
 }
@@ -102,201 +114,209 @@ func (v *ManifestValidator) validateCommonFields(errs *contracts.ValidationError
 
 	// Kind is already validated by the parser — but check it's valid.
 	if !m.GetKind().IsValid() {
-		errs.AddError(ErrInvalidFormat, "kind", "kind must be one of: Source, Destination, Model")
+		errs.AddError(ErrInvalidFormat, "kind", "kind must be one of: Connector, Store, Asset, AssetGroup, Transform")
 	}
 
-	// Metadata
+	// Metadata — name is required for all kinds.
 	if m.GetName() == "" {
 		errs.AddError(ErrMissingRequired, "metadata.name", "metadata.name is required")
 	} else if !isIdentifierValid(m.GetName()) {
 		errs.AddError(contracts.ErrCodeNameNotDNSSafe, "metadata.name", "metadata.name must be DNS-safe")
 	}
 
-	if m.GetNamespace() == "" {
-		errs.AddError(ErrMissingRequired, "metadata.namespace", "metadata.namespace is required")
-	} else if !isIdentifierValid(m.GetNamespace()) {
-		errs.AddError(contracts.ErrCodeNameNotDNSSafe, "metadata.namespace", "metadata.namespace must be DNS-safe")
-	}
-
-	if m.GetVersion() == "" {
-		errs.AddError(ErrMissingRequired, "metadata.version", "metadata.version is required")
-	} else if !isSemVerValid(m.GetVersion()) {
-		errs.AddError(contracts.ErrCodeInvalidSemVer, "metadata.version", "metadata.version must be valid SemVer")
-	}
-
-	// Description is required for all kinds.
-	if m.GetDescription() == "" {
-		errs.AddError(ErrMissingRequired, "spec.description", "spec.description is required")
+	// Namespace, version, description requirements depend on kind.
+	switch v.kind {
+	case contracts.KindConnector:
+		// Connectors are cluster-scoped — no namespace, version, or description required.
+	case contracts.KindStore, contracts.KindAsset, contracts.KindAssetGroup:
+		// Namespace is optional for these kinds — skip enforcement.
+		if m.GetNamespace() != "" && !isIdentifierValid(m.GetNamespace()) {
+			errs.AddError(contracts.ErrCodeNameNotDNSSafe, "metadata.namespace", "metadata.namespace must be DNS-safe")
+		}
+	case contracts.KindTransform:
+		// Transforms can have namespace and version.
+		if m.GetNamespace() != "" && !isIdentifierValid(m.GetNamespace()) {
+			errs.AddError(contracts.ErrCodeNameNotDNSSafe, "metadata.namespace", "metadata.namespace must be DNS-safe")
+		}
+		if m.GetVersion() != "" && !isSemVerValid(m.GetVersion()) {
+			errs.AddError(contracts.ErrCodeInvalidSemVer, "metadata.version", "metadata.version must be valid SemVer")
+		}
 	}
 }
 
-// validateSource validates Source-specific fields.
-func (v *ManifestValidator) validateSource(errs *contracts.ValidationErrors) {
-	src := v.rawSource
-	if src == nil {
+// --- Kind validation methods ---
+
+// validateConnector validates Connector-specific fields.
+func (v *ManifestValidator) validateConnector(errs *contracts.ValidationErrors) {
+	c := v.rawConnector
+	if c == nil {
 		return
 	}
 
-	// E101: Runtime must be a known value.
-	if !src.Spec.Runtime.IsValid() {
-		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
+	// E200: Connector type is required.
+	if c.Spec.Type == "" {
+		errs.AddError(contracts.ErrCodeConnectorTypeRequired, "spec.type", "spec.type is required for Connector")
 	}
 
-	// E102: Source must declare what it provides.
-	if src.Spec.Provides.Name == "" && src.Spec.Provides.Type == "" {
-		errs.AddError(contracts.ErrCodeSourceProvidesRequired, "spec.provides", "source must declare spec.provides (what data this source produces)")
-	}
-
-	// E104: spec.image is required for generic-* runtimes.
-	if src.Spec.Runtime.IsGeneric() && src.Spec.Image == "" {
-		errs.AddError(contracts.ErrCodeImageRequiredGeneric, "spec.image", "spec.image is required for generic-* runtimes")
-	}
-
-	// W104: configSchema is recommended for extensions.
-	if src.Spec.ConfigSchema == nil {
-		errs.AddWarning(contracts.WarnCodeConfigSchemaMissing, "spec.configSchema", "configSchema is recommended so data engineers can validate config")
-	}
-}
-
-// validateDestination validates Destination-specific fields.
-func (v *ManifestValidator) validateDestination(errs *contracts.ValidationErrors) {
-	dest := v.rawDest
-	if dest == nil {
-		return
-	}
-
-	// E101: Runtime must be a known value.
-	if !dest.Spec.Runtime.IsValid() {
-		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
-	}
-
-	// E103: Destination must declare what it accepts.
-	if dest.Spec.Accepts.Name == "" && dest.Spec.Accepts.Type == "" {
-		errs.AddError(contracts.ErrCodeDestAcceptsRequired, "spec.accepts", "destination must declare spec.accepts (what data this destination consumes)")
-	}
-
-	// E104: spec.image is required for generic-* runtimes.
-	if dest.Spec.Runtime.IsGeneric() && dest.Spec.Image == "" {
-		errs.AddError(contracts.ErrCodeImageRequiredGeneric, "spec.image", "spec.image is required for generic-* runtimes")
-	}
-
-	// W104: configSchema is recommended for extensions.
-	if dest.Spec.ConfigSchema == nil {
-		errs.AddWarning(contracts.WarnCodeConfigSchemaMissing, "spec.configSchema", "configSchema is recommended so data engineers can validate config")
-	}
-}
-
-// validateModel validates Model-specific fields.
-func (v *ManifestValidator) validateModel(errs *contracts.ValidationErrors) {
-	model := v.rawModel
-	if model == nil {
-		return
-	}
-
-	// E101: Runtime must be a known value.
-	if !model.Spec.Runtime.IsValid() {
-		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
-	}
-
-	// E202: Mode must be batch or streaming (if specified).
-	if !model.Spec.Mode.IsValid() && model.Spec.Mode != "" {
-		errs.AddError(ErrInvalidFormat, "spec.mode", "spec.mode must be batch or streaming")
-	}
-
-	// E104/E208: spec.image is required for generic-* runtimes when no extension provides it.
-	if model.Spec.Runtime.IsGeneric() && model.Spec.Image == "" {
-		errs.AddError(contracts.ErrCodeImageRequiredGeneric, "spec.image", "spec.image is required for generic-* runtimes")
-	}
-
-	// Outputs are required for Model kind.
-	if len(model.Spec.Outputs) == 0 {
-		errs.AddError(contracts.ErrCodeOutputsRequired, "spec.outputs", "outputs are required for Model packages")
-	}
-
-	// Validate inputs if present.
-	v.validateArtifacts(errs, model.Spec.Inputs, "spec.inputs", false)
-
-	// Validate outputs — classification is required on outputs.
-	v.validateArtifacts(errs, model.Spec.Outputs, "spec.outputs", true)
-
-	// Validate schedule if present.
-	if model.Spec.Schedule != nil {
-		v.validateSchedule(errs, model.Spec.Schedule)
-	}
-
-	// W209: Schedule recommended for batch mode.
-	effectiveMode := model.Spec.Mode
-	if effectiveMode == "" {
-		effectiveMode = effectiveMode.Default()
-	}
-	if effectiveMode == contracts.ModeBatch && model.Spec.Schedule == nil {
-		errs.AddWarning(contracts.WarnCodeScheduleBatchMode, "spec.schedule", "schedule is recommended for batch-mode models")
-	}
-
-	// Validate timeout format.
-	if model.Spec.Timeout != "" {
-		if !isValidDuration(model.Spec.Timeout) {
-			errs.AddError(contracts.ErrCodeInvalidTimeout, "spec.timeout", "spec.timeout must be a valid duration (e.g., 1h, 30m)")
-		}
-	}
-}
-
-// validateSchedule validates a ScheduleSpec.
-func (v *ManifestValidator) validateSchedule(errs *contracts.ValidationErrors, schedule *contracts.ScheduleSpec) {
-	// Schedule can have cron expression, or be suspended.
-	// For now, just verify cron is not empty if schedule is provided.
-	if schedule.Cron == "" && !schedule.Suspend {
-		// This is okay — schedule may be event-driven.
-	}
-}
-
-// validateArtifacts validates input or output artifacts.
-// If requireClassification is true, classification is required on each artifact (E204).
-func (v *ManifestValidator) validateArtifacts(errs *contracts.ValidationErrors, artifacts []contracts.ArtifactContract, basePath string, requireClassification bool) {
-	seen := make(map[string]bool)
-
-	for i := range artifacts {
-		artifact := &artifacts[i]
-		path := basePath + "[" + strconv.Itoa(i) + "]"
-
-		if artifact.Name == "" {
-			errs.AddError(ErrMissingRequired, path+".name", "artifact name is required")
-		} else if seen[artifact.Name] {
-			errs.AddError(ErrDuplicateName, path+".name", "duplicate artifact name: "+artifact.Name)
-		} else {
-			seen[artifact.Name] = true
-		}
-
-		if !artifact.Type.IsValid() {
-			errs.AddError(contracts.ErrCodeInvalidSchemaType, path+".type", "invalid artifact type")
-		}
-
-		if artifact.Binding == "" {
-			errs.AddError(ErrMissingRequired, path+".binding", "artifact binding is required")
-		}
-
-		// E204: Classification is required on output artifacts.
-		if requireClassification && artifact.Classification == nil {
-			errs.AddError(contracts.ErrCodeClassificationRequired, path+".classification", "classification is required on output artifacts")
-		}
-
-		if artifact.Classification != nil {
-			if artifact.Classification.Sensitivity != "" && !artifact.Classification.Sensitivity.IsValid() {
-				errs.AddError(ErrInvalidFormat, path+".classification.sensitivity", "invalid sensitivity level")
+	// E201: Capabilities must be non-empty.
+	if len(c.Spec.Capabilities) == 0 {
+		errs.AddError(contracts.ErrCodeConnectorCapabilitiesRequired, "spec.capabilities", "spec.capabilities must list at least one capability (source, destination)")
+	} else {
+		for i, cap := range c.Spec.Capabilities {
+			if cap != "source" && cap != "destination" {
+				errs.AddError(ErrInvalidFormat, fmt.Sprintf("spec.capabilities[%d]", i), "capability must be 'source' or 'destination'")
 			}
 		}
 	}
 }
 
-// validateAssetRefs validates that referenced assets exist in the project.
-func (v *ManifestValidator) validateAssetRefs(errs *contracts.ValidationErrors) {
-	// Asset refs only exist on Model kind currently.
-	if v.rawModel == nil {
+// validateStore validates Store-specific fields.
+func (v *ManifestValidator) validateStore(errs *contracts.ValidationErrors) {
+	s := v.rawStore
+	if s == nil {
 		return
 	}
 
-	// Models don't currently have an Assets field — skip.
-	// If assets are added to Model in the future, validate here.
+	// E210: Store must reference a Connector.
+	if s.Spec.Connector == "" {
+		errs.AddError(contracts.ErrCodeStoreConnectorRequired, "spec.connector", "spec.connector is required — must reference a Connector name")
+	}
+
+	// E211: Connection must have at least one entry.
+	if len(s.Spec.Connection) == 0 {
+		errs.AddError(contracts.ErrCodeStoreConnectionRequired, "spec.connection", "spec.connection must have at least one entry")
+	}
+
+	// E212: Validate secret interpolation syntax.
+	for key, val := range s.Spec.Secrets {
+		if val == "" {
+			errs.AddError(contracts.ErrCodeStoreSecretsInvalid, "spec.secrets."+key, "secret value must not be empty")
+		}
+	}
+}
+
+// validateAsset validates Asset-specific fields.
+func (v *ManifestValidator) validateAsset(errs *contracts.ValidationErrors) {
+	a := v.rawAsset
+	if a == nil {
+		return
+	}
+
+	// E220: Store reference is required.
+	if a.Spec.Store == "" {
+		errs.AddError(contracts.ErrCodeAssetStoreRequired, "spec.store", "spec.store is required — must reference a Store name")
+	}
+
+	// E221: At least one of table, prefix, or topic is required.
+	if a.Spec.Table == "" && a.Spec.Prefix == "" && a.Spec.Topic == "" {
+		errs.AddError(contracts.ErrCodeAssetLocationRequired, "spec", "at least one of spec.table, spec.prefix, or spec.topic is required")
+	}
+
+	// E222: Validate schema fields if present.
+	seen := make(map[string]bool)
+	for i, field := range a.Spec.Schema {
+		path := fmt.Sprintf("spec.schema[%d]", i)
+		if field.Name == "" {
+			errs.AddError(contracts.ErrCodeAssetSchemaInvalid, path+".name", "schema field name is required")
+		} else if seen[field.Name] {
+			errs.AddError(ErrDuplicateName, path+".name", "duplicate schema field name: "+field.Name)
+		} else {
+			seen[field.Name] = true
+		}
+		if field.Type == "" {
+			errs.AddError(contracts.ErrCodeAssetSchemaInvalid, path+".type", "schema field type is required")
+		}
+	}
+
+	// Validate classification if present.
+	if a.Spec.Classification != "" {
+		valid := map[string]bool{"public": true, "internal": true, "confidential": true, "restricted": true}
+		if !valid[a.Spec.Classification] {
+			errs.AddError(ErrInvalidFormat, "spec.classification", "classification must be public, internal, confidential, or restricted")
+		}
+	}
+}
+
+// validateAssetGroup validates AssetGroup-specific fields.
+func (v *ManifestValidator) validateAssetGroup(errs *contracts.ValidationErrors) {
+	ag := v.rawAssetGroup
+	if ag == nil {
+		return
+	}
+
+	// E240: Store is required.
+	if ag.Spec.Store == "" {
+		errs.AddError(contracts.ErrCodeAssetGroupStoreRequired, "spec.store", "spec.store is required for AssetGroup")
+	}
+
+	// E241: Assets list must be non-empty.
+	if len(ag.Spec.Assets) == 0 {
+		errs.AddError(contracts.ErrCodeAssetGroupAssetsRequired, "spec.assets", "spec.assets must list at least one asset name")
+	}
+}
+
+// validateTransform validates Transform-specific fields.
+func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) {
+	tr := v.rawTransform
+	if tr == nil {
+		return
+	}
+
+	// Runtime must be a known value.
+	if !tr.Spec.Runtime.IsValid() {
+		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
+	}
+
+	// Mode must be valid if specified.
+	if tr.Spec.Mode != "" && !tr.Spec.Mode.IsValid() {
+		errs.AddError(ErrInvalidFormat, "spec.mode", "spec.mode must be batch or streaming")
+	}
+
+	// E230: Inputs are required.
+	if len(tr.Spec.Inputs) == 0 {
+		errs.AddError(contracts.ErrCodeTransformInputsRequired, "spec.inputs", "at least one input asset is required")
+	}
+
+	// E231: Outputs are required.
+	if len(tr.Spec.Outputs) == 0 {
+		errs.AddError(contracts.ErrCodeTransformOutputsRequired, "spec.outputs", "at least one output asset is required")
+	}
+
+	// E232: spec.image is required for generic-* and dbt runtimes.
+	if tr.Spec.Runtime.IsGeneric() && tr.Spec.Image == "" {
+		errs.AddError(contracts.ErrCodeTransformImageRequired, "spec.image", "spec.image is required for generic-* runtimes")
+	}
+	if tr.Spec.Runtime == contracts.RuntimeDBT && tr.Spec.Image == "" {
+		errs.AddError(contracts.ErrCodeTransformImageRequired, "spec.image", "spec.image is required for dbt runtime")
+	}
+
+	// W209: Schedule recommended for batch mode.
+	effectiveMode := tr.Spec.Mode
+	if effectiveMode == "" {
+		effectiveMode = effectiveMode.Default()
+	}
+	if effectiveMode == contracts.ModeBatch && tr.Spec.Schedule == nil {
+		errs.AddWarning(contracts.WarnCodeScheduleBatchMode, "spec.schedule", "schedule is recommended for batch-mode transforms")
+	}
+
+	// Validate timeout format.
+	if tr.Spec.Timeout != "" {
+		if !isValidDuration(tr.Spec.Timeout) {
+			errs.AddError(contracts.ErrCodeInvalidTimeout, "spec.timeout", "spec.timeout must be a valid duration (e.g., 1h, 30m)")
+		}
+	}
+
+	// Validate input/output asset refs.
+	for i, ref := range tr.Spec.Inputs {
+		if ref.Asset == "" {
+			errs.AddError(ErrMissingRequired, fmt.Sprintf("spec.inputs[%d].asset", i), "input asset name is required")
+		}
+	}
+	for i, ref := range tr.Spec.Outputs {
+		if ref.Asset == "" {
+			errs.AddError(ErrMissingRequired, fmt.Sprintf("spec.outputs[%d].asset", i), "output asset name is required")
+		}
+	}
 }
 
 // isValidDuration checks if a string is a valid Go duration.
@@ -361,7 +381,7 @@ func isSemVerValid(s string) bool {
 	return parts >= 2 && numLen > 0
 }
 
-// --- Convenience constructors for backward-compatible callers ---
+// --- Convenience constructors ---
 
 // NewManifestValidator creates a ManifestValidator from a concrete manifest.
 func NewManifestValidator(m manifest.Manifest, kind contracts.Kind, pkgPath string) *ManifestValidator {
@@ -371,29 +391,26 @@ func NewManifestValidator(m manifest.Manifest, kind contracts.Kind, pkgPath stri
 		pkgPath:  pkgPath,
 	}
 	switch kind {
-	case contracts.KindSource:
-		if src, ok := m.(*contracts.Source); ok {
-			v.rawSource = src
+	case contracts.KindConnector:
+		if c, ok := m.(*contracts.Connector); ok {
+			v.rawConnector = c
 		}
-	case contracts.KindDestination:
-		if dest, ok := m.(*contracts.Destination); ok {
-			v.rawDest = dest
+	case contracts.KindStore:
+		if s, ok := m.(*contracts.Store); ok {
+			v.rawStore = s
 		}
-	case contracts.KindModel:
-		if model, ok := m.(*contracts.Model); ok {
-			v.rawModel = model
+	case contracts.KindAsset:
+		if a, ok := m.(*contracts.AssetManifest); ok {
+			v.rawAsset = a
+		}
+	case contracts.KindAssetGroup:
+		if ag, ok := m.(*contracts.AssetGroupManifest); ok {
+			v.rawAssetGroup = ag
+		}
+	case contracts.KindTransform:
+		if tr, ok := m.(*contracts.Transform); ok {
+			v.rawTransform = tr
 		}
 	}
 	return v
 }
-
-// ValidatePIIForModel validates PII fields on a Model manifest (placeholder).
-func ValidatePIIForModel(model *contracts.Model) contracts.ValidationErrors {
-	var errs contracts.ValidationErrors
-	_ = model
-	_ = asset.DefaultResolver // keep import alive for future PII checks
-	return errs
-}
-
-// Legacy compatibility: keep unused import reference satisfied.
-var _ = fmt.Sprintf

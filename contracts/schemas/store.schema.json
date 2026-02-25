@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.infoblox.com/schemas/v1alpha1/store.schema.json",
+  "title": "Store Manifest",
+  "description": "Schema for a Store — a named infrastructure instance with connection details and secrets",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "data.infoblox.com/v1alpha1",
+      "description": "Schema version"
+    },
+    "kind": {
+      "type": "string",
+      "const": "Store",
+      "description": "Resource kind"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "description": "Store name (DNS-safe, lowercase)"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Team namespace"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Key-value labels for filtering"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Arbitrary annotations"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "required": ["connector", "connection"],
+      "properties": {
+        "connector": {
+          "type": "string",
+          "description": "Name of the Connector this store is an instance of"
+        },
+        "connection": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Technology-specific connection parameters (host, port, bucket, etc.)"
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": ".*\\$\\{[A-Za-z_][A-Za-z0-9_]*\\}.*",
+            "description": "Secret value using ${VAR} interpolation syntax"
+          },
+          "description": "Credential references resolved from environment variables or a secret store at runtime"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

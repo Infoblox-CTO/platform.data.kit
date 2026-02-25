@@ -1,44 +1,11 @@
 package contracts
 
-import (
-	"fmt"
-	"strings"
-)
+// ---------------------------------------------------------------------------
+// Asset — a named data contract (table, prefix, or topic) in a Store.
+// ---------------------------------------------------------------------------
 
-// AssetType represents the type of asset.
-type AssetType string
-
-const (
-	// AssetTypeSource is a data source asset (pulls data into the platform).
-	AssetTypeSource AssetType = "source"
-
-	// AssetTypeSink is a data sink asset (pushes data to an external destination).
-	AssetTypeSink AssetType = "sink"
-
-	// AssetTypeModelEngine is a model-engine asset (transforms data in-place).
-	AssetTypeModelEngine AssetType = "model-engine"
-)
-
-// ValidAssetTypes returns all valid asset types.
-func ValidAssetTypes() []AssetType {
-	return []AssetType{
-		AssetTypeSource,
-		AssetTypeSink,
-		AssetTypeModelEngine,
-	}
-}
-
-// IsValid checks if the asset type is valid.
-func (t AssetType) IsValid() bool {
-	for _, valid := range ValidAssetTypes() {
-		if t == valid {
-			return true
-		}
-	}
-	return false
-}
-
-// AssetManifest represents a parsed asset.yaml file.
+// AssetManifest represents a data contract: a named piece of data in a Store
+// with schema, classification, and optional column-level lineage.
 type AssetManifest struct {
 	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
@@ -46,91 +13,163 @@ type AssetManifest struct {
 	// Kind is always "Asset".
 	Kind string `json:"kind" yaml:"kind"`
 
-	// Name is the unique asset identifier (DNS-safe, lowercase, 3-63 characters).
+	// Metadata contains asset identification information.
+	Metadata AssetMetadata `json:"metadata" yaml:"metadata"`
+
+	// Spec contains the asset specification.
+	Spec AssetSpec `json:"spec" yaml:"spec"`
+}
+
+// AssetMetadata contains identification information for an Asset.
+type AssetMetadata struct {
+	// Name is the logical asset name (e.g., "users", "orders-parquet").
 	Name string `json:"name" yaml:"name"`
 
-	// Type is the asset type: source, sink, or model-engine.
-	// Derived from the extension's kind segment.
-	Type AssetType `json:"type" yaml:"type"`
+	// Namespace is the team namespace.
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 
-	// Extension is the fully-qualified extension name (e.g., "cloudquery.source.aws").
-	Extension string `json:"extension" yaml:"extension"`
+	// Labels are key-value labels for filtering.
+	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 
-	// Version is the extension version (semver, e.g., "v24.0.2").
-	Version string `json:"version" yaml:"version"`
+	// Annotations are arbitrary annotations.
+	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+}
 
-	// OwnerTeam is the team that owns this asset instance.
-	OwnerTeam string `json:"ownerTeam" yaml:"ownerTeam"`
+// AssetSpec defines the data contract for a named dataset.
+type AssetSpec struct {
+	// Store is the name of the Store where this data lives.
+	Store string `json:"store" yaml:"store"`
 
-	// Description is an optional human-readable description.
-	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+	// Table is the fully-qualified table name (for relational stores).
+	Table string `json:"table,omitempty" yaml:"table,omitempty"`
 
-	// Binding is the optional name of the binding entry in bindings.yaml.
-	Binding string `json:"binding,omitempty" yaml:"binding,omitempty"`
+	// Prefix is the object prefix (for object stores like S3).
+	Prefix string `json:"prefix,omitempty" yaml:"prefix,omitempty"`
 
-	// Config is the configuration block validated against the extension's schema.json.
-	Config map[string]any `json:"config" yaml:"config"`
+	// Topic is the topic name (for streaming stores like Kafka).
+	Topic string `json:"topic,omitempty" yaml:"topic,omitempty"`
 
-	// Labels are optional key-value labels for filtering.
+	// Format is the data format (e.g., "parquet", "json", "csv", "avro").
+	Format string `json:"format,omitempty" yaml:"format,omitempty"`
+
+	// Classification is the data classification level (e.g., "public", "internal", "confidential", "restricted").
+	Classification string `json:"classification,omitempty" yaml:"classification,omitempty"`
+
+	// Schema defines the fields/columns in this dataset.
+	Schema []SchemaField `json:"schema,omitempty" yaml:"schema,omitempty"`
+}
+
+// SchemaField defines a single field in an Asset's schema.
+type SchemaField struct {
+	// Name is the field/column name.
+	Name string `json:"name" yaml:"name"`
+
+	// Type is the data type (e.g., "integer", "string", "timestamp", "boolean", "float").
+	Type string `json:"type" yaml:"type"`
+
+	// PII indicates this field contains personally identifiable information.
+	PII bool `json:"pii,omitempty" yaml:"pii,omitempty"`
+
+	// From declares the lineage source for this field (e.g., "users.id").
+	// This enables column-level lineage tracking.
+	From string `json:"from,omitempty" yaml:"from,omitempty"`
+}
+
+// --- Manifest interface implementation for AssetManifest ---
+
+// GetKind returns the manifest kind.
+func (a *AssetManifest) GetKind() Kind { return KindAsset }
+
+// GetName returns the asset name.
+func (a *AssetManifest) GetName() string { return a.Metadata.Name }
+
+// GetNamespace returns the asset namespace.
+func (a *AssetManifest) GetNamespace() string { return a.Metadata.Namespace }
+
+// GetVersion returns an empty string (assets are not versioned individually).
+func (a *AssetManifest) GetVersion() string { return "" }
+
+// GetDescription returns an empty string.
+func (a *AssetManifest) GetDescription() string { return "" }
+
+// GetOwner returns an empty string.
+func (a *AssetManifest) GetOwner() string { return "" }
+
+// ---------------------------------------------------------------------------
+// AssetGroup — bundles multiple Assets from a single materialisation.
+// ---------------------------------------------------------------------------
+
+// AssetGroupManifest bundles multiple Assets produced by a single operation
+// (e.g., a CQ sync that snapshots several tables at once).
+type AssetGroupManifest struct {
+	// APIVersion is the schema version.
+	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
+
+	// Kind is always "AssetGroup".
+	Kind string `json:"kind" yaml:"kind"`
+
+	// Metadata contains identification information.
+	Metadata AssetGroupMetadata `json:"metadata" yaml:"metadata"`
+
+	// Spec contains the asset group specification.
+	Spec AssetGroupSpec `json:"spec" yaml:"spec"`
+}
+
+// AssetGroupMetadata contains identification information for an AssetGroup.
+type AssetGroupMetadata struct {
+	// Name is the group name (e.g., "pg-snapshot").
+	Name string `json:"name" yaml:"name"`
+
+	// Namespace is the team namespace.
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+
+	// Labels are key-value labels for filtering.
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 }
 
-// Media type constants for extension packages.
+// AssetGroupSpec defines the grouped assets.
+type AssetGroupSpec struct {
+	// Store is the common Store for all assets in the group.
+	Store string `json:"store" yaml:"store"`
+
+	// Assets is the list of Asset names in this group.
+	Assets []string `json:"assets" yaml:"assets"`
+}
+
+// --- Manifest interface implementation for AssetGroupManifest ---
+
+// GetKind returns the manifest kind.
+func (ag *AssetGroupManifest) GetKind() Kind { return KindAssetGroup }
+
+// GetName returns the asset group name.
+func (ag *AssetGroupManifest) GetName() string { return ag.Metadata.Name }
+
+// GetNamespace returns the asset group namespace.
+func (ag *AssetGroupManifest) GetNamespace() string { return ag.Metadata.Namespace }
+
+// GetVersion returns an empty string.
+func (ag *AssetGroupManifest) GetVersion() string { return "" }
+
+// GetDescription returns an empty string.
+func (ag *AssetGroupManifest) GetDescription() string { return "" }
+
+// GetOwner returns an empty string.
+func (ag *AssetGroupManifest) GetOwner() string { return "" }
+
+// ---------------------------------------------------------------------------
+// Media type constants for OCI artifact layers.
+// ---------------------------------------------------------------------------
+
 const (
-	// MediaTypeExtensionSchema is the media type for extension JSON Schema files.
-	MediaTypeExtensionSchema = "application/vnd.infoblox.dp.extension.schema.v1+json"
+	// MediaTypeDPTransform is the OCI media type for Transform manifest layers.
+	MediaTypeDPTransform = "application/vnd.dp.transform.v1+yaml"
 
-	// MediaTypeExtensionPackage is the artifact type for extension packages.
-	MediaTypeExtensionPackage = "application/vnd.infoblox.dp.extension.v1"
+	// MediaTypeDPAsset is the OCI media type for Asset manifest layers.
+	MediaTypeDPAsset = "application/vnd.dp.asset.v1+yaml"
+
+	// MediaTypeDPConnector is the OCI media type for Connector manifest layers.
+	MediaTypeDPConnector = "application/vnd.dp.connector.v1+yaml"
+
+	// MediaTypeDPStore is the OCI media type for Store manifest layers.
+	MediaTypeDPStore = "application/vnd.dp.store.v1+yaml"
 )
-
-// ParseExtensionFQN parses a fully-qualified extension name into its components.
-// FQN format: <vendor>.<kind>.<name> (e.g., "cloudquery.source.aws")
-func ParseExtensionFQN(fqn string) (vendor, kind, name string, err error) {
-	parts := strings.SplitN(fqn, ".", 3)
-	if len(parts) != 3 {
-		return "", "", "", fmt.Errorf("invalid extension FQN %q: expected vendor.kind.name", fqn)
-	}
-	vendor, kind, name = parts[0], parts[1], parts[2]
-
-	if vendor == "" {
-		return "", "", "", fmt.Errorf("invalid extension FQN %q: vendor segment is empty", fqn)
-	}
-	if kind == "" {
-		return "", "", "", fmt.Errorf("invalid extension FQN %q: kind segment is empty", fqn)
-	}
-	if name == "" {
-		return "", "", "", fmt.Errorf("invalid extension FQN %q: name segment is empty", fqn)
-	}
-
-	// Validate kind is a known asset type
-	assetType := AssetType(kind)
-	if !assetType.IsValid() {
-		return "", "", "", fmt.Errorf("invalid extension kind %q in FQN %q: must be one of source, sink, model-engine", kind, fqn)
-	}
-
-	return vendor, kind, name, nil
-}
-
-// AssetTypeFromFQN extracts the asset type from an extension FQN.
-func AssetTypeFromFQN(fqn string) (AssetType, error) {
-	_, kind, _, err := ParseExtensionFQN(fqn)
-	if err != nil {
-		return "", err
-	}
-	return AssetType(kind), nil
-}
-
-// AssetTypeDirName returns the directory name for the given asset type.
-func AssetTypeDirName(t AssetType) string {
-	switch t {
-	case AssetTypeSource:
-		return "sources"
-	case AssetTypeSink:
-		return "sinks"
-	case AssetTypeModelEngine:
-		return "models"
-	default:
-		return ""
-	}
-}

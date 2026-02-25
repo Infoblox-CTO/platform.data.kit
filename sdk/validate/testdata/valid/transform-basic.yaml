@@ -1,0 +1,16 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: basic-pipeline
+  namespace: data-team
+  version: 1.0.0
+spec:
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
+  inputs:
+    - asset: raw-data
+  outputs:
+    - asset: customer-data
+  schedule:
+    cron: "0 * * * *"

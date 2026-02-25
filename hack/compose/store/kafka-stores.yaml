@@ -1,0 +1,63 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: raw-events
+  labels:
+    environment: local
+spec:
+  connector: kafka
+  connection:
+    topic: dp.raw.events
+    bootstrapServers: localhost:19092
+    schemaRegistry: http://localhost:18081
+  secrets:
+    consumerGroup: dp-local-dev
+---
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: processed-events
+  labels:
+    environment: local
+spec:
+  connector: kafka
+  connection:
+    topic: dp.processed.events
+    bootstrapServers: localhost:19092
+    schemaRegistry: http://localhost:18081
+---
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: error-dlq
+  labels:
+    environment: local
+spec:
+  connector: kafka
+  connection:
+    topic: dp.errors.dlq
+    bootstrapServers: localhost:19092
+---
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: test-input
+  labels:
+    environment: local
+spec:
+  connector: kafka
+  connection:
+    topic: dp.test.input
+    bootstrapServers: localhost:19092
+---
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: test-output
+  labels:
+    environment: local
+spec:
+  connector: kafka
+  connection:
+    topic: dp.test.output
+    bootstrapServers: localhost:19092

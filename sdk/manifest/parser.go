@@ -37,17 +37,20 @@ func DetectKindFromFile(path string) (contracts.Kind, error) {
 
 // Parser is the interface for parsing manifest files.
 type Parser interface {
-	// ParseSource parses a dp.yaml file with kind: Source
-	ParseSource(data []byte) (*contracts.Source, error)
+	// ParseConnector parses a manifest with kind: Connector.
+	ParseConnector(data []byte) (*contracts.Connector, error)
 
-	// ParseDestination parses a dp.yaml file with kind: Destination
-	ParseDestination(data []byte) (*contracts.Destination, error)
+	// ParseStore parses a manifest with kind: Store.
+	ParseStore(data []byte) (*contracts.Store, error)
 
-	// ParseModel parses a dp.yaml file with kind: Model
-	ParseModel(data []byte) (*contracts.Model, error)
+	// ParseAsset parses a manifest with kind: Asset.
+	ParseAsset(data []byte) (*contracts.AssetManifest, error)
 
-	// ParseBindings parses a bindings.yaml file
-	ParseBindings(data []byte) ([]contracts.Binding, error)
+	// ParseAssetGroup parses a manifest with kind: AssetGroup.
+	ParseAssetGroup(data []byte) (*contracts.AssetGroupManifest, error)
+
+	// ParseTransform parses a manifest with kind: Transform.
+	ParseTransform(data []byte) (*contracts.Transform, error)
 }
 
 // DefaultParser is the default implementation of Parser.
@@ -58,65 +61,79 @@ func NewParser() Parser {
 	return &DefaultParser{}
 }
 
-// ParseSource parses a dp.yaml with kind: Source.
-func (p *DefaultParser) ParseSource(data []byte) (*contracts.Source, error) {
-	return SourceFromBytes(data)
+// ParseConnector parses a manifest with kind: Connector.
+func (p *DefaultParser) ParseConnector(data []byte) (*contracts.Connector, error) {
+	return ConnectorFromBytes(data)
 }
 
-// ParseDestination parses a dp.yaml with kind: Destination.
-func (p *DefaultParser) ParseDestination(data []byte) (*contracts.Destination, error) {
-	return DestinationFromBytes(data)
+// ParseStore parses a manifest with kind: Store.
+func (p *DefaultParser) ParseStore(data []byte) (*contracts.Store, error) {
+	return StoreFromBytes(data)
 }
 
-// ParseModel parses a dp.yaml with kind: Model.
-func (p *DefaultParser) ParseModel(data []byte) (*contracts.Model, error) {
-	return ModelFromBytes(data)
+// ParseAsset parses a manifest with kind: Asset.
+func (p *DefaultParser) ParseAsset(data []byte) (*contracts.AssetManifest, error) {
+	return AssetFromBytes(data)
 }
 
-// ParseBindings parses a bindings.yaml file from bytes.
-func (p *DefaultParser) ParseBindings(data []byte) ([]contracts.Binding, error) {
-	return BindingsFromBytes(data)
+// ParseAssetGroup parses a manifest with kind: AssetGroup.
+func (p *DefaultParser) ParseAssetGroup(data []byte) (*contracts.AssetGroupManifest, error) {
+	return AssetGroupFromBytes(data)
 }
 
-// ParseSourceFile parses a Source manifest file from a path.
-func ParseSourceFile(path string) (*contracts.Source, error) {
+// ParseTransform parses a manifest with kind: Transform.
+func (p *DefaultParser) ParseTransform(data []byte) (*contracts.Transform, error) {
+	return TransformFromBytes(data)
+}
+
+// ParseConnectorFile parses a Connector manifest file from a path.
+func ParseConnectorFile(path string) (*contracts.Connector, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
-	return NewParser().ParseSource(data)
+	return NewParser().ParseConnector(data)
 }
 
-// ParseDestinationFile parses a Destination manifest file from a path.
-func ParseDestinationFile(path string) (*contracts.Destination, error) {
+// ParseStoreFile parses a Store manifest file from a path.
+func ParseStoreFile(path string) (*contracts.Store, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
-	return NewParser().ParseDestination(data)
+	return NewParser().ParseStore(data)
 }
 
-// ParseModelFile parses a Model manifest file from a path.
-func ParseModelFile(path string) (*contracts.Model, error) {
+// ParseAssetFile parses an Asset manifest file from a path.
+func ParseAssetFile(path string) (*contracts.AssetManifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
-	return NewParser().ParseModel(data)
+	return NewParser().ParseAsset(data)
 }
 
-// ParseBindingsFile parses a bindings.yaml file from a path.
-func ParseBindingsFile(path string) ([]contracts.Binding, error) {
+// ParseAssetGroupFile parses an AssetGroup manifest file from a path.
+func ParseAssetGroupFile(path string) (*contracts.AssetGroupManifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
+	return NewParser().ParseAssetGroup(data)
+}
 
-	return NewParser().ParseBindings(data)
+// ParseTransformFile parses a Transform manifest file from a path.
+func ParseTransformFile(path string) (*contracts.Transform, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
+	}
+	return NewParser().ParseTransform(data)
 }
 
 // Manifest is a generic interface satisfied by all manifest kinds
-// (Source, Destination, Model). It provides access to common metadata.
+// (Connector, Store, Asset, AssetGroup, Transform).
+// It provides access to common metadata.
 type Manifest interface {
 	// GetKind returns the manifest kind.
 	GetKind() contracts.Kind
@@ -151,25 +168,37 @@ func ParseManifest(data []byte) (Manifest, contracts.Kind, error) {
 
 	parser := NewParser()
 	switch kind {
-	case contracts.KindSource:
-		m, err := parser.ParseSource(data)
+	case contracts.KindConnector:
+		m, err := parser.ParseConnector(data)
 		if err != nil {
 			return nil, kind, err
 		}
 		return m, kind, nil
-	case contracts.KindDestination:
-		m, err := parser.ParseDestination(data)
+	case contracts.KindStore:
+		m, err := parser.ParseStore(data)
 		if err != nil {
 			return nil, kind, err
 		}
 		return m, kind, nil
-	case contracts.KindModel:
-		m, err := parser.ParseModel(data)
+	case contracts.KindAsset:
+		m, err := parser.ParseAsset(data)
+		if err != nil {
+			return nil, kind, err
+		}
+		return m, kind, nil
+	case contracts.KindAssetGroup:
+		m, err := parser.ParseAssetGroup(data)
+		if err != nil {
+			return nil, kind, err
+		}
+		return m, kind, nil
+	case contracts.KindTransform:
+		m, err := parser.ParseTransform(data)
 		if err != nil {
 			return nil, kind, err
 		}
 		return m, kind, nil
 	default:
-		return nil, kind, fmt.Errorf("unsupported manifest kind %q: must be Source, Destination, or Model", kind)
+		return nil, kind, fmt.Errorf("unsupported manifest kind %q: must be Connector, Store, Asset, AssetGroup, or Transform", kind)
 	}
 }

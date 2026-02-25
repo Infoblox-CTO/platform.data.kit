@@ -60,9 +60,8 @@ dp init <package-name> [flags]
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--kind` | `-k` | Manifest kind (source, destination, model) | model |
 | `--runtime` | `-r` | Runtime (cloudquery, generic-go, generic-python, dbt) | |
-| `--mode` | `-m` | Execution mode: batch, streaming (model only) | batch |
+| `--mode` | `-m` | Execution mode: batch, streaming | batch |
 | `--namespace` | `-n` | Package namespace | default |
 | `--owner` | | Package owner | current user |
 | `--team` | | Team label | my-team |
@@ -70,33 +69,23 @@ dp init <package-name> [flags]
 ### Examples
 
 ```bash
-# Create a model with CloudQuery runtime (default kind)
-dp init my-model --runtime cloudquery
+# Create a Transform with CloudQuery runtime
+dp init my-sync --runtime cloudquery
 ```
 
 ```bash
-# Create a streaming Python model
-dp init kafka-processor --kind model --runtime generic-python --mode streaming
+# Create a streaming Python Transform
+dp init kafka-processor --runtime generic-python --mode streaming
 ```
 
 ```bash
-# Create a Go model
-dp init etl-job --kind model --runtime generic-go
+# Create a Go Transform
+dp init etl-job --runtime generic-go
 ```
 
 ```bash
-# Create a dbt model
-dp init user-aggregation --kind model --runtime dbt
-```
-
-```bash
-# Create a CloudQuery source extension
-dp init my-source --kind source --runtime cloudquery
-```
-
-```bash
-# Create a Go destination extension
-dp init s3-writer --kind destination --runtime generic-go
+# Create a dbt Transform
+dp init user-aggregation --runtime dbt
 ```
 
 ### Output
@@ -104,7 +93,7 @@ dp init s3-writer --kind destination --runtime generic-go
 Creates the following directory structure (varies by runtime):
 
 ```
-my-model/
+my-pipeline/
 ├── dp.yaml
 ├── main.py (or main.go)
 └── requirements.txt (Python only)
@@ -396,7 +385,6 @@ dp lint [package-dir] [flags]
 | File | Description |
 |------|-------------|
 | `dp.yaml` | Package manifest (includes runtime config) |
-| `bindings.yaml` | Binding configuration |
 | `schemas/` | Schema files |
 
 ### Validation Rules
@@ -451,7 +439,6 @@ dp run [package-dir] [flags]
 |------|-------|-------------|---------|
 | `--network` | - | Docker network | dp-network |
 | `--env` | - | Environment variables (KEY=VALUE) | - |
-| `--bindings` | - | Bindings file path | bindings.yaml |
 | `--dry-run` | - | Print what would run | false |
 | `--detach` | - | Run in background | false |
 | `--attach` | - | Attach to logs (streaming mode) | true |
@@ -481,7 +468,7 @@ The run command behaves differently based on the pipeline mode:
 ### Runtime Configuration
 
 The pipeline runs using the container image and configuration specified in `spec.runtime` of dp.yaml.
-Environment variables are automatically mapped from bindings (e.g., `input.events.brokers` → `INPUT_EVENTS_BROKERS`).
+Environment variables are automatically mapped from Store connection details (e.g., `events-store.brokers` → `EVENTS_STORE_BROKERS`).
 
 ### Override Precedence
 
@@ -504,11 +491,6 @@ dp run ./my-streaming-pipeline
 
 # Run streaming pipeline detached
 dp run ./my-streaming-pipeline --detach
-```
-
-```bash
-# With custom bindings
-dp run ./my-pipeline --bindings bindings.local.yaml
 ```
 
 ```bash
@@ -615,7 +597,6 @@ dp test [package-dir] [flags]
 |------|-------------|---------|
 | `--data` | Test data directory | testdata/ |
 | `--timeout` | Test timeout | 5m |
-| `--bindings` | Bindings file path | bindings.yaml |
 | `--duration` | Test duration (streaming mode) | 30s |
 | `--startup-timeout` | Wait for healthy (streaming mode) | 60s |
 | `--integration` | Run CloudQuery integration test (full sync) | false |

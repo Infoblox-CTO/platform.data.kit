@@ -1,6 +1,6 @@
 # Invalid YAML - missing required fields
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   # missing name
 spec:

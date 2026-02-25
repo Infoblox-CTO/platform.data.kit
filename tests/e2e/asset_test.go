@@ -16,7 +16,7 @@ func TestAssetWorkflow(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Step 0: Initialize a data package project
-	result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "asset-test")
+	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "asset-test")
 	if err != nil {
 		t.Fatalf("dp init failed: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestAssetCreateInvalidName(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Initialize a project first
-	result, err := runDPInDir(t, tmpDir, "init", "--type", "pipeline", "test-pkg")
+	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-pkg")
 	if err != nil {
 		t.Fatalf("dp init failed: %v", err)
 	}

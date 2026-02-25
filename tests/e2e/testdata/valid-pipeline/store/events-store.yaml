@@ -1,0 +1,11 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: events-store
+  namespace: data-team
+spec:
+  connector: kafka
+  connection:
+    bootstrapServers: kafka:9092
+  secrets:
+    groupId: valid-pipeline

@@ -27,7 +27,7 @@ func TestPipelineShow(t *testing.T) {
 			wantOut: []string{
 				"Pipeline: demo-pipeline",
 				"STEP", "TYPE", "DETAILS",
-				"sync-data", "sync", "source=aws-source", "sink=pg-sink",
+				"sync-data", "sync", "input=aws-source", "output=pg-sink",
 				"transform", "asset=dbt-model",
 				"custom-step", "custom", "image=alpine:latest",
 			},
@@ -172,8 +172,8 @@ metadata:
 steps:
   - name: sync-data
     type: sync
-    source: aws-source
-    sink: pg-sink
+    input: aws-source
+    output: pg-sink
   - name: transform
     type: transform
     asset: dbt-model

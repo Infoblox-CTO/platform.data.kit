@@ -19,125 +19,124 @@ We'll build a real-time event aggregator that:
 
 ## Step 1: Initialize the Project
 
-Create a new streaming pipeline:
+Create a new streaming Transform:
 
 ```bash
-dp init user-aggregator --kind model --runtime generic-go --mode streaming
+dp init user-aggregator --runtime generic-go
 cd user-aggregator
 ```
 
-This creates a project structure optimized for streaming:
+This creates a project structure:
 
 ```
 user-aggregator/
-├── dp.yaml                 # Package manifest
-├── pipeline.yaml           # Pipeline configuration
-├── bindings.yaml           # Infrastructure bindings
+├── dp.yaml                 # Transform manifest
+├── connector/              # Connector definitions
+├── store/                  # Store definitions
+├── asset/                  # Asset definitions
 ├── src/
 │   └── main.go            # Pipeline code
 └── schemas/
     └── event.avsc         # Input schema
 ```
 
-## Step 2: Configure the Pipeline
+## Step 2: Configure the Transform
 
-Edit `pipeline.yaml` to configure streaming behavior:
+Edit `dp.yaml` to configure streaming behavior:
 
 ```yaml
-apiVersion: dp.io/v1
-kind: Pipeline
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
 metadata:
   name: user-aggregator
+  namespace: analytics
+  version: 1.0.0
 spec:
+  runtime: generic-go
   mode: streaming
-  
+  image: myorg/user-aggregator:v1.0.0
+
+  inputs:
+    - asset: user-events
+
+  outputs:
+    - asset: user-aggregations
+
   # Horizontal scaling
   replicas: 3
-  
-  # Graceful shutdown (30 seconds to drain)
-  terminationGracePeriodSeconds: 30
-  
-  # Health checks
-  livenessProbe:
-    httpGet:
-      path: /healthz
-      port: 8080
-    initialDelaySeconds: 10
-    periodSeconds: 15
-    failureThreshold: 3
-    
-  readinessProbe:
-    httpGet:
-      path: /ready
-      port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    
+  resources:
+    cpu: "500m"
+    memory: "1Gi"
+
   # Lineage tracking
   lineage:
     enabled: true
     heartbeatInterval: 30s
 ```
 
-## Step 3: Define Inputs and Outputs
+## Step 3: Define Assets and Stores
 
-Edit `dp.yaml` to declare data connections:
+Create the input Asset:
 
-```yaml
+```yaml title="asset/user-events.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Asset
 metadata:
-  name: user-aggregator
+  name: user-events
   namespace: analytics
 spec:
-  type: pipeline
-  description: Real-time user event aggregator
-  owner: data-engineering@example.com
-  
-  inputs:
-    - name: events
-      type: kafka-topic
-      binding: input.events
-      schema: schemas/event.avsc
-      
-  outputs:
-    - name: aggregations
-      type: s3-prefix
-      binding: output.aggregations
-      classification:
-        pii: false
-        sensitivity: internal
+  store: events-kafka
+  topic: user-activity
+  format: avro
 ```
 
-## Step 4: Configure Bindings
+Create the output Asset:
 
-Edit `bindings.yaml` for local development:
-
-```yaml
+```yaml title="asset/user-aggregations.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: Bindings
+kind: Asset
+metadata:
+  name: user-aggregations
+  namespace: analytics
 spec:
-  bindings:
-    input.events:
-      type: kafka-topic
-      ref: events/user-activity
-      config:
-        bootstrap-servers: kafka:9092
-        consumer-group: user-aggregator
-        auto-offset-reset: earliest
-        format: avro
-        
-    output.aggregations:
-      type: s3-prefix
-      ref: analytics-data/aggregations/users/
-      config:
-        endpoint: http://minio:9000
-        region: us-east-1
-        format: parquet
-        partition-by: date
+  store: analytics-s3
+  prefix: aggregations/users/
+  format: parquet
+  classification: internal
 ```
 
-## Step 5: Implement the Pipeline
+Create the Stores:
+
+```yaml title="store/events-kafka.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: events-kafka
+spec:
+  connector: kafka
+  connection:
+    bootstrap-servers: kafka:9092
+    consumer-group: user-aggregator
+    auto-offset-reset: earliest
+```
+
+```yaml title="store/analytics-s3.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: analytics-s3
+spec:
+  connector: s3
+  connection:
+    endpoint: http://minio:9000
+    region: us-east-1
+    partition-by: date
+  secrets:
+    accessKeyId: ${AWS_ACCESS_KEY_ID}
+    secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+```
+
+## Step 4: Implement the Pipeline
 
 Edit `src/main.go`:
 
@@ -302,7 +301,7 @@ func (w *S3Writer) WriteAggregations(data map[string]int64) error { return nil }
 func (w *S3Writer) Close() error { return nil }
 ```
 
-## Step 6: Test Locally
+## Step 5: Test Locally
 
 Start the local development stack:
 
@@ -335,7 +334,7 @@ dp run --detach
 dp logs --follow
 ```
 
-## Step 7: Monitor Health
+## Step 6: Monitor Health
 
 While the pipeline is running, you can check health:
 
@@ -348,7 +347,7 @@ curl http://localhost:8080/ready
 # Response: ready
 ```
 
-## Step 8: Build and Deploy
+## Step 7: Build and Deploy
 
 When ready for deployment:
 

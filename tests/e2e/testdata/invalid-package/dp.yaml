@@ -1,8 +1,8 @@
 # Invalid package - missing required fields
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 metadata:
   name: ""  # Empty name is invalid
 spec:
-  type: pipeline
-  # Missing: description, version, namespace
+  runtime: generic-go
+  # Missing: inputs, outputs

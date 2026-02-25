@@ -177,7 +177,7 @@ dp init my-pipeline
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: DataPackage
+kind: Transform
 ```
 
 ```python title="src/main.py"
@@ -295,7 +295,7 @@ Use title to show filename:
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 ```
 
 ### Placeholders
@@ -303,7 +303,7 @@ kind: Model
 Use angle brackets for placeholders:
 
 ```bash
-dp init <package-name> --kind <kind> --runtime <runtime>
+dp init <package-name> --runtime <runtime>
 ```
 
 ### Variables

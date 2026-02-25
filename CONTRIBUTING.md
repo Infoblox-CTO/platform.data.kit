@@ -173,7 +173,7 @@ func (v *Validator) validate(ctx context.Context) error {
 func TestValidator_Validate(t *testing.T) {
     tests := []struct {
         name    string
-        input   *DataPackage
+        input   *Transform
         wantErr bool
     }{
         {

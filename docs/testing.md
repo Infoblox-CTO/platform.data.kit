@@ -29,8 +29,12 @@ Tests are organized following Go conventions:
 
 ```
 contracts/
-├── datapackage.go
-├── datapackage_test.go     # Unit tests for datapackage.go
+├── transform.go
+├── transform_test.go       # Unit tests for transform.go
+├── asset.go
+├── asset_test.go           # Unit tests for asset.go
+├── connector.go
+├── store.go
 └── testdata/               # Test fixtures
 
 sdk/
@@ -63,20 +67,20 @@ tests/
 We use table-driven tests for functions with multiple input scenarios:
 
 ```go
-func TestValidatePackage(t *testing.T) {
+func TestValidateTransform(t *testing.T) {
     tests := []struct {
         name    string
-        input   *contracts.DataPackage
+        input   *contracts.Transform
         wantErr bool
     }{
-        {"valid package", validPackage(), false},
-        {"missing name", &contracts.DataPackage{}, true},
-        {"empty version", &contracts.DataPackage{Name: "test"}, true},
+        {"valid transform", validTransform(), false},
+        {"missing name", &contracts.Transform{}, true},
+        {"empty version", &contracts.Transform{Metadata: contracts.TransformMetadata{Name: "test"}}, true},
     }
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            err := ValidatePackage(tt.input)
+            err := ValidateTransform(tt.input)
             if (err != nil) != tt.wantErr {
                 t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
             }
@@ -92,11 +96,11 @@ Test data is stored in `testdata/` directories:
 ```
 testdata/
 ├── valid/
-│   ├── pipeline-full.yaml
-│   └── datapackage-basic.yaml
+│   ├── transform-full.yaml
+│   └── asset-basic.yaml
 ├── invalid/
 │   ├── missing-name.yaml
-│   └── invalid-binding.yaml
+│   └── invalid-store-ref.yaml
 └── golden/
     └── expected-output.json
 ```

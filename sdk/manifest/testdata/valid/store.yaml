@@ -1,0 +1,14 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+  namespace: data-team
+spec:
+  connector: postgres
+  connection:
+    host: db.example.com
+    port: 5432
+    database: analytics
+  secrets:
+    username: ${PG_USER}
+    password: ${PG_PASS}

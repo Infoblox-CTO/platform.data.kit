@@ -1,5 +1,5 @@
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-pipeline
   namespace: default
@@ -9,17 +9,8 @@ metadata:
 spec:
   runtime: generic-go
   mode: batch
-  description: A test model for CLI testing
-  owner: platform-team
   image: myimage:v1
   inputs:
-    - name: kafka-events
-      type: kafka-topic
-      binding: kafka-input
+    - asset: kafka-events
   outputs:
-    - name: s3-data
-      type: s3-prefix
-      binding: s3-output
-      classification:
-        sensitivity: internal
-        pii: false
+    - asset: s3-data

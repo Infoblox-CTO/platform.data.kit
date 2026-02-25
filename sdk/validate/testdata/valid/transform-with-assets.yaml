@@ -1,0 +1,13 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: source-with-assets
+  namespace: data-team
+  version: 1.0.0
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: raw-customer-data
+  outputs:
+    - asset: customer-data

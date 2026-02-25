@@ -23,7 +23,6 @@ type Runner interface {
 type RunOptions struct {
 	PackageDir     string
 	Env            map[string]string
-	BindingsFile   string
 	Network        string
 	Timeout        time.Duration
 	DryRun         bool

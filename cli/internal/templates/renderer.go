@@ -11,14 +11,8 @@ import (
 	"unicode"
 )
 
-//go:embed all:source
-var sourceFS embed.FS
-
-//go:embed all:destination
-var destinationFS embed.FS
-
-//go:embed all:model
-var modelFS embed.FS
+//go:embed all:transform
+var transformFS embed.FS
 
 // templateFuncMap provides helper functions available in templates.
 var templateFuncMap = template.FuncMap{
@@ -89,7 +83,7 @@ type PackageConfig struct {
 	Description string
 	Owner       string
 	Mode        string // batch, streaming
-	Kind        string // Source, Destination, Model (new taxonomy)
+	Kind        string // Transform, Connector, Store, Asset, AssetGroup
 	Runtime     string // cloudquery, generic-go, generic-python, dbt (new taxonomy)
 	GRPCPort    int    // gRPC server port (cloudquery, default 7777)
 	Concurrency int    // max concurrent resolvers (cloudquery, default 10000)
@@ -107,14 +101,10 @@ func NewRenderer() (*Renderer, error) {
 // kindFS returns the embedded filesystem for the given kind.
 func kindFS(kind string) (embed.FS, error) {
 	switch strings.ToLower(kind) {
-	case "source":
-		return sourceFS, nil
-	case "destination":
-		return destinationFS, nil
-	case "model":
-		return modelFS, nil
+	case "transform":
+		return transformFS, nil
 	default:
-		return embed.FS{}, fmt.Errorf("unknown kind %q: must be source, destination, or model", kind)
+		return embed.FS{}, fmt.Errorf("unknown kind %q; supported kinds: transform", kind)
 	}
 }
 
@@ -128,9 +118,8 @@ func (r *Renderer) RenderKindDirectory(outputDir string, config *PackageConfig) 
 	}
 
 	// Template subdirectory is kind/runtime within the embedded FS.
-	// The embed directive uses the kind name as the root (e.g., //go:embed all:source).
-	// So the path within the FS is: <kind>/<runtime>/
-	templateSubDir := fmt.Sprintf("%s/%s", strings.ToLower(config.Kind), config.Runtime)
+	kindDir := strings.ToLower(config.Kind)
+	templateSubDir := fmt.Sprintf("%s/%s", kindDir, config.Runtime)
 
 	return fs.WalkDir(efs, templateSubDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

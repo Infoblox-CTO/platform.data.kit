@@ -17,7 +17,6 @@ func TestTestCmd_Flags(t *testing.T) {
 	}{
 		{"data", ""},
 		{"timeout", "5m0s"},
-		{"bindings", ""},
 		{"duration", "30s"},
 		{"startup-timeout", "1m0s"},
 		{"integration", "false"},
@@ -37,21 +36,22 @@ func TestTestCmd_Flags(t *testing.T) {
 	}
 }
 
-func TestTestCmd_SourceDetection(t *testing.T) {
-	// Test that Source kind is detected from dp.yaml
+func TestTestCmd_TransformDetection(t *testing.T) {
+	// Test that Transform kind is detected from dp.yaml
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Source
+kind: Transform
 metadata:
   name: my-source
-  namespace: test-team
-  version: 0.1.0
 spec:
-  description: "Test source"
-  owner: "test-team"
   runtime: cloudquery
   image: my-source:latest
+  mode: batch
+  inputs:
+    - asset: source-data
+  outputs:
+    - asset: output-data
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -66,39 +66,32 @@ spec:
 	cmd := &cobra.Command{}
 	err := runTest(cmd, []string{tmpDir})
 
-	// Should detect Source kind and not fail with kind-related errors
+	// Should detect Transform kind and not fail with kind-related errors
 	if err != nil {
 		errMsg := err.Error()
 		// Should NOT fail with "unsupported kind" or similar
 		if strings.Contains(errMsg, "unsupported kind") {
-			t.Errorf("should handle Source kind, got: %s", errMsg)
+			t.Errorf("should handle Transform kind, got: %s", errMsg)
 		}
 	}
 }
 
-func TestTestCmd_ModelDetection(t *testing.T) {
-	// Test that Model kind with batch mode is detected correctly
+func TestTestCmd_TransformBatchDetection(t *testing.T) {
+	// Test that Transform kind with batch mode is detected correctly
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: test-model
-  namespace: test
-  version: 1.0.0
 spec:
-  description: "Test model"
-  owner: "test"
   runtime: generic-go
   image: python:3.11
   mode: batch
+  inputs:
+    - asset: source-data
   outputs:
-    - name: output
-      type: s3-prefix
-      binding: output-bucket
-      classification:
-        sensitivity: public
-        pii: false
+    - asset: output-data
 `
 	dpPath := filepath.Join(tmpDir, "dp.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
@@ -117,7 +110,7 @@ spec:
 	if err != nil {
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "unsupported kind") {
-			t.Errorf("should handle Model kind, got: %s", errMsg)
+			t.Errorf("should handle Transform kind, got: %s", errMsg)
 		}
 	}
 }

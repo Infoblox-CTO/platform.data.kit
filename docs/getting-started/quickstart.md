@@ -22,7 +22,7 @@ A simple data processing model that:
 Initialize a new data package:
 
 ```bash
-dp init my-first-pipeline --kind model --runtime generic-python
+dp init my-first-pipeline --runtime generic-python
 ```
 
 This creates the following structure:
@@ -38,7 +38,7 @@ Let's look at the generated manifest:
 
 ```yaml title="dp.yaml"
 apiVersion: data.infoblox.com/v1alpha1
-kind: Model
+kind: Transform
 metadata:
   name: my-first-pipeline
   namespace: default
@@ -53,14 +53,10 @@ spec:
   image: "${REGISTRY}/my-first-pipeline:${VERSION}"
 
   inputs:
-    - name: my-first-pipeline-input
-      type: kafka-topic
-      binding: input.main
+    - asset: my-first-pipeline-input
 
   outputs:
-    - name: my-first-pipeline-output
-      type: kafka-topic
-      binding: output.main
+    - asset: my-first-pipeline-output
       classification:
         pii: false
         sensitivity: internal
@@ -140,7 +136,6 @@ Expected output:
 
 ```
 ✓ dp.yaml: valid
-✓ bindings.yaml: valid
 
 All validations passed!
 ```
@@ -306,7 +301,7 @@ In addition to the standard prerequisites, you need:
 ### Step 1: Create a CloudQuery Model
 
 ```bash
-dp init my-sync --kind model --runtime cloudquery
+dp init my-sync --runtime cloudquery
 ```
 
 This creates:

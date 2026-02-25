@@ -138,34 +138,41 @@ After merge, ArgoCD syncs the changes:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Environment Bindings
+## Environment Stores
 
-Packages use bindings to reference infrastructure. Bindings resolve differently per environment:
+Packages use Store manifests to reference infrastructure. Store configurations differ per environment:
 
 ### Package Manifest
 
 ```yaml title="dp.yaml"
 spec:
-  inputs:
-    - name: events
-      type: kafka-topic
-      binding: input.events  # Logical name
+  store: events-store  # References a Store by name
 ```
 
-### Environment-Specific Bindings
+### Environment-Specific Stores
 
-```yaml title="environments/dev/bindings.yaml"
-bindings:
-  input.events:
-    type: kafka-topic
-    ref: dev-kafka/user-events-dev
+```yaml title="environments/dev/stores/events-store.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: events-store
+spec:
+  type: kafka-topic
+  connection:
+    brokers: dev-kafka:9092
+    topic: user-events-dev
 ```
 
-```yaml title="environments/prod/bindings.yaml"
-bindings:
-  input.events:
-    type: kafka-topic
-    ref: prod-kafka/user-events
+```yaml title="environments/prod/stores/events-store.yaml"
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: events-store
+spec:
+  type: kafka-topic
+  connection:
+    brokers: prod-kafka:9092
+    topic: user-events
 ```
 
 Same package, different infrastructure per environment.
@@ -239,7 +246,7 @@ environments:
     approval:
       required: false
       auto_merge: true
-    bindings: environments/dev/bindings.yaml
+    stores: environments/dev/stores/
     
   int:
     cluster: staging-cluster
@@ -247,7 +254,7 @@ environments:
     approval:
       required: true
       approvers: ["@team-leads"]
-    bindings: environments/int/bindings.yaml
+    stores: environments/int/stores/
     
   prod:
     cluster: prod-cluster
@@ -256,7 +263,7 @@ environments:
       required: true
       approvers: ["@team-leads", "@security"]
       count: 2
-    bindings: environments/prod/bindings.yaml
+    stores: environments/prod/stores/
 ```
 
 ### Custom Environments
@@ -272,7 +279,7 @@ environments:
     approval:
       required: true
       approvers: ["@perf-team"]
-    bindings: environments/perf/bindings.yaml
+    stores: environments/perf/stores/
     
   # Disaster recovery environment
   dr:
@@ -282,7 +289,7 @@ environments:
       required: true
       approvers: ["@platform-team", "@security"]
       count: 2
-    bindings: environments/dr/bindings.yaml
+    stores: environments/dr/stores/
 ```
 
 ## Best Practices

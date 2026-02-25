@@ -15,9 +15,8 @@ import (
 )
 
 var (
-	initKind      string // Source, Destination, Model
 	initRuntime   string // cloudquery, generic-go, generic-python, dbt
-	initMode      string // batch, streaming (model only)
+	initMode      string // batch, streaming
 	initNamespace string
 	initTeam      string
 	initOwner     string
@@ -27,32 +26,25 @@ var (
 var initCmd = &cobra.Command{
 	Use:   "init [name]",
 	Short: "Initialize a new data package",
-	Long: `Initialize a new data package with the required manifest files.
+	Long: `Initialize a new data package (Transform) with the required manifest files.
 
-Supported kinds: source, destination, model (default)
 Supported runtimes: cloudquery, generic-go, generic-python, dbt
 
 This command creates a new directory with dp.yaml and project
-files pre-configured with sensible defaults for the selected kind and runtime.
+files pre-configured with sensible defaults for the selected runtime.
 
 Examples:
-  # Create a new model with CloudQuery runtime (default kind)
-  dp init my-model --runtime cloudquery
+  # Create a new transform with CloudQuery runtime
+  dp init my-transform --runtime cloudquery
 
-  # Create a source extension (infra engineer)
-  dp init pg-cdc --kind source --runtime cloudquery
+  # Create a dbt transform
+  dp init user-aggregation --runtime dbt
 
-  # Create a destination extension in Go
-  dp init s3-writer --kind destination --runtime generic-go
-
-  # Create a dbt model
-  dp init user-aggregation --kind model --runtime dbt
-
-  # Create a Python model for streaming
-  dp init fraud-scorer --kind model --runtime generic-python --mode streaming
+  # Create a Python transform for streaming
+  dp init fraud-scorer --runtime generic-python --mode streaming
 
   # Create with custom namespace
-  dp init my-model --runtime cloudquery --namespace data-team`,
+  dp init my-transform --runtime cloudquery --namespace data-team`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInit,
 }
@@ -60,12 +52,10 @@ Examples:
 func init() {
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().StringVarP(&initKind, "kind", "k", "model",
-		"Manifest kind: source, destination, model")
 	initCmd.Flags().StringVarP(&initRuntime, "runtime", "r", "",
 		"Runtime: cloudquery, generic-go, generic-python, dbt")
 	initCmd.Flags().StringVarP(&initMode, "mode", "m", "batch",
-		"Execution mode: batch, streaming (model only)")
+		"Execution mode: batch, streaming")
 	initCmd.Flags().StringVarP(&initNamespace, "namespace", "n", "default",
 		"Package namespace")
 	initCmd.Flags().StringVar(&initTeam, "team", "my-team",
@@ -103,15 +93,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Normalize and validate kind
-	initKind = strings.ToLower(initKind)
-	kind := contracts.Kind(titleCase(initKind))
-	switch kind {
-	case contracts.KindSource, contracts.KindDestination, contracts.KindModel:
-		// valid
-	default:
-		return fmt.Errorf("invalid kind %q: must be source, destination, or model", initKind)
-	}
+	kind := contracts.KindTransform
 
 	// Validate runtime is provided
 	if initRuntime == "" {
@@ -124,24 +106,15 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid runtime %q: must be cloudquery, generic-go, generic-python, or dbt", initRuntime)
 	}
 
-	// Validate mode (only meaningful for model kind)
+	// Validate mode
 	mode := contracts.Mode(initMode)
-	if kind == contracts.KindModel {
-		if !mode.IsValid() {
-			return fmt.Errorf("invalid mode %q: must be batch or streaming", initMode)
-		}
+	if !mode.IsValid() {
+		return fmt.Errorf("invalid mode %q: must be batch or streaming", initMode)
 	}
 
-	// Validate kind-runtime combinations
-	if kind == contracts.KindModel && runtime == contracts.RuntimeDBT && mode == contracts.ModeStreaming {
+	// Validate runtime-mode combinations
+	if runtime == contracts.RuntimeDBT && mode == contracts.ModeStreaming {
 		return fmt.Errorf("dbt runtime does not support streaming mode")
-	}
-
-	// Source and Destination only support cloudquery and generic-go runtimes
-	if kind == contracts.KindSource || kind == contracts.KindDestination {
-		if runtime != contracts.RuntimeCloudQuery && runtime != contracts.RuntimeGenericGo {
-			return fmt.Errorf("%s runtime is only supported for model kind; use cloudquery or generic-go for %s", runtime, kind)
-		}
 	}
 
 	// Set default owner
@@ -159,7 +132,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		Name:        name,
 		Namespace:   initNamespace,
 		Team:        initTeam,
-		Description: fmt.Sprintf("A %s %s package", initRuntime, strings.ToLower(string(kind))),
+		Description: fmt.Sprintf("A %s transform package", initRuntime),
 		Owner:       initOwner,
 		Kind:        strings.ToLower(string(kind)),
 		Runtime:     string(runtime),
@@ -183,25 +156,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	cmd.Printf("\nPackage %q initialized successfully!\n", name)
 	cmd.Printf("\nNext steps:\n")
-	cmd.Printf("  1. Edit dp.yaml to configure your package\n")
-
-	switch kind {
-	case contracts.KindSource:
-		cmd.Printf("  2. Configure your source in dp.yaml (provides, configSchema)\n")
-		cmd.Printf("  3. Run 'dp lint' to validate\n")
-		cmd.Printf("  4. Run 'dp build' to bundle\n")
-		cmd.Printf("  5. Run 'dp publish' to publish to extension registry\n")
-	case contracts.KindDestination:
-		cmd.Printf("  2. Configure your destination in dp.yaml (accepts, configSchema)\n")
-		cmd.Printf("  3. Run 'dp lint' to validate\n")
-		cmd.Printf("  4. Run 'dp build' to bundle\n")
-		cmd.Printf("  5. Run 'dp publish' to publish to extension registry\n")
-	case contracts.KindModel:
-		cmd.Printf("  2. Configure source/destination references and schedule\n")
-		cmd.Printf("  3. Run 'dp lint' to validate\n")
-		cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
-		cmd.Printf("  5. Run 'dp run' to execute locally\n")
-	}
+	cmd.Printf("  1. Edit dp.yaml to configure your transform\n")
+	cmd.Printf("  2. Configure inputs/outputs and schedule\n")
+	cmd.Printf("  3. Run 'dp lint' to validate\n")
+	cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
+	cmd.Printf("  5. Run 'dp run' to execute locally\n")
 
 	return nil
 }

@@ -233,10 +233,6 @@ registry:
 # Project namespace
 defaults:
   namespace: my-project
-
-# Custom bindings path
-bindings:
-  default_path: config/bindings
 ```
 
 ### Configuration Precedence
