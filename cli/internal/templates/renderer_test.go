@@ -47,9 +47,25 @@ func TestRenderKindDirectory_TransformCloudQuery(t *testing.T) {
 		}
 	}
 
+	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dp run.
 	configPath := filepath.Join(outputDir, "config.yaml")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Error("expected config.yaml to be created for transform/cloudquery")
+	if _, err := os.Stat(configPath); err == nil {
+		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
+	}
+
+	// Verify connector/, store/, and asset/ subdirectories are scaffolded.
+	for _, sub := range []string{
+		"connector/postgres.yaml",
+		"connector/s3.yaml",
+		"store/source-db.yaml",
+		"store/dest-bucket.yaml",
+		"asset/source.yaml",
+		"asset/destination.yaml",
+	} {
+		p := filepath.Join(outputDir, sub)
+		if _, err := os.Stat(p); os.IsNotExist(err) {
+			t.Errorf("expected %s to be created", sub)
+		}
 	}
 }
 
@@ -151,9 +167,10 @@ func TestRenderKindDirectory_TransformCloudQuery_Legacy(t *testing.T) {
 		t.Fatal("expected dp.yaml to be created")
 	}
 
+	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dp run.
 	configPath := filepath.Join(outputDir, "config.yaml")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Error("expected config.yaml to be created for transform/cloudquery")
+	if _, err := os.Stat(configPath); err == nil {
+		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
 	}
 }
 

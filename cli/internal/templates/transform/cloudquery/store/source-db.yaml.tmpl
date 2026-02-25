@@ -1,0 +1,9 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: source-db
+  namespace: {{ .Namespace }}
+spec:
+  connector: postgres
+  connection:
+    connection_string: "postgresql://dpuser:dppassword@dp-postgres-postgresql.dp-local.svc.cluster.local:5432/dataplatform?sslmode=disable"

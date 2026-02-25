@@ -1,0 +1,16 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: {{ .Name }}-source-table
+  namespace: {{ .Namespace }}
+spec:
+  store: source-db
+  table: public.example_table
+  classification: internal
+  schema:
+    - name: id
+      type: integer
+    - name: name
+      type: string
+    - name: created_at
+      type: timestamp

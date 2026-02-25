@@ -283,9 +283,16 @@ type cqPlugin struct {
 // to cluster services (PostgreSQL, LocalStack S3, Redpanda, Marquez) without
 // needing a Docker daemon.
 func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
-	configPath := filepath.Join(opts.PackageDir, "config.yaml")
-	if _, err := os.Stat(configPath); err != nil {
-		return nil, fmt.Errorf("config.yaml not found in %s: %w", opts.PackageDir, err)
+	t, ok := m.(*contracts.Transform)
+	if !ok {
+		return nil, fmt.Errorf("runCloudQuery requires a Transform manifest")
+	}
+
+	// Auto-generate CloudQuery config.yaml from the manifest graph:
+	// Transform → Asset → Store → Connector.
+	configData, plugins, err := generateCQConfig(t, opts.PackageDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate CloudQuery config: %w", err)
 	}
 
 	// Determine k3d cluster settings.
@@ -297,12 +304,6 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 	if cfg, err := loadK3dClusterName(); err == nil && cfg != "" {
 		clusterName = cfg
 		kubeContext = fmt.Sprintf("k3d-%s", clusterName)
-	}
-
-	// Step 1: Parse config.yaml to discover plugin images.
-	plugins, err := parseCQPlugins(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config.yaml plugins: %w", err)
 	}
 
 	runID := GenerateRunID(m.GetName())
@@ -395,11 +396,7 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 		}
 	}
 
-	// Step 3: Rewrite config.yaml — registry:docker → registry:grpc with localhost ports.
-	configData, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config.yaml: %w", err)
-	}
+	// Step 3: Rewrite generated config — registry:docker → registry:grpc with localhost ports.
 	rewritten, err := rewriteCQConfigForGRPC(configData, plugins)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rewrite config for gRPC: %w", err)
@@ -528,52 +525,6 @@ func inspectPluginEntrypoint(ctx context.Context, image string) (string, error) 
 		return "", nil
 	}
 	return entrypoint[0], nil
-}
-
-// parseCQPlugins reads a CloudQuery config.yaml (multi-document YAML) and
-// extracts every plugin that uses `registry: docker`. Each plugin is assigned
-// a sequential gRPC port starting at 7777.
-func parseCQPlugins(configPath string) ([]cqPlugin, error) {
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var plugins []cqPlugin
-	port := 7777
-
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	for {
-		var doc map[string]any
-		if err := decoder.Decode(&doc); err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, fmt.Errorf("parsing config.yaml: %w", err)
-		}
-
-		kind, _ := doc["kind"].(string)
-		spec, _ := doc["spec"].(map[string]any)
-		if spec == nil {
-			continue
-		}
-
-		registry, _ := spec["registry"].(string)
-		path, _ := spec["path"].(string)
-		name, _ := spec["name"].(string)
-
-		if registry == "docker" && path != "" {
-			plugins = append(plugins, cqPlugin{
-				Kind:  kind,
-				Name:  name,
-				Image: path,
-				Port:  port,
-			})
-			port++
-		}
-	}
-
-	return plugins, nil
 }
 
 // rewriteCQConfigForGRPC takes raw config.yaml bytes and rewrites every

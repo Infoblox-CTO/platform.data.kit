@@ -197,9 +197,10 @@ func TestInitCmd_TransformCloudQuery(t *testing.T) {
 		t.Error("dp.yaml should contain 'mode: batch'")
 	}
 
+	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dp run.
 	configPath := filepath.Join(pkgDir, "config.yaml")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Error("config.yaml should be created for transform/cloudquery")
+	if _, err := os.Stat(configPath); err == nil {
+		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
 	}
 }
 

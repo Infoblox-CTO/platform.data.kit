@@ -1,0 +1,12 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: dest-bucket
+  namespace: {{ .Namespace }}
+spec:
+  connector: s3
+  connection:
+    bucket: "dp-raw"
+    region: "us-east-1"
+    endpoint: "http://localstack.dp-local.svc.cluster.local:4566"
+    no_rotate: true

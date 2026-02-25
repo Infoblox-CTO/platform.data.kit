@@ -1,0 +1,11 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: s3
+spec:
+  type: s3
+  protocol: s3
+  capabilities:
+    - destination
+  plugin:
+    destination: ghcr.io/cloudquery/cq-destination-s3:latest
