@@ -4,7 +4,10 @@ metadata:
   name: postgres
   labels:
     team: platform
+    dp.infoblox.com/provider: postgres
 spec:
+  provider: postgres
+  version: 1.0.0
   type: postgres
   protocol: postgresql
   capabilities:

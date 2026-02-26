@@ -6,10 +6,15 @@ import (
 
 // StoreSpec defines the desired state of a Store.
 type StoreSpec struct {
-	// Connector is the name of the Connector type this Store uses
-	// (e.g., "postgres", "s3"). The Connector definition lives in the
-	// package — the Store only references it by name.
+	// Connector references the provider identity of the Connector this
+	// Store uses (e.g., "postgres", "s3"). Maps to spec.provider on the
+	// Connector CR.
 	Connector string `json:"connector"`
+
+	// ConnectorVersion is an optional semver range constraint that pins
+	// this Store to a compatible Connector version (e.g., "^1.0.0").
+	// +optional
+	ConnectorVersion string `json:"connectorVersion,omitempty"`
 
 	// Connection contains non-secret connection parameters
 	// (e.g., connection_string, bucket, endpoint, region).

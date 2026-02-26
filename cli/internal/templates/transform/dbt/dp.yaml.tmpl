@@ -11,6 +11,7 @@ spec:
   mode: batch
   description: "{{ .Description }}"
   owner: {{ .Owner }}
+  image: "${REGISTRY}/{{ .Name }}:${VERSION}"
 
   config:
     target: production
@@ -19,17 +20,10 @@ spec:
     select: "tag:daily"
 
   inputs:
-    - name: {{ .Name }}-input
-      type: postgres-table
-      binding: input.raw
+    - asset: {{ .Name }}-input
 
   outputs:
-    - name: {{ .Name }}-output
-      type: postgres-table
-      binding: output.transformed
-      classification:
-        pii: false
-        sensitivity: internal
+    - asset: {{ .Name }}-output
 
   schedule:
     cron: "30 6 * * *"

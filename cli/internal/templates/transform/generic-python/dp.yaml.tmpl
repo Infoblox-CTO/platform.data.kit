@@ -14,17 +14,10 @@ spec:
   image: "${REGISTRY}/{{ .Name }}:${VERSION}"
 
   inputs:
-    - name: {{ .Name }}-input
-      type: kafka-topic
-      binding: input.main
+    - asset: {{ .Name }}-input
 
   outputs:
-    - name: {{ .Name }}-output
-      type: kafka-topic
-      binding: output.main
-      classification:
-        pii: false
-        sensitivity: internal
+    - asset: {{ .Name }}-output
 
   resources:
     cpu: "1"

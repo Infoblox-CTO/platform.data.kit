@@ -48,7 +48,11 @@
       "properties": {
         "connector": {
           "type": "string",
-          "description": "Name of the Connector this store is an instance of"
+          "description": "Provider name of the Connector this store is an instance of (references spec.provider on the Connector)"
+        },
+        "connectorVersion": {
+          "type": "string",
+          "description": "Semver range constraining compatible connector versions (e.g., '^1.0.0', '>=1.2.0 <2.0.0'). When omitted, the highest available version is used."
         },
         "connection": {
           "type": "object",

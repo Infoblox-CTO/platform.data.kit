@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://data.infoblox.com/schemas/v1alpha1/connector.schema.json",
   "title": "Connector Manifest",
-  "description": "Schema for a Connector — a storage technology type (e.g., Postgres, S3, Kafka)",
+  "description": "Schema for a Connector — a storage technology type (e.g., Postgres, S3, Kafka). Multiple versions of the same connector can coexist, identified by spec.provider + spec.version.",
   "type": "object",
   "required": ["apiVersion", "kind", "metadata", "spec"],
   "properties": {
@@ -23,12 +23,12 @@
         "name": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]{0,62}$",
-          "description": "Connector name (DNS-safe, lowercase)"
+          "description": "Unique CR instance name (e.g., 'postgres-1-2-0'). For local files with a single version, can match the provider name."
         },
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" },
-          "description": "Key-value labels for filtering"
+          "description": "Key-value labels for filtering. Convention: dp.infoblox.com/provider for indexed lookups."
         },
         "annotations": {
           "type": "object",
@@ -42,6 +42,15 @@
       "type": "object",
       "required": ["type", "capabilities"],
       "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Logical connector identity that stores reference (e.g., 'postgres', 's3'). Multiple CRs can share the same provider (one per version). Defaults to type if omitted."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$",
+          "description": "Semantic version of this connector release (e.g., '1.2.0')"
+        },
         "type": {
           "type": "string",
           "description": "Technology identifier (e.g., postgres, s3, kafka, snowflake)"
@@ -74,6 +83,96 @@
           },
           "additionalProperties": false,
           "description": "Optional CloudQuery plugin image references"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Tool identifier (e.g., 'psql', 'dsn', 'mount')"
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable summary"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["exec", "config"],
+                "description": "Tool category: 'exec' (run command) or 'config' (generate output)"
+              },
+              "requires": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Binary names that must be on $PATH"
+              },
+              "command": {
+                "type": "string",
+                "description": "Go template for shell command (type=exec)"
+              },
+              "format": {
+                "type": "string",
+                "enum": ["text", "file", "env"],
+                "description": "Output format for type=config"
+              },
+              "path": {
+                "type": "string",
+                "description": "File path for format=file"
+              },
+              "mode": {
+                "type": "string",
+                "enum": ["append", "overwrite"],
+                "description": "Write mode for format=file"
+              },
+              "template": {
+                "type": "string",
+                "description": "Go template for output content (type=config)"
+              },
+              "postMessage": {
+                "type": "string",
+                "description": "Go template rendered and displayed after execution"
+              },
+              "default": {
+                "type": "boolean",
+                "description": "Mark as default tool when none is specified"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Technology-specific actions this connector exposes"
+        },
+        "connectionSchema": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["field"],
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Human-readable explanation of the field"
+              },
+              "field": {
+                "type": "string",
+                "description": "Key name in Store.spec.connection that this maps to"
+              },
+              "default": {
+                "type": "string",
+                "description": "Fallback value when absent from the store"
+              },
+              "secret": {
+                "type": "boolean",
+                "description": "May also be fulfilled from Store.spec.secrets"
+              },
+              "optional": {
+                "type": "boolean",
+                "description": "Field is not required"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Structured connection field declarations mapping logical names to Store.spec.connection keys"
         }
       },
       "additionalProperties": false

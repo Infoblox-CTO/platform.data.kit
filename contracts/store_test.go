@@ -16,6 +16,7 @@ metadata:
     team: data-platform
 spec:
   connector: postgres
+  connectorVersion: "^1.0.0"
   connection:
     host: dp-postgres-postgresql.dp-local.svc.cluster.local
     port: 5432
@@ -47,6 +48,9 @@ spec:
 	if s.Spec.Connector != "postgres" {
 		t.Errorf("Spec.Connector = %q, want %q", s.Spec.Connector, "postgres")
 	}
+	if s.Spec.ConnectorVersion != "^1.0.0" {
+		t.Errorf("Spec.ConnectorVersion = %q, want %q", s.Spec.ConnectorVersion, "^1.0.0")
+	}
 	if s.Spec.Connection["host"] != "dp-postgres-postgresql.dp-local.svc.cluster.local" {
 		t.Errorf("Spec.Connection[host] = %v", s.Spec.Connection["host"])
 	}
@@ -72,6 +76,29 @@ spec:
 	}
 	if s2.Spec.Connector != s.Spec.Connector {
 		t.Errorf("round-trip Connector mismatch")
+	}
+	if s2.Spec.ConnectorVersion != s.Spec.ConnectorVersion {
+		t.Errorf("round-trip ConnectorVersion mismatch: %q vs %q", s2.Spec.ConnectorVersion, s.Spec.ConnectorVersion)
+	}
+}
+
+func TestStore_WithoutConnectorVersion(t *testing.T) {
+	// ConnectorVersion is optional — existing stores without it should still work.
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: legacy-store
+spec:
+  connector: postgres
+  connection:
+    host: localhost
+`
+	var s Store
+	if err := yaml.Unmarshal([]byte(input), &s); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if s.Spec.ConnectorVersion != "" {
+		t.Errorf("ConnectorVersion should be empty for legacy store, got %q", s.Spec.ConnectorVersion)
 	}
 }
 
@@ -100,6 +127,7 @@ metadata:
   name: lake-raw
 spec:
   connector: s3
+  connectorVersion: ">=1.0.0"
   connection:
     bucket: cdpp-raw
     region: us-east-1
@@ -114,6 +142,9 @@ spec:
 	}
 	if s.Spec.Connector != "s3" {
 		t.Errorf("Spec.Connector = %q, want %q", s.Spec.Connector, "s3")
+	}
+	if s.Spec.ConnectorVersion != ">=1.0.0" {
+		t.Errorf("Spec.ConnectorVersion = %q, want %q", s.Spec.ConnectorVersion, ">=1.0.0")
 	}
 	if s.Spec.Connection["bucket"] != "cdpp-raw" {
 		t.Errorf("Spec.Connection[bucket] = %v", s.Spec.Connection["bucket"])

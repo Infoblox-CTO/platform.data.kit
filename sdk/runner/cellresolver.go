@@ -109,9 +109,10 @@ type storeResource struct {
 		Namespace string `json:"namespace"`
 	} `json:"metadata"`
 	Spec struct {
-		Connector  string            `json:"connector"`
-		Connection map[string]any    `json:"connection,omitempty"`
-		Secrets    map[string]string `json:"secrets,omitempty"`
+		Connector        string            `json:"connector"`
+		ConnectorVersion string            `json:"connectorVersion,omitempty"`
+		Connection       map[string]any    `json:"connection,omitempty"`
+		Secrets          map[string]string `json:"secrets,omitempty"`
 	} `json:"spec"`
 }
 
@@ -158,9 +159,10 @@ func convertStoreResource(res *storeResource) *contracts.Store {
 			Namespace: res.Metadata.Namespace,
 		},
 		Spec: contracts.StoreSpec{
-			Connector:  res.Spec.Connector,
-			Connection: conn,
-			Secrets:    res.Spec.Secrets,
+			Connector:        res.Spec.Connector,
+			ConnectorVersion: res.Spec.ConnectorVersion,
+			Connection:       conn,
+			Secrets:          res.Spec.Secrets,
 		},
 	}
 }

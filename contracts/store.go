@@ -35,8 +35,15 @@ type StoreMetadata struct {
 
 // StoreSpec defines the connection details for a specific infrastructure instance.
 type StoreSpec struct {
-	// Connector is the name of the Connector this store is an instance of.
+	// Connector is the provider name of the Connector this store is an instance of.
+	// This references spec.provider on the Connector (e.g., "postgres", "s3"),
+	// NOT the CR metadata.name.
 	Connector string `json:"connector" yaml:"connector"`
+
+	// ConnectorVersion is an optional semver range constraining which connector
+	// versions this store is compatible with (e.g., "^1.0.0", ">=1.2.0 <2.0.0").
+	// When omitted, the highest available version of the named provider is used.
+	ConnectorVersion string `json:"connectorVersion,omitempty" yaml:"connectorVersion,omitempty"`
 
 	// Connection holds technology-specific connection parameters (host, port, bucket, etc.).
 	Connection map[string]any `json:"connection" yaml:"connection"`

@@ -127,7 +127,11 @@ func (v *ManifestValidator) validateCommonFields(errs *contracts.ValidationError
 	// Namespace, version, description requirements depend on kind.
 	switch v.kind {
 	case contracts.KindConnector:
-		// Connectors are cluster-scoped — no namespace, version, or description required.
+		// Connectors are cluster-scoped — no namespace required.
+		// Version is optional but must be valid SemVer if present.
+		if m.GetVersion() != "" && !isSemVerValid(m.GetVersion()) {
+			errs.AddError(contracts.ErrCodeInvalidSemVer, "spec.version", "spec.version must be valid SemVer")
+		}
 	case contracts.KindStore, contracts.KindAsset, contracts.KindAssetGroup:
 		// Namespace is optional for these kinds — skip enforcement.
 		if m.GetNamespace() != "" && !isIdentifierValid(m.GetNamespace()) {
@@ -168,6 +172,21 @@ func (v *ManifestValidator) validateConnector(errs *contracts.ValidationErrors) 
 			}
 		}
 	}
+
+	// Provider is optional — if set, validate it's DNS-safe.
+	if c.Spec.Provider != "" && !isIdentifierValid(c.Spec.Provider) {
+		errs.AddError(contracts.ErrCodeNameNotDNSSafe, "spec.provider", "spec.provider must be DNS-safe")
+	}
+
+	// Validate tool definitions.
+	for i, tool := range c.Spec.Tools {
+		if tool.Name == "" {
+			errs.AddError(ErrMissingRequired, fmt.Sprintf("spec.tools[%d].name", i), "tool name is required")
+		}
+		if tool.Type != "exec" && tool.Type != "config" {
+			errs.AddError(ErrInvalidFormat, fmt.Sprintf("spec.tools[%d].type", i), "tool type must be 'exec' or 'config'")
+		}
+	}
 }
 
 // validateStore validates Store-specific fields.
@@ -185,6 +204,15 @@ func (v *ManifestValidator) validateStore(errs *contracts.ValidationErrors) {
 	// E211: Connection must have at least one entry.
 	if len(s.Spec.Connection) == 0 {
 		errs.AddError(contracts.ErrCodeStoreConnectionRequired, "spec.connection", "spec.connection must have at least one entry")
+	}
+
+	// ConnectorVersion is optional — if set, validate it looks like a semver range.
+	if s.Spec.ConnectorVersion != "" {
+		// Basic sanity: must start with a digit, ^, ~, >=, <=, or =.
+		first := s.Spec.ConnectorVersion[0]
+		if !(first >= '0' && first <= '9') && first != '^' && first != '~' && first != '>' && first != '<' && first != '=' {
+			errs.AddError(ErrInvalidFormat, "spec.connectorVersion", "spec.connectorVersion must be a valid semver range (e.g., ^1.0.0, >=1.2.0)")
+		}
 	}
 
 	// E212: Validate secret interpolation syntax.
