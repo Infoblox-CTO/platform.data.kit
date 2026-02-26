@@ -302,11 +302,27 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 		// destination plugins apply these globally.
 		if len(di.assets) > 0 {
 			a := di.assets[0]
-			if a.Spec.Prefix != "" {
-				specMap["path"] = a.Spec.Prefix
-			}
 			if a.Spec.Format != "" {
 				specMap["format"] = a.Spec.Format
+			}
+			if a.Spec.Prefix != "" {
+				// CloudQuery file-based destinations (S3, GCS, file) expect
+				// "path" to be a complete key template. Build it from the
+				// asset prefix so the output lands in the right location.
+				prefix := strings.TrimRight(a.Spec.Prefix, "/")
+				format := "{{FORMAT}}"
+				if a.Spec.Format != "" {
+					format = a.Spec.Format
+				}
+				// When no_rotate is true the S3 plugin writes a single
+				// file per table and rejects {{UUID}} in the path.
+				noRotate, _ := specMap["no_rotate"].(bool)
+				if noRotate {
+					specMap["path"] = prefix + "/{{TABLE}}.{{FORMAT}}"
+				} else {
+					specMap["path"] = prefix + "/{{TABLE}}/{{UUID}}.{{FORMAT}}"
+				}
+				specMap["format"] = format
 			}
 		}
 

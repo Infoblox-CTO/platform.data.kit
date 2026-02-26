@@ -160,8 +160,8 @@ spec:
 	}
 
 	// Verify destination gets asset-level overrides.
-	if !strings.Contains(configStr, "users/") {
-		t.Error("config destination spec should contain asset prefix 'users/'")
+	if !strings.Contains(configStr, "users/{{TABLE}}/{{UUID}}.{{FORMAT}}") {
+		t.Errorf("config destination spec should contain CQ S3 path template built from prefix, got:\n%s", configStr)
 	}
 	if !strings.Contains(configStr, "parquet") {
 		t.Error("config destination spec should contain format parquet")
@@ -195,6 +195,119 @@ spec:
 	}
 	if dst.Port != 7778 {
 		t.Errorf("plugin[1].Port = %d, want 7778", dst.Port)
+	}
+}
+
+func TestGenerateCQConfig_NoRotate(t *testing.T) {
+	pkgDir := t.TempDir()
+
+	connDir := filepath.Join(pkgDir, "connector")
+	os.MkdirAll(connDir, 0755)
+	writeFile(t, filepath.Join(connDir, "s3.yaml"), `
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: s3
+spec:
+  type: s3
+  capabilities: [destination]
+  plugin:
+    destination: ghcr.io/cloudquery/cq-destination-s3:v1.0.0
+`)
+	writeFile(t, filepath.Join(connDir, "postgres.yaml"), `
+apiVersion: data.infoblox.com/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+spec:
+  type: postgres
+  capabilities: [source, destination]
+  plugin:
+    source: ghcr.io/cloudquery/cq-source-postgresql:v8.0.0
+    destination: ghcr.io/cloudquery/cq-destination-postgresql:v8.0.0
+`)
+
+	storeDir := filepath.Join(pkgDir, "store")
+	os.MkdirAll(storeDir, 0755)
+	writeFile(t, filepath.Join(storeDir, "warehouse.yaml"), `
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+spec:
+  connector: postgres
+  connection:
+    connection_string: "postgresql://user:pass@db:5432/mydb"
+`)
+	writeFile(t, filepath.Join(storeDir, "lake-raw.yaml"), `
+apiVersion: data.infoblox.com/v1alpha1
+kind: Store
+metadata:
+  name: lake-raw
+spec:
+  connector: s3
+  connection:
+    bucket: my-bucket
+    region: us-east-1
+    no_rotate: true
+`)
+
+	assetDir := filepath.Join(pkgDir, "asset")
+	os.MkdirAll(assetDir, 0755)
+	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+spec:
+  store: warehouse
+  table: public.users
+`)
+	writeFile(t, filepath.Join(assetDir, "users-parquet.yaml"), `
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users-parquet
+spec:
+  store: lake-raw
+  prefix: "data/"
+  format: parquet
+`)
+
+	transform := &contracts.Transform{
+		APIVersion: "data.infoblox.com/v1alpha1",
+		Kind:       "Transform",
+		Metadata: contracts.TransformMetadata{
+			Name:      "test-no-rotate",
+			Namespace: "data-team",
+			Version:   "1.0.0",
+		},
+		Spec: contracts.TransformSpec{
+			Runtime: contracts.RuntimeCloudQuery,
+			Mode:    "batch",
+			Inputs: []contracts.AssetRef{
+				{Asset: "users"},
+			},
+			Outputs: []contracts.AssetRef{
+				{Asset: "users-parquet"},
+			},
+		},
+	}
+
+	configData, _, err := generateCQConfig(transform, pkgDir)
+	if err != nil {
+		t.Fatalf("generateCQConfig() error: %v", err)
+	}
+
+	configStr := string(configData)
+
+	// When no_rotate is true, path must NOT contain {{UUID}}.
+	if strings.Contains(configStr, "{{UUID}}") {
+		t.Errorf("config path should not contain {{UUID}} when no_rotate is true, got:\n%s", configStr)
+	}
+	// Path should still contain table and format placeholders.
+	if !strings.Contains(configStr, "data/{{TABLE}}.{{FORMAT}}") {
+		t.Errorf("config path should be prefix/{{TABLE}}.{{FORMAT}} when no_rotate is true, got:\n%s", configStr)
 	}
 }
 
