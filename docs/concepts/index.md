@@ -67,6 +67,13 @@ Development, integration, and production workflows.
 [Environment Workflow →](environments.md)
 </div>
 
+<div class="card" markdown>
+### :diamond_shape_with_a_dot_inside: Cells & Stores
+Infrastructure contexts that separate what runs from where it runs.
+
+[Learn about Cells →](cells.md)
+</div>
+
 </div>
 
 ## Learning Path
@@ -81,6 +88,7 @@ We recommend reading the concepts in this order:
 6. **[Lineage](lineage.md)** - Track data flow
 7. **[Governance](governance.md)** - Classify and protect data
 8. **[Environments](environments.md)** - Deploy across stages
+9. **[Cells & Stores](cells.md)** - Understand the Package × Cell model
 
 ## Key Principles
 

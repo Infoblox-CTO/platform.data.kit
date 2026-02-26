@@ -77,7 +77,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Building package: %s\n\n", packageDir)
 
 	// Step 1: Validate manifests
-	fmt.Println("Step 1/3: Validating manifests...")
+	fmt.Println("Step 1/4: Validating manifests...")
 	ctx := context.Background()
 	result := validate.ValidatePackage(ctx, absDir)
 
@@ -107,7 +107,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Step 2: Gather git info
-	fmt.Println("\nStep 2/3: Gathering build info...")
+	fmt.Println("\nStep 2/4: Gathering build info...")
 	gitInfo := getGitInfo(absDir)
 	fmt.Printf("  Git commit: %s\n", gitInfo.commit)
 	fmt.Printf("  Git branch: %s\n", gitInfo.branch)
@@ -115,8 +115,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Git tag: %s\n", gitInfo.tag)
 	}
 
-	// Step 3: Bundle artifact
-	fmt.Println("\nStep 3/3: Creating artifact bundle...")
+	// Step 3: Bundle OCI artifact
+	fmt.Println("\nStep 3/4: Creating OCI artifact bundle...")
 	bundler := registry.NewBundler(Version)
 
 	artifact, err := bundler.Bundle(registry.BundleOptions{
@@ -144,6 +144,20 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		version = "latest"
 	}
 
+	// Step 4: Generate Helm chart
+	fmt.Println("\nStep 4/4: Generating Helm chart...")
+	chartResult, chartErr := registry.GenerateHelmChart(registry.HelmChartOptions{
+		PackageDir: absDir,
+		GitCommit:  gitInfo.commit,
+		GitBranch:  gitInfo.branch,
+		GitTag:     gitInfo.tag,
+		Version:    version,
+	})
+	if chartErr != nil {
+		return fmt.Errorf("failed to generate Helm chart: %w", chartErr)
+	}
+	fmt.Printf("✓ Helm chart: %s (%s)\n", chartResult.ChartPath, formatSize(chartResult.Size))
+
 	fmt.Printf("\n✓ Build complete!\n")
 	fmt.Printf("\nArtifact Info:\n")
 	fmt.Printf("  Name:      %s\n", m.GetName())
@@ -151,7 +165,9 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Version:   %s\n", version)
 	fmt.Printf("  Kind:      %s\n", kind)
 	fmt.Printf("  Layers:    %d\n", len(artifact.Layers))
-	fmt.Printf("  Size:      %s\n", formatSize(totalSize))
+	fmt.Printf("  OCI Size:  %s\n", formatSize(totalSize))
+	fmt.Printf("  Chart:     %s\n", chartResult.ChartPath)
+	fmt.Printf("  Chart Ver: %s\n", chartResult.ChartVersion)
 
 	if buildPush {
 		fmt.Println("\nPushing to registry...")
@@ -160,7 +176,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  dp publish              # Push to OCI registry\n")
+	fmt.Printf("  dp publish              # Push Helm chart to OCI registry\n")
 	fmt.Printf("  dp promote %s %s --to dev  # Promote to dev environment\n",
 		m.GetName(), version)
 

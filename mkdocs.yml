@@ -118,6 +118,7 @@ nav:
     - Lineage: concepts/lineage.md
     - Governance: concepts/governance.md
     - Environments: concepts/environments.md
+    - Cells & Stores: concepts/cells.md
   - Tutorials:
     - tutorials/index.md
     - Kafka to S3: tutorials/kafka-to-s3.md
@@ -125,6 +126,7 @@ nav:
     - Promoting Packages: tutorials/promoting-packages.md
     - CloudQuery Python Plugin: tutorials/cloudquery-python.md
     - CloudQuery Go Plugin: tutorials/cloudquery-go.md
+    - Deploying to Cells: tutorials/deploying-to-cells.md
   - Reference:
     - reference/index.md
     - CLI Commands: reference/cli.md

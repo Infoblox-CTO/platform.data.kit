@@ -79,6 +79,12 @@ type TransformSpec struct {
 type AssetRef struct {
 	// Asset is the name of the Asset manifest (local name or OCI ref).
 	Asset string `json:"asset" yaml:"asset"`
+
+	// Cell optionally qualifies which cell's Stores to resolve for this Asset.
+	// When empty, the deployment cell (or package store/ fallback) is used.
+	// When set, the Store is resolved from the named cell's namespace.
+	// This enables cross-cell transforms (fan-out, fan-in, routing).
+	Cell string `json:"cell,omitempty" yaml:"cell,omitempty"`
 }
 
 // --- Manifest interface implementation for Transform ---

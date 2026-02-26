@@ -10,6 +10,11 @@ type PackageDeploymentSpec struct {
 	// Package contains the package reference information.
 	Package PackageRef `json:"package"`
 
+	// Cell is the name of the Cell this package is deployed into.
+	// The controller resolves Stores from the cell's namespace.
+	// +optional
+	Cell string `json:"cell,omitempty"`
+
 	// Mode specifies the execution mode: batch or streaming.
 	// +kubebuilder:validation:Enum=batch;streaming
 	// +kubebuilder:default=batch

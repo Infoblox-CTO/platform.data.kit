@@ -30,6 +30,8 @@ type RunOptions struct {
 	Output         io.Writer
 	LineageEmitter lineage.Emitter // Optional lineage emitter for tracking
 	Mode           contracts.Mode  // Pipeline execution mode (batch/streaming)
+	Cell           string          // Cell name for store resolution (empty = use package store/)
+	KubeContext    string          // kubectl context for multi-cluster cell resolution
 }
 
 // RunResult contains the result of a pipeline run.

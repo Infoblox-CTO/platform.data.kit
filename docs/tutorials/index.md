@@ -56,6 +56,15 @@ Build a Go CloudQuery source plugin with tables and resolvers.
 [Start Tutorial →](cloudquery-go.md)
 </div>
 
+<div class="card" markdown>
+### :diamond_shape_with_a_dot_inside: Deploying to Cells
+Build a package and deploy it across multiple cells using Helm and GitOps.
+
+**Time**: ~30 minutes
+
+[Start Tutorial →](deploying-to-cells.md)
+</div>
+
 </div>
 
 ## Prerequisites

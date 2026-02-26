@@ -33,6 +33,9 @@ These flags apply to all commands:
 | [`dp build`](#dp-build) | Build OCI artifact |
 | [`dp publish`](#dp-publish) | Publish to registry |
 | [`dp promote`](#dp-promote) | Promote to environment |
+| [`dp cell list`](#dp-cell-list) | List cells in the cluster |
+| [`dp cell show`](#dp-cell-show) | Show cell details |
+| [`dp cell stores`](#dp-cell-stores) | List stores in a cell |
 | [`dp status`](#dp-status) | Show package status |
 | [`dp logs`](#dp-logs) | Stream logs |
 | [`dp rollback`](#dp-rollback) | Rollback to previous version |
@@ -437,6 +440,8 @@ dp run [package-dir] [flags]
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
+| `--cell` | - | Cell name for store resolution (overrides `store/` directory) | - |
+| `--context` | - | kubectl context for multi-cluster cell access | current context |
 | `--network` | - | Docker network | dp-network |
 | `--env` | - | Environment variables (KEY=VALUE) | - |
 | `--dry-run` | - | Print what would run | false |
@@ -511,6 +516,16 @@ dp run ./my-pipeline -f production.yaml --set spec.runtime.timeout=1h
 ```bash
 # With environment variables
 dp run ./my-pipeline --env API_KEY=secret --env DEBUG=true
+```
+
+```bash
+# Run against a cell (stores resolved from cell, not store/ dir)
+dp run --cell canary
+```
+
+```bash
+# Run against a cell in a specific cluster
+dp run --cell us-east --context arn:aws:eks:us-east-1:...:dp-prod
 ```
 
 ```bash
@@ -781,6 +796,107 @@ Pre-flight Checks:
   ✓ Passed lint validation
 
 Created PR: https://github.com/org/deploys/pull/123
+```
+
+---
+
+## dp cell
+
+Manage and inspect cells in the cluster.
+
+### dp cell list
+
+List all cells in the current cluster.
+
+```bash
+dp cell list [flags]
+```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--context` | kubectl context to use | current context |
+
+#### Example
+
+```bash
+dp cell list
+```
+
+```
+NAME      NAMESPACE    READY   STORES   PACKAGES   LABELS
+local     dp-local     true    2        3          tier=local
+canary    dp-canary    true    2        1          tier=canary,region=us-east-1
+stable    dp-stable    true    2        5          tier=production,region=us-east-1
+```
+
+```bash
+# List cells in a different cluster
+dp cell list --context arn:aws:eks:us-east-1:...:cluster/dp-prod
+```
+
+### dp cell show
+
+Show details of a specific cell.
+
+```bash
+dp cell show <cell-name> [flags]
+```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--context` | kubectl context to use | current context |
+
+#### Example
+
+```bash
+dp cell show canary
+```
+
+```
+Cell: canary
+  Namespace:  dp-canary
+  Ready:      true
+  Stores:     2
+  Packages:   1
+  Labels:
+    tier=canary
+    region=us-east-1
+
+Stores:
+  NAME           CONNECTOR   READY
+  source-db      postgres    true
+  dest-bucket    s3          true
+```
+
+### dp cell stores
+
+List stores in a specific cell.
+
+```bash
+dp cell stores <cell-name> [flags]
+```
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--context` | kubectl context to use | current context |
+
+#### Example
+
+```bash
+dp cell stores canary
+```
+
+```
+NAME           CONNECTOR   READY   AGE
+source-db      postgres    true    2d
+dest-bucket    s3          true    2d
+warehouse      postgres    true    5h
 ```
 
 ---

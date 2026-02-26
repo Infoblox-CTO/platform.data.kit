@@ -18,14 +18,16 @@ import (
 )
 
 var (
-	runEnv        []string
-	runNetwork    string
-	runTimeout    time.Duration
-	runDryRun     bool
-	runDetach     bool
-	runAttach     bool     // Explicitly attach to logs (for streaming)
-	runSet        []string // --set flags for inline overrides
-	runValueFiles []string // -f flags for override files
+	runEnv         []string
+	runNetwork     string
+	runTimeout     time.Duration
+	runDryRun      bool
+	runDetach      bool
+	runAttach      bool     // Explicitly attach to logs (for streaming)
+	runSet         []string // --set flags for inline overrides
+	runValueFiles  []string // -f flags for override files
+	runCell        string   // --cell flag: resolve stores from this cell
+	runKubeContext string   // --context flag: kubectl context for multi-cluster
 )
 
 // runCmd executes a pipeline locally
@@ -75,7 +77,13 @@ Examples:
   dp run --dry-run
 
   # Run in background
-  dp run --detach`,
+  dp run --detach
+
+  # Run with stores resolved from a cell
+  dp run --cell canary
+
+  # Run against a cell in a specific kubectl context
+  dp run --cell us-east --context arn:aws:eks:us-east-1:...:cluster/dp-prod`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipeline,
 }
@@ -91,6 +99,8 @@ func init() {
 	runCmd.Flags().BoolVar(&runAttach, "attach", true, "Attach to container logs (default for streaming)")
 	runCmd.Flags().StringArrayVar(&runSet, "set", []string{}, "Override values (key=value, can be repeated)")
 	runCmd.Flags().StringArrayVarP(&runValueFiles, "values", "f", []string{}, "Override files (can be repeated)")
+	runCmd.Flags().StringVar(&runCell, "cell", "", "Cell name for store resolution (e.g., canary, stable)")
+	runCmd.Flags().StringVar(&runKubeContext, "context", "", "kubectl context for multi-cluster cell resolution")
 }
 
 func runPipeline(cmd *cobra.Command, args []string) error {
@@ -166,17 +176,22 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 
 	// Build run options
 	opts := runner.RunOptions{
-		PackageDir: absDir,
-		Env:        env,
-		Network:    network,
-		Timeout:    runTimeout,
-		DryRun:     runDryRun,
-		Detach:     runDetach,
-		Output:     os.Stdout,
+		PackageDir:  absDir,
+		Env:         env,
+		Network:     network,
+		Timeout:     runTimeout,
+		DryRun:      runDryRun,
+		Detach:      runDetach,
+		Output:      os.Stdout,
+		Cell:        runCell,
+		KubeContext: runKubeContext,
 	}
 
 	fmt.Printf("Running pipeline from: %s\n", packageDir)
 	fmt.Printf("Pipeline mode: %s\n", pipelineMode)
+	if runCell != "" {
+		fmt.Printf("Cell: %s (stores from dp-%s namespace)\n", runCell, runCell)
+	}
 
 	if runDryRun {
 		fmt.Println("Dry run mode - will validate and build only")

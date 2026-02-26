@@ -290,7 +290,16 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 
 	// Auto-generate CloudQuery config.yaml from the manifest graph:
 	// Transform → Asset → Store → Connector.
-	configData, plugins, err := generateCQConfig(t, opts.PackageDir)
+	// When a cell is specified, stores are resolved from k8s instead of store/.
+	var cellResolver *CellResolver
+	if opts.Cell != "" {
+		kubeCtx := opts.KubeContext
+		cellResolver = NewCellResolver(opts.Cell, kubeCtx, opts.Output)
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Resolving stores from cell %q (namespace: %s)\n", opts.Cell, cellResolver.cellNamespace())
+		}
+	}
+	configData, plugins, err := generateCQConfigWithCell(t, opts.PackageDir, cellResolver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CloudQuery config: %w", err)
 	}

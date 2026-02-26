@@ -1,0 +1,89 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: stores.dp.io
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+spec:
+  group: dp.io
+  names:
+    kind: Store
+    listKind: StoreList
+    plural: stores
+    singular: store
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Connector
+          type: string
+          jsonPath: .spec.connector
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - connector
+              properties:
+                connector:
+                  type: string
+                  description: Name of the Connector type (e.g., "postgres", "s3")
+                connection:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Non-secret connection parameters
+                secrets:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Secret-bearing connection parameters (${VAR} interpolation from k8s Secrets)
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: Whether the store's connection has been verified
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                      - lastTransitionTime
+                      - reason
+                      - message
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum: ["True", "False", "Unknown"]
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string

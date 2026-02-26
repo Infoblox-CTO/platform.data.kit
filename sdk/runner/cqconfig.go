@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -110,13 +111,54 @@ type cqConfigSpec struct {
 // and produces CloudQuery config.yaml bytes plus the list of plugins that
 // need to run as sidecar containers.
 //
+// When cellResolver is non-nil, Stores are resolved from the cell's k8s
+// namespace instead of the package's local store/ directory. Connectors and
+// Assets always come from the package.
+//
 // The generated config uses `registry: docker` with OCI image paths from
 // the Connector's Plugin field. The caller (runCloudQuery) rewrites these
 // to `registry: grpc` / `localhost:<port>` before deploying.
 func generateCQConfig(t *contracts.Transform, packageDir string) ([]byte, []cqPlugin, error) {
+	return generateCQConfigWithCell(t, packageDir, nil)
+}
+
+// generateCQConfigWithCell is the cell-aware variant of generateCQConfig.
+func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellResolver *CellResolver) ([]byte, []cqPlugin, error) {
 	pm, err := loadPackageManifests(packageDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading package manifests: %w", err)
+	}
+
+	// resolveStore looks up a Store by name.
+	// When cellResolver is set, fetch from the cell's k8s namespace.
+	// Otherwise use the package-local store/ directory.
+	resolveStore := func(storeName string, assetRef contracts.AssetRef) (*contracts.Store, error) {
+		// If the asset ref has a cell override, resolve from that cell.
+		if assetRef.Cell != "" {
+			cr := NewCellResolver(assetRef.Cell, "", nil)
+			if cellResolver != nil && cellResolver.KubeContext != "" {
+				cr.KubeContext = cellResolver.KubeContext
+			}
+			s, err := cr.ResolveStore(context.Background(), storeName)
+			if err != nil {
+				return nil, fmt.Errorf("resolving store %q from cell %q: %w", storeName, assetRef.Cell, err)
+			}
+			return s, nil
+		}
+		// If a cell resolver is provided (dp run --cell), use the deployment cell.
+		if cellResolver != nil {
+			s, err := cellResolver.ResolveStore(context.Background(), storeName)
+			if err != nil {
+				return nil, fmt.Errorf("resolving store %q from cell %q: %w", storeName, cellResolver.CellName, err)
+			}
+			return s, nil
+		}
+		// Fallback: package-local store/ directory.
+		s, ok := pm.Stores[storeName]
+		if !ok {
+			return nil, fmt.Errorf("store %q not found in store/ directory", storeName)
+		}
+		return s, nil
 	}
 
 	// Resolve input chain: Asset → Store → Connector.
@@ -138,9 +180,9 @@ func generateCQConfig(t *contracts.Transform, packageDir string) ([]byte, []cqPl
 		if !ok {
 			return nil, nil, fmt.Errorf("input asset %q not found in asset/ directory", ref.Asset)
 		}
-		store, ok := pm.Stores[asset.Spec.Store]
-		if !ok {
-			return nil, nil, fmt.Errorf("store %q (referenced by asset %q) not found in store/ directory", asset.Spec.Store, ref.Asset)
+		store, err := resolveStore(asset.Spec.Store, ref)
+		if err != nil {
+			return nil, nil, fmt.Errorf("input asset %q: %w", ref.Asset, err)
 		}
 		conn, ok := pm.Connectors[store.Spec.Connector]
 		if !ok {
@@ -191,9 +233,9 @@ func generateCQConfig(t *contracts.Transform, packageDir string) ([]byte, []cqPl
 		if !ok {
 			return nil, nil, fmt.Errorf("output asset %q not found in asset/ directory", ref.Asset)
 		}
-		store, ok := pm.Stores[asset.Spec.Store]
-		if !ok {
-			return nil, nil, fmt.Errorf("store %q (referenced by asset %q) not found in store/ directory", asset.Spec.Store, ref.Asset)
+		store, err := resolveStore(asset.Spec.Store, ref)
+		if err != nil {
+			return nil, nil, fmt.Errorf("output asset %q: %w", ref.Asset, err)
 		}
 		conn, ok := pm.Connectors[store.Spec.Connector]
 		if !ok {

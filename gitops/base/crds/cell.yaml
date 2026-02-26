@@ -1,0 +1,98 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: cells.dp.io
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+spec:
+  group: dp.io
+  names:
+    kind: Cell
+    listKind: CellList
+    plural: cells
+    singular: cell
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Namespace
+          type: string
+          jsonPath: .spec.namespace
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Stores
+          type: integer
+          jsonPath: .status.storeCount
+        - name: Packages
+          type: integer
+          jsonPath: .status.packageCount
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - namespace
+              properties:
+                namespace:
+                  type: string
+                  description: Kubernetes namespace for this cell's workloads and Stores
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Key-value metadata for cell selection and filtering
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: Whether the cell's namespace and stores are initialised
+                storeCount:
+                  type: integer
+                  format: int32
+                  description: Number of Store CRs in the cell's namespace
+                packageCount:
+                  type: integer
+                  format: int32
+                  description: Number of PackageDeployments targeting this cell
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                      - lastTransitionTime
+                      - reason
+                      - message
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum: ["True", "False", "Unknown"]
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string

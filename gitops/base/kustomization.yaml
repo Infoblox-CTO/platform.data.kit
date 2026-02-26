@@ -3,6 +3,8 @@ kind: Kustomization
 
 # Base resources for all environments
 resources:
+  - crds/cell.yaml
+  - crds/store.yaml
   - crds/packagedeployment.yaml
 
 # Common labels applied to all resources
