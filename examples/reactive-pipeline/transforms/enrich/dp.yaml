@@ -1,0 +1,18 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: enrich
+  version: 0.1.0
+  labels:
+    team: data-platform
+spec:
+  runtime: generic-python
+  mode: batch
+  inputs:
+    - asset: raw-events-parquet
+  outputs:
+    - asset: enriched-events
+  image: my-team/enrich-events:latest
+  trigger:
+    policy: on-change
+  timeout: 30m

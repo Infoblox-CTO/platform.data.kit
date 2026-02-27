@@ -48,8 +48,6 @@ metadata:
 spec:
   runtime: generic-python
   mode: batch
-  description: "A generic-python model package"
-  owner: default-team
   image: "${REGISTRY}/my-first-pipeline:${VERSION}"
 
   inputs:
@@ -57,9 +55,6 @@ spec:
 
   outputs:
     - asset: my-first-pipeline-output
-      classification:
-        pii: false
-        sensitivity: internal
 
   resources:
     cpu: "1"

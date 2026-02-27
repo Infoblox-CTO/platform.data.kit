@@ -29,6 +29,11 @@
           "type": "string",
           "description": "Team namespace"
         },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+          "description": "Semantic version of the data contract (e.g., 1.2.0)"
+        },
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" },

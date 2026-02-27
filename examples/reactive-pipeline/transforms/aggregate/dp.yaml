@@ -1,0 +1,20 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: aggregate
+  version: 0.1.0
+  labels:
+    team: data-platform
+spec:
+  runtime: dbt
+  mode: batch
+  inputs:
+    - asset: enriched-events
+  outputs:
+    - asset: event-summary
+  image: my-team/dbt-analytics:latest
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"
+  timeout: 1h

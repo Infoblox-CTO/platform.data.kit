@@ -321,3 +321,223 @@ func TestAssetRef_YAML_CellOmitted(t *testing.T) {
 		t.Errorf("Expected cell to be omitted from YAML, got: %s", string(data))
 	}
 }
+
+func TestAssetRef_YAML_WithTags(t *testing.T) {
+	input := `
+tags:
+  domain: identity
+  tier: raw
+version: ">=1.0.0 <2.0.0"`
+	var ref AssetRef
+	if err := yaml.Unmarshal([]byte(input), &ref); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if ref.Asset != "" {
+		t.Errorf("Asset = %q, want empty (tag-based ref)", ref.Asset)
+	}
+	if len(ref.Tags) != 2 {
+		t.Fatalf("Tags len = %d, want 2", len(ref.Tags))
+	}
+	if ref.Tags["domain"] != "identity" {
+		t.Errorf("Tags[domain] = %q", ref.Tags["domain"])
+	}
+	if ref.Tags["tier"] != "raw" {
+		t.Errorf("Tags[tier] = %q", ref.Tags["tier"])
+	}
+	if ref.Version != ">=1.0.0 <2.0.0" {
+		t.Errorf("Version = %q", ref.Version)
+	}
+}
+
+func TestAssetRef_YAML_TagsOmitted(t *testing.T) {
+	ref := AssetRef{Asset: "users"}
+	data, err := yaml.Marshal(&ref)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	if strings.Contains(string(data), "tags") {
+		t.Errorf("Expected tags to be omitted from YAML, got: %s", string(data))
+	}
+	if strings.Contains(string(data), "version") {
+		t.Errorf("Expected version to be omitted from YAML, got: %s", string(data))
+	}
+}
+
+func TestTransform_TriggerOnChange(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: enrich
+  version: 0.1.0
+spec:
+  runtime: generic-python
+  mode: batch
+  inputs:
+    - asset: raw-events-parquet
+  outputs:
+    - asset: enriched-events
+  image: my-team/enrich:latest
+  trigger:
+    policy: on-change
+`
+
+	var tr Transform
+	if err := yaml.Unmarshal([]byte(input), &tr); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	if tr.Spec.Trigger == nil {
+		t.Fatal("Spec.Trigger is nil")
+	}
+	if tr.Spec.Trigger.Policy != TriggerPolicyOnChange {
+		t.Errorf("Trigger.Policy = %q, want %q", tr.Spec.Trigger.Policy, TriggerPolicyOnChange)
+	}
+	// Schedule should be nil for on-change.
+	if tr.Spec.Trigger.Schedule != nil {
+		t.Errorf("Trigger.Schedule should be nil for on-change")
+	}
+}
+
+func TestTransform_TriggerSchedule(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: aggregate
+  version: 0.1.0
+spec:
+  runtime: dbt
+  mode: batch
+  inputs:
+    - asset: enriched-events
+  outputs:
+    - asset: event-summary
+  image: my-team/dbt:latest
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"
+      timezone: UTC
+`
+
+	var tr Transform
+	if err := yaml.Unmarshal([]byte(input), &tr); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	if tr.Spec.Trigger == nil {
+		t.Fatal("Spec.Trigger is nil")
+	}
+	if tr.Spec.Trigger.Policy != TriggerPolicySchedule {
+		t.Errorf("Trigger.Policy = %q, want %q", tr.Spec.Trigger.Policy, TriggerPolicySchedule)
+	}
+	if tr.Spec.Trigger.Schedule == nil {
+		t.Fatal("Trigger.Schedule is nil")
+	}
+	if tr.Spec.Trigger.Schedule.Cron != "0 */6 * * *" {
+		t.Errorf("Trigger.Schedule.Cron = %q", tr.Spec.Trigger.Schedule.Cron)
+	}
+	if tr.Spec.Trigger.Schedule.Timezone != "UTC" {
+		t.Errorf("Trigger.Schedule.Timezone = %q", tr.Spec.Trigger.Schedule.Timezone)
+	}
+}
+
+func TestTransform_TriggerComposite(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: hybrid
+spec:
+  runtime: generic-go
+  inputs:
+    - asset: source
+  outputs:
+    - asset: dest
+  image: my-team/hybrid:latest
+  trigger:
+    policy: composite
+    schedule:
+      cron: "0 0 * * *"
+    policies:
+      - on-change
+      - schedule
+`
+
+	var tr Transform
+	if err := yaml.Unmarshal([]byte(input), &tr); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	if tr.Spec.Trigger.Policy != TriggerPolicyComposite {
+		t.Errorf("Trigger.Policy = %q, want %q", tr.Spec.Trigger.Policy, TriggerPolicyComposite)
+	}
+	if len(tr.Spec.Trigger.Policies) != 2 {
+		t.Fatalf("Trigger.Policies len = %d, want 2", len(tr.Spec.Trigger.Policies))
+	}
+	if tr.Spec.Trigger.Policies[0] != TriggerPolicyOnChange {
+		t.Errorf("Trigger.Policies[0] = %q", tr.Spec.Trigger.Policies[0])
+	}
+	if tr.Spec.Trigger.Policies[1] != TriggerPolicySchedule {
+		t.Errorf("Trigger.Policies[1] = %q", tr.Spec.Trigger.Policies[1])
+	}
+}
+
+func TestTriggerPolicy_IsValid(t *testing.T) {
+	tests := []struct {
+		policy TriggerPolicy
+		want   bool
+	}{
+		{TriggerPolicySchedule, true},
+		{TriggerPolicyOnChange, true},
+		{TriggerPolicyManual, true},
+		{TriggerPolicyComposite, true},
+		{TriggerPolicy("invalid"), false},
+		{TriggerPolicy(""), false},
+	}
+	for _, tt := range tests {
+		if got := tt.policy.IsValid(); got != tt.want {
+			t.Errorf("TriggerPolicy(%q).IsValid() = %v, want %v", tt.policy, got, tt.want)
+		}
+	}
+}
+
+func TestTransform_TagBasedInputs(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: loose-coupled
+spec:
+  runtime: generic-go
+  inputs:
+    - tags:
+        domain: identity
+        tier: raw
+      version: ">=1.0.0"
+  outputs:
+    - asset: processed-data
+  image: my-team/processor:latest
+`
+
+	var tr Transform
+	if err := yaml.Unmarshal([]byte(input), &tr); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	if len(tr.Spec.Inputs) != 1 {
+		t.Fatalf("Inputs len = %d, want 1", len(tr.Spec.Inputs))
+	}
+	in := tr.Spec.Inputs[0]
+	if in.Asset != "" {
+		t.Errorf("Input Asset = %q, want empty", in.Asset)
+	}
+	if len(in.Tags) != 2 {
+		t.Fatalf("Input Tags len = %d, want 2", len(in.Tags))
+	}
+	if in.Version != ">=1.0.0" {
+		t.Errorf("Input Version = %q", in.Version)
+	}
+
+	// Output is still name-based.
+	if tr.Spec.Outputs[0].Asset != "processed-data" {
+		t.Errorf("Output Asset = %q", tr.Spec.Outputs[0].Asset)
+	}
+}

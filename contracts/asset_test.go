@@ -161,6 +161,57 @@ func TestAssetManifest_ManifestInterface(t *testing.T) {
 	}
 }
 
+func TestAssetManifest_Version(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  version: "1.2.0"
+  labels:
+    domain: identity
+    tier: raw
+spec:
+  store: warehouse
+  table: public.users
+`
+
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if a.Metadata.Version != "1.2.0" {
+		t.Errorf("Metadata.Version = %q, want %q", a.Metadata.Version, "1.2.0")
+	}
+	if a.GetVersion() != "1.2.0" {
+		t.Errorf("GetVersion() = %q, want %q", a.GetVersion(), "1.2.0")
+	}
+	if a.Metadata.Labels["domain"] != "identity" {
+		t.Errorf("Labels[domain] = %q", a.Metadata.Labels["domain"])
+	}
+
+	// Round-trip.
+	out, err := yaml.Marshal(&a)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	var a2 AssetManifest
+	if err := yaml.Unmarshal(out, &a2); err != nil {
+		t.Fatalf("Round-trip unmarshal failed: %v", err)
+	}
+	if a2.Metadata.Version != "1.2.0" {
+		t.Errorf("Round-trip Version = %q", a2.Metadata.Version)
+	}
+}
+
+func TestAssetManifest_VersionEmpty(t *testing.T) {
+	a := &AssetManifest{
+		Metadata: AssetMetadata{Name: "no-version"},
+	}
+	if a.GetVersion() != "" {
+		t.Errorf("GetVersion() = %q, want empty", a.GetVersion())
+	}
+}
+
 func TestAssetGroupManifest_YAML(t *testing.T) {
 	input := `apiVersion: data.infoblox.com/v1alpha1
 kind: AssetGroup

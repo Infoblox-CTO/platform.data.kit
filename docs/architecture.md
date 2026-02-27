@@ -114,7 +114,10 @@ type Transform struct {
 
 // AssetRef is a reference to a named Asset.
 type AssetRef struct {
-    Asset string   // Asset name (local or OCI ref)
+    Asset   string            // Asset name (mutually exclusive with Tags)
+    Tags    map[string]string // Match assets by labels
+    Version string            // Semver range constraint
+    Cell    string            // Cell qualifier
 }
 
 // AssetManifest represents a data contract in a Store.

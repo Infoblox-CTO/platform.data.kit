@@ -108,7 +108,10 @@ timezone: America/New_York
 			defer os.Chdir(origDir)
 
 			// Reset flags
-			pipelineShowOutput = "table"
+			pipelineShowOutput = ""
+			pipelineShowAll = false
+			pipelineShowDestination = ""
+			pipelineShowScanDirs = nil
 
 			buf := new(bytes.Buffer)
 			cmd := rootCmd
@@ -157,8 +160,8 @@ func TestPipelineShowFlags(t *testing.T) {
 	if outputFlag.Shorthand != "o" {
 		t.Errorf("output shorthand = %q, want %q", outputFlag.Shorthand, "o")
 	}
-	if outputFlag.DefValue != "table" {
-		t.Errorf("output default = %q, want %q", outputFlag.DefValue, "table")
+	if outputFlag.DefValue != "" {
+		t.Errorf("output default = %q, want %q", outputFlag.DefValue, "")
 	}
 }
 

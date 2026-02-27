@@ -45,10 +45,18 @@ spec:                               # Required: Transform specification
   mode: string                      # Optional: batch | streaming (default: batch)
 
   inputs:                           # Required: Input Asset references
-    - asset: string                 # Required: Asset name (local or OCI ref)
+    - asset: string                 # Asset name (local or OCI ref)
+      tags:                         # OR match assets by labels
+        key: value
+      version: string               # Optional: Semver range constraint
+      cell: string                  # Optional: Cell/region constraint
 
   outputs:                          # Required: Output Asset references
-    - asset: string                 # Required: Asset name (local or OCI ref)
+    - asset: string                 # Asset name (local or OCI ref)
+      tags:                         # OR match assets by labels
+        key: value
+      version: string               # Optional: Semver range constraint
+      cell: string                  # Optional: Cell/region constraint
 
   image: string                     # Required for generic-go/generic-python/dbt runtimes
   command: [string]                 # Optional: Override container entrypoint
@@ -62,7 +70,15 @@ spec:                               # Required: Transform specification
           name: string
           key: string
 
-  schedule:                         # Optional: Cron scheduling (batch mode)
+  trigger:                          # Optional: Reactive trigger policy
+    policy: string                  # Required: schedule | on-change | manual | composite
+    schedule:                       # Required when policy=schedule
+      cron: string                  # 5-field cron expression
+      timezone: string              # IANA timezone (default: UTC)
+    policies:                       # Required when policy=composite
+      - string                      # e.g., ["schedule", "on-change"]
+
+  schedule:                         # Optional: Cron scheduling (shorthand for trigger.policy=schedule)
     cron: string                    # Cron expression (e.g., "0 */6 * * *")
     timezone: string                # IANA timezone (default: UTC)
 
@@ -131,11 +147,36 @@ spec:                               # Required: Transform specification
 
 | Property | Value |
 |----------|-------|
-| Type | array of `{ asset: string }` |
+| Type | array of AssetRef objects |
 | Required | Yes |
-| Description | Input/output Asset references. Each entry has an `asset` field naming an Asset manifest. |
+| Description | Input/output Asset references. Each entry uses either `asset` (named reference) or `tags` (label matching) — not both. |
+
+**AssetRef fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `asset` | string | Named Asset reference (local name or OCI ref) |
+| `tags` | map(string→string) | Match Assets by labels (alternative to `asset`) |
+| `version` | string | Semver range constraint (e.g., `>=1.0.0`) |
+| `cell` | string | Cell/region constraint |
 
 At runtime, the runner resolves the chain: **Transform → Asset → Store → Connector** to obtain connection details and plugin images.
+
+#### spec.trigger
+
+| Property | Value |
+|----------|-------|
+| Type | object |
+| Required | No |
+| Description | Reactive trigger policy. Replaces or extends `spec.schedule`. |
+
+**Trigger fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `policy` | string (required) | `schedule`, `on-change`, `manual`, or `composite` |
+| `schedule` | object | Required when policy=schedule. Has `cron` and `timezone` fields. |
+| `policies` | array of strings | Required when policy=composite. Sub-policies to combine. |
 
 #### spec.image
 
@@ -273,6 +314,49 @@ spec:
     heartbeatInterval: 30s
 ```
 
+#### Reactive Transform with Trigger
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: enrich
+  version: 0.3.0
+spec:
+  runtime: generic-python
+  inputs:
+    - asset: raw-events-parquet
+  outputs:
+    - asset: enriched-events
+  image: my-team/enrich:latest
+  trigger:
+    policy: on-change
+```
+
+#### Tag-based Input Resolution
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: aggregate-all
+  version: 1.0.0
+spec:
+  runtime: dbt
+  inputs:
+    - tags:
+        domain: analytics
+        tier: curated
+      version: ">=1.0.0"
+  outputs:
+    - asset: analytics-summary
+  image: my-team/dbt-runner:latest
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"
+```
+
 ---
 
 ## Asset Schema
@@ -290,6 +374,7 @@ kind: Asset                                     # Required: Resource type
 metadata:                           # Required: Asset metadata
   name: string                      # Required: Asset name (1-63 chars, lowercase, hyphenated)
   namespace: string                 # Optional: Team namespace
+  version: string                   # Optional: Semantic version (e.g., "1.0.0")
   labels:                           # Optional: Key-value labels
     key: value
 

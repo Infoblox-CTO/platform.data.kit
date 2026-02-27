@@ -28,6 +28,9 @@ type AssetMetadata struct {
 	// Namespace is the team namespace.
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 
+	// Version is the semantic version of the data contract (e.g., "1.2.0").
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
+
 	// Labels are key-value labels for filtering.
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 
@@ -86,8 +89,8 @@ func (a *AssetManifest) GetName() string { return a.Metadata.Name }
 // GetNamespace returns the asset namespace.
 func (a *AssetManifest) GetNamespace() string { return a.Metadata.Namespace }
 
-// GetVersion returns an empty string (assets are not versioned individually).
-func (a *AssetManifest) GetVersion() string { return "" }
+// GetVersion returns the asset version.
+func (a *AssetManifest) GetVersion() string { return a.Metadata.Version }
 
 // GetDescription returns an empty string.
 func (a *AssetManifest) GetDescription() string { return "" }

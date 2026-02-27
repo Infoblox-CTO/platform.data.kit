@@ -64,13 +64,11 @@ The manifest declares this as a CloudQuery source plugin written in Go:
 
 ```yaml
 spec:
-  type: cloudquery
-  cloudquery:
-    role: source
-    tables:
-      - example_resource
-    grpcPort: 7777
+  runtime: cloudquery
 ```
+
+The `cloudquery` runtime tells DP that this package is a CloudQuery plugin.
+No container `image` is required — plugin images come from the Connector manifest.
 
 ### internal/tables/example_resource.go — Table Definition
 

@@ -1,0 +1,13 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: raw-events
+  version: "1.0.0"
+  labels:
+    domain: analytics
+    tier: raw
+spec:
+  store: events-kafka
+  topic: raw.events.v1
+  format: json
+  classification: internal

@@ -13,29 +13,54 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var pipelineShowOutput string
+var (
+	pipelineShowOutput      string
+	pipelineShowAll         bool
+	pipelineShowDestination string
+	pipelineShowScanDirs    []string
+)
 
 // pipelineShowCmd displays pipeline definition details.
 var pipelineShowCmd = &cobra.Command{
 	Use:   "show [pipeline-dir]",
-	Short: "Display pipeline workflow details",
-	Long: `Display the pipeline workflow definition with step details.
+	Short: "Display pipeline workflow or dependency graph",
+	Long: `Display the pipeline workflow definition or the reactive dependency graph.
 
-Outputs a table (default), JSON, or YAML representation of the pipeline
-workflow including all steps and their configuration.
+When --all or --destination is used, the command scans for Transform and
+Asset manifests (dp.yaml files) and renders the dependency graph.
+
+Without those flags, it falls back to displaying the legacy pipeline.yaml
+workflow definition.
+
+Output formats for graph mode:
+  text      Text tree (default)
+  mermaid   Mermaid diagram
+  json      JSON adjacency list
+  dot       Graphviz DOT format
+
+Output formats for legacy mode:
+  table     Tabular step listing (default)
+  json      JSON
+  yaml      YAML
 
 Examples:
-  # Show pipeline in current directory
+  # Show dependency graph for all transforms
+  dp pipeline show --all
+
+  # Show graph leading to a specific asset
+  dp pipeline show --destination event-summary
+
+  # Render as Mermaid
+  dp pipeline show --all --output mermaid
+
+  # Scan specific directories
+  dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+
+  # Legacy: show pipeline.yaml
   dp pipeline show
 
-  # Show as JSON
-  dp pipeline show --output json
-
-  # Show as YAML
-  dp pipeline show --output yaml
-
-  # Show pipeline in specific directory
-  dp pipeline show ./my-pipeline`,
+  # Legacy: show as JSON
+  dp pipeline show --output json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipelineShow,
 }
@@ -43,11 +68,75 @@ Examples:
 func init() {
 	pipelineCmd.AddCommand(pipelineShowCmd)
 
-	pipelineShowCmd.Flags().StringVarP(&pipelineShowOutput, "output", "o", "table",
-		"Output format: table, json, yaml")
+	pipelineShowCmd.Flags().StringVarP(&pipelineShowOutput, "output", "o", "",
+		"Output format (graph: text, mermaid, json, dot; legacy: table, json, yaml)")
+	pipelineShowCmd.Flags().BoolVar(&pipelineShowAll, "all", false,
+		"Show full dependency graph")
+	pipelineShowCmd.Flags().StringVar(&pipelineShowDestination, "destination", "",
+		"Show dependency chain leading to this asset")
+	pipelineShowCmd.Flags().StringArrayVar(&pipelineShowScanDirs, "scan-dir", nil,
+		"Directories to scan for dp.yaml files (repeatable)")
 }
 
 func runPipelineShow(cmd *cobra.Command, args []string) error {
+	// Graph mode when --all or --destination is specified.
+	if pipelineShowAll || pipelineShowDestination != "" {
+		return runPipelineShowGraph(cmd, args)
+	}
+
+	// Legacy pipeline.yaml mode.
+	return runPipelineShowLegacy(cmd, args)
+}
+
+func runPipelineShowGraph(cmd *cobra.Command, args []string) error {
+	// Determine scan directories.
+	scanDirs := pipelineShowScanDirs
+	if len(scanDirs) == 0 {
+		dir := "."
+		if len(args) > 0 {
+			dir = args[0]
+		}
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			return fmt.Errorf("failed to resolve directory: %w", err)
+		}
+		scanDirs = []string{absDir}
+	}
+
+	g, err := pipeline.BuildGraph(pipeline.GraphOptions{
+		ScanDirs:    scanDirs,
+		Destination: pipelineShowDestination,
+		ShowAll:     pipelineShowAll,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to build graph: %w", err)
+	}
+
+	outputFmt := pipelineShowOutput
+	if outputFmt == "" {
+		outputFmt = "text"
+	}
+
+	out := cmd.OutOrStdout()
+	switch outputFmt {
+	case "text":
+		pipeline.RenderText(out, g, pipelineShowDestination)
+	case "mermaid":
+		pipeline.RenderMermaid(out, g)
+	case "dot":
+		pipeline.RenderDOT(out, g)
+	case "json":
+		if err := pipeline.RenderJSON(out, g); err != nil {
+			return fmt.Errorf("failed to render JSON: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported graph output format: %s (use text, mermaid, json, dot)", outputFmt)
+	}
+
+	return nil
+}
+
+func runPipelineShowLegacy(cmd *cobra.Command, args []string) error {
 	dir := "."
 	if len(args) > 0 {
 		dir = args[0]
@@ -62,7 +151,12 @@ func runPipelineShow(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no pipeline.yaml found in %s", dir)
 	}
 
-	switch pipelineShowOutput {
+	outputFmt := pipelineShowOutput
+	if outputFmt == "" {
+		outputFmt = "table"
+	}
+
+	switch outputFmt {
 	case "json":
 		data, err := json.MarshalIndent(workflow, "", "  ")
 		if err != nil {
@@ -93,7 +187,6 @@ func runPipelineShow(cmd *cobra.Command, args []string) error {
 		}
 		w.Flush()
 
-		// Show schedule if present
 		sched, _ := pipeline.LoadSchedule(pipelineDir)
 		if sched != nil {
 			cmd.Println()
@@ -112,7 +205,7 @@ func runPipelineShow(cmd *cobra.Command, args []string) error {
 		}
 
 	default:
-		return fmt.Errorf("unsupported output format: %s (use table, json, yaml)", pipelineShowOutput)
+		return fmt.Errorf("unsupported output format: %s (use table, json, yaml)", outputFmt)
 	}
 
 	return nil

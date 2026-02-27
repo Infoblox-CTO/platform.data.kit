@@ -61,8 +61,6 @@ metadata:
 spec:
   runtime: generic-python       # cloudquery | generic-go | generic-python | dbt
   mode: batch                   # batch | streaming
-  description: Processes event data from Kafka to S3
-  owner: data-engineering@example.com
   image: myorg/my-pipeline:v1.0.0
   timeout: 30m
 
@@ -71,9 +69,6 @@ spec:
 
   outputs:
     - asset: processed-events   # references an Asset by name
-      classification:
-        pii: false
-        sensitivity: internal
 ```
 
 !!! tip "See Also"

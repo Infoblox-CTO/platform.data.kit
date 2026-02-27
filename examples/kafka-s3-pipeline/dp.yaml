@@ -10,7 +10,6 @@ metadata:
 spec:
   runtime: generic-go
   mode: batch
-  description: Consumes events from Kafka, transforms, writes to S3
   image: "${REGISTRY}/kafka-s3-pipeline:${VERSION}"
   env:
     - name: LOG_LEVEL

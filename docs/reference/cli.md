@@ -399,7 +399,7 @@ dp lint [package-dir] [flags]
 | E010-E011 | Binding configuration |
 | E025 | PII classification required |
 | E030-E031 | Runtime configuration |
-| E040-E041 | Runtime required for pipeline type |
+| E040-E041 | Runtime required for transform |
 
 ### Examples
 
@@ -418,7 +418,7 @@ dp lint ./my-pipeline
 dp lint ./my-pipeline -f production.yaml
 
 # Lint with inline override
-dp lint ./my-pipeline --set spec.runtime.image=myimage:v2
+dp lint ./my-pipeline --set spec.image=myimage:v2
 ```
 
 ```bash
@@ -472,7 +472,7 @@ The run command behaves differently based on the pipeline mode:
 
 ### Runtime Configuration
 
-The pipeline runs using the container image and configuration specified in `spec.runtime` of dp.yaml.
+The pipeline runs using the container image specified in `spec.image` and the execution engine specified in `spec.runtime` of dp.yaml.
 Environment variables are automatically mapped from Store connection details (e.g., `events-store.brokers` → `EVENTS_STORE_BROKERS`).
 
 ### Override Precedence
@@ -500,7 +500,7 @@ dp run ./my-streaming-pipeline --detach
 
 ```bash
 # Override image for testing
-dp run ./my-pipeline --set spec.runtime.image=local:dev
+dp run ./my-pipeline --set spec.image=local:dev
 ```
 
 ```bash
@@ -510,7 +510,7 @@ dp run ./my-pipeline -f production.yaml
 
 ```bash
 # Combine overrides (--set wins over -f)
-dp run ./my-pipeline -f production.yaml --set spec.runtime.timeout=1h
+dp run ./my-pipeline -f production.yaml --set spec.timeout=1h
 ```
 
 ```bash
@@ -533,7 +533,7 @@ dp run --cell us-east --context arn:aws:eks:us-east-1:...:dp-prod
 dp run ./my-source
 ```
 
-**CloudQuery Mode** (when `spec.type: cloudquery`):
+**CloudQuery Mode** (when `spec.runtime: cloudquery`):
 
 When `dp run` detects a CloudQuery package, it orchestrates a full sync:
 
@@ -583,12 +583,12 @@ dp show ./my-pipeline -f production.yaml
 
 ```bash
 # Show with inline overrides
-dp show ./my-pipeline --set spec.runtime.image=myimage:v2
+dp show ./my-pipeline --set spec.image=myimage:v2
 ```
 
 ```bash
 # Show combined overrides (--set wins over -f)
-dp show ./my-pipeline -f base.yaml --set spec.runtime.timeout=1h
+dp show ./my-pipeline -f base.yaml --set spec.timeout=1h
 ```
 
 ```bash
@@ -1389,36 +1389,100 @@ dp pipeline backfill --from 2026-01-01 --to 2026-01-31 --env BATCH_SIZE=1000
 
 ## dp pipeline show
 
-Display the pipeline definition, steps, and schedule.
+Display the pipeline definition, steps, and schedule — or visualize the
+reactive dependency graph of transforms and assets.
 
 ```bash
 dp pipeline show [dir] [flags]
 ```
 
+### Modes
+
+The command operates in two modes:
+
+- **Graph mode**: activated with `--all` or `--destination`. Scans directories for
+  `dp.yaml` files (Transform and Asset manifests) and renders the dependency graph.
+- **Legacy mode**: activated when neither `--all` nor `--destination` is given. Reads
+  a `pipeline.yaml` workflow definition from the current directory.
+
 ### Flags
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--output` | `-o` | Output format (table, json, yaml) | table |
+| `--output` | `-o` | Output format (see below) | auto |
+| `--all` | | Show full dependency graph (graph mode) | false |
+| `--destination` | | Show dependency chain leading to this asset (graph mode) | |
+| `--scan-dir` | | Directories to scan for dp.yaml files (repeatable) | `.` |
+
+**Graph mode output formats:** `text` (default), `mermaid`, `json`, `dot`
+
+**Legacy mode output formats:** `table` (default), `json`, `yaml`
 
 ### Examples
 
 ```bash
-# Table view (default)
+# Show full reactive dependency graph (text tree)
+dp pipeline show --all
+
+# Show graph leading to a specific destination asset
+dp pipeline show --destination event-summary
+
+# Render the graph as a Mermaid diagram
+dp pipeline show --all --output mermaid
+
+# Render as Graphviz DOT
+dp pipeline show --all --output dot
+
+# JSON adjacency list
+dp pipeline show --all --output json
+
+# Scan specific directories
+dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+
+# Legacy: table view (default)
 dp pipeline show
-```
 
-```bash
-# JSON output
+# Legacy: JSON output
 dp pipeline show --output json
-```
 
-```bash
-# YAML output
+# Legacy: YAML output
 dp pipeline show --output yaml
 ```
 
-### Output Example (Table)
+### Output Example (Graph — Text)
+
+```
+Pipeline Dependency Graph
+=========================
+
+Assets:
+  ▪ raw-events            (kafka-topic)
+  ▪ raw-events-parquet    (s3-parquet)
+  ▪ enriched-events       (s3-parquet)
+  ▪ event-summary         (warehouse-table)
+
+Transforms:
+  ⚙ ingest      cloudquery   trigger: on-change
+  ⚙ enrich      generic-python trigger: on-change
+  ⚙ aggregate   dbt          trigger: schedule (0 */6 * * *)
+
+Dependencies:
+  raw-events ──▶ ingest ──▶ raw-events-parquet
+  raw-events-parquet ──▶ enrich ──▶ enriched-events
+  enriched-events ──▶ aggregate ──▶ event-summary
+```
+
+### Output Example (Graph — Mermaid)
+
+```mermaid
+graph LR
+  raw-events["raw-events (asset)"]
+  ingest["ingest (cloudquery)\ntrigger: on-change"]
+  raw-events-parquet["raw-events-parquet (asset)"]
+  raw-events --> ingest --> raw-events-parquet
+```
+
+### Output Example (Legacy — Table)
 
 ```
 Pipeline: my-pipeline

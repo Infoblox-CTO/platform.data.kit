@@ -144,7 +144,7 @@ Non-sync steps (transform, test, publish, custom) are excluded from backfill run
 | `dp pipeline create`    | Scaffold a new pipeline.yaml from a template |
 | `dp pipeline run`       | Execute the pipeline workflow                |
 | `dp pipeline backfill`  | Re-execute sync steps for a date range       |
-| `dp pipeline show`      | Display pipeline definition and schedule     |
+| `dp pipeline show`      | Display pipeline definition, schedule, or dependency graph |
 
 ### Creating a Pipeline
 
@@ -175,10 +175,28 @@ dp pipeline run --env DEBUG=true --env LOG_LEVEL=info
 ### Inspecting a Pipeline
 
 ```bash
-# Table view
+# Show full reactive dependency graph
+dp pipeline show --all
+
+# Show graph leading to a specific destination
+dp pipeline show --destination event-summary
+
+# Render as Mermaid diagram
+dp pipeline show --all --output mermaid
+
+# Render as Graphviz DOT
+dp pipeline show --all --output dot
+
+# JSON adjacency list
+dp pipeline show --all --output json
+
+# Scan specific directories
+dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+
+# Legacy: table view
 dp pipeline show
 
-# JSON output
+# Legacy: JSON output
 dp pipeline show --output json
 ```
 

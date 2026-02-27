@@ -59,7 +59,13 @@ type TransformSpec struct {
 	Env []EnvVar `json:"env,omitempty" yaml:"env,omitempty"`
 
 	// Schedule defines optional cron scheduling for batch transforms.
+	// Shorthand for trigger: { policy: schedule, schedule: { ... } }.
+	// Deprecated: prefer trigger.
 	Schedule *ScheduleSpec `json:"schedule,omitempty" yaml:"schedule,omitempty"`
+
+	// Trigger defines when this transform executes.
+	// If omitted but Schedule is set, trigger is inferred as policy: schedule.
+	Trigger *TriggerSpec `json:"trigger,omitempty" yaml:"trigger,omitempty"`
 
 	// Timeout is the maximum execution duration (e.g., "30m", "1h").
 	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
@@ -75,16 +81,64 @@ type TransformSpec struct {
 }
 
 // AssetRef is a reference to a named Asset.
+// Exactly one of Asset (exact name) or Tags (label selector) must be set.
 // The Asset name is resolved at runtime to find the Store and Connector.
 type AssetRef struct {
 	// Asset is the name of the Asset manifest (local name or OCI ref).
-	Asset string `json:"asset" yaml:"asset"`
+	// Mutually exclusive with Tags.
+	Asset string `json:"asset,omitempty" yaml:"asset,omitempty"`
+
+	// Tags matches assets by their metadata labels.
+	// Mutually exclusive with Asset.
+	Tags map[string]string `json:"tags,omitempty" yaml:"tags,omitempty"`
+
+	// Version is a semver range constraint (e.g., ">=1.0.0 <2.0.0", "^1.2.0").
+	// Used with Tags to resolve the best-matching asset version.
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 
 	// Cell optionally qualifies which cell's Stores to resolve for this Asset.
 	// When empty, the deployment cell (or package store/ fallback) is used.
 	// When set, the Store is resolved from the named cell's namespace.
 	// This enables cross-cell transforms (fan-out, fan-in, routing).
 	Cell string `json:"cell,omitempty" yaml:"cell,omitempty"`
+}
+
+// TriggerPolicy identifies when a transform should execute.
+type TriggerPolicy string
+
+const (
+	// TriggerPolicySchedule runs the transform on a cron schedule.
+	TriggerPolicySchedule TriggerPolicy = "schedule"
+
+	// TriggerPolicyOnChange runs the transform when any input asset's data is updated.
+	TriggerPolicyOnChange TriggerPolicy = "on-change"
+
+	// TriggerPolicyManual runs the transform only on explicit invocation.
+	TriggerPolicyManual TriggerPolicy = "manual"
+
+	// TriggerPolicyComposite combines multiple trigger policies.
+	TriggerPolicyComposite TriggerPolicy = "composite"
+)
+
+// IsValid checks if the trigger policy is a recognized value.
+func (tp TriggerPolicy) IsValid() bool {
+	switch tp {
+	case TriggerPolicySchedule, TriggerPolicyOnChange, TriggerPolicyManual, TriggerPolicyComposite:
+		return true
+	}
+	return false
+}
+
+// TriggerSpec defines when a transform should execute.
+type TriggerSpec struct {
+	// Policy is the trigger policy: schedule, on-change, manual, or composite.
+	Policy TriggerPolicy `json:"policy" yaml:"policy"`
+
+	// Schedule is the cron configuration (required when policy is "schedule").
+	Schedule *ScheduleSpec `json:"schedule,omitempty" yaml:"schedule,omitempty"`
+
+	// Policies lists the sub-policies for composite triggers.
+	Policies []TriggerPolicy `json:"policies,omitempty" yaml:"policies,omitempty"`
 }
 
 // --- Manifest interface implementation for Transform ---

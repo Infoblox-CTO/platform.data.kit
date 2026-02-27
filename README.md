@@ -82,7 +82,6 @@ metadata:
 spec:
   runtime: generic-go
   mode: batch
-  description: Processes events from Kafka to S3
   image: "myimage:v1"
   inputs:
     - asset: kafka-events

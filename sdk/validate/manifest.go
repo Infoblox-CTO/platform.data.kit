@@ -235,6 +235,11 @@ func (v *ManifestValidator) validateAsset(errs *contracts.ValidationErrors) {
 		errs.AddError(contracts.ErrCodeAssetStoreRequired, "spec.store", "spec.store is required — must reference a Store name")
 	}
 
+	// Validate asset version if present (semver).
+	if a.Metadata.Version != "" && !isSemVerValid(a.Metadata.Version) {
+		errs.AddError(contracts.ErrCodeInvalidSemVer, "metadata.version", "metadata.version must be valid SemVer")
+	}
+
 	// E221: At least one of table, prefix, or topic is required.
 	if a.Spec.Table == "" && a.Spec.Prefix == "" && a.Spec.Topic == "" {
 		errs.AddError(contracts.ErrCodeAssetLocationRequired, "spec", "at least one of spec.table, spec.prefix, or spec.topic is required")
@@ -318,13 +323,33 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 		errs.AddError(contracts.ErrCodeTransformImageRequired, "spec.image", "spec.image is required for dbt runtime")
 	}
 
-	// W209: Schedule recommended for batch mode.
+	// W209: Schedule or trigger recommended for batch mode.
 	effectiveMode := tr.Spec.Mode
 	if effectiveMode == "" {
 		effectiveMode = effectiveMode.Default()
 	}
-	if effectiveMode == contracts.ModeBatch && tr.Spec.Schedule == nil {
-		errs.AddWarning(contracts.WarnCodeScheduleBatchMode, "spec.schedule", "schedule is recommended for batch-mode transforms")
+	if effectiveMode == contracts.ModeBatch && tr.Spec.Schedule == nil && tr.Spec.Trigger == nil {
+		errs.AddWarning(contracts.WarnCodeScheduleBatchMode, "spec.schedule", "schedule or trigger is recommended for batch-mode transforms")
+	}
+
+	// Validate trigger spec.
+	if tr.Spec.Trigger != nil {
+		if !tr.Spec.Trigger.Policy.IsValid() {
+			errs.AddError(ErrInvalidFormat, "spec.trigger.policy", "spec.trigger.policy must be schedule, on-change, manual, or composite")
+		}
+		if tr.Spec.Trigger.Policy == contracts.TriggerPolicySchedule && tr.Spec.Trigger.Schedule == nil {
+			errs.AddError(ErrMissingRequired, "spec.trigger.schedule", "spec.trigger.schedule is required when policy is schedule")
+		}
+		if tr.Spec.Trigger.Policy == contracts.TriggerPolicyComposite {
+			if len(tr.Spec.Trigger.Policies) == 0 {
+				errs.AddError(ErrMissingRequired, "spec.trigger.policies", "spec.trigger.policies is required when policy is composite")
+			}
+			for i, p := range tr.Spec.Trigger.Policies {
+				if !p.IsValid() || p == contracts.TriggerPolicyComposite {
+					errs.AddError(ErrInvalidFormat, fmt.Sprintf("spec.trigger.policies[%d]", i), "sub-policy must be schedule, on-change, or manual")
+				}
+			}
+		}
 	}
 
 	// Validate timeout format.
@@ -336,14 +361,26 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 
 	// Validate input/output asset refs.
 	for i, ref := range tr.Spec.Inputs {
-		if ref.Asset == "" {
-			errs.AddError(ErrMissingRequired, fmt.Sprintf("spec.inputs[%d].asset", i), "input asset name is required")
-		}
+		validateAssetRef(errs, ref, fmt.Sprintf("spec.inputs[%d]", i))
 	}
 	for i, ref := range tr.Spec.Outputs {
-		if ref.Asset == "" {
-			errs.AddError(ErrMissingRequired, fmt.Sprintf("spec.outputs[%d].asset", i), "output asset name is required")
-		}
+		validateAssetRef(errs, ref, fmt.Sprintf("spec.outputs[%d]", i))
+	}
+}
+
+// validateAssetRef validates that exactly one of asset or tags is set.
+func validateAssetRef(errs *contracts.ValidationErrors, ref contracts.AssetRef, path string) {
+	hasAsset := ref.Asset != ""
+	hasTags := len(ref.Tags) > 0
+	if !hasAsset && !hasTags {
+		errs.AddError(ErrMissingRequired, path, "either asset name or tags is required")
+	}
+	if hasAsset && hasTags {
+		errs.AddError(ErrInvalidFormat, path, "asset and tags are mutually exclusive — specify one or the other")
+	}
+	// Version only makes sense with tags.
+	if ref.Version != "" && !hasTags {
+		errs.AddWarning("W210", path+".version", "version constraint is only used with tag-based resolution")
 	}
 }
 

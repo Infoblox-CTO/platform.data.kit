@@ -1,0 +1,17 @@
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: ingest
+  version: 0.1.0
+  labels:
+    team: data-platform
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: raw-events
+  outputs:
+    - asset: raw-events-parquet
+  trigger:
+    policy: on-change
+  timeout: 30m

@@ -33,8 +33,6 @@ metadata:
 spec:
   runtime: generic-python       # cloudquery | generic-go | generic-python | dbt
   mode: batch                   # batch | streaming
-  description: Description of what this transform does
-  owner: team@example.com
   image: myorg/my-package:v0.1.0
   timeout: 30m
 
@@ -43,9 +41,6 @@ spec:
 
   outputs:
     - asset: output-data
-      classification:
-        pii: false
-        sensitivity: internal
 ```
 
 ### Required Fields
@@ -56,7 +51,6 @@ spec:
 | `kind` | string | `Transform`, `Asset`, `AssetGroup`, `Connector`, or `Store` |
 | `metadata.name` | string | Package name (lowercase, hyphenated) |
 | `spec.runtime` | string | One of: `cloudquery`, `generic-go`, `generic-python`, `dbt` |
-| `spec.owner` | string | Owner email or team identifier |
 
 ### metadata
 
@@ -86,9 +80,15 @@ Inputs declare which Assets a Transform reads:
 ```yaml
 spec:
   inputs:
-    - asset: raw-events            # Asset name to read from
+    - asset: raw-events            # Reference asset by name
     - asset: user-metadata         # Multiple inputs supported
+    - tags:                        # Or match by labels
+        domain: analytics
+        tier: raw
+      version: ">=1.0.0"           # Optional semver constraint
 ```
+
+Each input (and output) uses either `asset` (exact name) or `tags` (label selector) — not both.
 
 ### spec.outputs
 
@@ -98,10 +98,10 @@ Outputs declare which Assets a Transform produces:
 spec:
   outputs:
     - asset: enriched-events       # Asset name to write to
-      classification:              # Data classification
-        pii: true
-        sensitivity: confidential
 ```
+
+!!! note
+    Data classification (`pii`, `sensitivity`) is declared on the **Asset** manifest, not on the Transform's AssetRef.
 
 ## Asset Manifest
 

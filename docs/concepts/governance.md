@@ -35,23 +35,42 @@ The Data Platform provides built-in governance features to ensure data quality, 
 
 ## Data Classification
 
-Every output in a data package includes classification metadata:
+Data classification is declared on the **Asset** manifest (not on the Transform's output references).
+Each Asset declares its sensitivity level and PII status in its `spec`:
 
 ```yaml
-outputs:
-  - name: customer-records
-    type: s3-prefix
-    binding: output.customers
-    classification:
+# asset/customer-records.yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: customer-records
+  version: 1.0.0
+spec:
+  store: lake-raw
+  prefix: data/customers/
+  format: parquet
+  classification: confidential
+
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
       pii: true
-      sensitivity: confidential
-      retention:
-        days: 730
-        deletionPolicy: archive
-      tags:
-        - gdpr
-        - customer-data
-        - eu-region
+    - name: name
+      type: string
+      pii: true
+    - name: created_at
+      type: timestamp
+```
+
+A Transform then references this Asset by name:
+
+```yaml
+# dp.yaml (Transform)
+spec:
+  outputs:
+    - asset: customer-records
 ```
 
 ### Sensitivity Levels

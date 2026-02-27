@@ -66,11 +66,27 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["asset"],
+            "anyOf": [
+              { "required": ["asset"] },
+              { "required": ["tags"] }
+            ],
             "properties": {
               "asset": {
                 "type": "string",
                 "description": "Name of the input Asset"
+              },
+              "tags": {
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "Match assets by metadata labels"
+              },
+              "version": {
+                "type": "string",
+                "description": "Semver range constraint (e.g., >=1.0.0, ^1.2.0)"
+              },
+              "cell": {
+                "type": "string",
+                "description": "Cell qualifier for cross-cell resolution"
               }
             },
             "additionalProperties": false
@@ -82,11 +98,27 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["asset"],
+            "anyOf": [
+              { "required": ["asset"] },
+              { "required": ["tags"] }
+            ],
             "properties": {
               "asset": {
                 "type": "string",
                 "description": "Name of the output Asset"
+              },
+              "tags": {
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "Match assets by metadata labels"
+              },
+              "version": {
+                "type": "string",
+                "description": "Semver range constraint"
+              },
+              "cell": {
+                "type": "string",
+                "description": "Cell qualifier for cross-cell resolution"
               }
             },
             "additionalProperties": false
@@ -133,7 +165,42 @@
               "description": "Cron expression"
             }
           },
-          "description": "Optional cron scheduling for batch transforms"
+          "description": "Optional cron scheduling (shorthand for trigger.policy: schedule)"
+        },
+        "trigger": {
+          "type": "object",
+          "required": ["policy"],
+          "properties": {
+            "policy": {
+              "type": "string",
+              "enum": ["schedule", "on-change", "manual", "composite"],
+              "description": "Trigger policy"
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "cron": {
+                  "type": "string",
+                  "description": "Cron expression"
+                },
+                "timezone": {
+                  "type": "string",
+                  "description": "Timezone for cron"
+                }
+              },
+              "description": "Cron schedule (required when policy is schedule)"
+            },
+            "policies": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["schedule", "on-change", "manual"]
+              },
+              "description": "Sub-policies for composite trigger"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Trigger configuration for when this transform executes"
         },
         "timeout": {
           "type": "string",

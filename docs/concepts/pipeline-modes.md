@@ -28,22 +28,26 @@ Batch pipelines process a finite dataset and exit when complete. This is the def
 ### Batch Configuration
 
 ```yaml
-# pipeline.yaml
-apiVersion: dp.io/v1
-kind: Pipeline
+# dp.yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
 metadata:
   name: daily-etl
+  version: 0.1.0
 spec:
+  runtime: generic-python
   mode: batch
-  
-  # How long before timeout (required for batch)
+  image: myorg/daily-etl:v0.1.0
+
+  inputs:
+    - asset: raw-data
+  outputs:
+    - asset: processed-data
+
+  # How long before timeout
   timeout: 30m
-  
-  # Retry failed runs
-  retries: 3
-  backoffLimit: 3
-  
-  # Schedule with cron (optional)
+
+  # Schedule with cron (optional) — or use trigger
   schedule:
     cron: "0 2 * * *"  # Run at 2 AM daily
     timezone: "America/New_York"
@@ -83,40 +87,38 @@ Streaming pipelines run continuously, processing data as it arrives. They never 
 ### Streaming Configuration
 
 ```yaml
-# pipeline.yaml
-apiVersion: dp.io/v1
-kind: Pipeline
+# dp.yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
 metadata:
   name: kafka-processor
+  version: 1.0.0
 spec:
+  runtime: generic-go
   mode: streaming
-  
+  image: myorg/kafka-processor:v1.0.0
+
+  inputs:
+    - asset: raw-events
+  outputs:
+    - asset: processed-events
+
   # Number of replicas
   replicas: 3
-  
-  # Graceful shutdown period
-  terminationGracePeriodSeconds: 30
-  
-  # Health checks
-  livenessProbe:
-    httpGet:
-      path: /healthz
-      port: 8080
-    initialDelaySeconds: 10
-    periodSeconds: 15
-    
-  readinessProbe:
-    httpGet:
-      path: /ready
-      port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    
-  # Lineage heartbeats
+
+  resources:
+    cpu: "1"
+    memory: 2Gi
+
+  # Lineage tracking
   lineage:
     enabled: true
-    heartbeatInterval: 30s
 ```
+
+!!! note "Health Checks"
+    Streaming mode containers should implement `/healthz` and `/ready` HTTP
+    endpoints on port 8080. The platform controller automatically configures
+    Kubernetes liveness and readiness probes based on these.
 
 ### Streaming Lifecycle
 
@@ -229,7 +231,7 @@ Both modes emit OpenLineage events for tracking:
 
 To change a pipeline's mode:
 
-1. Update `spec.mode` in pipeline.yaml
+1. Update `spec.mode` in dp.yaml
 2. Add/remove mode-specific fields (probes, timeout, etc.)
 3. Run `dp build` to update the package
 4. Deploy the new version
