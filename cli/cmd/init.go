@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"github.com/Infoblox-CTO/platform.data.kit/cli/internal/output"
+	"github.com/Infoblox-CTO/platform.data.kit/cli/internal/prompt"
 	"github.com/Infoblox-CTO/platform.data.kit/cli/internal/templates"
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
 
@@ -44,8 +46,11 @@ Examples:
   dp init fraud-scorer --runtime generic-python --mode streaming
 
   # Create with custom namespace
-  dp init my-transform --runtime cloudquery --namespace data-team`,
-	Args: cobra.ExactArgs(1),
+  dp init my-transform --runtime cloudquery --namespace data-team
+
+  # Interactive mode — prompts for missing values when run in a terminal
+  dp init`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runInit,
 }
 
@@ -65,9 +70,23 @@ func init() {
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
-	name := args[0]
+	// Grab name from positional arg if supplied.
+	name := ""
+	if len(args) > 0 {
+		name = args[0]
+	}
+
+	// If we're in a terminal, interactively prompt for any values the
+	// user didn't supply via flags.  In CI (non-TTY) we fall through
+	// to the normal validation that requires explicit flags.
+	if err := promptInitGaps(cmd, &name); err != nil {
+		return err
+	}
 
 	// Validate name
+	if name == "" {
+		return fmt.Errorf("package name is required (pass as argument or run interactively)")
+	}
 	if name != "." && !isValidPackageName(name) {
 		return fmt.Errorf("invalid package name %q: must be DNS-safe (lowercase, alphanumeric, hyphens, 3-63 chars)", name)
 	}
@@ -161,6 +180,90 @@ func runInit(cmd *cobra.Command, args []string) error {
 	cmd.Printf("  3. Run 'dp lint' to validate\n")
 	cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
 	cmd.Printf("  5. Run 'dp run' to execute locally\n")
+
+	return nil
+}
+
+// promptInitGaps checks for missing required values and, when running in an
+// interactive terminal, presents a guided form to collect them.  When stdin
+// is not a TTY (CI, piped input), the function is a no-op so the normal
+// flag-validation errors fire downstream.
+//
+// The function is intentionally a no-op in tests (non-TTY) so existing
+// flag-based tests continue to pass unchanged.
+func promptInitGaps(cmd *cobra.Command, name *string) error {
+	if !prompt.IsInteractive() {
+		return nil
+	}
+
+	var fields []huh.Field
+
+	// --- Package name ---
+	if *name == "" {
+		fields = append(fields, huh.NewInput().
+			Title("Package name").
+			Description("DNS-safe lowercase name (e.g. my-transform)").
+			Validate(func(s string) error {
+				if s == "" {
+					return fmt.Errorf("name is required")
+				}
+				if s != "." && !isValidPackageName(s) {
+					return fmt.Errorf("must be DNS-safe: lowercase, alphanumeric, hyphens, 3-63 chars")
+				}
+				return nil
+			}).
+			Value(name))
+	}
+
+	// --- Runtime ---
+	if !cmd.Flags().Changed("runtime") && initRuntime == "" {
+		fields = append(fields, huh.NewSelect[string]().
+			Title("Runtime").
+			Description("What runtime should this package use?").
+			Options(
+				huh.NewOption("CloudQuery", "cloudquery"),
+				huh.NewOption("Go (generic)", "generic-go"),
+				huh.NewOption("Python (generic)", "generic-python"),
+				huh.NewOption("dbt", "dbt"),
+			).
+			Value(&initRuntime))
+	}
+
+	// --- Mode ---
+	if !cmd.Flags().Changed("mode") {
+		fields = append(fields, huh.NewSelect[string]().
+			Title("Execution mode").
+			Options(
+				huh.NewOption("Batch", "batch"),
+				huh.NewOption("Streaming", "streaming"),
+			).
+			Value(&initMode))
+	}
+
+	// --- Namespace ---
+	if !cmd.Flags().Changed("namespace") {
+		fields = append(fields, huh.NewInput().
+			Title("Namespace").
+			Description("Logical grouping for this package").
+			Value(&initNamespace))
+	}
+
+	// --- Team ---
+	if !cmd.Flags().Changed("team") {
+		fields = append(fields, huh.NewInput().
+			Title("Team").
+			Description("Owning team label").
+			Value(&initTeam))
+	}
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	form := huh.NewForm(huh.NewGroup(fields...))
+	if err := form.Run(); err != nil {
+		return fmt.Errorf("interactive prompt cancelled: %w", err)
+	}
 
 	return nil
 }

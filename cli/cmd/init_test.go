@@ -43,7 +43,7 @@ func TestInitCmd_Args(t *testing.T) {
 		wantErr bool
 	}{
 		{"one arg is valid", []string{"my-package"}, false},
-		{"no args is invalid", []string{}, true},
+		{"no args is valid (interactive)", []string{}, false},
 		{"two args is invalid", []string{"pkg1", "pkg2"}, true},
 	}
 
@@ -359,5 +359,26 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 	dpPath := filepath.Join(pkgDir, "dp.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
 		t.Error("dp.yaml was not created in current directory")
+	}
+}
+
+func TestInitCmd_NoNameNonInteractive(t *testing.T) {
+	// When stdin is not a terminal (CI, tests), omitting the name arg should
+	// produce a clear error rather than blocking on a prompt.
+	saveAndRestoreInitFlags(t)
+	initRuntime = "cloudquery"
+	initMode = "batch"
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.Flags().StringVarP(&initRuntime, "runtime", "r", "", "")
+	cmd.Flags().Set("runtime", "cloudquery")
+
+	err := runInit(cmd, []string{})
+	if err == nil {
+		t.Fatal("expected error when name omitted in non-interactive mode")
+	}
+	if !strings.Contains(err.Error(), "package name is required") {
+		t.Errorf("error should mention package name, got: %v", err)
 	}
 }
