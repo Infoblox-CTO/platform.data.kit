@@ -38,7 +38,7 @@ The command-line interface is the primary interaction point for developers:
 |-----------|---------|
 | **Scaffolding** | Generate data package structures from templates |
 | **Validation** | Verify manifests, schemas, and configurations |
-| **Local Runtime** | Run pipelines against local Docker Compose stack |
+| **Local Runtime** | Run pipelines against local k3d development stack |
 | **Packaging** | Bundle packages as OCI artifacts |
 | **Deployment** | Create GitOps PRs for environment promotion |
 
@@ -59,12 +59,12 @@ The `dp.yaml` manifest consolidates all configuration in a single file, includin
 
 ### 3. Local Development Stack
 
-Docker Compose services for local development:
+Helm charts deployed to a local k3d cluster for development:
 
 | Service | Purpose | Default Port |
 |---------|---------|--------------|
-| **Kafka** | Message streaming | 9092 |
-| **MinIO** | S3-compatible storage | 9000 |
+| **Redpanda** | Kafka-compatible streaming | 19092 |
+| **LocalStack** | S3-compatible storage | 4566 |
 | **Marquez** | OpenLineage collection | 5000 |
 | **PostgreSQL** | Marquez metadata store | 5432 |
 

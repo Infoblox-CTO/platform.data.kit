@@ -170,6 +170,77 @@ spec:
 
 The `dp validate` command cross-validates that each asset's store reference resolves to an existing Store manifest.
 
+## Seed Data for Local Development
+
+Assets can declare sample data in a `dev.seed` section. This data is loaded
+into the backing database during local development so that your pipeline has
+real rows to process without manual SQL or external fixtures.
+
+```yaml title="asset/source.yaml"
+spec:
+  store: warehouse
+  table: example_table
+  schema:
+    - name: id
+      type: integer
+    - name: name
+      type: string
+  dev:
+    seed:
+      inline:
+        - { id: 1, name: "alice" }
+        - { id: 2, name: "bob" }
+```
+
+### How It Works
+
+1. `dp dev seed` (or the auto-seed that runs before `dp run`) reads every
+   input asset in the package.
+2. For each asset with a `dev.seed` section, it generates `CREATE TABLE IF
+   NOT EXISTS` + `INSERT` statements and executes them against the local
+   PostgreSQL instance via `kubectl exec`.
+3. A SHA-256 checksum of the seed data is stored in a `_dp_seed_meta` table.
+   On subsequent runs, unchanged data is skipped automatically.
+4. When data *does* change, the table is `TRUNCATE`d before inserting so the
+   contents always match the seed spec — no duplicates, no stale rows.
+
+### Seed Profiles
+
+You can define **named profiles** for different test scenarios under
+`dev.seed.profiles`. Each profile has its own `inline` rows or seed `file`:
+
+```yaml title="asset/source.yaml"
+dev:
+  seed:
+    inline:
+      - { id: 1, name: "alice" }      # default profile
+    profiles:
+      large-dataset:
+        file: testdata/large.csv       # file-based profile
+      edge-cases:
+        inline:
+          - { id: -1, name: "" }
+          - { id: 999, name: "O'Reilly" }
+      empty: {}                        # empty table for testing
+```
+
+Activate a profile with `dp dev seed --profile <name>`:
+
+```bash
+# Default seed data
+dp dev seed
+
+# Switch to the edge-cases profile
+dp dev seed --profile edge-cases
+
+# Force re-seed even if unchanged
+dp dev seed --force
+```
+
+!!! tip "Seed files"
+    Seed files can be CSV or JSON. Place them in your package directory and
+    reference them with a relative path (e.g., `testdata/data.csv`).
+
 ## CLI Commands
 
 | Command | Description |
@@ -178,6 +249,8 @@ The `dp validate` command cross-validates that each asset's store reference reso
 | `dp asset validate [path]` | Validate asset configuration |
 | `dp asset list` | List all assets in the project |
 | `dp asset show <name>` | Show full asset details |
+| `dp dev seed` | Load seed data into local dev stores |
+| `dp dev seed --profile <name>` | Use a named seed profile |
 
 ## Relationship to Other Concepts
 

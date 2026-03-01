@@ -391,7 +391,23 @@ spec:                               # Required: Asset specification
       type: string                  # Required: Data type (integer, string, timestamp, boolean, float)
       pii: boolean                  # Optional: Contains PII? (default: false)
       from: string                  # Optional: Lineage source (e.g., "users.id")
+
+  dev:                              # Optional: Development-only configuration
+    seed:                           # Optional: Sample data for local development
+      inline:                       # Option A: Rows defined directly in YAML
+        - { col: value, ... }
+      file: string                  # Option B: Path to a CSV or JSON seed file
+      profiles:                     # Optional: Named alternative data sets
+        <profile-name>:
+          inline:                   # Inline rows for this profile
+            - { col: value, ... }
+          file: string              # OR file path for this profile
 ```
+
+!!! info "Dev-only section"
+    The `dev` block is ignored in production deployments. It exists solely to
+    support the local development workflow (`dp dev seed` and auto-seeding
+    during `dp run`).
 
 ### Field Reference
 
@@ -494,6 +510,59 @@ spec:
       type: timestamp
       from: users.created_at
 ```
+
+#### Input Asset with seed data and profiles
+
+```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+  namespace: default
+spec:
+  store: warehouse
+  table: example_table
+  classification: internal
+  schema:
+    - name: id
+      type: integer
+    - name: name
+      type: string
+    - name: created_at
+      type: timestamp
+  dev:
+    seed:
+      inline:
+        - { id: 1, name: "alice",   created_at: "2026-01-01T00:00:00Z" }
+        - { id: 2, name: "bob",     created_at: "2026-01-15T00:00:00Z" }
+        - { id: 3, name: "charlie", created_at: "2026-02-01T00:00:00Z" }
+      profiles:
+        large-dataset:
+          file: testdata/large-users.csv
+        edge-cases:
+          inline:
+            - { id: -1, name: "",        created_at: "1970-01-01T00:00:00Z" }
+            - { id: 999, name: "O'Reilly", created_at: "2099-12-31T23:59:59Z" }
+        empty: {}
+```
+
+#### spec.dev.seed
+
+| Property | Value |
+|----------|-------|
+| Type | object |
+| Required | No |
+| Description | Sample data to load into the backing store for local development. |
+
+| Sub-field | Type | Description |
+|-----------|------|-------------|
+| `inline` | array of maps | Rows defined directly in YAML (default profile). |
+| `file` | string | Path (relative to package root) to a CSV or JSON seed file (default profile). |
+| `profiles` | map of objects | Named alternative data sets. Each profile has its own `inline` or `file`. |
+
+Seed data is loaded by `dp dev seed` or automatically before `dp run`. A SHA-256
+checksum is tracked in a `_dp_seed_meta` table so that unchanged data is skipped
+on subsequent runs.
 
 ---
 

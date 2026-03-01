@@ -260,6 +260,162 @@ func TestAssetGroupManifest_ManifestInterface(t *testing.T) {
 	}
 }
 
+func TestAssetManifest_DevSeed_YAMLRoundTrip(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+spec:
+  store: warehouse
+  table: example_table
+  schema:
+    - name: id
+      type: integer
+    - name: name
+      type: string
+  dev:
+    seed:
+      inline:
+        - { id: 1, name: "alice" }
+        - { id: 2, name: "bob" }
+`
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	if a.Spec.Dev == nil {
+		t.Fatal("Spec.Dev should not be nil")
+	}
+	if a.Spec.Dev.Seed == nil {
+		t.Fatal("Spec.Dev.Seed should not be nil")
+	}
+	if len(a.Spec.Dev.Seed.Inline) != 2 {
+		t.Fatalf("Spec.Dev.Seed.Inline len = %d, want 2", len(a.Spec.Dev.Seed.Inline))
+	}
+	if a.Spec.Dev.Seed.Inline[0]["name"] != "alice" {
+		t.Errorf("Inline[0].name = %v, want alice", a.Spec.Dev.Seed.Inline[0]["name"])
+	}
+}
+
+func TestAssetManifest_DevSeed_File(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: orders
+spec:
+  store: warehouse
+  table: orders
+  dev:
+    seed:
+      file: testdata/orders.csv
+`
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if a.Spec.Dev == nil || a.Spec.Dev.Seed == nil {
+		t.Fatal("Spec.Dev.Seed should not be nil")
+	}
+	if a.Spec.Dev.Seed.File != "testdata/orders.csv" {
+		t.Errorf("Spec.Dev.Seed.File = %q, want testdata/orders.csv", a.Spec.Dev.Seed.File)
+	}
+}
+
+func TestAssetManifest_NoDev(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+spec:
+  store: warehouse
+  table: users
+`
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if a.Spec.Dev != nil {
+		t.Errorf("Spec.Dev should be nil when not specified, got %+v", a.Spec.Dev)
+	}
+}
+
+func TestAssetManifest_DevSeed_Profiles(t *testing.T) {
+	input := `apiVersion: data.infoblox.com/v1alpha1
+kind: Asset
+metadata:
+  name: users
+spec:
+  store: warehouse
+  table: example_table
+  schema:
+    - name: id
+      type: integer
+    - name: name
+      type: string
+  dev:
+    seed:
+      inline:
+        - { id: 1, name: "alice" }
+      profiles:
+        large:
+          file: testdata/large.csv
+        edge-cases:
+          inline:
+            - { id: -1, name: "" }
+            - { id: 999, name: "O'Reilly" }
+        empty:
+          inline: []
+`
+	var a AssetManifest
+	if err := yaml.Unmarshal([]byte(input), &a); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	seed := a.Spec.Dev.Seed
+	if seed == nil {
+		t.Fatal("Spec.Dev.Seed should not be nil")
+	}
+
+	// Default inline.
+	if len(seed.Inline) != 1 || seed.Inline[0]["name"] != "alice" {
+		t.Errorf("default inline unexpected: %v", seed.Inline)
+	}
+
+	// Profiles map.
+	if len(seed.Profiles) != 3 {
+		t.Fatalf("expected 3 profiles, got %d", len(seed.Profiles))
+	}
+
+	// "large" profile.
+	large := seed.Profiles["large"]
+	if large == nil || large.File != "testdata/large.csv" {
+		t.Errorf("large profile file: %v", large)
+	}
+
+	// "edge-cases" profile.
+	edge := seed.Profiles["edge-cases"]
+	if edge == nil || len(edge.Inline) != 2 {
+		t.Errorf("edge-cases profile: %v", edge)
+	}
+
+	// "empty" profile.
+	empty := seed.Profiles["empty"]
+	if empty == nil || len(empty.Inline) != 0 {
+		t.Errorf("empty profile should have 0 inline rows: %v", empty)
+	}
+
+	// Round-trip marshal.
+	out, err := yaml.Marshal(&a)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	s := string(out)
+	if !containsSubstring(s, "profiles") {
+		t.Errorf("marshalled YAML should contain 'profiles': %s", s)
+	}
+}
+
 // containsSubstring is a test helper used across test files in this package.
 func containsSubstring(s, sub string) bool {
 	for i := 0; i <= len(s)-len(sub); i++ {

@@ -157,7 +157,6 @@ data-platform/
 ├── gitops/             # Environment definitions
 ├── examples/           # Reference packages
 ├── hack/               # Development utilities
-│   └── compose/        # Local dev stack
 └── dashboards/         # Grafana dashboards
 ```
 

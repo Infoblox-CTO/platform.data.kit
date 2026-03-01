@@ -11,14 +11,27 @@ import (
 type RuntimeType string
 
 const (
-	// RuntimeCompose uses Docker Compose for local development.
-	RuntimeCompose RuntimeType = "compose"
 	// RuntimeK3d uses k3d (k3s in Docker) for local development.
 	RuntimeK3d RuntimeType = "k3d"
 )
 
+// ServiceStatus represents the status of a service in the local dev stack.
+type ServiceStatus struct {
+	Name   string
+	Status string
+	Ports  []string
+	Health string
+}
+
+// StackStatus represents the overall status of the local dev stack.
+type StackStatus struct {
+	Running  bool
+	Runtime  RuntimeType
+	Services []ServiceStatus
+	Errors   []string
+}
+
 // RuntimeManager defines the interface for managing local development environments.
-// Both ComposeManager and K3dManager implement this interface.
 type RuntimeManager interface {
 	// Up starts the local development stack.
 	// If detach is true, the command returns after starting (background mode).
@@ -64,6 +77,3 @@ type PortForwardStatus struct {
 	// Error contains any error message if the forward failed.
 	Error string
 }
-
-// Ensure ComposeManager implements RuntimeManager at compile time.
-var _ RuntimeManager = (*ComposeManager)(nil)

@@ -11,11 +11,6 @@ func TestRuntimeType_Constants(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "compose runtime type",
-			runtime:  RuntimeCompose,
-			expected: "compose",
-		},
-		{
 			name:     "k3d runtime type",
 			runtime:  RuntimeK3d,
 			expected: "k3d",
@@ -32,12 +27,8 @@ func TestRuntimeType_Constants(t *testing.T) {
 }
 
 func TestRuntimeType_String(t *testing.T) {
-	compose := RuntimeCompose
 	k3d := RuntimeK3d
 
-	if string(compose) != "compose" {
-		t.Errorf("RuntimeCompose string = %q, want compose", compose)
-	}
 	if string(k3d) != "k3d" {
 		t.Errorf("RuntimeK3d string = %q, want k3d", k3d)
 	}

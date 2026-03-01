@@ -21,12 +21,12 @@ This tutorial covers the local development stack in detail, including how to use
 
 ## The Development Stack
 
-The `dp dev` command manages a Docker Compose stack with these services:
+The `dp dev` command manages a local k3d cluster with these services:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Kafka | 9092 | Message streaming |
-| MinIO | 9000/9001 | S3-compatible storage |
+| Redpanda | 19092 | Kafka-compatible streaming |
+| LocalStack | 4566 | S3-compatible storage |
 | Marquez | 5000 | Lineage tracking |
 | PostgreSQL | 5432 | Marquez database |
 
@@ -314,12 +314,9 @@ dp run ./my-pipeline --dry-run
 ### View Container Logs
 
 ```bash
-# All services
-docker compose -p dp logs -f
-
-# Specific service
-docker compose -p dp logs -f kafka
-docker compose -p dp logs -f marquez
+# Check pod logs
+kubectl --context k3d-dp-local logs -l app=redpanda
+kubectl --context k3d-dp-local logs -l app=marquez
 ```
 
 ### Access Container Shell
@@ -340,11 +337,10 @@ docker stats
 
 ```bash
 # Check if Kafka is healthy
-docker exec dp-kafka kafka-broker-api-versions \
-  --bootstrap-server localhost:9092
+dp dev status
 
-# Check Kafka logs
-docker compose -p dp logs kafka
+# Check Redpanda logs
+kubectl --context k3d-dp-local logs -l app=redpanda
 ```
 
 #### MinIO Access Denied
@@ -371,32 +367,11 @@ curl http://localhost:5000/api/v1/namespaces/default/jobs
 
 ### Override Configuration
 
-Create `.dp/docker-compose.override.yaml`:
+Chart versions and Helm values can be overridden via `dp config`:
 
-```yaml
-version: '3.8'
-
-services:
-  kafka:
-    environment:
-      KAFKA_HEAP_OPTS: "-Xmx2G -Xms2G"
-      
-  # Add custom service
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-```
-
-### Using Different Ports
-
-```yaml
-version: '3.8'
-
-services:
-  kafka:
-    ports:
-      - "19092:9092"  # Use port 19092 on host
+```bash
+dp config set dev.charts.redpanda.version 25.2.0
+dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ```
 
 ## Stopping the Stack
@@ -407,7 +382,7 @@ services:
 dp dev down
 ```
 
-Data persists in Docker volumes.
+Data persists in persistent volumes.
 
 ### Stop and Remove Data
 
@@ -440,14 +415,54 @@ dp dev down --volumes
 dp dev up
 ```
 
-### 3. Separate Test Data
+### 3. Use Seed Data for Testing
 
-Create separate topics/buckets for testing:
+Declare sample data directly in your asset YAML instead of manually
+creating tables or loading fixtures:
+
+```yaml title="asset/source.yaml"
+spec:
+  dev:
+    seed:
+      inline:
+        - { id: 1, name: "alice" }
+        - { id: 2, name: "bob" }
+```
+
+Then seed the database:
 
 ```bash
-mc mb local/test-data
-mc mb local/prod-data
+dp dev seed
 ```
+
+Use **named profiles** for different test scenarios:
+
+```yaml
+dev:
+  seed:
+    inline:
+      - { id: 1, name: "alice" }      # default
+    profiles:
+      edge-cases:
+        inline:
+          - { id: -1, name: "" }
+          - { id: 999, name: "O'Reilly" }
+      empty: {}
+```
+
+```bash
+# Load edge-case data
+dp dev seed --profile edge-cases
+
+# Reset to an empty table
+dp dev seed --profile empty --clean
+
+# The default profile is used automatically during dp run
+dp run
+```
+
+Seed runs are idempotent — unchanged data is skipped automatically via
+checksum tracking.
 
 ### 4. Use Lineage for Debugging
 
@@ -464,6 +479,7 @@ You've learned how to:
 - [x] Start and manage the development stack
 - [x] Work with local Kafka
 - [x] Use MinIO for S3 storage
+- [x] Load seed data and switch between profiles
 - [x] View lineage in Marquez
 - [x] Debug common issues
 - [x] Customize the stack

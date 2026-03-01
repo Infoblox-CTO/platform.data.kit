@@ -94,7 +94,6 @@ chmod +x bin/dp
    ```bash
    # Force cleanup
    dp dev down --volumes
-   docker compose -p dp down --volumes --remove-orphans
    dp dev up
    ```
 
@@ -116,7 +115,7 @@ chmod +x bin/dp
 
 2. **Check Kafka logs**
    ```bash
-   docker compose -p dp logs kafka
+   kubectl --context k3d-dp-local logs -l app=redpanda
    ```
 
 3. **Verify Kafka is accepting connections**

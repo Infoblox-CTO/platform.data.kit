@@ -252,6 +252,62 @@ Tests run automatically on every PR:
 
 Coverage reports are uploaded as artifacts and the coverage percentage is displayed in the job summary.
 
+## Using Seed Profiles for Test Data
+
+Assets can declare multiple **seed profiles** in their `dev.seed` section.
+This lets you set up different data scenarios for tests without writing SQL
+or managing fixture files separately.
+
+### Defining profiles
+
+```yaml title="asset/source.yaml"
+spec:
+  dev:
+    seed:
+      inline:                          # default profile
+        - { id: 1, name: "alice" }
+        - { id: 2, name: "bob" }
+      profiles:
+        large:
+          file: testdata/1000-rows.csv
+        edge-cases:
+          inline:
+            - { id: -1, name: "" }
+            - { id: 999, name: "O'Reilly" }
+        empty: {}
+```
+
+### Loading profiles in tests
+
+Switch between profiles to run the same pipeline against different data:
+
+```bash
+# Reset to default data
+dp dev seed
+
+# Run with edge-case data
+dp dev seed --profile edge-cases
+dp run
+
+# Run with a large data set
+dp dev seed --profile large
+dp run
+
+# Test with an empty table
+dp dev seed --profile empty --clean
+dp run
+```
+
+### Idempotency
+
+Seed runs are **idempotent by default**. A SHA-256 checksum of the resolved
+data is stored in a `_dp_seed_meta` table in PostgreSQL. On subsequent runs,
+if the data hasn't changed, the seed is skipped entirely — no duplicate-key
+errors, no unnecessary writes.
+
+Use `--force` to re-seed even when the checksum matches, or `--clean` to
+`DROP` and recreate the table from scratch.
+
 ## Troubleshooting
 
 ### Tests fail with "package not found"

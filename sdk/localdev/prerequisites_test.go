@@ -13,12 +13,6 @@ func TestNewPrerequisiteChecker(t *testing.T) {
 		expectedAnyOfKeys [][]string // At least one key from each group must be present
 	}{
 		{
-			name:    "compose runtime requires container runtime and docker-compose",
-			runtime: RuntimeCompose,
-			// Either docker OR rancher must be present, plus docker-compose
-			expectedAnyOfKeys: [][]string{{"docker", "rancher"}, {"docker-compose"}},
-		},
-		{
 			name:    "k3d runtime requires container runtime, k3d, kubectl, and helm",
 			runtime: RuntimeK3d,
 			// Either docker OR rancher must be present, plus k3d, kubectl, and helm
@@ -52,7 +46,7 @@ func TestNewPrerequisiteChecker(t *testing.T) {
 
 func TestPrerequisiteChecker_Check(t *testing.T) {
 	// This test verifies that Check returns results for all tools
-	checker := NewPrerequisiteChecker(RuntimeCompose)
+	checker := NewPrerequisiteChecker(RuntimeK3d)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

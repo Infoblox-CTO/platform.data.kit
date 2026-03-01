@@ -31,7 +31,7 @@ var testCmd = &cobra.Command{
 Supported package types: pipeline, cloudquery
 
 For pipeline packages, runs the pipeline with test data against the
-local development environment (Docker Compose).
+local development environment.
 
 For cloudquery packages, auto-detects the plugin language and runs
 unit tests (pytest or go test). Use --integration to run a full

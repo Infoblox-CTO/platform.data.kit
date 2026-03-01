@@ -60,6 +60,42 @@ type AssetSpec struct {
 
 	// Schema defines the fields/columns in this dataset.
 	Schema []SchemaField `json:"schema,omitempty" yaml:"schema,omitempty"`
+
+	// Dev contains development-only configuration such as seed data.
+	// This section is ignored in production deployments.
+	Dev *AssetDevSpec `json:"dev,omitempty" yaml:"dev,omitempty"`
+}
+
+// AssetDevSpec holds development-time configuration for an Asset.
+type AssetDevSpec struct {
+	// Seed defines mock/sample data to load into the store for local development.
+	Seed *SeedSpec `json:"seed,omitempty" yaml:"seed,omitempty"`
+}
+
+// SeedSpec defines how to populate an Asset's backing store with sample data.
+type SeedSpec struct {
+	// Inline rows to insert. Each entry is a map of column→value.
+	// These are the "default" seed rows used when no --profile is specified.
+	Inline []map[string]any `json:"inline,omitempty" yaml:"inline,omitempty"`
+
+	// File is a path (relative to the package directory) to a CSV or JSON file
+	// containing seed rows for the default profile.
+	File string `json:"file,omitempty" yaml:"file,omitempty"`
+
+	// Profiles defines named alternative seed data sets. Each profile can
+	// supply its own inline rows or file, enabling different test scenarios
+	// (e.g., "large-dataset", "edge-cases", "empty").
+	// Use `dp dev seed --profile <name>` to activate a specific profile.
+	Profiles map[string]*SeedProfileSpec `json:"profiles,omitempty" yaml:"profiles,omitempty"`
+}
+
+// SeedProfileSpec defines a named seed data profile.
+type SeedProfileSpec struct {
+	// Inline rows to insert for this profile.
+	Inline []map[string]any `json:"inline,omitempty" yaml:"inline,omitempty"`
+
+	// File is a path (relative to the package directory) to a CSV or JSON file.
+	File string `json:"file,omitempty" yaml:"file,omitempty"`
 }
 
 // SchemaField defines a single field in an Asset's schema.

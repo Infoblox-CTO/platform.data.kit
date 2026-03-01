@@ -110,11 +110,6 @@ func TestConfig_GetDefaultRuntime(t *testing.T) {
 		expect  RuntimeType
 	}{
 		{
-			name:    "compose",
-			runtime: "compose",
-			expect:  RuntimeCompose,
-		},
-		{
 			name:    "k3d",
 			runtime: "k3d",
 			expect:  RuntimeK3d,
@@ -266,8 +261,8 @@ func TestLoadHierarchicalConfig(t *testing.T) {
 		},
 		{
 			name:         "system only",
-			systemYAML:   "dev:\n  runtime: compose\nplugins:\n  registry: ghcr.io/system-org\n",
-			wantRuntime:  "compose",
+			systemYAML:   "dev:\n  runtime: k3d\nplugins:\n  registry: ghcr.io/system-org\n",
+			wantRuntime:  "k3d",
 			wantRegistry: "ghcr.io/system-org",
 			wantCluster:  DefaultClusterName,
 		},
@@ -287,7 +282,7 @@ func TestLoadHierarchicalConfig(t *testing.T) {
 		},
 		{
 			name:         "merge all three - repo wins",
-			systemYAML:   "dev:\n  runtime: compose\nplugins:\n  registry: ghcr.io/system-org\n",
+			systemYAML:   "dev:\n  runtime: k3d\nplugins:\n  registry: ghcr.io/system-org\n",
 			userYAML:     "dev:\n  runtime: k3d\n  k3d:\n    clusterName: user-cluster\nplugins:\n  registry: ghcr.io/user-org\n",
 			repoYAML:     "plugins:\n  registry: internal.registry.io/repo\n",
 			wantRuntime:  "k3d",
@@ -484,7 +479,7 @@ func TestValidateField(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "valid runtime k3d", key: "dev.runtime", value: "k3d", wantErr: false},
-		{name: "valid runtime compose", key: "dev.runtime", value: "compose", wantErr: false},
+		{name: "invalid runtime compose", key: "dev.runtime", value: "compose", wantErr: true},
 		{name: "invalid runtime", key: "dev.runtime", value: "docker", wantErr: true},
 		{name: "valid registry", key: "plugins.registry", value: "ghcr.io/myteam", wantErr: false},
 		{name: "invalid registry", key: "plugins.registry", value: "https://bad", wantErr: true},
@@ -519,8 +514,8 @@ func TestConfigSetField(t *testing.T) {
 		{
 			name:  "set dev.runtime",
 			key:   "dev.runtime",
-			value: "compose",
-			check: func(c *Config) bool { return c.Dev.Runtime == "compose" },
+			value: "k3d",
+			check: func(c *Config) bool { return c.Dev.Runtime == "k3d" },
 		},
 		{
 			name:  "set dev.workspace",
@@ -588,7 +583,7 @@ func TestConfigUnsetField(t *testing.T) {
 	}{
 		{
 			name:  "unset dev.runtime",
-			setup: func(c *Config) { c.Dev.Runtime = "compose" },
+			setup: func(c *Config) { c.Dev.Runtime = "k3d" },
 			key:   "dev.runtime",
 			check: func(c *Config) bool { return c.Dev.Runtime == "" },
 		},

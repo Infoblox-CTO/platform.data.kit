@@ -14,11 +14,9 @@ GOPATH := $(HOME)/go
 # Default target
 all: lint test build
 
-# ============================================================================
-# Build targets
-# ============================================================================
+##@ Build
 
-build: build-contracts build-sdk build-cli build-controller
+build: build-contracts build-sdk build-cli build-controller ## Build all modules
 	@echo "✓ All modules built successfully"
 
 build-contracts:
@@ -29,30 +27,28 @@ build-sdk:
 	@echo "Building sdk..."
 	@cd sdk && go build ./...
 
-build-cli:
+build-cli: ## Build CLI binary
 	@echo "Building cli..."
 	@cd cli && go build -o ../bin/dp .
 
-build-controller:
+build-controller: ## Build controller binary
 	@echo "Building controller..."
 	@cd platform/controller && go build -o ../../bin/controller ./cmd/
 
-# ============================================================================
-# Test targets
-# ============================================================================
+##@ Test
 
-test: test-contracts test-sdk test-cli test-controller
+test: test-contracts test-sdk test-cli test-controller ## Run all tests
 	@echo "✓ All tests passed"
 
-test-unit: test-contracts test-sdk test-cli test-controller
+test-unit: test-contracts test-sdk test-cli test-controller ## Run unit tests only
 	@echo "✓ All unit tests passed"
 
-test-e2e:
+test-e2e: ## Run E2E tests
 	@echo "Running E2E tests..."
 	@cd tests/e2e && go test -v ./...
 	@echo "✓ E2E tests passed"
 
-test-short:
+test-short: ## Run short tests (skip E2E)
 	@echo "Running short tests (skipping E2E)..."
 	@cd contracts && go test -short ./...
 	@cd sdk && go test -short ./...
@@ -60,7 +56,7 @@ test-short:
 	@cd platform/controller && go test -short ./...
 	@echo "✓ Short tests passed"
 
-test-race:
+test-race: ## Run tests with race detector
 	@echo "Running tests with race detector..."
 	@cd contracts && go test -race ./...
 	@cd sdk && go test -race ./...
@@ -84,8 +80,7 @@ test-controller:
 	@echo "Testing controller..."
 	@cd platform/controller && go test -race ./...
 
-# Coverage report
-coverage:
+coverage: ## Generate coverage reports
 	@mkdir -p coverage
 	@cd contracts && go test -coverprofile=../coverage/contracts.out ./...
 	@cd sdk && go test -coverprofile=../coverage/sdk.out ./...
@@ -93,18 +88,16 @@ coverage:
 	@cd platform/controller && go test -coverprofile=../../coverage/controller.out ./...
 	@echo "Coverage reports generated in coverage/"
 
-test-coverage: coverage
+test-coverage: coverage ## Display coverage summary
 	@echo "Coverage summary:"
 	@go tool cover -func=coverage/contracts.out | grep total || true
 	@go tool cover -func=coverage/sdk.out | grep total || true
 	@go tool cover -func=coverage/cli.out | grep total || true
 	@go tool cover -func=coverage/controller.out | grep total || true
 
-# ============================================================================
-# Lint targets
-# ============================================================================
+##@ Lint
 
-lint: lint-contracts lint-sdk lint-cli lint-controller
+lint: lint-contracts lint-sdk lint-cli lint-controller ## Run linting on all modules
 	@echo "✓ All linting passed"
 
 lint-contracts:
@@ -123,37 +116,33 @@ lint-controller:
 	@echo "Linting controller..."
 	@cd platform/controller && go vet ./... && go fmt ./...
 
-# ============================================================================
-# Development targets
-# ============================================================================
+##@ Development
 
-tidy:
+tidy: ## Tidy all go.mod files
 	@echo "Tidying modules..."
 	@cd contracts && go mod tidy
 	@cd sdk && go mod tidy
 	@cd cli && go mod tidy
 	@cd platform/controller && go mod tidy
 
-install:
+install: ## Install dp to GOPATH/bin
 	@echo "Installing dp to $(GOPATH)/bin..."
 	@cd cli && go build -o $(GOPATH)/bin/dp .
 	@echo "✓ Installed dp to $(GOPATH)/bin/dp"
 
-run-local:
+run-local: ## Start local dev stack
 	@echo "Starting local development stack..."
-	@docker compose -f hack/compose/docker-compose.yaml up -d
+	@cd cli && go run . dev up
 	@echo "✓ Local stack running"
 
-stop-local:
+stop-local: ## Stop local dev stack
 	@echo "Stopping local development stack..."
-	@docker compose -f hack/compose/docker-compose.yaml down
+	@cd cli && go run . dev down
 	@echo "✓ Local stack stopped"
 
-# ============================================================================
-# Helm chart dependency targets
-# ============================================================================
+##@ Helm
 
-helm-deps:
+helm-deps: ## Build Helm chart dependencies
 	@echo "Building Helm chart dependencies..."
 	@for chart in sdk/localdev/charts/redpanda sdk/localdev/charts/postgres; do \
 		if [ -f "$$chart/Chart.yaml" ] && grep -q "dependencies:" "$$chart/Chart.yaml"; then \
@@ -163,26 +152,22 @@ helm-deps:
 	done
 	@echo "✓ Helm chart dependencies built"
 
-# ============================================================================
-# Code generation targets
-# ============================================================================
+##@ Code Generation
 
-generate:
+generate: ## Run go generate
 	@echo "Generating code..."
 	@cd platform/controller && go generate ./...
 
-manifests:
+manifests: ## Generate CRD manifests
 	@echo "Generating CRD manifests..."
 	@cd platform/controller && controller-gen crd paths="./..." output:crd:artifacts:config=config/crd
 
-# ============================================================================
-# Release targets
-# ============================================================================
+##@ Release
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 
-release-cli:
+release-cli: ## Build release CLI binaries
 	@echo "Building release CLI $(VERSION)..."
 	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dp-linux-amd64 .
 	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dp-linux-arm64 .
@@ -190,16 +175,14 @@ release-cli:
 	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dp-darwin-arm64 .
 	@echo "✓ Release binaries in bin/"
 
-release-controller:
+release-controller: ## Build controller Docker image
 	@echo "Building controller image..."
 	@docker build -t cdpp-controller:$(VERSION) -f platform/controller/Dockerfile .
 	@echo "✓ Controller image built"
 
-# ============================================================================
-# Cleanup targets
-# ============================================================================
+##@ Cleanup
 
-clean:
+clean: ## Remove build artifacts
 	@echo "Cleaning build artifacts..."
 	@rm -rf bin/
 	@rm -rf coverage/
@@ -208,46 +191,31 @@ clean:
 	@find . -name "*.out" -delete
 	@echo "✓ Clean complete"
 
-# ============================================================================
-# Help
-# ============================================================================
+##@ Help
 
-help:
-	@echo "Data Kit Build System"
-	@echo ""
-	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Build targets:"
-	@echo "  build           Build all modules"
-	@echo "  build-cli       Build CLI binary"
-	@echo "  build-controller Build controller binary"
-	@echo ""
-	@echo "Test targets:"
-	@echo "  test            Run all tests"
-	@echo "  test-unit       Run unit tests only"
-	@echo "  test-e2e        Run E2E tests only"
-	@echo "  test-short      Run short tests (skip E2E)"
-	@echo "  test-race       Run tests with race detector"
-	@echo "  coverage        Generate coverage reports"
-	@echo "  test-coverage   Generate and display coverage summary"
-	@echo ""
-	@echo "Lint targets:"
-	@echo "  lint            Run linting on all modules"
-	@echo "  lint-fix        Auto-fix lint issues"
-	@echo ""
-	@echo "Development targets:"
-	@echo "  tidy            Tidy all go.mod files"
-	@echo "  install         Install dp to GOPATH/bin"
-	@echo "  run-local       Start local dev stack"
-	@echo "  stop-local      Stop local dev stack"
-	@echo ""
-	@echo "Code generation:"
-	@echo "  generate        Run go generate"
-	@echo "  manifests       Generate CRD manifests"
-	@echo ""
-	@echo "Release targets:"
-	@echo "  release-cli     Build release CLI binaries"
-	@echo "  release-controller Build controller Docker image"
-	@echo ""
-	@echo "Cleanup:"
-	@echo "  clean           Remove build artifacts"
+# ANSI color codes
+# Disabled automatically in CI (GitHub Actions, Jenkins, GitLab, Travis, CircleCI)
+# or when NO_COLOR=1 is set (see https://no-color.org)
+CI_DETECTED := $(or $(NO_COLOR),$(CI),$(GITHUB_ACTIONS),$(JENKINS_URL),$(BUILD_NUMBER),$(GITLAB_CI),$(TRAVIS),$(CIRCLECI))
+ifdef CI_DETECTED
+  C_RESET  :=
+  C_BOLD   :=
+  C_CYAN   :=
+  C_GREEN  :=
+  C_YELLOW :=
+  C_DIM    :=
+else
+  C_RESET  := \033[0m
+  C_BOLD   := \033[1m
+  C_CYAN   := \033[36m
+  C_GREEN  := \033[32m
+  C_YELLOW := \033[33m
+  C_DIM    := \033[2m
+endif
+
+help: ## Show this help
+	@printf "$(C_BOLD)Data Kit Build System$(C_RESET)\n\n"
+	@printf "$(C_DIM)Usage:$(C_RESET) make $(C_CYAN)<target>$(C_RESET)\n"
+	@awk 'BEGIN {FS = ":.*## "} \
+		/^##@/ { printf "\n$(C_YELLOW)%s$(C_RESET)\n", substr($$0, 5); next } \
+		/^[a-zA-Z_0-9-]+:.*## / { printf "  $(C_GREEN)%-20s$(C_RESET) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)

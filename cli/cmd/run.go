@@ -341,8 +341,6 @@ func detectDevNetwork() string {
 			cluster = localdev.DefaultClusterName
 		}
 		return fmt.Sprintf("k3d-%s", cluster)
-	case localdev.RuntimeCompose:
-		return "dp-network"
 	default:
 		return detectNetworkByProbing()
 	}
@@ -350,12 +348,11 @@ func detectDevNetwork() string {
 
 // detectNetworkByProbing checks which dev network actually exists.
 func detectNetworkByProbing() string {
-	// Try k3d network first (default runtime)
+	// Try k3d network (default runtime)
 	k3dNetwork := fmt.Sprintf("k3d-%s", localdev.DefaultClusterName)
 	if networkExists(k3dNetwork) {
 		return k3dNetwork
 	}
-	// Fall back to compose network
 	return "dp-network"
 }
 

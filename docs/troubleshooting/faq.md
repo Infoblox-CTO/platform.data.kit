@@ -104,15 +104,11 @@ Assets reference the Store by name — no additional configuration is needed.
 
 ### How do I add custom services to the dev stack?
 
-Create `.dp/docker-compose.override.yaml`:
+Use `dp config` to customize chart versions and Helm values:
 
-```yaml
-version: '3.8'
-services:
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
+```bash
+dp config set dev.charts.redpanda.version 25.2.0
+dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ```
 
 ### How do I persist data between runs?
@@ -353,7 +349,7 @@ export PATH=$PATH:/path/to/data-platform/bin
 ### Pipeline can't connect to Kafka
 
 1. Wait for Kafka to be ready: `dp dev status`
-2. Check Kafka logs: `docker compose -p dp logs kafka`
+2. Check Kafka logs: `kubectl --context k3d-dp-local logs -l app=redpanda`
 3. Verify bootstrap server: `localhost:9092`
 
 ### Push to registry fails

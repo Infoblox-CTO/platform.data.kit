@@ -45,3 +45,19 @@ postgresql:
           GRANT ALL PRIVILEGES ON SCHEMA dp TO dpuser;
           GRANT ALL PRIVILEGES ON SCHEMA staging TO dpuser;
           GRANT ALL PRIVILEGES ON SCHEMA curated TO dpuser;
+
+          -- Create example_table used by the default bootstrapped transform
+          -- (dp init <name> --runtime cloudquery) so it works out of the box.
+          CREATE TABLE IF NOT EXISTS example_table (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+          GRANT ALL PRIVILEGES ON TABLE example_table TO dpuser;
+          GRANT USAGE, SELECT ON SEQUENCE example_table_id_seq TO dpuser;
+
+          -- Seed a few rows so the first sync produces visible output.
+          INSERT INTO example_table (name) VALUES
+            ('alice'),
+            ('bob'),
+            ('charlie');

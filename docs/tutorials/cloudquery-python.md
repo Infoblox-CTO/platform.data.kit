@@ -25,7 +25,7 @@ You'll learn the full developer lifecycle for a Python CloudQuery plugin:
 ## 1. Scaffold a Python Plugin
 
 ```bash
-dp init -t cloudquery -l python my-source
+dp init my-source --runtime cloudquery
 cd my-source
 ```
 
@@ -61,14 +61,29 @@ my-source/
 cat dp.yaml
 ```
 
-The manifest declares this as a CloudQuery source plugin written in Python:
+The manifest declares this as a **Transform** with the CloudQuery runtime:
 
 ```yaml
+apiVersion: data.infoblox.com/v1alpha1
+kind: Transform
+metadata:
+  name: my-source
+  namespace: default
+  version: 0.1.0
+  labels:
+    team: my-team
 spec:
   runtime: cloudquery
+  mode: batch
+  inputs:
+    - asset: my-source-source-table
+  outputs:
+    - asset: my-source-dest-table
+  timeout: 30m
 ```
 
-The `cloudquery` runtime tells DP that this package is a CloudQuery plugin.
+The `kind: Transform` with `runtime: cloudquery` tells DP that this package is a CloudQuery plugin.
+The `inputs` and `outputs` declare the assets this transform reads from and writes to.
 No container `image` is required — plugin images come from the Connector manifest.
 
 ### plugin/tables/example_resource.py — Table Definition
@@ -348,7 +363,7 @@ dp run --sync --destination postgresql  # Sync to PostgreSQL
 
 | Command | What it does | Needs Docker/k3d? |
 |---------|--------------|-------------------|
-| `dp init -t cloudquery -l python <name>` | Scaffold a new plugin | No |
+| `dp init <name> --runtime cloudquery` | Scaffold a new plugin | No |
 | `dp test` | Create venv, install deps, run pytest | No |
 | `dp run` | Build container, deploy to k3d, discover tables | Yes |
 | `dp run --sync` | Sync data to local JSON files | Yes |

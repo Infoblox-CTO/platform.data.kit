@@ -81,7 +81,7 @@ type PluginOverride struct {
 
 // DevConfig represents the dev command configuration.
 type DevConfig struct {
-	// Runtime is the default runtime to use (compose or k3d).
+	// Runtime is the default runtime to use (k3d).
 	Runtime string `yaml:"runtime"`
 	// Workspace is the path to the DP workspace.
 	Workspace string `yaml:"workspace"`
@@ -152,12 +152,7 @@ func LoadConfigFromPath(path string) (*Config, error) {
 
 // GetDefaultRuntime returns the configured default runtime.
 func (c *Config) GetDefaultRuntime() RuntimeType {
-	switch c.Dev.Runtime {
-	case "compose", "docker-compose":
-		return RuntimeCompose
-	default:
-		return RuntimeK3d
-	}
+	return RuntimeK3d
 }
 
 // SaveConfig saves the configuration to the default path.
@@ -318,8 +313,7 @@ func isChartKey(key string) (chartName, field, valuesPath string, ok bool) {
 
 // validRuntimes lists valid values for dev.runtime.
 var validRuntimes = map[string]bool{
-	"k3d":     true,
-	"compose": true,
+	"k3d": true,
 }
 
 // semverRegex matches semver version strings like v1.2.3.
@@ -337,7 +331,7 @@ func (c *Config) Validate() []error {
 
 	// Validate dev.runtime
 	if c.Dev.Runtime != "" && !validRuntimes[c.Dev.Runtime] {
-		errs = append(errs, fmt.Errorf("invalid value %q for dev.runtime (allowed: k3d, compose)", c.Dev.Runtime))
+		errs = append(errs, fmt.Errorf("invalid value %q for dev.runtime (allowed: k3d)", c.Dev.Runtime))
 	}
 
 	// Validate dev.k3d.clusterName
@@ -438,7 +432,7 @@ func ValidateField(key, value string) error {
 	switch key {
 	case "dev.runtime":
 		if !validRuntimes[value] {
-			return fmt.Errorf("invalid value %q for dev.runtime (allowed: k3d, compose)", value)
+			return fmt.Errorf("invalid value %q for dev.runtime (allowed: k3d)", value)
 		}
 	case "dev.k3d.clusterName":
 		if !dnsNameRegex.MatchString(value) {

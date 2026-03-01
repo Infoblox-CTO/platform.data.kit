@@ -25,6 +25,7 @@ These flags apply to all commands:
 |---------|-------------|
 | [`dp init`](#dp-init) | Create a new data package |
 | [`dp dev`](#dp-dev) | Manage local development stack |
+| [`dp dev seed`](#dp-dev-seed) | Load seed data into local dev stores |
 | [`dp config`](#dp-config) | Manage dp configuration |
 | [`dp lint`](#dp-lint) | Validate package manifests |
 | [`dp run`](#dp-run) | Execute pipeline locally |
@@ -128,8 +129,7 @@ dp dev up [flags]
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--runtime` | Runtime to use (k3d, compose) | k3d |
-| `--compose` | Path to docker-compose.yaml | auto-detected |
+| `--runtime` | Runtime to use | k3d |
 | `--detach` | Run in background | false |
 | `--timeout` | Startup timeout | 60s |
 
@@ -138,11 +138,6 @@ dp dev up [flags]
 ```bash
 # Start local stack with k3d (default)
 dp dev up
-```
-
-```bash
-# Start local stack with Docker Compose
-dp dev up --runtime=compose
 ```
 
 ```bash
@@ -176,6 +171,87 @@ dp dev down
 # Stop compose stack and remove volumes
 dp dev down --runtime=compose --volumes
 ```
+
+### dp dev seed
+
+Load seed data into local dev stores.
+
+```bash
+dp dev seed [package-dir] [flags]
+```
+
+Reads each input asset in the package and, for assets that declare a
+`dev.seed` section, creates the table (if missing) and inserts sample data
+into the backing database in the local k3d cluster.
+
+Seed runs are **idempotent**: a SHA-256 checksum of the resolved rows is
+stored in a `_dp_seed_meta` table. If the data hasn't changed since the
+last seed, the asset is skipped entirely.
+
+When the data *does* change (or when `--force` / `--clean` is used), the
+table is `TRUNCATE`d before inserting so the contents always match the
+seed spec exactly — no stale rows, no duplicate-key errors.
+
+#### Flags
+
+| Flag | Description | Default |
+|------|-------------|--------|
+| `--profile` | Use a named seed profile instead of the default | |
+| `--force` | Re-seed even when data is unchanged | false |
+| `--clean` | Drop and recreate tables before seeding | false |
+| `--asset` | Seed only a specific asset by name | (all) |
+
+#### Examples
+
+```bash
+# Seed all input assets (skips if data unchanged)
+dp dev seed
+```
+
+```bash
+# Use a named seed profile for integration tests
+dp dev seed --profile edge-cases
+```
+
+```bash
+# Force re-seed even if data hasn't changed
+dp dev seed --force
+```
+
+```bash
+# Drop and recreate tables (full reset)
+dp dev seed --clean
+```
+
+```bash
+# Seed only a specific asset
+dp dev seed --asset users-source-table
+```
+
+```bash
+# Seed from a specific package directory
+dp dev seed ./my-pipeline
+```
+
+#### Output Example
+
+```
+Seeding users-source-table (example_table, profile=default): 3 row(s)...
+
+✓ Seeded 1 asset(s), 3 row(s) inserted
+```
+
+On subsequent runs with unchanged data:
+
+```
+Skipping users-source-table (profile=default): data unchanged
+
+✓ Seeded 0 asset(s), 0 row(s) inserted, 1 unchanged (skipped)
+```
+
+!!! tip "Auto-seeding during `dp run`"
+    Seed data is also loaded automatically before each `dp run` execution.
+    The checksum skip ensures this adds no overhead when data is unchanged.
 
 ### dp dev status
 

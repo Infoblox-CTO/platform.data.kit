@@ -255,7 +255,7 @@ lsof -i :4566
 lsof -i :5432
 ```
 
-Stop conflicting services or use Docker Compose runtime which may use different ports.
+Stop conflicting services before starting the k3d stack.
 
 ### "Cluster creation timed out"
 
@@ -271,15 +271,3 @@ kubectl --context k3d-dp-local get pods
 kubectl --context k3d-dp-local describe pod <pod-name>
 kubectl --context k3d-dp-local logs <pod-name>
 ```
-
-## Comparison: Docker Compose vs k3d
-
-| Feature | Docker Compose | k3d |
-|---------|---------------|-----|
-| Startup time | ~30s | ~90s (first), ~30s (subsequent) |
-| Resource usage | Lower | Higher (runs k3s) |
-| Kubernetes-native | No | Yes |
-| Works from any directory | No (needs compose file) | Yes |
-| Production parity | Lower | Higher |
-
-**Recommendation**: Use k3d if you want a Kubernetes-native development experience. Use Docker Compose for faster iteration on simple pipelines.

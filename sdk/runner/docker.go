@@ -304,6 +304,22 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 		return nil, fmt.Errorf("failed to generate CloudQuery config: %w", err)
 	}
 
+	// Auto-seed: create tables & load sample data for any input asset that
+	// declares dev.seed. This ensures the backing database has the expected
+	// schema even after a pod restart (persistence is disabled in dev mode).
+	seedOpts := SeedOptions{
+		PackageDir: opts.PackageDir,
+		Output:     opts.Output,
+	}
+	if seedResult, err := SeedPackage(ctx, seedOpts); err != nil {
+		if opts.Output != nil {
+			fmt.Fprintf(opts.Output, "Warning: dev seed failed: %v\n", err)
+		}
+	} else if seedResult.AssetsSeeded > 0 && opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Seeded %d asset(s), %d row(s)\n",
+			seedResult.AssetsSeeded, seedResult.RowsInserted)
+	}
+
 	// Determine k3d cluster settings.
 	clusterName := defaultClusterName
 	namespace := defaultNamespace

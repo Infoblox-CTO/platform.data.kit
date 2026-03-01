@@ -14,3 +14,9 @@ spec:
       type: string
     - name: created_at
       type: timestamp
+  dev:
+    seed:
+      inline:
+        - { id: 1, name: "alice",   created_at: "2026-01-01T00:00:00Z" }
+        - { id: 2, name: "bob",     created_at: "2026-01-15T00:00:00Z" }
+        - { id: 3, name: "charlie", created_at: "2026-02-01T00:00:00Z" }

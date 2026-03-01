@@ -76,12 +76,13 @@ dp dev up
 
 Each chart includes init jobs that automatically create topics, buckets, database schemas, and lineage namespaces — no manual setup required.
 
-!!! tip "Alternative: Use Docker Compose"
-    You can also run the local development stack using Docker Compose:
-    
+!!! tip "Seed Data"
+    If your input assets declare `dev.seed` data, you can load it now:
     ```bash
-    dp dev up --runtime=compose
+    dp dev seed
     ```
+    This creates tables and inserts sample rows into the local PostgreSQL.
+    Seed data is also loaded automatically before each `dp run`.
 
 Check the status:
 
@@ -257,8 +258,9 @@ You've completed the full DP workflow:
 |------|---------|--------------|
 | 1 | `dp init` | Create a new data package |
 | 2 | `dp dev up` | Start local infrastructure |
+| 2b | `dp dev seed` | Load sample data into local stores |
 | 3 | `dp lint` | Validate manifests |
-| 4 | `dp run` | Execute locally |
+| 4 | `dp run` | Execute locally (auto-seeds if needed) |
 | 5 | ~~`dp lineage`~~ | View data lineage *(not yet implemented — use Marquez UI)* |
 | 6 | `dp logs` | Stream logs from a run |
 | 7 | `dp build` | Create OCI artifact |

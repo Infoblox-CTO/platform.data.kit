@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev"
@@ -15,7 +14,6 @@ func TestDevCmd_Flags(t *testing.T) {
 		flag     string
 		defValue string
 	}{
-		{"compose", ""},
 		{"runtime", "k3d"},
 	}
 
@@ -59,21 +57,6 @@ func TestGetRuntime_DefaultK3d(t *testing.T) {
 
 	if runtime != localdev.RuntimeK3d {
 		t.Errorf("getRuntime() = %q, want %q", runtime, localdev.RuntimeK3d)
-	}
-}
-
-// TestGetRuntime_ExplicitCompose tests getRuntime with explicit compose runtime.
-func TestGetRuntime_ExplicitCompose(t *testing.T) {
-	oldRuntime := devRuntime
-	defer func() { devRuntime = oldRuntime }()
-
-	devRuntime = "compose"
-	runtime, err := getRuntime()
-	if err != nil {
-		t.Fatalf("getRuntime() error = %v", err)
-	}
-	if runtime != localdev.RuntimeCompose {
-		t.Errorf("getRuntime() = %q, want %q", runtime, localdev.RuntimeCompose)
 	}
 }
 
@@ -150,160 +133,6 @@ func TestGetWorkspacePath_EnvOverridesConfig(t *testing.T) {
 	result := getWorkspacePath()
 	if result != envPath {
 		t.Errorf("getWorkspacePath() = %q, want %q (env should override config)", result, envPath)
-	}
-}
-
-// TestFindComposeFile_WithWorkspacePath tests findComposeFile uses workspace path.
-func TestFindComposeFile_WithWorkspacePath(t *testing.T) {
-	// Create a temp directory with docker-compose.yaml
-	tmpDir := t.TempDir()
-	composeDir := filepath.Join(tmpDir, "hack", "compose")
-	if err := os.MkdirAll(composeDir, 0755); err != nil {
-		t.Fatalf("failed to create compose dir: %v", err)
-	}
-
-	composePath := filepath.Join(composeDir, "docker-compose.yaml")
-	if err := os.WriteFile(composePath, []byte("version: '3'\n"), 0644); err != nil {
-		t.Fatalf("failed to write compose file: %v", err)
-	}
-
-	// Save and restore env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
-
-	os.Setenv("DP_WORKSPACE_PATH", tmpDir)
-
-	// Change to a different directory
-	oldWd, _ := os.Getwd()
-	os.Chdir(os.TempDir())
-	defer os.Chdir(oldWd)
-
-	result, err := findComposeFile()
-	if err != nil {
-		t.Fatalf("findComposeFile() error = %v", err)
-	}
-
-	if result != composePath {
-		t.Errorf("findComposeFile() = %q, want %q", result, composePath)
-	}
-}
-
-// TestFindComposeFile_NoFile tests findComposeFile when file doesn't exist.
-func TestFindComposeFile_NoFile(t *testing.T) {
-	// Save and restore env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
-
-	os.Unsetenv("DP_WORKSPACE_PATH")
-
-	// Change to temp dir with no compose file
-	tmpDir := t.TempDir()
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
-
-	_, err := findComposeFile()
-	if err == nil {
-		t.Error("findComposeFile() should return error when file not found")
-	}
-}
-
-// TestFindComposeFile_CurrentDir tests findComposeFile finds file in current directory.
-func TestFindComposeFile_CurrentDir(t *testing.T) {
-	// Create a temp directory with docker-compose.yaml
-	tmpDir := t.TempDir()
-	composePath := filepath.Join(tmpDir, "docker-compose.yaml")
-	if err := os.WriteFile(composePath, []byte("version: '3'\n"), 0644); err != nil {
-		t.Fatalf("failed to write compose file: %v", err)
-	}
-
-	// Clear env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
-	os.Unsetenv("DP_WORKSPACE_PATH")
-
-	// Change to temp dir
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
-
-	result, err := findComposeFile()
-	if err != nil {
-		t.Fatalf("findComposeFile() error = %v", err)
-	}
-
-	// Resolve symlinks for comparison (macOS /var -> /private/var)
-	expectedPath, _ := filepath.EvalSymlinks(composePath)
-	resultPath, _ := filepath.EvalSymlinks(result)
-
-	if resultPath != expectedPath {
-		t.Errorf("findComposeFile() = %q, want %q", resultPath, expectedPath)
-	}
-}
-
-// TestFindComposeFile_HackCompose tests findComposeFile finds file in hack/compose.
-func TestFindComposeFile_HackCompose(t *testing.T) {
-	// Create a temp directory with hack/compose/docker-compose.yaml
-	tmpDir := t.TempDir()
-	composeDir := filepath.Join(tmpDir, "hack", "compose")
-	if err := os.MkdirAll(composeDir, 0755); err != nil {
-		t.Fatalf("failed to create compose dir: %v", err)
-	}
-
-	composePath := filepath.Join(composeDir, "docker-compose.yaml")
-	if err := os.WriteFile(composePath, []byte("version: '3'\n"), 0644); err != nil {
-		t.Fatalf("failed to write compose file: %v", err)
-	}
-
-	// Clear env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
-	os.Unsetenv("DP_WORKSPACE_PATH")
-
-	// Change to temp dir
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
-
-	result, err := findComposeFile()
-	if err != nil {
-		t.Fatalf("findComposeFile() error = %v", err)
-	}
-
-	// Resolve symlinks for comparison (macOS /var -> /private/var)
-	expectedPath, _ := filepath.EvalSymlinks(composePath)
-	resultPath, _ := filepath.EvalSymlinks(result)
-
-	if resultPath != expectedPath {
-		t.Errorf("findComposeFile() = %q, want %q", resultPath, expectedPath)
-	}
-}
-
-// TestGetRuntimeManager_Compose tests getRuntimeManager for compose runtime.
-func TestGetRuntimeManager_Compose(t *testing.T) {
-	// Create temp compose file
-	tmpDir := t.TempDir()
-	composePath := filepath.Join(tmpDir, "docker-compose.yaml")
-	if err := os.WriteFile(composePath, []byte("version: '3'\n"), 0644); err != nil {
-		t.Fatalf("failed to write compose file: %v", err)
-	}
-
-	oldPath := devComposePath
-	defer func() { devComposePath = oldPath }()
-
-	devComposePath = composePath
-
-	manager, err := getRuntimeManager(localdev.RuntimeCompose)
-	if err != nil {
-		t.Fatalf("getRuntimeManager(compose) error = %v", err)
-	}
-
-	if manager == nil {
-		t.Error("getRuntimeManager(compose) returned nil")
-	}
-
-	if manager.Type() != localdev.RuntimeCompose {
-		t.Errorf("manager.Type() = %q, want %q", manager.Type(), localdev.RuntimeCompose)
 	}
 }
 
@@ -470,16 +299,5 @@ func TestIntegration_BackwardCompatibility(t *testing.T) {
 	if runtime != localdev.RuntimeK3d {
 		t.Errorf("Default runtime = %q, want %q (k3d should be default)",
 			runtime, localdev.RuntimeK3d)
-	}
-
-	// With explicit compose flag
-	devRuntime = "compose"
-	runtime, err = getRuntime()
-	if err != nil {
-		t.Fatalf("getRuntime() error = %v", err)
-	}
-
-	if runtime != localdev.RuntimeCompose {
-		t.Errorf("Explicit compose runtime = %q, want %q", runtime, localdev.RuntimeCompose)
 	}
 }

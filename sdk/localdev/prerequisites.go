@@ -67,9 +67,6 @@ func NewPrerequisiteChecker(runtime RuntimeType) *PrerequisiteChecker {
 		checker.requiredTools["k3d"] = []string{"k3d", "version"}
 		checker.requiredTools["kubectl"] = []string{"kubectl", "version", "--client"}
 		checker.requiredTools["helm"] = []string{"helm", "version", "--short"}
-	case RuntimeCompose:
-		// Docker Compose is bundled with Docker/Rancher, but check anyway
-		checker.requiredTools["docker-compose"] = []string{"docker", "compose", "version"}
 	}
 
 	return checker
@@ -178,7 +175,6 @@ func extractVersion(output string) string {
 		line := strings.TrimSpace(lines[0])
 		// Remove common prefixes
 		line = strings.TrimPrefix(line, "Docker version ")
-		line = strings.TrimPrefix(line, "Docker Compose version ")
 		line = strings.TrimPrefix(line, "kubectl version ")
 		line = strings.TrimPrefix(line, "k3d version ")
 		// Take first word if it looks like a version

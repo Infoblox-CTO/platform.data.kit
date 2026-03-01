@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 )
 
 var (
-	devComposePath   string
 	devRemoveVolumes bool
 	devRuntime       string
 )
@@ -90,8 +88,7 @@ func init() {
 	devCmd.AddCommand(devStatusCmd)
 
 	// Flags for dev commands
-	devCmd.PersistentFlags().StringVar(&devComposePath, "compose", "", "Path to docker-compose.yaml (auto-detected if not specified)")
-	devCmd.PersistentFlags().StringVar(&devRuntime, "runtime", "k3d", "Runtime to use: 'k3d' (default) or 'compose'")
+	devCmd.PersistentFlags().StringVar(&devRuntime, "runtime", "k3d", "Runtime to use (default: k3d)")
 	devDownCmd.Flags().BoolVar(&devRemoveVolumes, "volumes", false, "Remove data volumes when stopping")
 }
 
@@ -109,58 +106,6 @@ func getWorkspacePath() string {
 	}
 
 	return ""
-}
-
-// findComposeFile searches for the docker-compose file in standard locations
-func findComposeFile() (string, error) {
-	// First check DP_WORKSPACE_PATH environment variable
-	workspacePath := getWorkspacePath()
-
-	// Get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	// Build search paths
-	var searchPaths []string
-
-	// If workspace path is set, search there first
-	if workspacePath != "" {
-		searchPaths = append(searchPaths,
-			filepath.Join(workspacePath, "hack", "compose", "docker-compose.yaml"),
-			filepath.Join(workspacePath, "hack", "compose", "docker-compose.yml"),
-			filepath.Join(workspacePath, "docker-compose.yaml"),
-			filepath.Join(workspacePath, "docker-compose.yml"),
-		)
-	}
-
-	// Search paths relative to current directory
-	searchPaths = append(searchPaths,
-		filepath.Join(cwd, "hack", "compose", "docker-compose.yaml"),
-		filepath.Join(cwd, "hack", "compose", "docker-compose.yml"),
-		filepath.Join(cwd, "docker-compose.yaml"),
-		filepath.Join(cwd, "docker-compose.yml"),
-	)
-
-	// Also search in parent directories (up to 3 levels)
-	for i := 0; i < 3; i++ {
-		parent := cwd
-		for j := 0; j <= i; j++ {
-			parent = filepath.Dir(parent)
-		}
-		searchPaths = append(searchPaths,
-			filepath.Join(parent, "hack", "compose", "docker-compose.yaml"),
-		)
-	}
-
-	for _, p := range searchPaths {
-		if _, err := os.Stat(p); err == nil {
-			return p, nil
-		}
-	}
-
-	return "", fmt.Errorf("docker-compose.yaml not found; specify path with --compose, set DP_WORKSPACE_PATH, or run from DP workspace")
 }
 
 // getRuntime returns the selected runtime type based on the --runtime flag or config.
@@ -181,29 +126,14 @@ func getRuntime() (localdev.RuntimeType, error) {
 	switch runtime {
 	case "k3d", "kubernetes", "k8s":
 		return localdev.RuntimeK3d, nil
-	case "compose", "docker-compose":
-		return localdev.RuntimeCompose, nil
 	default:
-		return "", fmt.Errorf("unsupported runtime %q; use 'k3d' or 'compose'", devRuntime)
+		return "", fmt.Errorf("unsupported runtime %q; use 'k3d'", devRuntime)
 	}
 }
 
 // getRuntimeManager creates the appropriate runtime manager based on the selected runtime.
 func getRuntimeManager(runtime localdev.RuntimeType) (localdev.RuntimeManager, error) {
 	switch runtime {
-	case localdev.RuntimeCompose:
-		composePath := devComposePath
-		var err error
-
-		if composePath == "" {
-			composePath, err = findComposeFile()
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		return localdev.NewComposeManager(composePath)
-
 	case localdev.RuntimeK3d:
 		k3dManager, err := localdev.NewK3dManager("dp-local")
 		if err != nil {

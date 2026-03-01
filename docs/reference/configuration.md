@@ -250,74 +250,20 @@ Use `dp config list` to see the effective value and source for each setting.
 
 ## Local Development Stack
 
-### docker-compose.yaml
+The `dp dev up` command deploys Helm charts to a local k3d cluster providing:
 
-The default development stack includes:
+| Service | Port | Purpose |
+|---------|------|---------|
+| Redpanda | 19092 | Kafka-compatible streaming |
+| LocalStack | 4566 | AWS S3 emulation |
+| PostgreSQL | 5432 | Relational database |
+| Marquez | 5000, 3000 | Data lineage tracking |
 
-```yaml
-# docker-compose.yaml (managed by dp dev)
-version: '3.8'
+Chart versions and Helm values can be overridden via `dp config`:
 
-services:
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      
-  minio:
-    image: minio/minio:latest
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-      
-  postgres:
-    image: postgres:15
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: marquez
-      POSTGRES_PASSWORD: marquez
-      POSTGRES_DB: marquez
-      
-  marquez:
-    image: marquezproject/marquez:0.41.0
-    ports:
-      - "5000:5000"
-    depends_on:
-      - postgres
-    environment:
-      MARQUEZ_PORT: 5000
-      MARQUEZ_ADMIN_PORT: 5001
-```
-
-### Customizing the Stack
-
-Override services in `.dp/docker-compose.override.yaml`:
-
-```yaml
-# .dp/docker-compose.override.yaml
-version: '3.8'
-
-services:
-  # Add Redis for caching
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-      
-  # Override Kafka memory
-  kafka:
-    environment:
-      KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
+```bash
+dp config set dev.charts.redpanda.version 25.2.0
+dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ```
 
 ---
