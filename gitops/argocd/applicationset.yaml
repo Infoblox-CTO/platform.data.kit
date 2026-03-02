@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: dp-environments
+  name: dk-environments
   namespace: argocd
 spec:
   generators:
@@ -9,32 +9,32 @@ spec:
         elements:
           - environment: dev
             cluster: in-cluster
-            namespace: dp-dev
+            namespace: dk-dev
             autoSync: true
             selfHeal: true
           - environment: int
             cluster: in-cluster
-            namespace: dp-int
+            namespace: dk-int
             autoSync: true
             selfHeal: true
           - environment: prod
             cluster: in-cluster
-            namespace: dp-prod
+            namespace: dk-prod
             autoSync: false
             selfHeal: false
   template:
     metadata:
-      name: dp-{{environment}}
+      name: dk-{{environment}}
       namespace: argocd
       labels:
         app.kubernetes.io/name: dp
         app.kubernetes.io/component: platform
         app.kubernetes.io/part-of: dp
-        dp.io/environment: "{{environment}}"
+        datakit.infoblox.dev/environment: "{{environment}}"
       annotations:
-        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: dp-alerts
-        notifications.argoproj.io/subscribe.on-sync-failed.slack: dp-alerts
-        notifications.argoproj.io/subscribe.on-health-degraded.slack: dp-alerts
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: dk-alerts
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: dk-alerts
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: dk-alerts
     spec:
       project: default
       source:
@@ -84,9 +84,9 @@ spec:
     - https://github.com/Infoblox-CTO/platform.data.kit.git
     - ghcr.io/infoblox-cto/*
   destinations:
-    - namespace: dp-*
+    - namespace: dk-*
       server: https://kubernetes.default.svc
-    - namespace: dp-system
+    - namespace: dk-system
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ""
@@ -100,18 +100,18 @@ spec:
       kind: "*"
     - group: batch
       kind: "*"
-    - group: dp.io
+    - group: datakit.infoblox.dev
       kind: "*"
   roles:
     - name: admin
-      description: DP admin role
+      description: DK admin role
       policies:
-        - p, proj:dp:admin, applications, *, dp/*, allow
+        - p, proj:dk:admin, applications, *, dk/*, allow
       groups:
-        - dp-admins
+        - dk-admins
     - name: readonly
-      description: DP read-only role
+      description: DK read-only role
       policies:
-        - p, proj:dp:readonly, applications, get, dp/*, allow
+        - p, proj:dk:readonly, applications, get, dk/*, allow
       groups:
-        - dp-viewers
+        - dk-viewers

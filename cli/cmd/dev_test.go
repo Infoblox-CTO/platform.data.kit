@@ -95,11 +95,11 @@ func TestGetRuntime_Invalid(t *testing.T) {
 // TestGetWorkspacePath_FromEnv tests workspace path from environment variable.
 func TestGetWorkspacePath_FromEnv(t *testing.T) {
 	// Save and restore env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
+	oldVal := os.Getenv("DK_WORKSPACE_PATH")
+	defer os.Setenv("DK_WORKSPACE_PATH", oldVal)
 
 	testPath := "/test/workspace/path"
-	os.Setenv("DP_WORKSPACE_PATH", testPath)
+	os.Setenv("DK_WORKSPACE_PATH", testPath)
 
 	result := getWorkspacePath()
 	if result != testPath {
@@ -110,10 +110,10 @@ func TestGetWorkspacePath_FromEnv(t *testing.T) {
 // TestGetWorkspacePath_NoEnv tests workspace path when env var is not set.
 func TestGetWorkspacePath_NoEnv(t *testing.T) {
 	// Save and restore env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
+	oldVal := os.Getenv("DK_WORKSPACE_PATH")
+	defer os.Setenv("DK_WORKSPACE_PATH", oldVal)
 
-	os.Unsetenv("DP_WORKSPACE_PATH")
+	os.Unsetenv("DK_WORKSPACE_PATH")
 
 	// Result depends on config file; may be empty if no config
 	result := getWorkspacePath()
@@ -124,11 +124,11 @@ func TestGetWorkspacePath_NoEnv(t *testing.T) {
 // TestGetWorkspacePath_EnvOverridesConfig tests that env var takes precedence.
 func TestGetWorkspacePath_EnvOverridesConfig(t *testing.T) {
 	// Save and restore env var
-	oldVal := os.Getenv("DP_WORKSPACE_PATH")
-	defer os.Setenv("DP_WORKSPACE_PATH", oldVal)
+	oldVal := os.Getenv("DK_WORKSPACE_PATH")
+	defer os.Setenv("DK_WORKSPACE_PATH", oldVal)
 
 	envPath := "/from/env/path"
-	os.Setenv("DP_WORKSPACE_PATH", envPath)
+	os.Setenv("DK_WORKSPACE_PATH", envPath)
 
 	result := getWorkspacePath()
 	if result != envPath {
@@ -232,7 +232,7 @@ func TestDevStatusCmd_Description(t *testing.T) {
 // Integration tests - These require actual runtime dependencies and are skipped by default.
 // Run with: go test -v -run Integration -tags=integration
 
-// TestIntegration_DevUp_K3d tests dp dev up --runtime=k3d (T032).
+// TestIntegration_DevUp_K3d tests dk dev up --runtime=k3d (T032).
 // Skipped unless k3d is available and integration tag is set.
 func TestIntegration_DevUp_K3d(t *testing.T) {
 	if testing.Short() {
@@ -248,11 +248,11 @@ func TestIntegration_DevUp_K3d(t *testing.T) {
 
 	// This test would create an actual k3d cluster
 	// For CI, this is typically run separately or skipped
-	t.Log("Integration test: dp dev up --runtime=k3d would be run here")
+	t.Log("Integration test: dk dev up --runtime=k3d would be run here")
 	t.Log("This creates an actual k3d cluster and should be run manually")
 }
 
-// TestIntegration_DevDown_K3d tests dp dev down --runtime=k3d (T038).
+// TestIntegration_DevDown_K3d tests dk dev down --runtime=k3d (T038).
 func TestIntegration_DevDown_K3d(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
@@ -264,10 +264,10 @@ func TestIntegration_DevDown_K3d(t *testing.T) {
 		t.Skipf("skipping: k3d prerequisites not available: %v", err)
 	}
 
-	t.Log("Integration test: dp dev down --runtime=k3d would be run here")
+	t.Log("Integration test: dk dev down --runtime=k3d would be run here")
 }
 
-// TestIntegration_DevStatus_K3d tests dp dev status --runtime=k3d (T045).
+// TestIntegration_DevStatus_K3d tests dk dev status --runtime=k3d (T045).
 func TestIntegration_DevStatus_K3d(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
@@ -279,7 +279,7 @@ func TestIntegration_DevStatus_K3d(t *testing.T) {
 		t.Skipf("skipping: k3d prerequisites not available: %v", err)
 	}
 
-	t.Log("Integration test: dp dev status --runtime=k3d would be run here")
+	t.Log("Integration test: dk dev status --runtime=k3d would be run here")
 }
 
 // TestIntegration_BackwardCompatibility tests that k3d is the default runtime.

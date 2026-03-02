@@ -15,7 +15,7 @@ func TestGenerateHelmChart(t *testing.T) {
 	// Create a temp package directory.
 	tmpDir := t.TempDir()
 
-	// Write dp.yaml
+	// Write dk.yaml
 	dpYAML := `apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -30,7 +30,7 @@ spec:
   outputs:
     - asset: users-parquet
 `
-	os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpYAML), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpYAML), 0644)
 
 	// Write connector/
 	os.MkdirAll(filepath.Join(tmpDir, "connector"), 0755)
@@ -102,7 +102,7 @@ spec:
 		"pg-to-s3/Chart.yaml",
 		"pg-to-s3/values.yaml",
 		"pg-to-s3/templates/packagedeployment.yaml",
-		"pg-to-s3/manifests/dp.yaml",
+		"pg-to-s3/manifests/dk.yaml",
 		"pg-to-s3/manifests/connector/postgres.yaml",
 		"pg-to-s3/manifests/asset/users.yaml",
 	}
@@ -135,7 +135,7 @@ spec:
   outputs:
     - asset: result
 `
-	os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpYAML), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpYAML), 0644)
 
 	result, err := GenerateHelmChart(HelmChartOptions{
 		PackageDir: tmpDir,
@@ -154,7 +154,7 @@ spec:
 	if !strings.Contains(string(chartYAML), "version: 2.0.0-gdeadbeef") {
 		t.Errorf("Chart.yaml missing version, got: %s", chartYAML)
 	}
-	if !strings.Contains(string(chartYAML), "io.infoblox.dp/kind: package") {
+	if !strings.Contains(string(chartYAML), "io.infoblox.dk/kind: package") {
 		t.Errorf("Chart.yaml missing annotation, got: %s", chartYAML)
 	}
 }

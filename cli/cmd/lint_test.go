@@ -93,8 +93,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	lintStrict = false
@@ -118,8 +118,8 @@ metadata:
 spec:
   runtime: generic-go
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	lintStrict = false
@@ -149,8 +149,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	lintStrict = true
@@ -178,8 +178,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	lintStrict = false
@@ -235,7 +235,7 @@ func TestLintCmd_OverrideFlags(t *testing.T) {
 func TestLintCmd_WithOverrides(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create dp.yaml without image (may trigger validation warning)
+	// Create dk.yaml without image (may trigger validation warning)
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -248,9 +248,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Create override file that adds image
@@ -298,7 +298,7 @@ spec:
 func TestLintCmd_WithSetOverride(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create valid Transform dp.yaml
+	// Create valid Transform dk.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -312,9 +312,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -342,14 +342,14 @@ spec:
 		t.Errorf("runLint() with --set error = %v, want nil", err)
 	}
 
-	// Read the modified dp.yaml to verify override was applied
+	// Read the modified dk.yaml to verify override was applied
 	data, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Fatalf("failed to read dp.yaml: %v", err)
+		t.Fatalf("failed to read dk.yaml: %v", err)
 	}
 
 	if !stringContains(string(data), "overridden:v2") {
-		t.Error("expected override to be applied to dp.yaml")
+		t.Error("expected override to be applied to dk.yaml")
 	}
 }
 
@@ -364,9 +364,9 @@ spec:
   runtime: generic-go
   image: test:v1
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -425,8 +425,8 @@ spec:
   outputs:
     - asset: example-resource
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	lintStrict = false

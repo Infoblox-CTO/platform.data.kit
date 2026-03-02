@@ -37,7 +37,7 @@ spec:
               done
 
               echo "Creating namespaces..."
-              {{- range $ns := list "dp" "dp-dev" "analytics" }}
+              {{- range $ns := list "dk" "dk-dev" "analytics" }}
               curl -sf -X PUT "$MARQUEZ_API/api/v1/namespaces/{{ $ns }}" \
                 -H "Content-Type: application/json" \
                 -d '{"ownerName": "dataplatform", "description": "{{ $ns }} namespace"}' \

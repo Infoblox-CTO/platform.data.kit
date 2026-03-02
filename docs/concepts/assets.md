@@ -15,7 +15,7 @@ An **asset** is a configured instance of an approved extension. Assets are **con
 | **Schema-validated** | Config is validated against the extension's JSON Schema |
 | **Typed** | Source, sink, or model-engine — derived from the extension |
 | **Versioned** | Pinned to a specific extension version (semver) |
-| **Scoped** | Each asset belongs to a data package via `dp.yaml` |
+| **Scoped** | Each asset belongs to a data package via `dk.yaml` |
 
 ## Asset Types
 
@@ -33,7 +33,7 @@ Each asset lives in a type-based directory under `assets/`:
 
 ```
 my-package/
-├── dp.yaml
+├── dk.yaml
 └── assets/
     ├── sources/
     │   ├── aws-security/
@@ -91,14 +91,14 @@ Examples:
 
 ## Schema Validation
 
-Each extension publishes a JSON Schema that defines the allowed configuration fields. When you run `dp asset validate`, the asset's `config` block is validated against this schema:
+Each extension publishes a JSON Schema that defines the allowed configuration fields. When you run `dk asset validate`, the asset's `config` block is validated against this schema:
 
 ```bash
 # Validate a single asset
-dp asset validate assets/sources/aws-security/
+dk asset validate assets/sources/aws-security/
 
 # Validate all assets in the project
-dp asset validate
+dk asset validate
 ```
 
 ### Error Codes
@@ -111,7 +111,7 @@ dp asset validate
 | E073 | Asset type does not match extension kind |
 | E074 | Config block fails schema validation |
 | E075 | Extension schema not found |
-| E076 | Asset referenced in dp.yaml not found on disk |
+| E076 | Asset referenced in dk.yaml not found on disk |
 
 ## Lifecycle
 
@@ -120,7 +120,7 @@ dp asset validate
 Scaffold an asset from an extension:
 
 ```bash
-dp asset create aws-security --ext cloudquery.source.aws
+dk asset create aws-security --ext cloudquery.source.aws
 ```
 
 The scaffolder resolves the extension's JSON Schema and generates placeholder config with required fields.
@@ -134,12 +134,12 @@ Edit the generated `asset.yaml` to fill in your configuration values. Set `owner
 Validate the config against the extension schema:
 
 ```bash
-dp asset validate
+dk asset validate
 ```
 
 ### 4. Reference
 
-Add the asset to your `dp.yaml`:
+Add the asset to your `dk.yaml`:
 
 ```yaml
 spec:
@@ -149,7 +149,7 @@ spec:
 
 ### 5. Build & Deploy
 
-Assets are included in the normal `dp build → dp publish → dp promote` workflow.
+Assets are included in the normal `dk build → dk publish → dk promote` workflow.
 
 ## Store References
 
@@ -168,7 +168,7 @@ spec:
     prefix: raw/security/
 ```
 
-The `dp validate` command cross-validates that each asset's store reference resolves to an existing Store manifest.
+The `dk validate` command cross-validates that each asset's store reference resolves to an existing Store manifest.
 
 ## Seed Data for Local Development
 
@@ -194,7 +194,7 @@ spec:
 
 ### How It Works
 
-1. `dp dev seed` (or the auto-seed that runs before `dp run`) reads every
+1. `dk dev seed` (or the auto-seed that runs before `dk run`) reads every
    input asset in the package.
 2. For each asset with a `dev.seed` section, it generates `CREATE TABLE IF
    NOT EXISTS` + `INSERT` statements and executes them against the local
@@ -224,17 +224,17 @@ dev:
       empty: {}                        # empty table for testing
 ```
 
-Activate a profile with `dp dev seed --profile <name>`:
+Activate a profile with `dk dev seed --profile <name>`:
 
 ```bash
 # Default seed data
-dp dev seed
+dk dev seed
 
 # Switch to the edge-cases profile
-dp dev seed --profile edge-cases
+dk dev seed --profile edge-cases
 
 # Force re-seed even if unchanged
-dp dev seed --force
+dk dev seed --force
 ```
 
 !!! tip "Seed files"
@@ -245,12 +245,12 @@ dp dev seed --force
 
 | Command | Description |
 |---------|-------------|
-| `dp asset create <name> --ext <fqn>` | Scaffold a new asset |
-| `dp asset validate [path]` | Validate asset configuration |
-| `dp asset list` | List all assets in the project |
-| `dp asset show <name>` | Show full asset details |
-| `dp dev seed` | Load seed data into local dev stores |
-| `dp dev seed --profile <name>` | Use a named seed profile |
+| `dk asset create <name> --ext <fqn>` | Scaffold a new asset |
+| `dk asset validate [path]` | Validate asset configuration |
+| `dk asset list` | List all assets in the project |
+| `dk asset show <name>` | Show full asset details |
+| `dk dev seed` | Load seed data into local dev stores |
+| `dk dev seed --profile <name>` | Use a named seed profile |
 
 ## Relationship to Other Concepts
 
@@ -261,7 +261,7 @@ Extension Schema (JSON Schema)
   Asset (asset.yaml)  ←──→  Store (store.yaml)
        │
        ▼
-  Data Package (dp.yaml)
+  Data Package (dk.yaml)
        │
        ▼
   Build → Publish → Promote
@@ -274,6 +274,6 @@ Extension Schema (JSON Schema)
 ## See Also
 
 - [Data Packages](data-packages.md) — The container for assets
-- [Manifests](manifests.md) — dp.yaml and store manifest reference
+- [Manifests](manifests.md) — dk.yaml and store manifest reference
 - [CLI Reference](../reference/cli.md) — Complete CLI documentation
 - [Manifest Schema](../reference/manifest-schema.md) — Schema reference

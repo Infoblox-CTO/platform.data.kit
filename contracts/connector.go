@@ -27,7 +27,7 @@ type ConnectorMetadata struct {
 	Name string `json:"name" yaml:"name"`
 
 	// Labels are key-value labels for filtering.
-	// Convention: dp.infoblox.com/provider and dp.infoblox.com/channel
+	// Convention: datakit.infoblox.dev/provider and datakit.infoblox.dev/channel
 	// are used for indexed lookups in k8s.
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 

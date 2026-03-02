@@ -24,8 +24,8 @@ func TestRootCmd_OutputFlag(t *testing.T) {
 
 func TestRootCmd_Usage(t *testing.T) {
 	// Verify root command attributes
-	if rootCmd.Use != "dp" {
-		t.Errorf("Use = %v, want dp", rootCmd.Use)
+	if rootCmd.Use != "dk" {
+		t.Errorf("Use = %v, want dk", rootCmd.Use)
 	}
 	if rootCmd.Short == "" {
 		t.Error("Short description is empty")

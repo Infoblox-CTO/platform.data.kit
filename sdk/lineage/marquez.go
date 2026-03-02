@@ -35,7 +35,7 @@ type MarquezConfig struct {
 func DefaultMarquezConfig() MarquezConfig {
 	return MarquezConfig{
 		Endpoint:       "http://localhost:5000",
-		Namespace:      "dp",
+		Namespace:      "dk",
 		TimeoutSeconds: 30,
 	}
 }

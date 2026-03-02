@@ -1,11 +1,11 @@
 ---
 title: Reference
-description: Complete reference documentation for the DP CLI and configuration
+description: Complete reference documentation for the DK CLI and configuration
 ---
 
 # Reference
 
-Complete reference documentation for the `dp` CLI, manifest schemas, and configuration options.
+Complete reference documentation for the `dk` CLI, manifest schemas, and configuration options.
 
 ## Reference Guides
 
@@ -13,14 +13,14 @@ Complete reference documentation for the `dp` CLI, manifest schemas, and configu
 
 <div class="card" markdown>
 ### :terminal: CLI Commands
-Complete reference for all `dp` commands with examples.
+Complete reference for all `dk` commands with examples.
 
 [CLI Reference →](cli.md)
 </div>
 
 <div class="card" markdown>
 ### :page_facing_up: Manifest Schema
-Full schema reference for dp.yaml and the manifest kinds (Transform, Asset, Connector, Store).
+Full schema reference for dk.yaml and the manifest kinds (Transform, Asset, Connector, Store).
 
 [Manifest Schema →](manifest-schema.md)
 </div>
@@ -40,43 +40,43 @@ Environment variables and configuration options.
 
 ```bash
 # Initialize a new package
-dp init <name>
+dk init <name>
 
 # Local development
-dp dev up|down|status
+dk dev up|down|status
 
 # Validation
-dp lint <path>
+dk lint <path>
 
 # Execution
-dp run <path>
+dk run <path>
 
 # Publishing
-dp build <path>
-dp publish <path>
+dk build <path>
+dk publish <path>
 
 # Promotion
-dp promote <package> <version> --to <environment>
+dk promote <package> <version> --to <environment>
 
 # Observability
-dp status <package>
-dp logs <package>
+dk status <package>
+dk logs <package>
 ```
 
 ### Manifest Files
 
 | File | Purpose |
 |------|---------|
-| `dp.yaml` | Transform manifest — metadata, runtime, inputs, outputs, classification |
+| `dk.yaml` | Transform manifest — metadata, runtime, inputs, outputs, classification |
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DP_REGISTRY` | OCI registry URL | `ghcr.io` |
-| `DP_NAMESPACE` | Default namespace | `default` |
-| `DP_LOG_LEVEL` | Log verbosity | `info` |
-| `DP_OUTPUT_FORMAT` | Output format | `table` |
+| `DK_REGISTRY` | OCI registry URL | `ghcr.io` |
+| `DK_NAMESPACE` | Default namespace | `default` |
+| `DK_LOG_LEVEL` | Log verbosity | `info` |
+| `DK_OUTPUT_FORMAT` | Output format | `table` |
 
 ## Related Documentation
 

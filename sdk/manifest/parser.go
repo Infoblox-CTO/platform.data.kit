@@ -149,7 +149,7 @@ type Manifest interface {
 	GetOwner() string
 }
 
-// ParseManifestFile reads a dp.yaml, detects the kind, and returns the
+// ParseManifestFile reads a dk.yaml, detects the kind, and returns the
 // parsed manifest as a Manifest interface along with the concrete kind.
 func ParseManifestFile(path string) (Manifest, contracts.Kind, error) {
 	data, err := os.ReadFile(path)

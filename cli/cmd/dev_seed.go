@@ -32,7 +32,7 @@ The dev.seed section supports two data sources:
   - file:   path to a CSV or JSON file with seed rows
 
 Seed runs are idempotent — a checksum of the seed data is stored in a
-_dp_seed_meta table and compared on subsequent runs. If the data hasn't
+_dk_seed_meta table and compared on subsequent runs. If the data hasn't
 changed, the seed is skipped entirely.
 
 Named profiles let you maintain multiple data sets for different test
@@ -41,22 +41,22 @@ under dev.seed.profiles.<name>.
 
 Examples:
   # Seed all input assets (skips if data unchanged)
-  dp dev seed
+  dk dev seed
 
   # Use a named seed profile
-  dp dev seed --profile large-dataset
+  dk dev seed --profile large-dataset
 
   # Force re-seed even if data unchanged
-  dp dev seed --force
+  dk dev seed --force
 
   # Seed a specific asset
-  dp dev seed --asset foo-source-table
+  dk dev seed --asset foo-source-table
 
   # Drop and recreate tables before seeding
-  dp dev seed --clean
+  dk dev seed --clean
 
   # Seed from a specific package directory
-  dp dev seed ./my-pipeline`,
+  dk dev seed ./my-pipeline`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runDevSeed,
 }
@@ -81,10 +81,10 @@ func runDevSeed(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Verify dp.yaml exists.
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Verify dk.yaml exists.
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return fmt.Errorf("dp.yaml not found in %s — is this a valid DP package?", packageDir)
+		return fmt.Errorf("dk.yaml not found in %s — is this a valid DK package?", packageDir)
 	}
 
 	ctx := context.Background()

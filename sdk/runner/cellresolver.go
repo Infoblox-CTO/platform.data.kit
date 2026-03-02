@@ -13,8 +13,8 @@ import (
 )
 
 // CellResolver resolves Stores from a Cell's Kubernetes namespace via kubectl.
-// When a cell is specified (dp run --cell canary), Stores are fetched from the
-// cell's namespace (dp-<cell>) instead of the package's local store/ directory.
+// When a cell is specified (dk run --cell canary), Stores are fetched from the
+// cell's namespace (dk-<cell>) instead of the package's local store/ directory.
 type CellResolver struct {
 	// CellName is the cell to resolve stores from.
 	CellName string
@@ -36,9 +36,9 @@ func NewCellResolver(cellName, kubeContext string, output io.Writer) *CellResolv
 }
 
 // cellNamespace returns the k8s namespace for a cell.
-// Convention: dp-<cellName>
+// Convention: dk-<cellName>
 func (r *CellResolver) cellNamespace() string {
-	return "dp-" + r.CellName
+	return "dk-" + r.CellName
 }
 
 // ResolveStore fetches a single Store by name from the cell's namespace.

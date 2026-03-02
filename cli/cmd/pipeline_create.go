@@ -28,16 +28,16 @@ Available templates:
 
 Examples:
   # Create with default template
-  dp pipeline create my-pipeline
+  dk pipeline create my-pipeline
 
   # Create with specific template
-  dp pipeline create my-pipeline --template sync-only
+  dk pipeline create my-pipeline --template sync-only
 
   # List available templates
-  dp pipeline create --list-templates
+  dk pipeline create --list-templates
 
   # Force overwrite existing pipeline.yaml
-  dp pipeline create my-pipeline --force`,
+  dk pipeline create my-pipeline --force`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if pipelineCreateListTemplates {
 			return nil
@@ -119,8 +119,8 @@ func runPipelineCreate(cmd *cobra.Command, args []string) error {
 	cmd.Printf("✓ Created pipeline %q at %s\n", name, relPath)
 	cmd.Printf("\nNext steps:\n")
 	cmd.Printf("  1. Edit %s to configure your pipeline steps\n", relPath)
-	cmd.Printf("  2. Run 'dp lint' to validate the pipeline\n")
-	cmd.Printf("  3. Run 'dp pipeline run' to execute the pipeline\n")
+	cmd.Printf("  2. Run 'dk lint' to validate the pipeline\n")
+	cmd.Printf("  3. Run 'dk pipeline run' to execute the pipeline\n")
 
 	return nil
 }

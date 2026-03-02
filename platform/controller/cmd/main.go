@@ -1,4 +1,4 @@
-// Package main is the entry point for the DP controller.
+// Package main is the entry point for the DK controller.
 package main
 
 import (
@@ -87,7 +87,7 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "dp-controller.dp.io",
+		LeaderElectionID:       "dk-controller.datakit.infoblox.dev",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

@@ -1,4 +1,4 @@
-# LocalStack values for dp local development
+# LocalStack values for dk local development
 replicaCount: 1
 
 image:

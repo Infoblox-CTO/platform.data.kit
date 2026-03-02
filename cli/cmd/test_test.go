@@ -37,7 +37,7 @@ func TestTestCmd_Flags(t *testing.T) {
 }
 
 func TestTestCmd_TransformDetection(t *testing.T) {
-	// Test that Transform kind is detected from dp.yaml
+	// Test that Transform kind is detected from dk.yaml
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
@@ -53,9 +53,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -93,9 +93,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -116,16 +116,16 @@ spec:
 }
 
 func TestTestCmd_MissingDpYaml(t *testing.T) {
-	// Test that missing dp.yaml still returns proper error
+	// Test that missing dk.yaml still returns proper error
 	tmpDir := t.TempDir()
 
 	cmd := &cobra.Command{}
 	err := runTest(cmd, []string{tmpDir})
 
 	if err == nil {
-		t.Error("expected error for missing dp.yaml")
+		t.Error("expected error for missing dk.yaml")
 	}
-	if !strings.Contains(err.Error(), "dp.yaml not found") {
-		t.Errorf("expected 'dp.yaml not found' error, got: %s", err.Error())
+	if !strings.Contains(err.Error(), "dk.yaml not found") {
+		t.Errorf("expected 'dk.yaml not found' error, got: %s", err.Error())
 	}
 }

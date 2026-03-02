@@ -82,14 +82,14 @@ func TestBuildCmd_DirectoryNotFound(t *testing.T) {
 }
 
 func TestBuildCmd_MissingDpYaml(t *testing.T) {
-	// Test that building a directory without dp.yaml returns an error
+	// Test that building a directory without dk.yaml returns an error
 	tmpDir := t.TempDir()
 
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
 	if err == nil {
-		t.Error("expected error for missing dp.yaml")
+		t.Error("expected error for missing dk.yaml")
 	}
 }
 
@@ -110,8 +110,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -140,8 +140,8 @@ metadata:
 spec:
   runtime: generic-go
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	cmd := &cobra.Command{}
@@ -170,8 +170,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -194,7 +194,7 @@ spec:
 }
 
 func TestBuildCmd_CloudQueryPackage(t *testing.T) {
-	// Test that dp build works for a CloudQuery package in dry-run mode
+	// Test that dk build works for a CloudQuery package in dry-run mode
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
@@ -210,8 +210,8 @@ spec:
   outputs:
     - asset: cloud-resources
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -230,7 +230,7 @@ spec:
 }
 
 func TestBuildCmd_CloudQueryPackageValid(t *testing.T) {
-	// Test that dp build accepts a valid CloudQuery Transform package
+	// Test that dk build accepts a valid CloudQuery Transform package
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
@@ -246,8 +246,8 @@ spec:
   outputs:
     - asset: cloud-resources
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	cmd := &cobra.Command{}

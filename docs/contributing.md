@@ -172,10 +172,10 @@ Use fenced code blocks with language hints:
 
 ````markdown
 ```bash
-dp init my-pipeline
+dk init my-pipeline
 ```
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 ```
@@ -280,11 +280,11 @@ We recommend using a spell checker. Common technical terms are in the project di
 Show the command, then the output:
 
 ```bash
-dp version
+dk version
 ```
 
 ```
-dp version v0.1.0
+dk version v0.1.0
   commit: abc1234
   built:  2025-01-22T10:00:00Z
 ```
@@ -293,7 +293,7 @@ dp version v0.1.0
 
 Use title to show filename:
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 ```
@@ -303,7 +303,7 @@ kind: Transform
 Use angle brackets for placeholders:
 
 ```bash
-dp init <package-name> --runtime <runtime>
+dk init <package-name> --runtime <runtime>
 ```
 
 ### Variables
@@ -311,7 +311,7 @@ dp init <package-name> --runtime <runtime>
 Use `$VARIABLE` for environment variables:
 
 ```bash
-export DP_REGISTRY=$REGISTRY_URL
+export DK_REGISTRY=$REGISTRY_URL
 ```
 
 ## Getting Help

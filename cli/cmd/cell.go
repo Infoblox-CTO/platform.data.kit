@@ -24,10 +24,10 @@ of pipeline infrastructure. Each cell owns a namespace containing Store CRs
 that resolve to physical databases, buckets, and message brokers.
 
 Examples:
-  dp cell list                          # list all cells in current cluster
-  dp cell list --context k3d-dp-local   # list cells in specific cluster
-  dp cell show canary                   # show cell details + stores
-  dp cell stores canary                 # list stores in canary cell`,
+  dk cell list                          # list all cells in current cluster
+  dk cell list --context k3d-dk-local   # list cells in specific cluster
+  dk cell show canary                   # show cell details + stores
+  dk cell stores canary                 # list stores in canary cell`,
 }
 
 // cellListCmd lists all cells in the cluster.
@@ -39,9 +39,9 @@ var cellListCmd = &cobra.Command{
 Uses kubectl to query the cluster for Cell CRDs.
 
 Examples:
-  dp cell list
-  dp cell list --context k3d-dp-local
-  dp cell list --context arn:aws:eks:us-east-1:...:cluster/dp-prod`,
+  dk cell list
+  dk cell list --context k3d-dk-local
+  dk cell list --context arn:aws:eks:us-east-1:...:cluster/dk-prod`,
 	RunE: runCellList,
 }
 
@@ -53,8 +53,8 @@ var cellShowCmd = &cobra.Command{
 namespace, labels, status, and deployed packages.
 
 Examples:
-  dp cell show canary
-  dp cell show stable --context arn:aws:eks:...:dp-prod`,
+  dk cell show canary
+  dk cell show stable --context arn:aws:eks:...:dk-prod`,
 	Args: cobra.ExactArgs(1),
 	RunE: runCellShow,
 }
@@ -70,8 +70,8 @@ infrastructure in a cell. The same store name in different cells
 points to different physical infrastructure.
 
 Examples:
-  dp cell stores canary
-  dp cell stores stable --context arn:aws:eks:...:dp-prod`,
+  dk cell stores canary
+  dk cell stores stable --context arn:aws:eks:...:dk-prod`,
 	Args: cobra.ExactArgs(1),
 	RunE: runCellStores,
 }
@@ -93,7 +93,7 @@ func runCellList(cmd *cobra.Command, args []string) error {
 
 	out, err := execKubectl(kubectlArgs...)
 	if err != nil {
-		return fmt.Errorf("failed to list cells: %w\n\nMake sure Cell CRDs are installed and you have cluster access.\nHint: dp dev up installs CRDs automatically.", err)
+		return fmt.Errorf("failed to list cells: %w\n\nMake sure Cell CRDs are installed and you have cluster access.\nHint: dk dev up installs CRDs automatically.", err)
 	}
 
 	// Parse the JSON list.
@@ -121,7 +121,7 @@ func runCellList(cmd *cobra.Command, args []string) error {
 	if len(list.Items) == 0 {
 		fmt.Println("No cells found.")
 		fmt.Println("\nTo create a cell:")
-		fmt.Println("  dp dev up --cell canary    # create a cell in local k3d")
+		fmt.Println("  dk dev up --cell canary    # create a cell in local k3d")
 		return nil
 	}
 
@@ -194,7 +194,7 @@ func runCellShow(cmd *cobra.Command, args []string) error {
 
 func runCellStores(cmd *cobra.Command, args []string) error {
 	cellName := args[0]
-	ns := "dp-" + cellName
+	ns := "dk-" + cellName
 	fmt.Printf("Stores in cell %q (namespace: %s):\n\n", cellName, ns)
 	return listStoresInNamespace(ns)
 }

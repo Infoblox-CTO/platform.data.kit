@@ -13,9 +13,9 @@ func TestDefaultConfigPath(t *testing.T) {
 		t.Skip("could not determine home directory")
 	}
 
-	// Should contain .config/dp/config.yaml
-	if !contains(path, ".config") || !contains(path, "dp") || !contains(path, "config.yaml") {
-		t.Errorf("DefaultConfigPath() = %q, expected to contain .config/dp/config.yaml", path)
+	// Should contain .config/dk/config.yaml
+	if !contains(path, ".config") || !contains(path, "dk") || !contains(path, "config.yaml") {
+		t.Errorf("DefaultConfigPath() = %q, expected to contain .config/dk/config.yaml", path)
 	}
 }
 
@@ -301,8 +301,8 @@ func TestLoadHierarchicalConfig(t *testing.T) {
 			// Create temp directory structure to simulate scopes
 			tmpDir := t.TempDir()
 			systemDir := filepath.Join(tmpDir, "system")
-			userDir := filepath.Join(tmpDir, "user", "dp")
-			repoDir := filepath.Join(tmpDir, "repo", ".dp")
+			userDir := filepath.Join(tmpDir, "user", "dk")
+			repoDir := filepath.Join(tmpDir, "repo", ".dk")
 
 			os.MkdirAll(systemDir, 0755)
 			os.MkdirAll(userDir, 0755)
@@ -370,8 +370,8 @@ func TestConfigScopePaths(t *testing.T) {
 	if userPath == "" {
 		t.Error("UserConfigPath() returned empty string")
 	}
-	if !containsStr(userPath, ".config") || !containsStr(userPath, "dp") || !containsStr(userPath, "config.yaml") {
-		t.Errorf("UserConfigPath() = %q, expected to contain .config/dp/config.yaml", userPath)
+	if !containsStr(userPath, ".config") || !containsStr(userPath, "dk") || !containsStr(userPath, "config.yaml") {
+		t.Errorf("UserConfigPath() = %q, expected to contain .config/dk/config.yaml", userPath)
 	}
 
 	// SystemConfigPath should return the fixed path
@@ -383,8 +383,8 @@ func TestConfigScopePaths(t *testing.T) {
 	// RepoConfigPath - in a git repo should return non-empty
 	repoPath := RepoConfigPath()
 	if repoPath != "" {
-		if !containsStr(repoPath, ".dp") || !containsStr(repoPath, "config.yaml") {
-			t.Errorf("RepoConfigPath() = %q, expected to contain .dp/config.yaml", repoPath)
+		if !containsStr(repoPath, ".dk") || !containsStr(repoPath, "config.yaml") {
+			t.Errorf("RepoConfigPath() = %q, expected to contain .dk/config.yaml", repoPath)
 		}
 	}
 
@@ -411,7 +411,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				Dev:     DevConfig{Runtime: "k3d", K3d: K3dConfig{ClusterName: "dp-local"}},
+				Dev:     DevConfig{Runtime: "k3d", K3d: K3dConfig{ClusterName: "dk-local"}},
 				Plugins: PluginsConfig{Registry: "ghcr.io/infobloxopen"},
 			},
 			wantErrs: 0,
@@ -483,7 +483,7 @@ func TestValidateField(t *testing.T) {
 		{name: "invalid runtime", key: "dev.runtime", value: "docker", wantErr: true},
 		{name: "valid registry", key: "plugins.registry", value: "ghcr.io/myteam", wantErr: false},
 		{name: "invalid registry", key: "plugins.registry", value: "https://bad", wantErr: true},
-		{name: "valid cluster name", key: "dev.k3d.clusterName", value: "dp-local", wantErr: false},
+		{name: "valid cluster name", key: "dev.k3d.clusterName", value: "dk-local", wantErr: false},
 		{name: "invalid cluster name", key: "dev.k3d.clusterName", value: "BAD!", wantErr: true},
 		{name: "valid workspace", key: "dev.workspace", value: "/path/to/workspace", wantErr: false},
 		{name: "unknown key", key: "foo.bar", value: "whatever", wantErr: true},
@@ -661,7 +661,7 @@ func TestBackwardCompatibility(t *testing.T) {
   runtime: k3d
   workspace: /path/to/workspace
   k3d:
-    clusterName: dp-local
+    clusterName: dk-local
 `
 	if err := os.WriteFile(configPath, []byte(oldConfig), 0644); err != nil {
 		t.Fatalf("failed to write test config: %v", err)
@@ -679,8 +679,8 @@ func TestBackwardCompatibility(t *testing.T) {
 	if config.Dev.Workspace != "/path/to/workspace" {
 		t.Errorf("Dev.Workspace = %q, want '/path/to/workspace'", config.Dev.Workspace)
 	}
-	if config.Dev.K3d.ClusterName != "dp-local" {
-		t.Errorf("Dev.K3d.ClusterName = %q, want 'dp-local'", config.Dev.K3d.ClusterName)
+	if config.Dev.K3d.ClusterName != "dk-local" {
+		t.Errorf("Dev.K3d.ClusterName = %q, want 'dk-local'", config.Dev.K3d.ClusterName)
 	}
 
 	// Plugins section should be zero value

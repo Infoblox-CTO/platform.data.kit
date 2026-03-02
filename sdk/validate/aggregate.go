@@ -43,9 +43,9 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		return result
 	}
 
-	dpPath := filepath.Join(v.packageDir, "dp.yaml")
+	dpPath := filepath.Join(v.packageDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		result.AddError(ErrFileNotFound, "dp.yaml", "dp.yaml not found - this is required for a valid package")
+		result.AddError(ErrFileNotFound, "dk.yaml", "dk.yaml not found - this is required for a valid package")
 	} else {
 		dpResult := v.validateManifest(ctx, dpPath)
 		result.Merge(dpResult)
@@ -81,13 +81,13 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 	return result
 }
 
-// validateManifest validates the dp.yaml file using the kind-aware ManifestValidator.
+// validateManifest validates the dk.yaml file using the kind-aware ManifestValidator.
 func (v *AggregateValidator) validateManifest(ctx context.Context, path string) *ValidationResult {
 	result := NewValidationResult()
 
 	validator, err := NewManifestValidatorFromFile(path)
 	if err != nil {
-		result.AddError(ErrParseError, "dp.yaml", "failed to parse dp.yaml: "+err.Error())
+		result.AddError(ErrParseError, "dk.yaml", "failed to parse dk.yaml: "+err.Error())
 		return result
 	}
 

@@ -33,7 +33,7 @@ kind: Cell
 metadata:
   name: canary
 spec:
-  namespace: dp-canary              # k8s namespace for Jobs/Deployments
+  namespace: dk-canary              # k8s namespace for Jobs/Deployments
   labels:
     tier: canary
     region: us-east-1
@@ -43,7 +43,7 @@ status:
   packageCount: 3
 ```
 
-Each Cell owns a dedicated Kubernetes namespace (`dp-<cell>`) where its Stores, Secrets, and workloads live.
+Each Cell owns a dedicated Kubernetes namespace (`dk-<cell>`) where its Stores, Secrets, and workloads live.
 
 ### Store (namespaced CRD)
 
@@ -54,11 +54,11 @@ apiVersion: data.infoblox.com/v1alpha1
 kind: Store
 metadata:
   name: warehouse
-  namespace: dp-canary               # belongs to cell:canary
+  namespace: dk-canary               # belongs to cell:canary
 spec:
   connector: postgres
   connection:
-    connection_string: "postgresql://canary-db:5432/dp_canary"
+    connection_string: "postgresql://canary-db:5432/dk_canary"
   secrets:
     password: ${PG_PASS}             # resolved from k8s Secret
 ```
@@ -68,29 +68,29 @@ The same logical Store name can exist in every cell, pointing to different physi
 | Cell | Store name | Physical target |
 |------|-----------|-----------------|
 | `local` | `warehouse` | `postgresql://localhost:5432/dp_local` |
-| `canary` | `warehouse` | `postgresql://canary-db:5432/dp_canary` |
+| `canary` | `warehouse` | `postgresql://canary-db:5432/dk_canary` |
 | `stable` | `warehouse` | `postgresql://prod-db:5432/dp_stable` |
 
 ## Discovery
 
 | Concept | Discovery mechanism |
 |---------|---------------------|
-| **Cell** | `dp cell list` or `kubectl get cells` |
-| **Store** | `dp cell stores <name>` or `kubectl get stores -n dp-<cell>` |
-| **Package** | `dp search` or OCI registry tags |
+| **Cell** | `dk cell list` or `kubectl get cells` |
+| **Store** | `dk cell stores <name>` or `kubectl get stores -n dk-<cell>` |
+| **Package** | `dk search` or OCI registry tags |
 
 ```bash
 # List all cells in current cluster
-dp cell list
+dk cell list
 
 # Show details of a specific cell
-dp cell show canary
+dk cell show canary
 
 # List stores in a cell
-dp cell stores canary
+dk cell stores canary
 
 # Target a different cluster
-dp cell list --context arn:aws:eks:us-east-1:...:cluster/dp-prod
+dk cell list --context arn:aws:eks:us-east-1:...:cluster/dk-prod
 ```
 
 ## Resolution Order
@@ -105,24 +105,24 @@ When running a package, manifests are resolved by these rules:
 | **Store** | Cell (if `--cell` set), else package `store/` | Infrastructure varies per cell |
 
 ```bash
-dp run                     # Stores from package store/ directory (local dev)
-dp run --cell canary       # Stores from cell:canary via kubectl
-dp run --cell stable       # Stores from cell:stable via kubectl
+dk run                     # Stores from package store/ directory (local dev)
+dk run --cell canary       # Stores from cell:canary via kubectl
+dk run --cell stable       # Stores from cell:stable via kubectl
 ```
 
-The package always ships a `store/` directory with local dev defaults so `dp run` works out of the box without any cell configuration.
+The package always ships a `store/` directory with local dev defaults so `dk run` works out of the box without any cell configuration.
 
 ## Cell Lifecycle
 
 ### Creating cells locally
 
 ```bash
-# dp dev up creates k3d cluster + shared infra + cell:local
-dp dev up
+# dk dev up creates k3d cluster + shared infra + cell:local
+dk dev up
 
 # Create additional cells for testing
-dp dev up --cell canary
-dp dev up --cell dev-dgarcia
+dk dev up --cell canary
+dk dev up --cell dev-dgarcia
 ```
 
 ### Creating cells in production (GitOps)
@@ -133,7 +133,7 @@ platform-repo/
 │   ├── canary/
 │   │   ├── cell.yaml              # kind: Cell (cluster-scoped)
 │   │   └── stores/
-│   │       ├── warehouse.yaml     # kind: Store (namespace: dp-canary)
+│   │       ├── warehouse.yaml     # kind: Store (namespace: dk-canary)
 │   │       └── lake-raw.yaml
 │   ├── stable/
 │   │   ├── cell.yaml
@@ -153,7 +153,7 @@ kubectl apply -f cells/canary/
 Cells are k8s CRDs — they live in a specific cluster. When you have multiple clusters, each has its own set of cells:
 
 ```
-k3d-dp-local
+k3d-dk-local
 ├── cell:local
 ├── cell:canary
 └── cell:dev-dgarcia
@@ -169,19 +169,19 @@ eks-prod
 
 Use `--context` to target a specific cluster:
 ```bash
-dp run --cell canary --context k3d-dp-local
-dp cell list --context arn:aws:eks:us-east-1:...:cluster/dp-prod
+dk run --cell canary --context k3d-dk-local
+dk cell list --context arn:aws:eks:us-east-1:...:cluster/dk-prod
 ```
 
 ## Package × Cell Deployment
 
 ### What ships in the package
 
-When you `dp build` and `dp publish`, the package becomes an immutable Helm chart in an OCI registry. The chart contains:
+When you `dk build` and `dk publish`, the package becomes an immutable Helm chart in an OCI registry. The chart contains:
 
 | Included | Excluded |
 |----------|----------|
-| `dp.yaml` (Transform) | `store/` directory |
+| `dk.yaml` (Transform) | `store/` directory |
 | `connector/*.yaml` | `src/` (baked into image) |
 | `asset/*.yaml` | `tests/` |
 | `templates/packagedeployment.yaml` | |
@@ -208,13 +208,13 @@ cell: canary
 # schedule: "0 */6 * * *"
 ```
 
-ArgoCD pulls the chart from the OCI registry, renders it with `cell: canary`, and applies the `PackageDeployment` CR to `dp-canary` namespace.
+ArgoCD pulls the chart from the OCI registry, renders it with `cell: canary`, and applies the `PackageDeployment` CR to `dk-canary` namespace.
 
 ### Cross-cell transforms
 
 When a Transform reads from one cell and writes to another, use the `cell` field on asset references:
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 spec:
   inputs:
     - asset: raw-events

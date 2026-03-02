@@ -13,7 +13,7 @@ metadata:
   name: postgres-1-2-0
   labels:
     managed-by: platform-team
-    dp.infoblox.com/provider: postgres
+    datakit.infoblox.dev/provider: postgres
 spec:
   provider: postgres
   version: 1.2.0
@@ -72,8 +72,8 @@ spec:
 	if c.Metadata.Labels["managed-by"] != "platform-team" {
 		t.Errorf("Metadata.Labels[managed-by] = %q, want %q", c.Metadata.Labels["managed-by"], "platform-team")
 	}
-	if c.Metadata.Labels["dp.infoblox.com/provider"] != "postgres" {
-		t.Errorf("Metadata.Labels[dp.infoblox.com/provider] = %q, want %q", c.Metadata.Labels["dp.infoblox.com/provider"], "postgres")
+	if c.Metadata.Labels["datakit.infoblox.dev/provider"] != "postgres" {
+		t.Errorf("Metadata.Labels[datakit.infoblox.dev/provider] = %q, want %q", c.Metadata.Labels["datakit.infoblox.dev/provider"], "postgres")
 	}
 	if c.Spec.Provider != "postgres" {
 		t.Errorf("Spec.Provider = %q, want %q", c.Spec.Provider, "postgres")

@@ -1,4 +1,4 @@
-// Package cmd provides the CLI commands for the dp tool.
+// Package cmd provides the CLI commands for the dk tool.
 package cmd
 
 import (
@@ -32,19 +32,19 @@ the pipeline. Use this to preview the effect of override files and --set flags.
 
 Examples:
   # Show the manifest as-is
-  dp show ./my-pipeline
+  dk show ./my-pipeline
 
   # Show with override file applied
-  dp show ./my-pipeline -f production.yaml
+  dk show ./my-pipeline -f production.yaml
 
   # Show with inline overrides
-  dp show ./my-pipeline --set spec.image=myimage:v2
+  dk show ./my-pipeline --set spec.image=myimage:v2
 
   # Show combined overrides (file first, then --set)
-  dp show ./my-pipeline -f base.yaml --set spec.timeout=1h
+  dk show ./my-pipeline -f base.yaml --set spec.timeout=1h
 
   # Output as JSON
-  dp show ./my-pipeline -o json
+  dk show ./my-pipeline -o json
 `,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -88,22 +88,22 @@ func init() {
 // showManifest reads the manifest, applies overrides, and returns the output.
 // The writer is for any status messages; the return value is the formatted manifest.
 func showManifest(packageDir string, w io.Writer) (string, error) {
-	// Find dp.yaml
-	dpPath := filepath.Join(packageDir, "dp.yaml")
+	// Find dk.yaml
+	dpPath := filepath.Join(packageDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("dp.yaml not found in %s", packageDir)
+		return "", fmt.Errorf("dk.yaml not found in %s", packageDir)
 	}
 
-	// Read base dp.yaml
+	// Read base dk.yaml
 	baseData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read dp.yaml: %w", err)
+		return "", fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	// Parse as generic map for merging
 	var base map[string]any
 	if err := yaml.Unmarshal(baseData, &base); err != nil {
-		return "", fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return "", fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	mergeOpts := manifest.DefaultMergeOptions()

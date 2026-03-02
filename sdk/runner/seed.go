@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
@@ -48,7 +49,7 @@ type SeedOptions struct {
 	AssetFilter string
 	// Output receives progress messages. May be nil.
 	Output io.Writer
-	// KubeContext is the kubectl context to use (defaults to k3d-dp-local).
+	// KubeContext is the kubectl context to use (defaults to k3d-dk-local).
 	KubeContext string
 	// Namespace is the k8s namespace where the database pod lives.
 	Namespace string
@@ -273,7 +274,7 @@ func schemaTypeToSQL(t string) string {
 	case "boolean", "bool":
 		return "BOOLEAN"
 	case "timestamp", "datetime":
-		return "TIMESTAMP"
+		return "TIMESTAMPTZ"
 	case "date":
 		return "DATE"
 	case "string", "text", "varchar":
@@ -354,6 +355,10 @@ func sqlLiteral(v any) string {
 			return "TRUE"
 		}
 		return "FALSE"
+	case time.Time:
+		// Format as ISO 8601 so PostgreSQL TIMESTAMPTZ columns parse
+		// the value unambiguously (date + time + timezone).
+		return fmt.Sprintf("'%s'", val.Format(time.RFC3339))
 	default:
 		// Escape single quotes for string values.
 		s := fmt.Sprintf("%v", val)

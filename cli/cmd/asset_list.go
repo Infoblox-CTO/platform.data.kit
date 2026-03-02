@@ -25,10 +25,10 @@ with Name, Type, Extension, Version, and Owner.
 
 Examples:
   # List all assets in table format
-  dp asset list
+  dk asset list
 
   # List assets as JSON
-  dp asset list --output json`,
+  dk asset list --output json`,
 	Args: cobra.NoArgs,
 	RunE: runAssetList,
 }
@@ -57,7 +57,7 @@ func runAssetList(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(w, "No assets found.")
 		fmt.Fprintln(w, "")
 		fmt.Fprintln(w, "Get started:")
-		fmt.Fprintln(w, "  dp asset create <name>")
+		fmt.Fprintln(w, "  dk asset create <name>")
 		return nil
 	}
 

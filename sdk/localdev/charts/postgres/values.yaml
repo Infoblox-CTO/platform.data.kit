@@ -1,4 +1,4 @@
-# PostgreSQL values for dp local development
+# PostgreSQL values for dk local development
 # These values configure the upstream bitnami/postgresql subchart for dev use.
 
 postgresql:
@@ -6,8 +6,8 @@ postgresql:
 
   auth:
     postgresPassword: devpassword
-    username: dpuser
-    password: dppassword
+    username: dkuser
+    password: dkpassword
     database: dataplatform
 
   primary:
@@ -37,24 +37,24 @@ postgresql:
 
           -- Connect to dataplatform DB and create schemas
           \c dataplatform
-          CREATE SCHEMA IF NOT EXISTS dp;
+          CREATE SCHEMA IF NOT EXISTS dk;
           CREATE SCHEMA IF NOT EXISTS staging;
           CREATE SCHEMA IF NOT EXISTS curated;
 
-          -- Grant permissions to dpuser
-          GRANT ALL PRIVILEGES ON SCHEMA dp TO dpuser;
-          GRANT ALL PRIVILEGES ON SCHEMA staging TO dpuser;
-          GRANT ALL PRIVILEGES ON SCHEMA curated TO dpuser;
+          -- Grant permissions to dkuser
+          GRANT ALL PRIVILEGES ON SCHEMA dk TO dkuser;
+          GRANT ALL PRIVILEGES ON SCHEMA staging TO dkuser;
+          GRANT ALL PRIVILEGES ON SCHEMA curated TO dkuser;
 
           -- Create example_table used by the default bootstrapped transform
-          -- (dp init <name> --runtime cloudquery) so it works out of the box.
+          -- (dk init <name> --runtime cloudquery) so it works out of the box.
           CREATE TABLE IF NOT EXISTS example_table (
             id SERIAL PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
-          GRANT ALL PRIVILEGES ON TABLE example_table TO dpuser;
-          GRANT USAGE, SELECT ON SEQUENCE example_table_id_seq TO dpuser;
+          GRANT ALL PRIVILEGES ON TABLE example_table TO dkuser;
+          GRANT USAGE, SELECT ON SEQUENCE example_table_id_seq TO dkuser;
 
           -- Seed a few rows so the first sync produces visible output.
           INSERT INTO example_table (name) VALUES

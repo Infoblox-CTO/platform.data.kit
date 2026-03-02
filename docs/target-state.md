@@ -1,13 +1,13 @@
 ---
 title: Target State — Operating Model
-description: Two-persona architecture for the Data Platform
+description: Two-persona architecture for DataKit
 ---
 
 # Target State — Operating Model
 
 ## Two personas, one platform
 
-The Data Platform serves two distinct roles with clear ownership boundaries.
+DataKit serves two distinct roles with clear ownership boundaries.
 
 | Persona | Owns | Defines |
 |---------|------|---------|
@@ -64,7 +64,7 @@ engine: cloudquery
 description: "CloudQuery AWS source — IAM, EC2, S3, and 300+ tables"
 ```
 
-Each extension ships with a `schema.json` that validates consumer configuration, a `versions.yaml` for version policy, and optional templates and examples. Extensions are published to the OCI registry via `dp ext publish`.
+Each extension ships with a `schema.json` that validates consumer configuration, a `versions.yaml` for version policy, and optional templates and examples. Extensions are published to the OCI registry via `dk ext publish`.
 
 ### 2. Assets — configured instances
 
@@ -83,7 +83,7 @@ config:
   tables: ["iam_roles", "iam_policies", "ec2_instances"]
 ```
 
-The `config` block is validated against the extension's `schema.json` at `dp validate` time — errors surface before runtime.
+The `config` block is validated against the extension's `schema.json` at `dk validate` time — errors surface before runtime.
 
 ### 3. Pipelines — multi-step wiring
 
@@ -137,7 +137,7 @@ Platform engineers define environments with allowed extensions, version constrai
 
 ### Policies
 
-Declarative YAML policies enforce guardrails at `dp validate` time:
+Declarative YAML policies enforce guardrails at `dk validate` time:
 
 - **versions.yaml** — prod requires exact version pins; dev allows ranges
 - **quality.yaml** — gold-tier outputs require tests and documentation
@@ -150,24 +150,24 @@ Declarative YAML policies enforce guardrails at `dp validate` time:
 ### Platform engineer
 
 ```
-dp ext create cloudquery.source.aws --kind source --engine cloudquery
+dk ext create cloudquery.source.aws --kind source --engine cloudquery
 # Edit schema.json, templates/, versions.yaml, examples
-dp ext validate cloudquery.source.aws
-dp ext publish
+dk ext validate cloudquery.source.aws
+dk ext publish
 ```
 
 ### Data engineer
 
 ```
-dp asset create aws_security --ext cloudquery.source.aws --interactive
-dp asset create snowflake_raw --ext cloudquery.dest.snowflake
-dp pipeline create aws_compliance --template sync-transform-test
+dk asset create aws_security --ext cloudquery.source.aws --interactive
+dk asset create snowflake_raw --ext cloudquery.dest.snowflake
+dk pipeline create aws_compliance --template sync-transform-test
 # Edit dbt models and tests
-dp validate
-dp plan --env dev
-dp apply --env dev
-dp pipeline run aws_compliance --env dev
-dp pipeline backfill aws_compliance --from 2026-01-01 --to 2026-02-01
+dk validate
+dk plan --env dev
+dk apply --env dev
+dk pipeline run aws_compliance --env dev
+dk pipeline backfill aws_compliance --from 2026-01-01 --to 2026-02-01
 ```
 
 ---
@@ -198,10 +198,10 @@ The target state is reached incrementally through five features, each independen
 
 | # | Feature | Delivers |
 |---|---------|----------|
-| 011 | Extension type system | `dp ext create/validate/publish`, extension.yaml + schema.json |
-| 012 | Asset instances | `dp asset create/validate`, asset.yaml referencing extensions |
-| 013 | Pipeline orchestration | Multi-step pipelines, `dp pipeline backfill`, schedule.yaml |
-| 014 | Environments and policies | `dp plan/apply`, declarative policies, version constraints |
+| 011 | Extension type system | `dk ext create/validate/publish`, extension.yaml + schema.json |
+| 012 | Asset instances | `dk asset create/validate`, asset.yaml referencing extensions |
+| 013 | Pipeline orchestration | Multi-step pipelines, `dk pipeline backfill`, schedule.yaml |
+| 014 | Environments and policies | `dk plan/apply`, declarative policies, version constraints |
 | 015 | dbt model engine | dbt as a first-class extension, sync → transform → test chains |
 
-The existing `dp init` / `dp build` / `dp run` workflow continues to work throughout — it is progressively refactored under the hood as each feature lands. The current CloudQuery source plugin becomes the first built-in extension.
+The existing `dk init` / `dk build` / `dk run` workflow continues to work throughout — it is progressively refactored under the hood as each feature lands. The current CloudQuery source plugin becomes the first built-in extension.

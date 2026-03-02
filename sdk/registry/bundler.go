@@ -51,16 +51,16 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		return nil, fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Read and parse dp.yaml
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Read and parse dk.yaml
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	dpData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
+		return nil, fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	m, kind, err := manifest.ParseManifest(dpData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return nil, fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	// Create manifest layer (YAML files)
@@ -79,7 +79,7 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 	hostname, _ := os.Hostname()
 	buildInfo := &BuildInfo{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		Builder:   "dp/" + b.Version,
+		Builder:   "dk/" + b.Version,
 		GitCommit: opts.GitCommit,
 		GitBranch: opts.GitBranch,
 		GitTag:    opts.GitTag,
@@ -99,8 +99,8 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		"org.opencontainers.image.version":     m.GetVersion(),
 		"org.opencontainers.image.title":       m.GetName(),
 		"org.opencontainers.image.description": m.GetDescription(),
-		"io.infoblox.dp.namespace":             m.GetNamespace(),
-		"io.infoblox.dp.kind":                  string(kind),
+		"io.infoblox.dk.namespace":             m.GetNamespace(),
+		"io.infoblox.dk.kind":                  string(kind),
 	}
 
 	if opts.GitCommit != "" {
@@ -130,7 +130,7 @@ func (b *Bundler) createManifestLayer(packageDir string) (Layer, error) {
 
 	// Add manifest files
 	manifestFiles := []string{
-		"dp.yaml",
+		"dk.yaml",
 	}
 
 	for _, name := range manifestFiles {
@@ -168,7 +168,7 @@ func (b *Bundler) createManifestLayer(packageDir string) (Layer, error) {
 		MediaType: MediaTypeDPManifest,
 		Content:   buf.Bytes(),
 		Annotations: map[string]string{
-			"io.infoblox.dp.layer.type": "manifests",
+			"io.infoblox.dk.layer.type": "manifests",
 		},
 	}, nil
 }
@@ -219,7 +219,7 @@ func (b *Bundler) createContentLayer(packageDir string, excludePatterns []string
 		}
 
 		// Skip manifest files (they're in their own layer)
-		if relPath == "dp.yaml" || relPath == "pipeline.yaml" ||
+		if relPath == "dk.yaml" || relPath == "pipeline.yaml" ||
 			filepath.HasPrefix(relPath, "schemas") {
 			if info.IsDir() {
 				return filepath.SkipDir
@@ -252,7 +252,7 @@ func (b *Bundler) createContentLayer(packageDir string, excludePatterns []string
 		MediaType: MediaTypeTarGz,
 		Content:   buf.Bytes(),
 		Annotations: map[string]string{
-			"io.infoblox.dp.layer.type": "content",
+			"io.infoblox.dk.layer.type": "content",
 		},
 	}, nil
 }

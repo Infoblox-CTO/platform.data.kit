@@ -21,27 +21,27 @@ var (
 	buildNoCache bool
 )
 
-// buildCmd builds a DP package artifact
+// buildCmd builds a DK package artifact
 var buildCmd = &cobra.Command{
 	Use:   "build [package-dir]",
-	Short: "Build a DP package artifact",
-	Long: `Build a DP data package into an OCI artifact.
+	Short: "Build a DK package artifact",
+	Long: `Build a DK data package into an OCI artifact.
 
 The build command validates the package manifests, bundles all files,
 and creates an OCI-compliant artifact ready for publishing.
 
 Examples:
   # Build package in current directory
-  dp build
+  dk build
 
   # Build with custom tag
-  dp build --tag v1.0.0
+  dk build --tag v1.0.0
 
   # Build and push to registry
-  dp build --push
+  dk build --push
 
   # Dry run (validate only)
-  dp build --dry-run`,
+  dk build --dry-run`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runBuild,
 }
@@ -49,7 +49,7 @@ Examples:
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.Flags().StringVarP(&buildTag, "tag", "t", "", "Tag for the built artifact (default: version from dp.yaml)")
+	buildCmd.Flags().StringVarP(&buildTag, "tag", "t", "", "Tag for the built artifact (default: version from dk.yaml)")
 	buildCmd.Flags().BoolVar(&buildPush, "push", false, "Push artifact to registry after building")
 	buildCmd.Flags().BoolVar(&buildDryRun, "dry-run", false, "Validate only, don't build artifact")
 	buildCmd.Flags().BoolVar(&buildNoCache, "no-cache", false, "Don't use cache when building")
@@ -68,10 +68,10 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Verify dp.yaml exists
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Verify dk.yaml exists
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
+		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
 	fmt.Printf("Building package: %s\n\n", packageDir)
@@ -103,7 +103,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	// Parse the manifest for metadata
 	m, kind, parseErr := manifest.ParseManifestFile(dpPath)
 	if parseErr != nil {
-		return fmt.Errorf("failed to parse dp.yaml: %w", parseErr)
+		return fmt.Errorf("failed to parse dk.yaml: %w", parseErr)
 	}
 
 	// Step 2: Gather git info
@@ -172,12 +172,12 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	if buildPush {
 		fmt.Println("\nPushing to registry...")
 		// This would call the publish logic
-		fmt.Println("(Push not implemented yet - use 'dp publish' after build)")
+		fmt.Println("(Push not implemented yet - use 'dk publish' after build)")
 	}
 
 	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  dp publish              # Push Helm chart to OCI registry\n")
-	fmt.Printf("  dp promote %s %s --to dev  # Promote to dev environment\n",
+	fmt.Printf("  dk publish              # Push Helm chart to OCI registry\n")
+	fmt.Printf("  dk promote %s %s --to dev  # Promote to dev environment\n",
 		m.GetName(), version)
 
 	return nil

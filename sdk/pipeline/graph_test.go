@@ -256,7 +256,7 @@ spec:
 		if err := os.MkdirAll(assetDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(assetDir, "dp.yaml"), []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(assetDir, "dk.yaml"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -266,7 +266,7 @@ spec:
 		if err := os.MkdirAll(transformDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(transformDir, "dp.yaml"), []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(transformDir, "dk.yaml"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}

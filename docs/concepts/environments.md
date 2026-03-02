@@ -44,7 +44,7 @@ The Data Platform uses a structured environment model for promoting data package
 - **Access**: All developers
 
 ```bash
-dp promote my-package v1.0.0 --to dev
+dk promote my-package v1.0.0 --to dev
 # Creates PR, auto-merges after CI passes
 ```
 
@@ -56,7 +56,7 @@ dp promote my-package v1.0.0 --to dev
 - **Access**: Development team
 
 ```bash
-dp promote my-package v1.0.0 --to int
+dk promote my-package v1.0.0 --to int
 # Creates PR, requires 1 approval
 ```
 
@@ -68,7 +68,7 @@ dp promote my-package v1.0.0 --to int
 - **Access**: Limited, audited
 
 ```bash
-dp promote my-package v1.0.0 --to prod
+dk promote my-package v1.0.0 --to prod
 # Creates PR, requires security + team approval
 ```
 
@@ -80,8 +80,8 @@ First, build and publish your package:
 
 ```bash
 cd my-package
-dp build --version v1.0.0
-dp publish
+dk build --version v1.0.0
+dk publish
 ```
 
 ### 2. Promote to Environment
@@ -89,7 +89,7 @@ dp publish
 Request promotion to an environment:
 
 ```bash
-dp promote my-package v1.0.0 --to dev
+dk promote my-package v1.0.0 --to dev
 ```
 
 This creates a GitOps PR in the deployment repository:
@@ -144,7 +144,7 @@ Packages use Store manifests to reference infrastructure. Store configurations d
 
 ### Package Manifest
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 spec:
   store: events-store  # References a Store by name
 ```
@@ -184,7 +184,7 @@ Same package, different infrastructure per environment.
 View your package across environments:
 
 ```bash
-dp status my-package
+dk status my-package
 ```
 
 ```
@@ -203,7 +203,7 @@ prod         v0.9.0    Synced    2 days ago       6 hours ago (success)
 View all packages in an environment:
 
 ```bash
-dp status --env dev
+dk status --env dev
 ```
 
 ```
@@ -223,7 +223,7 @@ ml-training          v3.0.0    Synced    Healthy
 If a deployment causes issues, rollback to a previous version:
 
 ```bash
-dp promote my-package v0.9.0 --to dev --rollback
+dk promote my-package v0.9.0 --to dev --rollback
 ```
 
 The `--rollback` flag:
@@ -300,14 +300,14 @@ Always promote through environments in order:
 
 ```bash
 # Good: dev → int → prod
-dp promote pkg v1.0.0 --to dev
+dk promote pkg v1.0.0 --to dev
 # Test in dev
-dp promote pkg v1.0.0 --to int
+dk promote pkg v1.0.0 --to int
 # Test in int
-dp promote pkg v1.0.0 --to prod
+dk promote pkg v1.0.0 --to prod
 
 # Bad: Skipping environments
-dp promote pkg v1.0.0 --to prod  # ⚠ Skipped dev and int
+dk promote pkg v1.0.0 --to prod  # ⚠ Skipped dev and int
 ```
 
 ### 2. Version Pinning
@@ -316,10 +316,10 @@ Use exact versions, not `latest`:
 
 ```bash
 # Good
-dp promote my-package v1.2.3 --to prod
+dk promote my-package v1.2.3 --to prod
 
 # Bad
-dp promote my-package latest --to prod
+dk promote my-package latest --to prod
 ```
 
 ### 3. Promote Often
@@ -339,9 +339,9 @@ v1.0.0 → v2.0.0
 Always verify after promotion:
 
 ```bash
-dp promote my-package v1.0.0 --to prod
-dp status my-package
-dp logs my-package --env prod --follow
+dk promote my-package v1.0.0 --to prod
+dk status my-package
+dk logs my-package --env prod --follow
 ```
 
 ## Troubleshooting
@@ -355,7 +355,7 @@ If a promotion PR isn't merging:
 3. Check for merge conflicts
 
 ```bash
-dp promote my-package v1.0.0 --to dev --status
+dk promote my-package v1.0.0 --to dev --status
 ```
 
 ### Sync Failed
@@ -364,10 +364,10 @@ If ArgoCD sync fails:
 
 ```bash
 # Check sync status
-dp status my-package --env dev
+dk status my-package --env dev
 
 # View sync details
-dp logs my-package --env dev --sync
+dk logs my-package --env dev --sync
 ```
 
 ### Binding Resolution Errors

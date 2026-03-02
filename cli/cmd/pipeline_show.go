@@ -27,7 +27,7 @@ var pipelineShowCmd = &cobra.Command{
 	Long: `Display the pipeline workflow definition or the reactive dependency graph.
 
 When --all or --destination is used, the command scans for Transform and
-Asset manifests (dp.yaml files) and renders the dependency graph.
+Asset manifests (dk.yaml files) and renders the dependency graph.
 
 Without those flags, it falls back to displaying the legacy pipeline.yaml
 workflow definition.
@@ -45,22 +45,22 @@ Output formats for legacy mode:
 
 Examples:
   # Show dependency graph for all transforms
-  dp pipeline show --all
+  dk pipeline show --all
 
   # Show graph leading to a specific asset
-  dp pipeline show --destination event-summary
+  dk pipeline show --destination event-summary
 
   # Render as Mermaid
-  dp pipeline show --all --output mermaid
+  dk pipeline show --all --output mermaid
 
   # Scan specific directories
-  dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+  dk pipeline show --all --scan-dir ./transforms --scan-dir ./assets
 
   # Legacy: show pipeline.yaml
-  dp pipeline show
+  dk pipeline show
 
   # Legacy: show as JSON
-  dp pipeline show --output json`,
+  dk pipeline show --output json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipelineShow,
 }
@@ -75,7 +75,7 @@ func init() {
 	pipelineShowCmd.Flags().StringVar(&pipelineShowDestination, "destination", "",
 		"Show dependency chain leading to this asset")
 	pipelineShowCmd.Flags().StringArrayVar(&pipelineShowScanDirs, "scan-dir", nil,
-		"Directories to scan for dp.yaml files (repeatable)")
+		"Directories to scan for dk.yaml files (repeatable)")
 }
 
 func runPipelineShow(cmd *cobra.Command, args []string) error {

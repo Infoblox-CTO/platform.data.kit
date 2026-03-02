@@ -119,8 +119,8 @@ func TestHeartbeat_DefaultConfig(t *testing.T) {
 	if config.Interval != 30*time.Second {
 		t.Errorf("Expected default interval 30s, got %v", config.Interval)
 	}
-	if config.Producer != "dp-runner" {
-		t.Errorf("Expected default producer dp-runner, got %v", config.Producer)
+	if config.Producer != "dk-runner" {
+		t.Errorf("Expected default producer dk-runner, got %v", config.Producer)
 	}
 }
 
@@ -137,8 +137,8 @@ func TestNewHeartbeat_DefaultValues(t *testing.T) {
 	if heartbeat.config.Interval != 30*time.Second {
 		t.Errorf("Expected default interval 30s, got %v", heartbeat.config.Interval)
 	}
-	if heartbeat.config.Producer != "dp-runner" {
-		t.Errorf("Expected default producer dp-runner, got %v", heartbeat.config.Producer)
+	if heartbeat.config.Producer != "dk-runner" {
+		t.Errorf("Expected default producer dk-runner, got %v", heartbeat.config.Producer)
 	}
 }
 

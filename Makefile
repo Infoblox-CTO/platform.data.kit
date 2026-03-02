@@ -1,4 +1,4 @@
-# dp Makefile
+# dk Makefile
 # Multi-module Go workspace build system
 
 # Install location for binaries
@@ -29,7 +29,7 @@ build-sdk:
 
 build-cli: ## Build CLI binary
 	@echo "Building cli..."
-	@cd cli && go build -o ../bin/dp .
+	@cd cli && go build -o ../bin/dk .
 
 build-controller: ## Build controller binary
 	@echo "Building controller..."
@@ -125,10 +125,10 @@ tidy: ## Tidy all go.mod files
 	@cd cli && go mod tidy
 	@cd platform/controller && go mod tidy
 
-install: ## Install dp to GOPATH/bin
-	@echo "Installing dp to $(GOPATH)/bin..."
-	@cd cli && go build -o $(GOPATH)/bin/dp .
-	@echo "✓ Installed dp to $(GOPATH)/bin/dp"
+install: ## Install dk to GOPATH/bin
+	@echo "Installing dk to $(GOPATH)/bin..."
+	@cd cli && go build -o $(GOPATH)/bin/dk .
+	@echo "✓ Installed dk to $(GOPATH)/bin/dk"
 
 run-local: ## Start local dev stack
 	@echo "Starting local development stack..."
@@ -169,10 +169,10 @@ LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 
 release-cli: ## Build release CLI binaries
 	@echo "Building release CLI $(VERSION)..."
-	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dp-linux-amd64 .
-	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dp-linux-arm64 .
-	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dp-darwin-amd64 .
-	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dp-darwin-arm64 .
+	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dk-linux-amd64 .
+	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dk-linux-arm64 .
+	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dk-darwin-amd64 .
+	@cd cli && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o ../bin/dk-darwin-arm64 .
 	@echo "✓ Release binaries in bin/"
 
 release-controller: ## Build controller Docker image

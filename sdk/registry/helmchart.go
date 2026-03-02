@@ -28,7 +28,7 @@ type HelmChartOptions struct {
 	// GitTag is the source tag.
 	GitTag string
 
-	// Version overrides the chart version (default: from dp.yaml).
+	// Version overrides the chart version (default: from dk.yaml).
 	Version string
 }
 
@@ -59,7 +59,7 @@ type HelmChartResult struct {
 //	├── templates/
 //	│   └── packagedeployment.yaml
 //	└── manifests/
-//	    ├── dp.yaml
+//	    ├── dk.yaml
 //	    ├── connector/*.yaml
 //	    └── asset/*.yaml
 func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
@@ -68,16 +68,16 @@ func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
 		return nil, fmt.Errorf("resolving path: %w", err)
 	}
 
-	// Parse dp.yaml for metadata.
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Parse dk.yaml for metadata.
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	dpData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return nil, fmt.Errorf("reading dp.yaml: %w", err)
+		return nil, fmt.Errorf("reading dk.yaml: %w", err)
 	}
 
 	m, _, err := manifest.ParseManifest(dpData)
 	if err != nil {
-		return nil, fmt.Errorf("parsing dp.yaml: %w", err)
+		return nil, fmt.Errorf("parsing dk.yaml: %w", err)
 	}
 
 	name := m.GetName()
@@ -104,7 +104,7 @@ func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
 		namespace = "default"
 	}
 
-	// Runtime from dp.yaml (for annotation).
+	// Runtime from dk.yaml (for annotation).
 	runtime := ""
 	if t, ok := m.(interface{ GetRuntime() string }); ok {
 		runtime = t.GetRuntime()
@@ -152,8 +152,8 @@ func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
 		return nil, err
 	}
 
-	// Write manifests/dp.yaml
-	if err := writeChartFile(tw, name+"/manifests/dp.yaml", dpData, now); err != nil {
+	// Write manifests/dk.yaml
+	if err := writeChartFile(tw, name+"/manifests/dk.yaml", dpData, now); err != nil {
 		return nil, err
 	}
 
@@ -205,16 +205,16 @@ func generateChartYAML(name, version, appVersion, runtime string) []byte {
 	buf.WriteString(fmt.Sprintf("description: %s data package\n", name))
 	buf.WriteString("type: application\n")
 	buf.WriteString("annotations:\n")
-	buf.WriteString("  io.infoblox.dp/kind: package\n")
+	buf.WriteString("  io.infoblox.dk/kind: package\n")
 	if runtime != "" {
-		buf.WriteString(fmt.Sprintf("  io.infoblox.dp/runtime: %s\n", runtime))
+		buf.WriteString(fmt.Sprintf("  io.infoblox.dk/runtime: %s\n", runtime))
 	}
 	return buf.Bytes()
 }
 
 func generateValuesYAML() []byte {
 	return []byte(`# Cell name — REQUIRED at deploy time.
-# The controller resolves Stores from the cell's namespace (dp-<cell>).
+# The controller resolves Stores from the cell's namespace (dk-<cell>).
 cell: ""
 
 # Resource defaults — override per deployment in the CM repo.
@@ -232,7 +232,7 @@ replicas: 1
 # Schedule (batch mode only) — cron expression.
 schedule: ""
 
-# OCI registry (default: ghcr.io/infoblox-cto/dp).
+# OCI registry (default: ghcr.io/infoblox-cto/dk).
 registry: ""
 `)
 }
@@ -242,12 +242,12 @@ func generatePackageDeploymentTemplate() []byte {
 kind: PackageDeployment
 metadata:
   name: {{ .Chart.Name }}
-  namespace: dp-{{ .Values.cell }}
+  namespace: dk-{{ .Values.cell }}
 spec:
   package:
     name: {{ .Chart.Name }}
     version: {{ .Chart.Version }}
-    registry: {{ .Values.registry | default "ghcr.io/infoblox-cto/dp" }}
+    registry: {{ .Values.registry | default "ghcr.io/infoblox-cto/dk" }}
   cell: {{ .Values.cell }}
   mode: {{ .Values.mode | default "batch" }}
   {{- if .Values.schedule }}

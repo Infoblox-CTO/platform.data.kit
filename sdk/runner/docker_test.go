@@ -52,9 +52,9 @@ spec:
 			// Create temp directory
 			tmpDir := t.TempDir()
 
-			// Write dp.yaml
-			if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(tt.dpYAML), 0644); err != nil {
-				t.Fatalf("failed to write dp.yaml: %v", err)
+			// Write dk.yaml
+			if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(tt.dpYAML), 0644); err != nil {
+				t.Fatalf("failed to write dk.yaml: %v", err)
 			}
 
 			// Create runner
@@ -114,8 +114,8 @@ spec:
     - asset: output-data
 `
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpYAML), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpYAML), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	runner, err := NewDockerRunner()

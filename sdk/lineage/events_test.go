@@ -47,8 +47,8 @@ func TestNewEvent(t *testing.T) {
 	if event.SchemaURL != SchemaVersion {
 		t.Errorf("SchemaURL = %s, want %s", event.SchemaURL, SchemaVersion)
 	}
-	if event.Producer != "dp" {
-		t.Errorf("Producer = %s, want dp", event.Producer)
+	if event.Producer != "dk" {
+		t.Errorf("Producer = %s, want dk", event.Producer)
 	}
 }
 

@@ -2,21 +2,22 @@
 ================================================================================
 SYNC IMPACT REPORT
 ================================================================================
-Version Change: 1.2.0 → 2.0.0
-Bump Rationale: Operating model evolution — two-persona architecture
-  (platform engineer + data engineer), extension type system, policy engine.
+Version Change: 2.0.0 → 3.0.0
+Bump Rationale: Product rebrand from DP to DK (DataKit), pre-production
+  backward compatibility policy, K8s API group change to datakit.infoblox.dev.
 
 Modified Principles:
-  - Article IV: Expanded from "Infra vs Pipelines" to "Platform vs Domain"
-    with four-layer separation (extension → asset → pipeline → binding).
+  - Article II: Removed backward compat requirement for pre-production phase
 
-Added Sections:
-  - Article X: Persona Boundaries and Least Authority
-  - Article XI: Extensions are Contracts
-  - Technology Standards / Python Testing Requirements
-  - Definition of Done / Schema-validated gate
-  - MVP Guardrails: extension system scope limits
-  - Pre-Implementation Gates: Persona Mapping gate
+Modified Sections:
+  - CLI Name: dp → dk (DataKit)
+  - Versioning and Compatibility Rules: Added pre-production exemption
+  - MVP Guardrails: Updated dp → dk references, added no-backward-compat rule
+  - Title: DP Constitution → DK Constitution
+
+Previous Change (2.0.0):
+  - Article IV: Expanded from "Infra vs Pipelines" to "Platform vs Domain"
+  - Added Articles X, XI, Python Testing, Schema-validated gate, Persona Mapping gate
 
 Removed Sections: N/A
 
@@ -24,17 +25,16 @@ Templates Requiring Updates:
   - plan-template.md: Constitution Check table needs Articles X and XI rows
 
 Follow-up TODOs:
-  - Generate specs 011–015 for the operating model evolution
-  - Update CONTRIBUTING.md constitution summary to reflect new articles
-  - Ensure all future specs include persona mapping in their plans
+  - Update CONTRIBUTING.md constitution summary to reflect DK rename
+  - Ensure all future specs use dk in CLI references
 ================================================================================
 -->
 
-# DP Constitution (Project Governance)
+# DK Constitution (Project Governance)
 
 ## Purpose
 
-This constitution defines the non-negotiable principles for building the Data Platform (DP). All specs, plans, tasks, and implementation decisions MUST align with these principles.
+This constitution defines the non-negotiable principles for building DataKit (DK). All specs, plans, tasks, and implementation decisions MUST align with these principles.
 
 ## Scope
 
@@ -206,10 +206,12 @@ Extensions define the approved building blocks of the platform. They are APIs be
 
 ### CLI Name
 
-- The CLI binary MUST be named `dp` (short for Data Platform).
-- All documentation, examples, and help text MUST use `dp` as the command name.
+- The CLI binary MUST be named `dk` (short for DataKit).
+- All documentation, examples, and help text MUST use `dk` as the command name.
+- The K8s API group MUST be `datakit.infoblox.dev`.
+- All K8s labels MUST use the `datakit.infoblox.dev/` domain prefix.
 
-**Rationale**: Short CLI names improve developer ergonomics and reduce typing friction.
+**Rationale**: `dk` (DataKit) is the product identity. Short CLI names improve developer ergonomics. The `datakit.infoblox.dev` domain is owned by Infoblox and follows K8s API group conventions.
 
 ## Definition of Done (for MVP increments)
 
@@ -224,12 +226,11 @@ A feature is "done" only when:
 ## Versioning and Compatibility Rules
 
 - Contracts and CLI/platform modules use SemVer (MAJOR.MINOR.PATCH).
-- Backward compatibility is favored:
+- **Pre-production phase** (current): Backward compatibility is NOT guaranteed. Breaking changes may be introduced at any time without migration guidance. All effort is focused on making the project consistent with currently proposed concepts.
+- **Post-production release**: Once the project is declared production-ready, backward compatibility MUST be maintained:
   - Add fields as optional first.
   - Keep old fields for at least one minor release with deprecation notes.
-- Breaking changes require:
-  - Major version bump (or explicit vNext manifest apiVersion).
-  - Migration guidance documentation.
+  - Breaking changes require major version bump (or explicit vNext manifest apiVersion) and migration guidance documentation.
 
 ## MVP Guardrails (Anti-Goals)
 
@@ -238,8 +239,9 @@ The following are explicitly out of scope for MVP:
 - **Do NOT** build a new scheduler.
 - **Do NOT** build a full enterprise data marketplace in MVP.
 - **Do NOT** introduce complex multi-tenancy until MVP workflow is proven.
-- **Do NOT** build a custom policy engine — start with declarative YAML policies evaluated at `dp validate` time.
-- **Do NOT** build dynamic extension discovery or marketplace UI — extensions are registered via `dp ext publish` and referenced by FQN.
+- **Do NOT** build a custom policy engine — start with declarative YAML policies evaluated at `dk validate` time.
+- **Do NOT** build dynamic extension discovery or marketplace UI — extensions are registered via `dk ext publish` and referenced by FQN.
+- **Do NOT** invest in backward compatibility, migration tooling, or deprecation paths until the project reaches production release. Consistency with current design takes priority over preserving old behavior.
 - **Do NOT** build a multi-repo extension resolution protocol — start with a single OCI registry.
 - The extension type system SHOULD launch with existing CloudQuery as the first built-in extension, not with a broad catalog.
 - **Avoid** over-generalizing beyond current requirements; design for extensibility, not maximal abstraction.
@@ -280,4 +282,4 @@ This constitution follows SemVer:
 
 ---
 
-**Version**: 2.0.0 | **Ratified**: 2026-01-22 | **Last Amended**: 2026-02-14
+**Version**: 3.0.0 | **Ratified**: 2026-01-22 | **Last Amended**: 2026-03-01

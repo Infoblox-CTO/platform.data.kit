@@ -7,7 +7,7 @@ import (
 // CellSpec defines the desired state of a Cell.
 type CellSpec struct {
 	// Namespace is the Kubernetes namespace where this cell's workloads
-	// and Stores are deployed (e.g., "dp-canary").
+	// and Stores are deployed (e.g., "dk-canary").
 	Namespace string `json:"namespace"`
 
 	// Labels are key-value metadata for cell selection and filtering.

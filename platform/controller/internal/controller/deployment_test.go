@@ -97,11 +97,11 @@ func TestDeploymentGenerator_Generate(t *testing.T) {
 				}
 
 				// Verify labels
-				if deploy.Labels["dp.io/package"] != tt.deployment.Spec.Package.Name {
-					t.Errorf("Deployment label dp.io/package = %v, want %v", deploy.Labels["dp.io/package"], tt.deployment.Spec.Package.Name)
+				if deploy.Labels["datakit.infoblox.dev/package"] != tt.deployment.Spec.Package.Name {
+					t.Errorf("Deployment label datakit.infoblox.dev/package = %v, want %v", deploy.Labels["datakit.infoblox.dev/package"], tt.deployment.Spec.Package.Name)
 				}
-				if deploy.Labels["dp.io/mode"] != "streaming" {
-					t.Errorf("Deployment label dp.io/mode = %v, want streaming", deploy.Labels["dp.io/mode"])
+				if deploy.Labels["datakit.infoblox.dev/mode"] != "streaming" {
+					t.Errorf("Deployment label datakit.infoblox.dev/mode = %v, want streaming", deploy.Labels["datakit.infoblox.dev/mode"])
 				}
 
 				// Verify owner reference

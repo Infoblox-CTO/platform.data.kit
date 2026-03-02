@@ -21,13 +21,13 @@ var assetCreateCmd = &cobra.Command{
 
 Examples:
   # Create a basic asset
-  dp asset create aws-security
+  dk asset create aws-security
 
   # Create with a pre-filled store reference
-  dp asset create aws-security --store my-s3
+  dk asset create aws-security --store my-s3
 
   # Overwrite existing asset
-  dp asset create aws-security --force`,
+  dk asset create aws-security --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAssetCreate,
 }
@@ -76,7 +76,7 @@ func runAssetCreate(cmd *cobra.Command, args []string) error {
 	cmd.Printf("Created asset %q at %s\n", name, relPath)
 	cmd.Printf("\nNext steps:\n")
 	cmd.Printf("  1. Edit %s to fill in spec.store and locators\n", relPath)
-	cmd.Printf("  2. Run 'dp asset validate' to validate\n")
+	cmd.Printf("  2. Run 'dk asset validate' to validate\n")
 
 	return nil
 }

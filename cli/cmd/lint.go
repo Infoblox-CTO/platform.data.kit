@@ -23,10 +23,10 @@ var (
 var lintCmd = &cobra.Command{
 	Use:   "lint [package-dir]",
 	Short: "Validate package manifests",
-	Long: `Validate all manifests in a DP package directory.
+	Long: `Validate all manifests in a DK package directory.
 
 The lint command checks:
-  - dp.yaml: Data package manifest validation
+  - dk.yaml: Data package manifest validation
   - schemas/: Schema file validation
   - PII classification: Ensures outputs have required classifications
 
@@ -39,26 +39,26 @@ Validation rules include:
 You can validate with overrides to check merged configuration:
   - Use -f to apply override files (like Helm values files)
   - Use --set for inline overrides
-  - Precedence: dp.yaml < -f files (in order) < --set (in order)
+  - Precedence: dk.yaml < -f files (in order) < --set (in order)
 
 Examples:
   # Lint current directory
-  dp lint
+  dk lint
 
   # Lint specific package
-  dp lint ./my-pipeline
+  dk lint ./my-pipeline
 
   # Lint with overrides applied
-  dp lint ./my-pipeline -f production.yaml
+  dk lint ./my-pipeline -f production.yaml
 
   # Lint with inline override
-  dp lint ./my-pipeline --set spec.runtime.image=myimage:v2
+  dk lint ./my-pipeline --set spec.runtime.image=myimage:v2
 
   # Strict mode (warnings become errors)
-  dp lint --strict
+  dk lint --strict
 
   # Skip PII classification validation
-  dp lint --skip-pii`,
+  dk lint --skip-pii`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runLint,
 }
@@ -126,8 +126,8 @@ func runLint(cmd *cobra.Command, args []string) error {
 
 	// Check what files were validated
 	files := []string{}
-	if _, err := os.Stat(filepath.Join(absDir, "dp.yaml")); err == nil {
-		files = append(files, "dp.yaml")
+	if _, err := os.Stat(filepath.Join(absDir, "dk.yaml")); err == nil {
+		files = append(files, "dk.yaml")
 	}
 	if entries, err := os.ReadDir(filepath.Join(absDir, "schemas")); err == nil {
 		for _, e := range entries {
@@ -181,26 +181,26 @@ func runLint(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// applyLintOverrides applies overrides to dp.yaml for validation.
+// applyLintOverrides applies overrides to dk.yaml for validation.
 // Creates a backup and modifies the file in place for validation.
 func applyLintOverrides(absDir string) error {
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	dpPath := filepath.Join(absDir, "dk.yaml")
 
-	// Check if dp.yaml exists
+	// Check if dk.yaml exists
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return fmt.Errorf("dp.yaml not found in %s", absDir)
+		return fmt.Errorf("dk.yaml not found in %s", absDir)
 	}
 
-	// Read base dp.yaml
+	// Read base dk.yaml
 	baseData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return fmt.Errorf("failed to read dp.yaml: %w", err)
+		return fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	// Parse as generic map for merging
 	var base map[string]any
 	if err := yaml.Unmarshal(baseData, &base); err != nil {
-		return fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	mergeOpts := manifest.DefaultMergeOptions()
@@ -239,7 +239,7 @@ func applyLintOverrides(absDir string) error {
 		fmt.Printf("Set: %s=%v\n", path, value)
 	}
 
-	// Write merged config back to dp.yaml
+	// Write merged config back to dk.yaml
 	mergedData, err := yaml.Marshal(base)
 	if err != nil {
 		return fmt.Errorf("failed to marshal merged config: %w", err)

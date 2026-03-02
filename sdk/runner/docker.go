@@ -48,15 +48,15 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		return nil, err
 	}
 
-	dpPath := filepath.Join(opts.PackageDir, "dp.yaml")
+	dpPath := filepath.Join(opts.PackageDir, "dk.yaml")
 	dpData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
+		return nil, fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	m, kind, err := manifest.ParseManifest(dpData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return nil, fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	var image string
@@ -152,7 +152,7 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		dockerfileContent := generateDockerfile(lang, opts.PackageDir)
 
 		// Create temp directory for build context
-		tempDir, err := os.MkdirTemp("", "dp-build-*")
+		tempDir, err := os.MkdirTemp("", "dk-build-*")
 		if err != nil {
 			return nil, fmt.Errorf("failed to create temp build directory: %w", err)
 		}
@@ -170,7 +170,7 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 
 		// Build version tag with git revision
 		versionTag := buildVersionTag(m.GetVersion(), opts.PackageDir)
-		imageName := fmt.Sprintf("dp/%s:%s", m.GetName(), versionTag)
+		imageName := fmt.Sprintf("dk/%s:%s", m.GetName(), versionTag)
 		if err := r.buildImageWithDockerfile(ctx, opts.PackageDir, dockerfilePath, imageName, opts.Output); err != nil {
 			result.Status = contracts.RunStatusFailed
 			result.Error = fmt.Sprintf("failed to build image: %v", err)
@@ -263,8 +263,8 @@ const DefaultCloudQueryImage = "ghcr.io/cloudquery/cloudquery:latest"
 
 // k3d cluster defaults (duplicated from localdev to avoid import cycle risk).
 const (
-	defaultClusterName = "dp-local"
-	defaultNamespace   = "dp-local"
+	defaultClusterName = "dk-local"
+	defaultNamespace   = "dk-local"
 )
 
 // cqPlugin represents a CloudQuery plugin extracted from config.yaml.
@@ -374,7 +374,7 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 
 	// Verify the k3d cluster is reachable.
 	if err := verifyCluster(ctx, kubeContext, namespace); err != nil {
-		return nil, fmt.Errorf("k3d cluster %q not reachable — is it running? (dp dev up): %w",
+		return nil, fmt.Errorf("k3d cluster %q not reachable — is it running? (dk dev up): %w",
 			clusterName, err)
 	}
 
@@ -494,7 +494,7 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 
 	logsCmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
 		"logs", "--follow", "--all-containers",
-		"-l", fmt.Sprintf("dp.io/run-id=%s", runID),
+		"-l", fmt.Sprintf("datakit.infoblox.dev/run-id=%s", runID),
 		"-n", namespace)
 	if opts.Output != nil {
 		logsCmd.Stdout = opts.Output
@@ -602,14 +602,14 @@ func rewriteCQConfigForGRPC(configData []byte, plugins []cqPlugin) ([]byte, erro
 // Kubernetes helpers
 // ---------------------------------------------------------------------------
 
-// loadK3dClusterName reads the cluster name from the dp config hierarchy.
+// loadK3dClusterName reads the cluster name from the dk config hierarchy.
 // Returns empty string on any error.
 func loadK3dClusterName() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	cfgPath := filepath.Join(home, ".config", "dp", "config.yaml")
+	cfgPath := filepath.Join(home, ".config", "dk", "config.yaml")
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
 		return "", err
@@ -679,15 +679,15 @@ metadata:
   name: %s
   namespace: %s
   labels:
-    app.kubernetes.io/managed-by: dp-cli
-    dp.io/runtime: cloudquery
+    app.kubernetes.io/managed-by: dk-cli
+    datakit.infoblox.dev/runtime: cloudquery
 spec:
   backoffLimit: 0
   template:
     metadata:
       labels:
-        dp.io/run-id: %s
-        dp.io/runtime: cloudquery
+        datakit.infoblox.dev/run-id: %s
+        datakit.infoblox.dev/runtime: cloudquery
     spec:
       restartPolicy: Never
 %s      containers:
@@ -721,7 +721,7 @@ func waitForJobPod(ctx context.Context, kubeContext, namespace, runID string) er
 		case <-ticker.C:
 			cmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
 				"get", "pods",
-				"-l", fmt.Sprintf("dp.io/run-id=%s", runID),
+				"-l", fmt.Sprintf("datakit.infoblox.dev/run-id=%s", runID),
 				"-n", namespace,
 				"-o", "jsonpath={.items[0].status.phase}")
 			out, err := cmd.Output()
@@ -932,15 +932,15 @@ func (r *DockerRunner) buildImage(ctx context.Context, dir, imageName string, ou
 // buildEnvVarsFromPackage reads the package manifest and returns
 // explicit environment variables defined in the spec.
 func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]string, error) {
-	dpPath := filepath.Join(packageDir, "dp.yaml")
+	dpPath := filepath.Join(packageDir, "dk.yaml")
 	dpData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read dp.yaml: %w", err)
+		return nil, fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	m, kind, err := manifest.ParseManifest(dpData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return nil, fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	// Get explicit env vars from manifest
@@ -1107,59 +1107,59 @@ func generateDockerfile(lang, packageDir string) string {
 	switch lang {
 	case "python":
 		if useSrcLayout {
-			return `# DP Pipeline Image (auto-generated)
-ARG DP_BASE_IMAGE=python:3.11-slim
+			return `# DK Pipeline Image (auto-generated)
+ARG DK_BASE_IMAGE=python:3.11-slim
 
 FROM python:3.11-slim AS builder
 WORKDIR /build
 COPY src/requirements.txt ./
 RUN pip install --no-cache-dir --target=/deps -r requirements.txt || true
 
-FROM ${DP_BASE_IMAGE}
+FROM ${DK_BASE_IMAGE}
 WORKDIR /app
 COPY --from=builder /deps /app/deps
 ENV PYTHONPATH=/app/deps
 COPY src/ /app/src/
-COPY dp.yaml /app/
+COPY dk.yaml /app/
 ENTRYPOINT ["python", "/app/src/main.py"]
 `
 		}
-		return `# DP Pipeline Image (auto-generated)
-ARG DP_BASE_IMAGE=python:3.11-slim
+		return `# DK Pipeline Image (auto-generated)
+ARG DK_BASE_IMAGE=python:3.11-slim
 
 FROM python:3.11-slim AS builder
 WORKDIR /build
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --target=/deps -r requirements.txt || true
 
-FROM ${DP_BASE_IMAGE}
+FROM ${DK_BASE_IMAGE}
 WORKDIR /app
 COPY --from=builder /deps /app/deps
 ENV PYTHONPATH=/app/deps
 COPY . /app/
-COPY dp.yaml /app/
+COPY dk.yaml /app/
 ENTRYPOINT ["python", "/app/main.py"]
 `
 	default: // go
 		if useSrcLayout {
-			return `# DP Pipeline Image (auto-generated)
-ARG DP_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
+			return `# DK Pipeline Image (auto-generated)
+ARG DK_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
 
 FROM golang:1.25-alpine AS builder
 WORKDIR /build
 COPY src/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline .
 
-FROM ${DP_BASE_IMAGE}
+FROM ${DK_BASE_IMAGE}
 WORKDIR /app
 COPY --from=builder /pipeline /app/pipeline
-COPY dp.yaml /app/
+COPY dk.yaml /app/
 ENTRYPOINT ["/app/pipeline"]
 `
 		}
 		buildTarget := detectGoBuildTarget(packageDir)
-		return fmt.Sprintf(`# DP Pipeline Image (auto-generated)
-ARG DP_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
+		return fmt.Sprintf(`# DK Pipeline Image (auto-generated)
+ARG DK_BASE_IMAGE=gcr.io/distroless/static-debian12:nonroot
 
 FROM golang:1.25-alpine AS builder
 WORKDIR /build
@@ -1168,10 +1168,10 @@ RUN go mod download || true
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /pipeline %s
 
-FROM ${DP_BASE_IMAGE}
+FROM ${DK_BASE_IMAGE}
 WORKDIR /app
 COPY --from=builder /pipeline /app/pipeline
-COPY dp.yaml /app/
+COPY dk.yaml /app/
 ENTRYPOINT ["/app/pipeline"]
 `, buildTarget)
 	}

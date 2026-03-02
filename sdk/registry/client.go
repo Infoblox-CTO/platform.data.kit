@@ -157,13 +157,13 @@ type ClientConfig struct {
 // Media types for DP artifacts.
 const (
 	// MediaTypeDPManifest is the media type for DP manifests.
-	MediaTypeDPManifest = "application/vnd.infoblox.dp.manifest.v1+yaml"
+	MediaTypeDPManifest = "application/vnd.infoblox.dk.manifest.v1+yaml"
 
 	// MediaTypeDPConfig is the media type for DP artifact config.
-	MediaTypeDPConfig = "application/vnd.infoblox.dp.config.v1+json"
+	MediaTypeDPConfig = "application/vnd.infoblox.dk.config.v1+json"
 
 	// MediaTypeDPPackage is the artifact type for DP packages.
-	MediaTypeDPPackage = "application/vnd.infoblox.dp.package.v1"
+	MediaTypeDPPackage = "application/vnd.infoblox.dk.package.v1"
 
 	// MediaTypeTarGz is the media type for tar.gz archives.
 	MediaTypeTarGz = "application/vnd.oci.image.layer.v1.tar+gzip"

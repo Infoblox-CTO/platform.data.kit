@@ -27,10 +27,10 @@ The asset is looked up by name across all type directories (sources, sinks, mode
 
 Examples:
   # Show asset details in YAML format
-  dp asset show aws-security
+  dk asset show aws-security
 
   # Show asset details as JSON
-  dp asset show aws-security --output json`,
+  dk asset show aws-security --output json`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAssetShow,
 }

@@ -40,14 +40,14 @@ The run command builds (if needed) and executes the package defined in
 the specified directory.
 
 The command will:
-1. Parse dp.yaml manifest
+1. Parse dk.yaml manifest
 2. Apply any override files (-f) and inline overrides (--set)
 3. Build the Docker image
 4. Start the container on the Docker network
 5. Stream logs to stdout
 
 Override precedence (lowest to highest):
-  - dp.yaml (base configuration)
+  - dk.yaml (base configuration)
   - Override files (-f) in order specified
   - Inline overrides (--set) in order specified
 
@@ -56,34 +56,34 @@ Prerequisites:
 
 Examples:
   # Run pipeline in current directory
-  dp run
+  dk run
 
   # Run pipeline in specific directory
-  dp run ./my-pipeline
+  dk run ./my-pipeline
 
   # Run with custom environment variables
-  dp run -e DEBUG=true -e LOG_LEVEL=debug
+  dk run -e DEBUG=true -e LOG_LEVEL=debug
 
   # Override configuration values
-  dp run --set spec.resources.memory=8Gi
+  dk run --set spec.resources.memory=8Gi
 
   # Use an override file
-  dp run -f prod-overrides.yaml
+  dk run -f prod-overrides.yaml
 
   # Combine override file and inline overrides
-  dp run -f prod-overrides.yaml --set spec.timeout=4h
+  dk run -f prod-overrides.yaml --set spec.timeout=4h
 
   # Dry run (validate only, don't execute)
-  dp run --dry-run
+  dk run --dry-run
 
   # Run in background
-  dp run --detach
+  dk run --detach
 
   # Run with stores resolved from a cell
-  dp run --cell canary
+  dk run --cell canary
 
   # Run against a cell in a specific kubectl context
-  dp run --cell us-east --context arn:aws:eks:us-east-1:...:cluster/dp-prod`,
+  dk run --cell us-east --context arn:aws:eks:us-east-1:...:cluster/dk-prod`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipeline,
 }
@@ -116,16 +116,16 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Verify dp.yaml exists
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Verify dk.yaml exists
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
+		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
-	// Parse dp.yaml to detect package kind
+	// Parse dk.yaml to detect package kind
 	m, kind, err := manifest.ParseManifestFile(dpPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	// Read pipeline mode from Transform spec (defaults to batch)
@@ -190,7 +190,7 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Running pipeline from: %s\n", packageDir)
 	fmt.Printf("Pipeline mode: %s\n", pipelineMode)
 	if runCell != "" {
-		fmt.Printf("Cell: %s (stores from dp-%s namespace)\n", runCell, runCell)
+		fmt.Printf("Cell: %s (stores from dk-%s namespace)\n", runCell, runCell)
 	}
 
 	if runDryRun {
@@ -215,8 +215,8 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Container: %s\n", result.ContainerID)
 		fmt.Printf("  Mode: %s\n", pipelineMode)
 		fmt.Println("\nUse these commands to manage the run:")
-		fmt.Printf("  View logs: dp logs %s\n", result.RunID)
-		fmt.Printf("  Stop:      dp stop %s\n", result.RunID)
+		fmt.Printf("  View logs: dk logs %s\n", result.RunID)
+		fmt.Printf("  Stop:      dk stop %s\n", result.RunID)
 	} else {
 		switch result.Status {
 		case "completed":
@@ -244,20 +244,20 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// applyOverrides loads dp.yaml, applies override files and --set values,
+// applyOverrides loads dk.yaml, applies override files and --set values,
 // and writes the merged result to a temporary file for the runner.
 // The runner will use this merged configuration.
 func applyOverrides(dpPath string) error {
-	// Read base dp.yaml
+	// Read base dk.yaml
 	baseData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return fmt.Errorf("failed to read dp.yaml: %w", err)
+		return fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	// Parse as generic map for merging
 	var base map[string]any
 	if err := yaml.Unmarshal(baseData, &base); err != nil {
-		return fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	mergeOpts := manifest.DefaultMergeOptions()
@@ -296,7 +296,6 @@ func applyOverrides(dpPath string) error {
 		fmt.Printf("Set: %s=%v\n", path, value)
 	}
 
-	// Write merged config back to dp.yaml
 	// Note: This modifies the file in place. For non-destructive behavior,
 	// we could write to a temp file and pass that to the runner.
 	mergedData, err := yaml.Marshal(base)
@@ -325,12 +324,12 @@ func applyOverrides(dpPath string) error {
 }
 
 // detectDevNetwork returns the Docker network name for the active dev runtime.
-// For k3d, it uses "k3d-<cluster-name>". For compose, it uses "dp-network".
+// For k3d, it uses "k3d-<cluster-name>". For compose, it uses "dk-network".
 func detectDevNetwork() string {
 	config, err := localdev.LoadConfig()
 	if err != nil {
 		// Fall back to trying k3d network first (since it's the default runtime),
-		// then dp-network.
+		// then dk-network.
 		return detectNetworkByProbing()
 	}
 
@@ -353,7 +352,7 @@ func detectNetworkByProbing() string {
 	if networkExists(k3dNetwork) {
 		return k3dNetwork
 	}
-	return "dp-network"
+	return "dk-network"
 }
 
 // networkExists checks if a Docker network exists.

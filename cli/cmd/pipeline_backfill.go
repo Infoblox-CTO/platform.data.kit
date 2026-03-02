@@ -22,17 +22,17 @@ var pipelineBackfillCmd = &cobra.Command{
 	Use:   "backfill [pipeline-dir]",
 	Short: "Re-execute sync steps for a date range",
 	Long: `Re-execute sync steps in a pipeline workflow with a date range
-injected as DP_BACKFILL_FROM and DP_BACKFILL_TO environment variables.
+injected as DK_BACKFILL_FROM and DK_BACKFILL_TO environment variables.
 
 Only sync steps are executed; transform, test, publish, and custom steps
 are skipped.
 
 Examples:
   # Backfill January 2026
-  dp pipeline backfill --from 2026-01-01 --to 2026-01-31
+  dk pipeline backfill --from 2026-01-01 --to 2026-01-31
 
   # Backfill with extra env vars
-  dp pipeline backfill --from 2026-01-01 --to 2026-01-31 --env DEBUG=true`,
+  dk pipeline backfill --from 2026-01-01 --to 2026-01-31 --env DEBUG=true`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipelineBackfill,
 }

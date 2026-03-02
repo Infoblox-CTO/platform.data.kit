@@ -24,15 +24,15 @@ In this tutorial, you'll build a production-ready data pipeline that reads event
 Initialize a new Transform package:
 
 ```bash
-dp init kafka-to-s3-pipeline --runtime generic-python
+dk init kafka-to-s3-pipeline --runtime generic-python
 cd kafka-to-s3-pipeline
 ```
 
 ## Step 2: Define the Transform Manifest
 
-Edit `dp.yaml` with your Transform configuration:
+Edit `dk.yaml` with your Transform configuration:
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -259,13 +259,13 @@ pyarrow>=14.0.0
 Start the local development stack:
 
 ```bash
-dp dev up
+dk dev up
 ```
 
 Verify all services are running:
 
 ```bash
-dp dev status
+dk dev status
 ```
 
 ## Step 7: Produce Test Data
@@ -315,20 +315,20 @@ python scripts/produce_test_data.py
 Validate your package:
 
 ```bash
-dp lint
+dk lint
 ```
 
 Run the pipeline:
 
 ```bash
-dp run
+dk run
 ```
 
 ## Step 9: Check Results
 
 ### View Lineage
 
-<!-- dp lineage is not yet implemented -->
+<!-- dk lineage is not yet implemented -->
 Open the Marquez UI at http://localhost:3000 to view the lineage graph.
 
 ### Check S3 Output
@@ -350,10 +350,10 @@ When ready for deployment:
 
 ```bash
 # Build OCI artifact
-dp build --tag v1.0.0
+dk build --tag v1.0.0
 
 # Publish to registry
-dp publish
+dk publish
 ```
 
 ## Step 11: Promote to Environment
@@ -361,7 +361,7 @@ dp publish
 Deploy to the development environment:
 
 ```bash
-dp promote kafka-to-s3-pipeline v1.0.0 --to dev
+dk promote kafka-to-s3-pipeline v1.0.0 --to dev
 ```
 
 ## Summary

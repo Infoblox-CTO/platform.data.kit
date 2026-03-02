@@ -89,8 +89,8 @@ jobs:
       - name: Build cli
         run: |
           cd cli
-          go build -o ../bin/cdpp .
-          ../bin/cdpp --help
+          go build -o ../bin/dk .
+          ../bin/dk --help
 
       - name: Build controller
         run: |
@@ -100,8 +100,8 @@ jobs:
       - name: Upload CLI binary
         uses: actions/upload-artifact@v4
         with:
-          name: cdpp-linux-amd64
-          path: bin/cdpp
+          name: dk-linux-amd64
+          path: bin/dk
           retention-days: 7
 
   validate-schemas:

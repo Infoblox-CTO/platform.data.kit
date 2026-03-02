@@ -16,9 +16,9 @@ import (
 type ConfigScope string
 
 const (
-	// ScopeRepo is the repository-level config (.dp/config.yaml at git root).
+	// ScopeRepo is the repository-level config (.dk/config.yaml at git root).
 	ScopeRepo ConfigScope = "repo"
-	// ScopeUser is the user-level config (~/.config/dp/config.yaml).
+	// ScopeUser is the user-level config (~/.config/dk/config.yaml).
 	ScopeUser ConfigScope = "user"
 	// ScopeSystem is the system-level config (/etc/datakit/config.yaml).
 	ScopeSystem ConfigScope = "system"
@@ -36,7 +36,7 @@ var DefaultPluginVersions = map[string]string{
 	"s3":         "v7.10.1",
 }
 
-// Config represents the dp CLI configuration.
+// Config represents the dk CLI configuration.
 type Config struct {
 	Dev     DevConfig     `yaml:"dev"`
 	Plugins PluginsConfig `yaml:"plugins,omitempty"`
@@ -103,7 +103,7 @@ func DefaultConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".config", "dp", "config.yaml")
+	return filepath.Join(home, ".config", "dk", "config.yaml")
 }
 
 // LoadConfig loads the configuration from the default path.
@@ -191,21 +191,21 @@ func gitRepoRoot() string {
 	return strings.TrimSpace(string(out))
 }
 
-// RepoConfigPath returns the repo-scope config file path (.dp/config.yaml at git root).
+// RepoConfigPath returns the repo-scope config file path (.dk/config.yaml at git root).
 // Returns empty string if not inside a git repository.
 func RepoConfigPath() string {
 	root := gitRepoRoot()
 	if root == "" {
 		return ""
 	}
-	return filepath.Join(root, ".dp", "config.yaml")
+	return filepath.Join(root, ".dk", "config.yaml")
 }
 
 // UserConfigPath returns the user-scope config file path.
-// Respects $XDG_CONFIG_HOME if set, otherwise uses ~/.config/dp/config.yaml.
+// Respects $XDG_CONFIG_HOME if set, otherwise uses ~/.config/dk/config.yaml.
 func UserConfigPath() string {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "dp", "config.yaml")
+		return filepath.Join(xdg, "dk", "config.yaml")
 	}
 	return DefaultConfigPath()
 }

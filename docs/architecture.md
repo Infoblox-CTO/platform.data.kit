@@ -22,7 +22,7 @@ DP is a Kubernetes-native data pipeline platform that enables teams to contribut
 │           │                                                                      │
 │           ▼                                                                      │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                              DP CLI                                       │   │
+│  │                              DK CLI                                       │   │
 │  │  ┌──────┐ ┌─────┐ ┌─────┐ ┌──────┐ ┌───────┐ ┌─────────┐ ┌─────────┐    │   │
 │  │  │ init │ │ dev │ │ run │ │ lint │ │ build │ │ publish │ │ promote │    │   │
 │  │  └──────┘ └─────┘ └─────┘ └──────┘ └───────┘ └─────────┘ └─────────┘    │   │
@@ -61,12 +61,12 @@ DP is a Kubernetes-native data pipeline platform that enables teams to contribut
 The command-line interface for interacting with the platform.
 
 **Responsibilities:**
-- Package scaffolding (`dp init`)
-- Local development (`dp dev`, `dp run`)
-- Validation (`dp lint`, `dp test`)
-- Publishing (`dp build`, `dp publish`)
-- Promotion (`dp promote`)
-- Observability (`dp status`, `dp logs`)
+- Package scaffolding (`dk init`)
+- Local development (`dk dev`, `dk run`)
+- Validation (`dk lint`, `dk test`)
+- Publishing (`dk build`, `dk publish`)
+- Promotion (`dk promote`)
+- Observability (`dk status`, `dk logs`)
 
 **Technology:** Go, Cobra
 
@@ -75,7 +75,7 @@ The command-line interface for interacting with the platform.
 Core libraries used by the CLI and controller.
 
 #### 2.1 Validate (`sdk/validate/`)
-- Manifest validation (dp.yaml, connector, store, asset manifests)
+- Manifest validation (dk.yaml, connector, store, asset manifests)
 - PII classification validation
 - Schema validation
 
@@ -168,17 +168,17 @@ gitops/
 ### Local Development
 
 ```
-Developer → dp init → Creates dp.yaml
-         → dp dev up → Deploys embedded Helm charts to k3d
+Developer → dk init → Creates dk.yaml
+         → dk dev up → Deploys embedded Helm charts to k3d
                         (Redpanda, LocalStack, PostgreSQL, Marquez)
                         Init jobs seed topics, buckets, schemas, namespaces
-         → dp run → Builds container, runs locally
+         → dk run → Builds container, runs locally
          → Lineage events → Marquez
 ```
 
 #### Helm Chart Deployment Mechanism
 
-The `dp dev up` command uses a uniform Helm chart deployment mechanism:
+The `dk dev up` command uses a uniform Helm chart deployment mechanism:
 
 1. **Embedded Charts**: All dev dependency charts are embedded in the CLI binary via Go's `embed.FS` (`sdk/localdev/charts/`)
 2. **Chart Registry**: A `DefaultCharts` registry defines each chart's port-forwarding rules, health labels, display endpoints, and timeouts
@@ -196,9 +196,9 @@ Adding a new dev dependency requires only:
 ### Publish & Promote
 
 ```
-Developer → dp build → Validates & bundles artifact
-         → dp publish → Pushes to OCI registry (digest-based)
-         → dp promote → Creates PR to gitops repo
+Developer → dk build → Validates & bundles artifact
+         → dk publish → Pushes to OCI registry (digest-based)
+         → dk promote → Creates PR to gitops repo
          → PR merged → ArgoCD syncs
          → Controller → Pulls artifact, creates Job
 ```
@@ -281,9 +281,9 @@ Events sent to:
 ## Observability
 
 ### Metrics
-- `dp_run_total{status,package,namespace}`
-- `dp_run_duration_seconds{package,namespace}`
-- `dp_controller_reconcile_total{result}`
+- `dk_run_total{status,package,namespace}`
+- `dk_run_duration_seconds{package,namespace}`
+- `dk_controller_reconcile_total{result}`
 
 ### Logging
 - Structured JSON with slog

@@ -9,7 +9,7 @@ Build a Go-based CloudQuery source plugin that fetches data from an API and sync
 
 **Time**: ~15 minutes  
 **Difficulty**: Beginner  
-**Prerequisites**: DP CLI installed, Go 1.25+, Docker running, `dp dev up` completed
+**Prerequisites**: DK CLI installed, Go 1.25+, Docker running, `dk dev up` completed
 
 ## Overview
 
@@ -25,7 +25,7 @@ You'll learn the full developer lifecycle for a Go CloudQuery plugin:
 ## 1. Scaffold a Go Plugin
 
 ```bash
-dp init my-source --runtime cloudquery
+dk init my-source --runtime cloudquery
 cd my-source
 ```
 
@@ -37,7 +37,7 @@ my-source/
 ├── .datakit/
 │   └── Makefile.common              # Managed targets (do not edit)
 ├── Makefile                         # Project Makefile (add your own targets here)
-├── dp.yaml                          # Package manifest
+├── dk.yaml                          # Package manifest
 ├── go.mod                           # Go module definition
 ├── main.go                          # Plugin entry point
 ├── resources/
@@ -54,10 +54,10 @@ my-source/
 
 ## 2. Understand the Project
 
-### dp.yaml — Package Manifest
+### dk.yaml — Package Manifest
 
 ```bash
-cat dp.yaml
+cat dk.yaml
 ```
 
 The manifest declares this as a **Transform** with the CloudQuery runtime:
@@ -157,7 +157,7 @@ Targets:
   clean                Remove build artifacts and sync output
   fmt                  Format Go source code
   help                 Show this help message
-  lint                 Run dp lint on the package
+  lint                 Run dk lint on the package
   run                  Build and deploy to k3d, discover tables
   sync                 Run a full sync to local files
   sync-pg              Run a full sync to PostgreSQL
@@ -166,7 +166,7 @@ Targets:
   vet                  Run go vet
 ```
 
-The `Makefile` includes `.datakit/Makefile.common` which is **managed by the dp CLI** — do not edit it. It is automatically kept in sync when you run `dp build` or `dp run`. Add your own targets to the root `Makefile` using `##` comments so they appear in `make help`:
+The `Makefile` includes `.datakit/Makefile.common` which is **managed by the dk CLI** — do not edit it. It is automatically kept in sync when you run `dk build` or `dk run`. Add your own targets to the root `Makefile` using `##` comments so they appear in `make help`:
 
 ```makefile
 # In your Makefile:
@@ -176,13 +176,13 @@ my-target: ## My custom description
 
 ## 3. Run Tests
 
-### Using the DP CLI (recommended)
+### Using the DK CLI (recommended)
 
 ```bash
-dp test
+dk test
 ```
 
-For Go plugins, `dp test` runs `go test ./... -v`:
+For Go plugins, `dk test` runs `go test ./... -v`:
 
 ```text
 ------------------------------------------------------------
@@ -202,12 +202,12 @@ PASS
 go test ./... -v
 ```
 
-This is exactly what `dp test` does. No additional setup needed — Go's toolchain handles everything.
+This is exactly what `dk test` does. No additional setup needed — Go's toolchain handles everything.
 
 ## 4. Build and Run the Plugin
 
 ```bash
-dp run
+dk run
 ```
 
 This builds a Docker container using a multi-stage Dockerfile (Go 1.25 builder → distroless static runtime), imports it into the k3d cluster, and starts the plugin:
@@ -232,7 +232,7 @@ Discovered 1 table(s):
 ### Sync to local files
 
 ```bash
-dp run --sync
+dk run --sync
 ```
 
 Writes JSON output to `./cq-sync-output/`:
@@ -245,7 +245,7 @@ Writes JSON output to `./cq-sync-output/`:
 ### Sync to PostgreSQL
 
 ```bash
-dp run --sync --destination postgresql
+dk run --sync --destination postgresql
 ```
 
 Uses the PostgreSQL instance running in the k3d dev environment:
@@ -257,7 +257,7 @@ Uses the PostgreSQL instance running in the k3d dev environment:
 Verify the data:
 
 ```bash
-kubectl exec -it deploy/dp-postgres-postgres -n dp-local -- \
+kubectl exec -it deploy/dk-postgres-postgres -n dk-local -- \
   psql -U postgres -c "SELECT * FROM example_resource;"
 ```
 
@@ -336,24 +336,24 @@ func TestUsersTable(t *testing.T) {
 ### Test and run
 
 ```bash
-dp test                              # Run unit tests
-dp run                               # Verify table discovery
-dp run --sync                        # Sync data to files
-dp run --sync --destination postgresql  # Sync to PostgreSQL
+dk test                              # Run unit tests
+dk run                               # Verify table discovery
+dk run --sync                        # Sync data to files
+dk run --sync --destination postgresql  # Sync to PostgreSQL
 ```
 
 ## Command Reference
 
 | Command | What it does | Needs Docker/k3d? |
 |---------|--------------|-------------------|
-| `dp init <name> --runtime cloudquery` | Scaffold a new Go plugin | No |
-| `dp test` | Run `go test ./... -v` | No |
-| `dp run` | Build container, deploy to k3d, discover tables | Yes |
-| `dp run --sync` | Sync data to local JSON files | Yes |
-| `dp run --sync --destination postgresql` | Sync data to PostgreSQL | Yes |
-| `dp test --integration` | Full build + sync integration test | Yes |
+| `dk init <name> --runtime cloudquery` | Scaffold a new Go plugin | No |
+| `dk test` | Run `go test ./... -v` | No |
+| `dk run` | Build container, deploy to k3d, discover tables | Yes |
+| `dk run --sync` | Sync data to local JSON files | Yes |
+| `dk run --sync --destination postgresql` | Sync data to PostgreSQL | Yes |
+| `dk test --integration` | Full build + sync integration test | Yes |
 | `make` | Show all available Make targets | No |
-| `make test` | Run `go test ./... -v` (same as `dp test`) | No |
+| `make test` | Run `go test ./... -v` (same as `dk test`) | No |
 | `make sync` | Build + sync to local files | Yes |
 
 ## Python vs Go Comparison
@@ -366,7 +366,7 @@ dp run --sync --destination postgresql  # Sync to PostgreSQL
 | Test runner | `go test` | pytest |
 | Build image | `golang:1.25-alpine` | `python:3.11-slim` |
 | Runtime image | `distroless/static-debian12` | `distroless/python3-debian12` |
-| Local deps | Go 1.25+ (auto-managed) | Python 3.12+ + venv (auto-created by `dp test`) |
+| Local deps | Go 1.25+ (auto-managed) | Python 3.12+ + venv (auto-created by `dk test`) |
 
 ## Next Steps
 

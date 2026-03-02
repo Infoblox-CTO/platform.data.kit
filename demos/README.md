@@ -1,18 +1,18 @@
 # Demos
 
-Scripted, reproducible terminal demos for the Data Platform CLI. Each demo is a plain-text **dialog file** executed by a shared runner script, producing clean, deterministic output suitable for presentations and recordings.
+Scripted, reproducible terminal demos for the DataKit CLI. Each demo is a plain-text **dialog file** executed by a shared runner script, producing clean, deterministic output suitable for presentations and recordings.
 
 ## Available Demos
 
 | Demo | Description | Prerequisites | Infrastructure |
 |------|-------------|---------------|----------------|
-| [quickstart](quickstart/) | `dp init` → `dp lint` → `dp show` | `dp` binary | No |
-| [dev-lifecycle](dev-lifecycle/) | `dp dev up` → `status` → `down` | `dp` binary, k3d, `DP_E2E_DEV=1` | Yes |
+| [quickstart](quickstart/) | `dk init` → `dk lint` → `dk show` | `dk` binary | No |
+| [dev-lifecycle](dev-lifecycle/) | `dk dev up` → `status` → `down` | `dk` binary, k3d, `DK_E2E_DEV=1` | Yes |
 
 ## Running a Demo
 
 ```bash
-# Build the dp binary first
+# Build the dk binary first
 make build
 
 # Run any demo from the repository root
@@ -41,9 +41,9 @@ SAY: Let's create a new data package
 Execute a shell command. The command is shown with a green `$ ` prompt, then executed via `eval`. Supports pipes, `&&`, and environment variable expansion. If the command fails, the runner stops and reports the step number and exit code.
 
 ```
-CMD: dp init my-project
-CMD: cd my-project && dp lint
-CMD: dp show --json | jq '.name'
+CMD: dk init my-project
+CMD: cd my-project && dk lint
+CMD: dk show --json | jq '.name'
 ```
 
 #### `WAIT: <seconds>`
@@ -60,11 +60,11 @@ WAIT: 0.5
 Declare a prerequisite. All `REQUIRE:` lines are collected and checked before any commands run.
 
 - **Commands** (lowercase/mixed): checked via `command -v` (e.g., `k3d`, `docker`)
-- **Environment variables** (uppercase + underscores + digits): checked via `[ -n "$VAR" ]` (e.g., `DP_E2E_DEV`)
+- **Environment variables** (uppercase + underscores + digits): checked via `[ -n "$VAR" ]` (e.g., `DK_E2E_DEV`)
 
 ```
 REQUIRE: k3d
-REQUIRE: DP_E2E_DEV
+REQUIRE: DK_E2E_DEV
 ```
 
 #### `# <comment>`
@@ -103,7 +103,7 @@ Create `demos/<demo-name>/demo.txt`:
 # Shows: <brief description>
 # Prerequisites: <what's needed>
 
-REQUIRE: dp    # if the demo uses dp commands
+REQUIRE: dk    # if the demo uses dk commands
 
 SAY: Welcome to the <demo-name> demo
 
@@ -138,8 +138,8 @@ func TestDemo_<DemoName>(t *testing.T) {
     skipIfShort(t)
 
     // Add environment variable gates if infrastructure is required:
-    // if os.Getenv("DP_E2E_DEV") == "" {
-    //     t.Skip("set DP_E2E_DEV=1 to enable this test")
+    // if os.Getenv("DK_E2E_DEV") == "" {
+    //     t.Skip("set DK_E2E_DEV=1 to enable this test")
     // }
 
     result := runDemo(t, "<demo-name>")
@@ -171,12 +171,12 @@ Demos are executed in CI tests, so output must be **deterministic and stable**:
 - **Use temp directories**: Avoid polluting the workspace with demo artifacts
   ```
   CMD: export DEMO_DIR=$(mktemp -d) && echo "Working in $DEMO_DIR"
-  CMD: cd "$DEMO_DIR" && dp init my-project
+  CMD: cd "$DEMO_DIR" && dk init my-project
   ```
 
 - **Filter verbose output**: Use `| head`, `| tail`, or `| grep` to limit output
   ```
-  CMD: dp show --json | jq '.metadata.name'
+  CMD: dk show --json | jq '.metadata.name'
   ```
 
 - **Clean up**: Remove temp files at the end of the demo

@@ -35,7 +35,7 @@ A Transform package — the deployable unit — follows this structure:
 
 ```
 my-pipeline/
-├── dp.yaml           # Transform manifest (required)
+├── dk.yaml           # Transform manifest (required)
 ├── src/              # Source code (generic-go / generic-python)
 │   └── main.py
 └── tests/            # Tests (optional)
@@ -44,11 +44,11 @@ my-pipeline/
 
 For CloudQuery runtimes, no source code is needed — the Connector's plugin images handle execution.
 
-### dp.yaml (Manifest)
+### dk.yaml (Manifest)
 
 The manifest is the heart of every package:
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -78,7 +78,7 @@ spec:
 
 The `spec` section of a Transform defines how the container runs:
 
-```yaml title="dp.yaml (spec section)"
+```yaml title="dk.yaml (spec section)"
 spec:
   runtime: generic-python
   image: myorg/my-pipeline:v1.0.0       # Required: container image
@@ -93,32 +93,32 @@ spec:
 
 #### Overriding at Runtime
 
-You can override configuration values without modifying dp.yaml:
+You can override configuration values without modifying dk.yaml:
 
 ```bash
 # Override image for local testing
-dp run ./my-pipeline --set spec.image=local:dev
+dk run ./my-pipeline --set spec.image=local:dev
 
 # Apply environment-specific overrides
-dp run ./my-pipeline -f production.yaml
+dk run ./my-pipeline -f production.yaml
 
 # Combine both (--set takes precedence)
-dp run ./my-pipeline -f production.yaml --set spec.timeout=1h
+dk run ./my-pipeline -f production.yaml --set spec.timeout=1h
 
 # Preview merged configuration
-dp show ./my-pipeline -f production.yaml --set spec.image=new:v2
+dk show ./my-pipeline -f production.yaml --set spec.image=new:v2
 ```
 
 ## Runtimes
 
-The DP CLI supports the following runtimes:
+The DK CLI supports the following runtimes:
 
 ### Generic Python
 
 A containerised Python pipeline. This is the default runtime.
 
 ```bash
-dp init my-pipeline --runtime generic-python
+dk init my-pipeline --runtime generic-python
 ```
 
 ### Generic Go
@@ -126,7 +126,7 @@ dp init my-pipeline --runtime generic-python
 A containerised Go pipeline.
 
 ```bash
-dp init my-pipeline --runtime generic-go
+dk init my-pipeline --runtime generic-go
 ```
 
 ### CloudQuery
@@ -134,7 +134,7 @@ dp init my-pipeline --runtime generic-go
 A [CloudQuery](https://docs.cloudquery.io/) sync that uses Connector plugin images to move data between Stores. No application code required.
 
 ```bash
-dp init my-sync --runtime cloudquery
+dk init my-sync --runtime cloudquery
 ```
 
 ### dbt
@@ -142,7 +142,7 @@ dp init my-sync --runtime cloudquery
 A [dbt](https://www.getdbt.com/) transformation project.
 
 ```bash
-dp init my-transforms --runtime dbt
+dk init my-transforms --runtime dbt
 ```
 
 ## Package Lifecycle
@@ -154,7 +154,7 @@ dp init my-transforms --runtime dbt
 │                                                                     │
 │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌───────┐ │
 │  │ Create  │ → │ Develop │ → │  Build  │ → │ Publish │ → │Promote│ │
-│  │(dp init)│   │(dp dev) │   │(dp build│   │(dp push)│   │(dp ↑) │ │
+│  │(dk init)│   │(dk dev) │   │(dk build│   │(dk push)│   │(dk ↑) │ │
 │  └─────────┘   └─────────┘   └─────────┘   └─────────┘   └───────┘ │
 │       │             │             │             │             │     │
 │       ▼             ▼             ▼             ▼             ▼     │
@@ -171,7 +171,7 @@ dp init my-transforms --runtime dbt
 Initialize a new package with templates:
 
 ```bash
-dp init analytics-pipeline --runtime generic-python
+dk init analytics-pipeline --runtime generic-python
 ```
 
 ### 2. Develop
@@ -179,9 +179,9 @@ dp init analytics-pipeline --runtime generic-python
 Iterate locally with the dev stack:
 
 ```bash
-dp dev up          # Start local services
-dp run ./package   # Test pipeline
-dp dev down        # Stop services
+dk dev up          # Start local services
+dk run ./package   # Test pipeline
+dk dev down        # Stop services
 ```
 
 ### 3. Build
@@ -189,7 +189,7 @@ dp dev down        # Stop services
 Package as an OCI artifact:
 
 ```bash
-dp build ./package
+dk build ./package
 # Output: analytics-pipeline:v1.0.0
 ```
 
@@ -198,7 +198,7 @@ dp build ./package
 Push to registry:
 
 ```bash
-dp publish ./package
+dk publish ./package
 # Pushes to: ghcr.io/org/analytics-pipeline:v1.0.0
 ```
 
@@ -207,7 +207,7 @@ dp publish ./package
 Deploy to an environment:
 
 ```bash
-dp promote analytics-pipeline v1.0.0 --to dev
+dk promote analytics-pipeline v1.0.0 --to dev
 ```
 
 ## Versioning
@@ -224,12 +224,12 @@ Versions are immutable once published:
 
 ```bash
 # Publish version 1.0.0
-dp build --version v1.0.0
-dp publish
+dk build --version v1.0.0
+dk publish
 
 # Cannot overwrite - must increment
-dp build --version v1.0.1
-dp publish
+dk build --version v1.0.1
+dk publish
 ```
 
 ## Inputs and Outputs

@@ -1,11 +1,11 @@
 ---
 title: Governance
-description: Data governance features in the Data Platform
+description: Data governance features in DataKit
 ---
 
 # Governance
 
-The Data Platform provides built-in governance features to ensure data quality, security, and compliance across all data packages.
+DataKit provides built-in governance features to ensure data quality, security, and compliance across all data packages.
 
 ## Governance Pillars
 
@@ -67,7 +67,7 @@ spec:
 A Transform then references this Asset by name:
 
 ```yaml
-# dp.yaml (Transform)
+# dk.yaml (Transform)
 spec:
   outputs:
     - asset: customer-records
@@ -94,10 +94,10 @@ When `pii: true` is set:
 
 ### Manifest Validation
 
-The `dp lint` command enforces governance policies:
+The `dk lint` command enforces governance policies:
 
 ```bash
-dp lint ./my-package
+dk lint ./my-package
 ```
 
 Policy checks include:
@@ -111,7 +111,7 @@ Policy checks include:
 
 ### Policy Configuration
 
-Define organization-wide policies in `.dp/policies.yaml`:
+Define organization-wide policies in `.dk/policies.yaml`:
 
 ```yaml
 policies:
@@ -134,7 +134,7 @@ policies:
 Example validation output:
 
 ```
-dp lint ./my-package
+dk lint ./my-package
 
 Errors (blocking):
   ✗ output 'customer-data': pii=true requires sensitivity level
@@ -155,9 +155,9 @@ Lineage enables impact analysis and compliance:
 
 Understand what's affected by changes:
 
-<!-- dp lineage is not yet implemented -->
+<!-- dk lineage is not yet implemented -->
 ```bash
-# Planned: dp lineage my-source-package --downstream
+# Planned: dk lineage my-source-package --downstream
 # For now, use the Marquez UI at http://localhost:3000
 ```
 
@@ -184,7 +184,7 @@ PII Data Flow:
 Generate compliance reports:
 
 ```bash
-dp governance report --namespace analytics
+dk governance report --namespace analytics
 ```
 
 ```
@@ -233,7 +233,7 @@ spec:
 Promotion to production requires approvals:
 
 ```bash
-dp promote my-package v1.0.0 --to prod
+dk promote my-package v1.0.0 --to prod
 ```
 
 ```
@@ -290,7 +290,7 @@ outputs:
 View retention status:
 
 ```bash
-dp governance retention --namespace analytics
+dk governance retention --namespace analytics
 ```
 
 ```
@@ -310,7 +310,7 @@ Packages past retention:
 All operations are logged for audit:
 
 ```bash
-dp governance audit my-package
+dk governance audit my-package
 ```
 
 ```
@@ -331,8 +331,8 @@ Audit Log: my-package
 Add classification when creating packages:
 
 ```bash
-dp init my-package --runtime generic-python
-# Immediately update dp.yaml with classification
+dk init my-package --runtime generic-python
+# Immediately update dk.yaml with classification
 ```
 
 ### 2. Use Meaningful Tags
@@ -353,7 +353,7 @@ classification:
 Always check downstream impact:
 
 ```bash
-# Planned: dp lineage my-package --downstream
+# Planned: dk lineage my-package --downstream
 # For now, use the Marquez UI at http://localhost:3000
 # Review affected packages before making changes
 ```
@@ -364,10 +364,10 @@ Schedule governance reviews:
 
 ```bash
 # Weekly: check policy compliance
-dp governance report --all
+dk governance report --all
 
 # Monthly: review retention status
-dp governance retention --all
+dk governance retention --all
 ```
 
 ## Next Steps

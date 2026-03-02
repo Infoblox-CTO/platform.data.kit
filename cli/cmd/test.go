@@ -25,8 +25,8 @@ var (
 
 var testCmd = &cobra.Command{
 	Use:   "test [package-dir]",
-	Short: "Run tests for a DP package",
-	Long: `Run tests for a DP data package in a local environment.
+	Short: "Run tests for a DK package",
+	Long: `Run tests for a DK data package in a local environment.
 
 Supported package types: pipeline, cloudquery
 
@@ -37,16 +37,16 @@ For cloudquery packages, auto-detects the plugin language and runs
 unit tests (pytest or go test). Use --integration to run a full
 CloudQuery sync integration test.`,
 	Example: `  # Run tests in current package
-  dp test
+  dk test
   
   # Run tests with specific test data (pipeline)
-  dp test --data ./test/sample.json
+  dk test --data ./test/sample.json
   
   # Run with timeout
-  dp test --timeout 5m
+  dk test --timeout 5m
 
   # Run CloudQuery integration test (full sync)
-  dp test --integration`,
+  dk test --integration`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runTest,
 }
@@ -87,16 +87,16 @@ func runTest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Verify dp.yaml exists
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Verify dk.yaml exists
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
+		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
 	// Detect package kind
 	m, kind, err := manifest.ParseManifestFile(dpPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	// Detect pipeline mode from Transform spec
@@ -142,8 +142,8 @@ func runTest(cmd *cobra.Command, args []string) error {
 
 	// Set up test environment
 	env := map[string]string{
-		"DP_TEST_MODE":  "true",
-		"DP_INPUT_TYPE": "test",
+		"DK_TEST_MODE":  "true",
+		"DK_INPUT_TYPE": "test",
 	}
 
 	fmt.Println()

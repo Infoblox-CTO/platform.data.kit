@@ -1,4 +1,4 @@
-# DP - Data Platform CLI
+# DP - DataKit CLI
 
 [![Build Status](https://github.com/Infoblox-CTO/platform.data.kit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Infoblox-CTO/platform.data.kit/actions)
 [![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8?logo=go)](https://go.dev)
@@ -36,43 +36,43 @@ make build
 export PATH=$PATH:$(pwd)/bin
 
 # Verify installation
-dp version
+dk version
 ```
 
 ### Your First Pipeline (30 minutes)
 
 ```bash
 # 1. Create a new data package
-dp init my-pipeline --runtime generic-python
+dk init my-pipeline --runtime generic-python
 
 # 2. Start the local development stack
-dp dev up
+dk dev up
 
 # 3. Validate your manifest
-dp lint ./my-pipeline
+dk lint ./my-pipeline
 
 # 4. Run locally
-dp run ./my-pipeline
+dk run ./my-pipeline
 
 # 5. Build and publish
-dp build ./my-pipeline
-dp publish ./my-pipeline
+dk build ./my-pipeline
+dk publish ./my-pipeline
 
 # 6. Promote to an environment
-dp promote my-pipeline v0.1.0 --to dev
+dk promote my-pipeline v0.1.0 --to dev
 ```
 
 ## 📦 What is a Data Package?
 
 A data package is a self-contained unit of data processing that includes:
 
-- **Manifest** (`dp.yaml`): Transform definition with runtime, inputs, outputs, and schedule
+- **Manifest** (`dk.yaml`): Transform definition with runtime, inputs, outputs, and schedule
 - **Connectors & Stores**: Infrastructure connection definitions
 - **Assets**: Data contracts with schema and lineage
 - **Code**: Your data processing logic (Python, Go, etc.)
 
 ```yaml
-# dp.yaml example
+# dk.yaml example
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -93,17 +93,17 @@ spec:
 
 | Command | Description |
 |---------|-------------|
-| `dp init` | Create a new data package |
-| `dp dev up/down/status` | Manage local development stack |
-| `dp lint` | Validate package manifests |
-| `dp run` | Execute pipeline locally |
-| `dp test` | Run tests with sample data |
-| `dp build` | Build OCI artifact |
-| `dp publish` | Publish to OCI registry |
-| `dp promote` | Promote to environment via GitOps |
-| `dp status` | Show package status across environments |
-| `dp logs` | Stream logs from running pipeline |
-| `dp rollback` | Rollback to previous version |
+| `dk init` | Create a new data package |
+| `dk dev up/down/status` | Manage local development stack |
+| `dk lint` | Validate package manifests |
+| `dk run` | Execute pipeline locally |
+| `dk test` | Run tests with sample data |
+| `dk build` | Build OCI artifact |
+| `dk publish` | Publish to OCI registry |
+| `dk promote` | Promote to environment via GitOps |
+| `dk status` | Show package status across environments |
+| `dk logs` | Stream logs from running pipeline |
+| `dk rollback` | Rollback to previous version |
 
 ## 🏗️ Architecture
 
@@ -113,7 +113,7 @@ spec:
 │                            │                                 │
 │                            ▼                                 │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │                   DP CLI (dp)                        │   │
+│  │                   DK CLI (dk)                        │   │
 │  │  init, dev, run, lint, build, publish, promote      │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                            │                                 │
@@ -150,7 +150,7 @@ data-platform/
 │   ├── registry/       # OCI registry client
 │   ├── runner/         # Local execution runtime
 │   └── catalog/        # Data catalog client
-├── cli/                # DP CLI implementation
+├── cli/                # DK CLI implementation
 ├── demos/              # Scripted terminal demos (see demos/README.md)
 ├── platform/
 │   └── controller/     # Kubernetes controller
@@ -176,7 +176,7 @@ outputs:
       retentionDays: 365
 ```
 
-Validate with: `dp lint --strict`
+Validate with: `dk lint --strict`
 
 ### Data Lineage
 
@@ -194,16 +194,16 @@ Start the full local stack:
 
 ```bash
 # Start all services (Kafka, S3, PostgreSQL, Marquez)
-dp dev up
+dk dev up
 
 # Check status
-dp dev status
+dk dev status
 
 # View Marquez lineage UI
 open http://localhost:5000
 
 # Stop when done
-dp dev down
+dk dev down
 ```
 
 ## 📊 Observability

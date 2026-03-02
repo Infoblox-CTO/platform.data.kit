@@ -30,24 +30,24 @@ func TestRenderKindDirectory_TransformCloudQuery(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	dpPath := filepath.Join(outputDir, "dp.yaml")
+	dpPath := filepath.Join(outputDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		t.Fatal("expected dp.yaml to be created")
+		t.Fatal("expected dk.yaml to be created")
 	}
 
 	data, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Fatalf("failed to read dp.yaml: %v", err)
+		t.Fatalf("failed to read dk.yaml: %v", err)
 	}
 
 	content := string(data)
 	for _, want := range []string{"my-transform", "data-team", "cloudquery", "Transform"} {
 		if !strings.Contains(content, want) {
-			t.Errorf("dp.yaml should contain %q", want)
+			t.Errorf("dk.yaml should contain %q", want)
 		}
 	}
 
-	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dp run.
+	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dk run.
 	configPath := filepath.Join(outputDir, "config.yaml")
 	if _, err := os.Stat(configPath); err == nil {
 		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
@@ -87,7 +87,7 @@ func TestRenderKindDirectory_TransformGenericGo(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
+	for _, f := range []string{"dk.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -112,7 +112,7 @@ func TestRenderKindDirectory_TransformDBT(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
+	for _, f := range []string{"dk.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected dbt file %q was not created", f)
 		}
@@ -137,7 +137,7 @@ func TestRenderKindDirectory_TransformGenericPython(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "main.py", "requirements.txt"} {
+	for _, f := range []string{"dk.yaml", "main.py", "requirements.txt"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -162,12 +162,12 @@ func TestRenderKindDirectory_TransformCloudQuery_Legacy(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	dpPath := filepath.Join(outputDir, "dp.yaml")
+	dpPath := filepath.Join(outputDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		t.Fatal("expected dp.yaml to be created")
+		t.Fatal("expected dk.yaml to be created")
 	}
 
-	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dp run.
+	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dk run.
 	configPath := filepath.Join(outputDir, "config.yaml")
 	if _, err := os.Stat(configPath); err == nil {
 		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
@@ -192,7 +192,7 @@ func TestRenderKindDirectory_TransformDBT_Legacy(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
+	for _, f := range []string{"dk.yaml", "dbt_project.yml", "profiles.yml", "models/example.sql"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected dbt file %q was not created", f)
 		}
@@ -217,7 +217,7 @@ func TestRenderKindDirectory_TransformGenericGo_Legacy(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
+	for _, f := range []string{"dk.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -242,7 +242,7 @@ func TestRenderKindDirectory_TransformGenericPython_Legacy(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "main.py", "requirements.txt"} {
+	for _, f := range []string{"dk.yaml", "main.py", "requirements.txt"} {
 		if _, err := os.Stat(filepath.Join(outputDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}

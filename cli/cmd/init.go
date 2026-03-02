@@ -32,24 +32,24 @@ var initCmd = &cobra.Command{
 
 Supported runtimes: cloudquery, generic-go, generic-python, dbt
 
-This command creates a new directory with dp.yaml and project
+This command creates a new directory with dk.yaml and project
 files pre-configured with sensible defaults for the selected runtime.
 
 Examples:
   # Create a new transform with CloudQuery runtime
-  dp init my-transform --runtime cloudquery
+  dk init my-transform --runtime cloudquery
 
   # Create a dbt transform
-  dp init user-aggregation --runtime dbt
+  dk init user-aggregation --runtime dbt
 
   # Create a Python transform for streaming
-  dp init fraud-scorer --runtime generic-python --mode streaming
+  dk init fraud-scorer --runtime generic-python --mode streaming
 
   # Create with custom namespace
-  dp init my-transform --runtime cloudquery --namespace data-team
+  dk init my-transform --runtime cloudquery --namespace data-team
 
   # Interactive mode — prompts for missing values when run in a terminal
-  dp init`,
+  dk init`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runInit,
 }
@@ -175,11 +175,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	cmd.Printf("\nPackage %q initialized successfully!\n", name)
 	cmd.Printf("\nNext steps:\n")
-	cmd.Printf("  1. Edit dp.yaml to configure your transform\n")
+	cmd.Printf("  1. Edit dk.yaml to configure your transform\n")
 	cmd.Printf("  2. Configure inputs/outputs and schedule\n")
-	cmd.Printf("  3. Run 'dp lint' to validate\n")
-	cmd.Printf("  4. Run 'dp dev up' to start local environment\n")
-	cmd.Printf("  5. Run 'dp run' to execute locally\n")
+	cmd.Printf("  3. Run 'dk lint' to validate\n")
+	cmd.Printf("  4. Run 'dk dev up' to start local environment\n")
+	cmd.Printf("  5. Run 'dk run' to execute locally\n")
 
 	return nil
 }
@@ -195,6 +195,9 @@ func promptInitGaps(cmd *cobra.Command, name *string) error {
 	if !prompt.IsInteractive() {
 		return nil
 	}
+
+	// Show the DataKit banner before the first interactive prompt.
+	ShowBanner()
 
 	var fields []huh.Field
 

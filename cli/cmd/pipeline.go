@@ -18,16 +18,16 @@ Subcommands:
 
 Examples:
   # Create a pipeline from the default template
-  dp pipeline create my-pipeline
+  dk pipeline create my-pipeline
 
   # Create with a specific template
-  dp pipeline create my-pipeline --template sync-only
+  dk pipeline create my-pipeline --template sync-only
 
   # List available templates
-  dp pipeline create --list-templates
+  dk pipeline create --list-templates
 
   # Overwrite existing pipeline.yaml
-  dp pipeline create my-pipeline --template custom --force`,
+  dk pipeline create my-pipeline --template custom --force`,
 }
 
 func init() {

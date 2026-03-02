@@ -13,15 +13,15 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
 
 # Namespace will be overridden per environment
-namespace: dp-system
+namespace: dk-system
 
 # ConfigMap generator for shared configuration
 configMapGenerator:
-  - name: dp-config
+  - name: dk-config
     literals:
       - DP_LOG_LEVEL=info
       - DP_METRICS_ENABLED=true
 
 # Common annotations
 commonAnnotations:
-  dp.io/managed-by: kustomize
+  datakit.infoblox.dev/managed-by: kustomize

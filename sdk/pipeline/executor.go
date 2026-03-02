@@ -277,23 +277,23 @@ func buildStepArgs(step contracts.Step, extraEnv map[string]string) ([]string, e
 		// Sync: docker run with input/output env
 		args = append(args, "docker", "run", "--rm")
 		args = appendEnvArgs(args, step.Env, extraEnv)
-		args = append(args, "-e", fmt.Sprintf("DP_INPUT=%s", step.Input))
-		args = append(args, "-e", fmt.Sprintf("DP_OUTPUT=%s", step.Output))
-		args = append(args, "dp-sync:latest")
+		args = append(args, "-e", fmt.Sprintf("DK_INPUT=%s", step.Input))
+		args = append(args, "-e", fmt.Sprintf("DK_OUTPUT=%s", step.Output))
+		args = append(args, "dk-sync:latest")
 
 	case contracts.StepTypeTransform:
 		// Transform: docker run with asset reference
 		args = append(args, "docker", "run", "--rm")
 		args = appendEnvArgs(args, step.Env, extraEnv)
-		args = append(args, "-e", fmt.Sprintf("DP_ASSET=%s", step.Asset))
-		args = append(args, "dp-transform:latest")
+		args = append(args, "-e", fmt.Sprintf("DK_ASSET=%s", step.Asset))
+		args = append(args, "dk-transform:latest")
 
 	case contracts.StepTypeTest:
 		// Test: docker run with command override
 		args = append(args, "docker", "run", "--rm")
 		args = appendEnvArgs(args, step.Env, extraEnv)
-		args = append(args, "-e", fmt.Sprintf("DP_ASSET=%s", step.Asset))
-		args = append(args, "dp-test:latest")
+		args = append(args, "-e", fmt.Sprintf("DK_ASSET=%s", step.Asset))
+		args = append(args, "dk-test:latest")
 		if len(step.Command) > 0 {
 			args = append(args, step.Command...)
 		}

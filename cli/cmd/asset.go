@@ -22,16 +22,16 @@ Subcommands:
 
 Examples:
   # Create a new source asset
-  dp asset create aws-security --ext cloudquery.source.aws
+  dk asset create aws-security --ext cloudquery.source.aws
 
   # Validate all assets
-  dp asset validate
+  dk asset validate
 
   # List assets
-  dp asset list
+  dk asset list
 
   # Show asset details
-  dp asset show aws-security`,
+  dk asset show aws-security`,
 }
 
 func init() {

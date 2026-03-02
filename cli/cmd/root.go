@@ -1,4 +1,4 @@
-// Package cmd contains all CLI commands for dp.
+// Package cmd contains all CLI commands for dk.
 package cmd
 
 import (
@@ -18,9 +18,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dp",
-	Short: "DP - Data Platform CLI",
-	Long: `DP (Data Platform) is a Kubernetes-native data pipeline platform
+	Use:   "dk",
+	Short: "DK - DataKit CLI",
+	Long: `DK (DataKit) is a Kubernetes-native data pipeline platform
 enabling teams to contribute reusable, versioned "data packages" with
 a complete developer workflow.
 
@@ -28,23 +28,23 @@ Workflow: init -> dev -> run -> lint -> test -> build -> publish -> promote
 
 Example:
   # Create a new transform package
-  dp init my-pipeline --runtime cloudquery
+  dk init my-pipeline --runtime cloudquery
 
   # Start local development environment
-  dp dev up
+  dk dev up
 
   # Validate manifest files
-  dp lint
+  dk lint
 
   # Run pipeline locally
-  dp run
+  dk run
 
   # Build and publish package
-  dp build
-  dp publish
+  dk build
+  dk publish
 
   # Promote to next environment
-  dp promote my-pipeline v1.0.0 --to int`,
+  dk promote my-pipeline v1.0.0 --to int`,
 	SilenceUsage: true,
 }
 
@@ -77,6 +77,6 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the CLI version",
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf("dp version %s\n", Version)
+		cmd.Printf("dk version %s\n", Version)
 	},
 }

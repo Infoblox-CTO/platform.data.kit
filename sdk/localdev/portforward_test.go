@@ -7,18 +7,18 @@ import (
 )
 
 func TestNewPortForwarder(t *testing.T) {
-	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf := NewPortForwarder("k3d-dk-local", "dk-local")
 
 	if pf == nil {
 		t.Fatal("NewPortForwarder() returned nil")
 	}
 
-	if pf.kubeContext != "k3d-dp-local" {
-		t.Errorf("kubeContext = %q, want %q", pf.kubeContext, "k3d-dp-local")
+	if pf.kubeContext != "k3d-dk-local" {
+		t.Errorf("kubeContext = %q, want %q", pf.kubeContext, "k3d-dk-local")
 	}
 
-	if pf.namespace != "dp-local" {
-		t.Errorf("namespace = %q, want %q", pf.namespace, "dp-local")
+	if pf.namespace != "dk-local" {
+		t.Errorf("namespace = %q, want %q", pf.namespace, "dk-local")
 	}
 
 	if len(pf.forwards) != 0 {
@@ -27,7 +27,7 @@ func TestNewPortForwarder(t *testing.T) {
 }
 
 func TestPortForwarder_AddForward(t *testing.T) {
-	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf := NewPortForwarder("k3d-dk-local", "dk-local")
 
 	pf.AddForward("redpanda", 19092, 9092)
 	pf.AddForward("localstack", 4566, 4566)
@@ -57,7 +57,7 @@ func TestPortForwarder_AddForward(t *testing.T) {
 }
 
 func TestPortForwarder_Status_NoForwards(t *testing.T) {
-	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf := NewPortForwarder("k3d-dk-local", "dk-local")
 
 	statuses := pf.Status()
 
@@ -67,7 +67,7 @@ func TestPortForwarder_Status_NoForwards(t *testing.T) {
 }
 
 func TestPortForwarder_Status_WithForwards(t *testing.T) {
-	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf := NewPortForwarder("k3d-dk-local", "dk-local")
 	pf.AddForward("redpanda", 19092, 9092)
 	pf.AddForward("localstack", 4566, 4566)
 
@@ -88,7 +88,7 @@ func TestPortForwarder_Status_WithForwards(t *testing.T) {
 // TestPortForwarder_AddForwardsFromCharts tests that port forwards are
 // correctly derived from ChartDefinition slices.
 func TestPortForwarder_AddForwardsFromCharts(t *testing.T) {
-	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf := NewPortForwarder("k3d-dk-local", "dk-local")
 	pf.AddForwardsFromCharts(charts.DefaultCharts)
 
 	// Count total expected port forwards from all default charts
@@ -136,7 +136,7 @@ func TestPortForward_Struct(t *testing.T) {
 }
 
 func TestPortForwarder_Stop_NoProcesses(t *testing.T) {
-	pf := NewPortForwarder("k3d-dp-local", "dp-local")
+	pf := NewPortForwarder("k3d-dk-local", "dk-local")
 	pf.AddForward("redpanda", 19092, 9092)
 
 	// Stop should not panic even when no processes are started

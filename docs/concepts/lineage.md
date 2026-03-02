@@ -33,7 +33,7 @@ Lineage answers critical questions:
 │         │                        │                      │       │
 │         ▼                        │                      ▼       │
 │  ┌──────────────┐         ┌──────────────┐        ┌──────────┐ │
-│  │ dp.yaml      │         │  OpenLineage │        │ Lineage  │ │
+│  │ dk.yaml      │         │  OpenLineage │        │ Lineage  │ │
 │  │ manifest     │────────▶│    Events    │        │  Graph   │ │
 │  └──────────────┘ defines └──────────────┘        └──────────┘ │
 │                                                                 │
@@ -42,7 +42,7 @@ Lineage answers critical questions:
 
 ### Automatic Lineage
 
-When you run `dp run`, the CLI automatically:
+When you run `dk run`, the CLI automatically:
 
 1. **Reads** the manifest to understand inputs/outputs
 2. **Emits START** event when pipeline begins
@@ -77,24 +77,24 @@ client.emit(
 
 ### Local Development
 
-With `dp dev up`, Marquez is available at http://localhost:5000:
+With `dk dev up`, Marquez is available at http://localhost:5000:
 
 ```bash
-dp dev up
-dp run ./my-package
+dk dev up
+dk run ./my-package
 # Open http://localhost:5000 to see lineage
 ```
 
 ### CLI Lineage Command
 
 !!! warning "Not Yet Implemented"
-    The `dp lineage` CLI command is planned but not yet available.
+    The `dk lineage` CLI command is planned but not yet available.
     Use the Marquez Web UI at http://localhost:3000 to view lineage graphs.
 
 Planned usage:
 
 ```bash
-dp lineage my-package
+dk lineage my-package
 ```
 
 Output:
@@ -137,7 +137,7 @@ The Marquez UI provides a visual lineage graph:
 
 ## OpenLineage Events
 
-The DP CLI emits standard OpenLineage events:
+The DK CLI emits standard OpenLineage events:
 
 ### Run Events
 
@@ -189,7 +189,7 @@ export OPENLINEAGE_URL=http://localhost:5000/api/v1/lineage
 export OPENLINEAGE_API_KEY=your-api-key  # if required
 ```
 
-Or in `~/.dp/config.yaml`:
+Or in `~/.dk/config.yaml`:
 
 ```yaml
 lineage:
@@ -263,7 +263,7 @@ outputs:
 
 ### Events Not Appearing
 
-1. Check Marquez is running: `dp dev status`
+1. Check Marquez is running: `dk dev status`
 2. Verify endpoint: `echo $OPENLINEAGE_URL`
 3. Check connectivity: `curl $OPENLINEAGE_URL/api/v1/namespaces`
 
@@ -280,7 +280,7 @@ If upstream/downstream links are missing:
 If lineage shows old data:
 
 ```bash
-# Planned: dp lineage my-package --refresh
+# Planned: dk lineage my-package --refresh
 # For now, check directly in the Marquez UI at http://localhost:3000
 ```
 

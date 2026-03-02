@@ -128,11 +128,11 @@ timezone: America/New_York
 
 The backfill feature re-executes **sync steps only** with a date range injected as environment variables:
 
-- `DP_BACKFILL_FROM`: Start date (YYYY-MM-DD)
-- `DP_BACKFILL_TO`: End date (YYYY-MM-DD)
+- `DK_BACKFILL_FROM`: Start date (YYYY-MM-DD)
+- `DK_BACKFILL_TO`: End date (YYYY-MM-DD)
 
 ```bash
-dp pipeline backfill --from 2026-01-01 --to 2026-01-31
+dk pipeline backfill --from 2026-01-01 --to 2026-01-31
 ```
 
 Non-sync steps (transform, test, publish, custom) are excluded from backfill runs.
@@ -141,72 +141,72 @@ Non-sync steps (transform, test, publish, custom) are excluded from backfill run
 
 | Command                  | Description                                  |
 |--------------------------|----------------------------------------------|
-| `dp pipeline create`    | Scaffold a new pipeline.yaml from a template |
-| `dp pipeline run`       | Execute the pipeline workflow                |
-| `dp pipeline backfill`  | Re-execute sync steps for a date range       |
-| `dp pipeline show`      | Display pipeline definition, schedule, or dependency graph |
+| `dk pipeline create`    | Scaffold a new pipeline.yaml from a template |
+| `dk pipeline run`       | Execute the pipeline workflow                |
+| `dk pipeline backfill`  | Re-execute sync steps for a date range       |
+| `dk pipeline show`      | Display pipeline definition, schedule, or dependency graph |
 
 ### Creating a Pipeline
 
 ```bash
 # Create with the default template (sync → transform → test → publish)
-dp pipeline create my-pipeline
+dk pipeline create my-pipeline
 
 # Use a specific template
-dp pipeline create my-pipeline --template sync-only
+dk pipeline create my-pipeline --template sync-only
 
 # List available templates
-dp pipeline create --list-templates
+dk pipeline create --list-templates
 ```
 
 ### Running a Pipeline
 
 ```bash
 # Run all steps
-dp pipeline run
+dk pipeline run
 
 # Run a single step
-dp pipeline run --step sync-data
+dk pipeline run --step sync-data
 
 # Pass environment variables
-dp pipeline run --env DEBUG=true --env LOG_LEVEL=info
+dk pipeline run --env DEBUG=true --env LOG_LEVEL=info
 ```
 
 ### Inspecting a Pipeline
 
 ```bash
 # Show full reactive dependency graph
-dp pipeline show --all
+dk pipeline show --all
 
 # Show graph leading to a specific destination
-dp pipeline show --destination event-summary
+dk pipeline show --destination event-summary
 
 # Render as Mermaid diagram
-dp pipeline show --all --output mermaid
+dk pipeline show --all --output mermaid
 
 # Render as Graphviz DOT
-dp pipeline show --all --output dot
+dk pipeline show --all --output dot
 
 # JSON adjacency list
-dp pipeline show --all --output json
+dk pipeline show --all --output json
 
 # Scan specific directories
-dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+dk pipeline show --all --scan-dir ./transforms --scan-dir ./assets
 
 # Legacy: table view
-dp pipeline show
+dk pipeline show
 
 # Legacy: JSON output
-dp pipeline show --output json
+dk pipeline show --output json
 ```
 
 ## Backward Compatibility
 
-The existing `dp run` command continues to work unchanged for packages that use `dp.yaml` without a `pipeline.yaml`. The pipeline workflow feature is additive — it does not modify the existing single-container execution path.
+The existing `dk run` command continues to work unchanged for packages that use `dk.yaml` without a `pipeline.yaml`. The pipeline workflow feature is additive — it does not modify the existing single-container execution path.
 
 ## Validation
 
-Pipeline workflows are validated by `dp validate` (via the aggregate validator):
+Pipeline workflows are validated by `dk validate` (via the aggregate validator):
 
 - Required fields: `apiVersion`, `kind`, `metadata.name`, `steps`
 - Step names must be unique and DNS-safe (3–63 lowercase chars)

@@ -13,7 +13,7 @@ type ChartDefinition struct {
 	Name string
 
 	// ReleaseName is the Helm release name used with helm upgrade --install.
-	// Convention: "dp-" + Name.
+	// Convention: "dk-" + Name.
 	ReleaseName string
 
 	// Namespace is the Kubernetes namespace for deployment.

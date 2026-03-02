@@ -62,7 +62,7 @@ func TestBundle_MissingDpYaml(t *testing.T) {
 
 	_, err := bundler.Bundle(opts)
 	if err == nil {
-		t.Error("expected error for missing dp.yaml")
+		t.Error("expected error for missing dk.yaml")
 	}
 }
 
@@ -71,8 +71,8 @@ func TestBundle_InvalidDpYaml(t *testing.T) {
 
 	// Write invalid YAML
 	invalidYAML := "invalid: [yaml: content"
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(invalidYAML), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(invalidYAML), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	bundler := NewBundler("v1.0.0")
@@ -82,7 +82,7 @@ func TestBundle_InvalidDpYaml(t *testing.T) {
 
 	_, err := bundler.Bundle(opts)
 	if err == nil {
-		t.Error("expected error for invalid dp.yaml")
+		t.Error("expected error for invalid dk.yaml")
 	}
 }
 
@@ -109,8 +109,8 @@ spec:
         sensitivity: public
         pii: false
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	bundler := NewBundler("v1.0.0")
@@ -165,8 +165,8 @@ spec:
         sensitivity: public
         pii: false
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Create a directory to exclude

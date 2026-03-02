@@ -1,33 +1,33 @@
 ---
 title: Configuration Reference
-description: Complete reference for dp CLI configuration
+description: Complete reference for dk CLI configuration
 ---
 
 # Configuration Reference
 
-This document covers all configuration options for the `dp` CLI including configuration files, environment variables, and per-project settings.
+This document covers all configuration options for the `dk` CLI including configuration files, environment variables, and per-project settings.
 
 ## Configuration File
 
-The dp CLI uses hierarchical YAML configuration. Settings are loaded from three scopes (lowest to highest precedence):
+The dk CLI uses hierarchical YAML configuration. Settings are loaded from three scopes (lowest to highest precedence):
 
 1. **System**: `/etc/datakit/config.yaml`
-2. **User**: `~/.config/dp/config.yaml`
-3. **Repo**: `{git-root}/.dp/config.yaml`
+2. **User**: `~/.config/dk/config.yaml`
+3. **Repo**: `{git-root}/.dk/config.yaml`
 
 Higher-precedence scopes override lower ones. Command-line flags override all scopes.
 
 ### Full Configuration
 
 ```yaml
-# .dp/config.yaml — Example with all supported settings
+# .dk/config.yaml — Example with all supported settings
 
 # Local development settings
 dev:
   runtime: k3d               # Runtime type: k3d or compose
   workspace: /path/to/work   # Path to DP workspace (optional)
   k3d:
-    clusterName: dp-local    # k3d cluster name (DNS-safe)
+    clusterName: dk-local    # k3d cluster name (DNS-safe)
 
 # Plugin registry settings
 plugins:
@@ -61,7 +61,7 @@ Local development settings.
 |-------|------|-------------|---------|
 | `dev.runtime` | string | Runtime type: `k3d` or `compose` | `k3d` |
 | `dev.workspace` | string | Path to DP workspace | (none) |
-| `dev.k3d.clusterName` | string | k3d cluster name (DNS-safe) | `dp-local` |
+| `dev.k3d.clusterName` | string | k3d cluster name (DNS-safe) | `dk-local` |
 
 #### plugins
 
@@ -82,12 +82,12 @@ Plugin registry and override settings.
 
 #### plugins.destinations
 
-Per-destination connection and spec overrides. These settings control how `dp run` connects destination plugins to their backing services (databases, object stores, etc.).
+Per-destination connection and spec overrides. These settings control how `dk run` connects destination plugins to their backing services (databases, object stores, etc.).
 
 | Field | Type | Description | Default |
 |-------|------|-------------|---------|
 | `plugins.destinations.<name>.connection_string` | string | Full connection string (postgresql) | auto-detected |
-| `plugins.destinations.<name>.bucket` | string | S3 bucket name | `dp-output` |
+| `plugins.destinations.<name>.bucket` | string | S3 bucket name | `dk-output` |
 | `plugins.destinations.<name>.region` | string | AWS region for S3 | `us-east-1` |
 | `plugins.destinations.<name>.endpoint` | string | Custom S3 endpoint (e.g., LocalStack) | auto-detected |
 | `plugins.destinations.<name>.path` | string | Output directory for file destination | `/home/nonroot/cq-sync-output` |
@@ -100,10 +100,10 @@ Per-destination connection and spec overrides. These settings control how `dp ru
 
 **Auto-detection details:**
 
-During `dp run`, the CLI queries the k3d cluster for known services:
+During `dk run`, the CLI queries the k3d cluster for known services:
 
-- **PostgreSQL**: Looks for `dp-postgres-postgres` service in the current namespace. If found, builds the connection string using the in-cluster DNS name (`dp-postgres-postgres.<namespace>.svc.cluster.local:5432`) with default credentials (`postgres:postgres`, database `postgres`).
-- **S3 (LocalStack)**: Looks for `dp-localstack-localstack` service in the current namespace. If found, uses its in-cluster DNS endpoint (`http://dp-localstack-localstack.<namespace>.svc.cluster.local:4566`), sets `force_path_style: true`, and uses the `dp-output` bucket.
+- **PostgreSQL**: Looks for `dk-postgres-postgres` service in the current namespace. If found, builds the connection string using the in-cluster DNS name (`dk-postgres-postgres.<namespace>.svc.cluster.local:5432`) with default credentials (`postgres:postgres`, database `postgres`).
+- **S3 (LocalStack)**: Looks for `dk-localstack-localstack` service in the current namespace. If found, uses its in-cluster DNS endpoint (`http://dk-localstack-localstack.<namespace>.svc.cluster.local:4566`), sets `force_path_style: true`, and uses the `dk-output` bucket.
 - **File**: No auto-detection needed. Defaults to `/home/nonroot/cq-sync-output` inside the container, which is bind-mounted to `./cq-sync-output/` on the host.
 
 **Examples:**
@@ -111,27 +111,27 @@ During `dp run`, the CLI queries the k3d cluster for known services:
 Override the PostgreSQL connection string for a custom database:
 
 ```bash
-dp config set plugins.destinations.postgresql.connection_string \
+dk config set plugins.destinations.postgresql.connection_string \
   "postgresql://myuser:mypass@custom-host:5432/analytics?sslmode=disable"
 ```
 
 Point S3 output at a custom bucket and endpoint:
 
 ```bash
-dp config set plugins.destinations.s3.bucket my-data-lake
-dp config set plugins.destinations.s3.endpoint "http://minio:9000"
+dk config set plugins.destinations.s3.bucket my-data-lake
+dk config set plugins.destinations.s3.endpoint "http://minio:9000"
 ```
 
 Change the file output path:
 
 ```bash
-dp config set plugins.destinations.file.path /data/output
+dk config set plugins.destinations.file.path /data/output
 ```
 
 View the effective destination configuration:
 
 ```bash
-dp config list | grep destinations
+dk config list | grep destinations
 ```
 
 #### registry
@@ -140,7 +140,7 @@ Registry settings for artifact publishing.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `default` | string | Default registry URL for `dp publish` |
+| `default` | string | Default registry URL for `dk publish` |
 | `credentials` | array | List of registry credentials |
 | `credentials[].registry` | string | Registry hostname |
 | `credentials[].username` | string | Username (supports env vars) |
@@ -189,19 +189,19 @@ Environment variables override configuration file values.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DP_CONFIG` | Config file path | `/custom/config.yaml` |
-| `DP_NAMESPACE` | Default namespace | `analytics` |
-| `DP_OUTPUT_FORMAT` | Output format | `json` |
-| `DP_LOG_LEVEL` | Log level | `debug` |
-| `DP_DEBUG` | Enable debug mode | `true` |
+| `DK_CONFIG` | Config file path | `/custom/config.yaml` |
+| `DK_NAMESPACE` | Default namespace | `analytics` |
+| `DK_OUTPUT_FORMAT` | Output format | `json` |
+| `DK_LOG_LEVEL` | Log level | `debug` |
+| `DK_DEBUG` | Enable debug mode | `true` |
 
 ### Registry Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DP_REGISTRY` | Default registry | `ghcr.io/myorg` |
-| `DP_REGISTRY_USER` | Registry username | `ci-bot` |
-| `DP_REGISTRY_TOKEN` | Registry token | `ghp_xxx...` |
+| `DK_REGISTRY` | Default registry | `ghcr.io/myorg` |
+| `DK_REGISTRY_USER` | Registry username | `ci-bot` |
+| `DK_REGISTRY_TOKEN` | Registry token | `ghp_xxx...` |
 
 ### Lineage Variables
 
@@ -214,17 +214,17 @@ Environment variables override configuration file values.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DP_DEV_NETWORK` | Docker network name | `dp-network` |
-| `DP_DEV_TIMEOUT` | Dev stack timeout | `120s` |
+| `DK_DEV_NETWORK` | Docker network name | `dk-network` |
+| `DK_DEV_TIMEOUT` | Dev stack timeout | `120s` |
 
 ---
 
 ## Project Configuration
 
-Project-specific settings in `.dp/config.yaml`:
+Project-specific settings in `.dk/config.yaml`:
 
 ```yaml
-# .dp/config.yaml (in project root)
+# .dk/config.yaml (in project root)
 
 # Project-specific registry
 registry:
@@ -239,18 +239,18 @@ defaults:
 
 1. Command-line flags (highest priority) — e.g., `--registry`
 2. Environment variables
-3. Repo configuration (`{git-root}/.dp/config.yaml`)
-4. User configuration (`~/.config/dp/config.yaml`)
+3. Repo configuration (`{git-root}/.dk/config.yaml`)
+4. User configuration (`~/.config/dk/config.yaml`)
 5. System configuration (`/etc/datakit/config.yaml`)
 6. Built-in defaults (lowest priority)
 
-Use `dp config list` to see the effective value and source for each setting.
+Use `dk config list` to see the effective value and source for each setting.
 
 ---
 
 ## Local Development Stack
 
-The `dp dev up` command deploys Helm charts to a local k3d cluster providing:
+The `dk dev up` command deploys Helm charts to a local k3d cluster providing:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -259,11 +259,11 @@ The `dp dev up` command deploys Helm charts to a local k3d cluster providing:
 | PostgreSQL | 5432 | Relational database |
 | Marquez | 5000, 3000 | Data lineage tracking |
 
-Chart versions and Helm values can be overridden via `dp config`:
+Chart versions and Helm values can be overridden via `dk config`:
 
 ```bash
-dp config set dev.charts.redpanda.version 25.2.0
-dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
+dk config set dev.charts.redpanda.version 25.2.0
+dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ```
 
 ---
@@ -275,7 +275,7 @@ dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 Define organization-wide policies:
 
 ```yaml
-# .dp/policies.yaml
+# .dk/policies.yaml
 
 policies:
   # Require classification on all outputs
@@ -300,10 +300,10 @@ policies:
 
 ### Policy Enforcement
 
-Policies are checked by `dp lint`:
+Policies are checked by `dk lint`:
 
 ```bash
-dp lint --policy .dp/policies.yaml
+dk lint --policy .dk/policies.yaml
 ```
 
 ---
@@ -316,20 +316,20 @@ Enable tab completion for better CLI experience.
 
 ```bash
 # Add to ~/.bashrc
-source <(dp completion bash)
+source <(dk completion bash)
 ```
 
 ### Zsh
 
 ```bash
 # Add to ~/.zshrc
-source <(dp completion zsh)
+source <(dk completion zsh)
 ```
 
 ### Fish
 
 ```bash
-dp completion fish | source
+dk completion fish | source
 ```
 
 ---
@@ -349,24 +349,24 @@ dp completion fish | source
 
 ```bash
 # Environment variable
-export DP_LOG_LEVEL=debug
+export DK_LOG_LEVEL=debug
 
 # Config file
 defaults:
   log_level: debug
 
 # Command line
-dp run --log-level debug
+dk run --log-level debug
 ```
 
 ### Log Output
 
 ```bash
 # JSON format for parsing
-export DP_LOG_FORMAT=json
+export DK_LOG_FORMAT=json
 
 # Include timestamps
-export DP_LOG_TIMESTAMPS=true
+export DK_LOG_TIMESTAMPS=true
 ```
 
 ---

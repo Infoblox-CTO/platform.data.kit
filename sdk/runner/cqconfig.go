@@ -145,7 +145,7 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 			}
 			return s, nil
 		}
-		// If a cell resolver is provided (dp run --cell), use the deployment cell.
+		// If a cell resolver is provided (dk run --cell), use the deployment cell.
 		if cellResolver != nil {
 			s, err := cellResolver.ResolveStore(context.Background(), storeName)
 			if err != nil {

@@ -9,17 +9,17 @@ This page covers common issues you may encounter and how to resolve them.
 
 ## Installation Issues
 
-### Command Not Found: dp
+### Command Not Found: dk
 
-**Symptom**: Running `dp` returns "command not found"
+**Symptom**: Running `dk` returns "command not found"
 
-**Cause**: The dp binary is not in your PATH
+**Cause**: The dk binary is not in your PATH
 
 **Solution**:
 
 ```bash
 # Check if binary exists
-ls -la bin/dp
+ls -la bin/dk
 
 # Add to PATH temporarily
 export PATH=$PATH:$(pwd)/bin
@@ -51,22 +51,22 @@ go mod download
 
 ### Permission Denied on Binary
 
-**Symptom**: Running dp gives "permission denied"
+**Symptom**: Running dk gives "permission denied"
 
 **Solution**:
 
 ```bash
-chmod +x bin/dp
-./bin/dp version
+chmod +x bin/dk
+./bin/dk version
 ```
 
 ---
 
 ## Development Stack Issues
 
-### dp dev up Fails
+### dk dev up Fails
 
-**Symptom**: `dp dev up` fails to start services
+**Symptom**: `dk dev up` fails to start services
 
 **Common Causes**:
 
@@ -93,8 +93,8 @@ chmod +x bin/dp
 3. **Previous containers not cleaned up**
    ```bash
    # Force cleanup
-   dp dev down --volumes
-   dp dev up
+   dk dev down --volumes
+   dk dev up
    ```
 
 ### Kafka Connection Refused
@@ -106,21 +106,21 @@ chmod +x bin/dp
 1. **Wait for Kafka to be ready**
    ```bash
    # Check health
-   dp dev status
+   dk dev status
    
    # Wait and retry
    sleep 30
-   dp run ./my-pipeline
+   dk run ./my-pipeline
    ```
 
 2. **Check Kafka logs**
    ```bash
-   kubectl --context k3d-dp-local logs -l app=redpanda
+   kubectl --context k3d-dk-local logs -l app=redpanda
    ```
 
 3. **Verify Kafka is accepting connections**
    ```bash
-   docker exec dp-kafka kafka-broker-api-versions \
+   docker exec dk-kafka kafka-broker-api-versions \
      --bootstrap-server localhost:9092
    ```
 
@@ -132,7 +132,7 @@ chmod +x bin/dp
 
 ```bash
 # Verify MinIO is running
-dp dev status
+dk dev status
 
 # Check credentials (default: minioadmin/minioadmin)
 mc alias set local http://localhost:9000 minioadmin minioadmin
@@ -161,22 +161,22 @@ mc mb local/my-bucket
 3. **Run pipeline and check events**
    ```bash
    # Run with debug
-   DP_LOG_LEVEL=debug dp run ./my-pipeline
+   DK_LOG_LEVEL=debug dk run ./my-pipeline
    ```
 
 ---
 
 ## Pipeline Issues
 
-### dp lint Fails
+### dk lint Fails
 
-**Symptom**: `dp lint` returns validation errors
+**Symptom**: `dk lint` returns validation errors
 
 **Common Errors**:
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `E001: metadata.name is required` | Missing name | Add `metadata.name` to dp.yaml |
+| `E001: metadata.name is required` | Missing name | Add `metadata.name` to dk.yaml |
 | `E004: invalid name format` | Uppercase/special chars | Use lowercase and hyphens only |
 | `E010: store not found` | Missing store reference | Add a Store manifest with the referenced name |
 | `E025: pii=true requires sensitivity` | Missing classification | Add sensitivity level |
@@ -208,7 +208,7 @@ outputs:
       sensitivity: confidential  # Add this
 ```
 
-### dp run Fails Immediately
+### dk run Fails Immediately
 
 **Symptom**: Pipeline starts but exits immediately
 
@@ -216,12 +216,12 @@ outputs:
 
 1. **Check logs**
    ```bash
-   dp logs <run-id>
+   dk logs <run-id>
    ```
 
 2. **Run with debug**
    ```bash
-   DP_LOG_LEVEL=debug dp run ./my-pipeline
+   DK_LOG_LEVEL=debug dk run ./my-pipeline
    ```
 
 3. **Common causes**:
@@ -229,7 +229,7 @@ outputs:
    - Can't connect to input sources
    - Syntax errors in pipeline code
 
-### dp run Timeout
+### dk run Timeout
 
 **Symptom**: Pipeline times out before completing
 
@@ -237,10 +237,10 @@ outputs:
 
 ```bash
 # Increase timeout
-dp run ./my-pipeline --timeout 60m
+dk run ./my-pipeline --timeout 60m
 
 # Or set default in config
-# ~/.dp/config.yaml
+# ~/.dk/config.yaml
 defaults:
   timeout: 60m
 ```
@@ -254,7 +254,7 @@ defaults:
 1. **Check input has data**
    ```bash
    # For Kafka
-   docker exec dp-kafka kafka-console-consumer \
+   docker exec dk-kafka kafka-console-consumer \
      --bootstrap-server localhost:9092 \
      --topic user-events \
      --from-beginning \
@@ -263,7 +263,7 @@ defaults:
 
 2. **Check consumer group offset**
    ```bash
-   docker exec dp-kafka kafka-consumer-groups \
+   docker exec dk-kafka kafka-consumer-groups \
      --bootstrap-server localhost:9092 \
      --group my-consumer-group \
      --describe
@@ -280,7 +280,7 @@ defaults:
 
 ### Authentication Failed
 
-**Symptom**: `dp publish` fails with authentication error
+**Symptom**: `dk publish` fails with authentication error
 
 **Solution**:
 
@@ -292,13 +292,13 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin
 docker login
 
 # Set in config
-export DP_REGISTRY_USER=myuser
-export DP_REGISTRY_TOKEN=mytoken
+export DK_REGISTRY_USER=myuser
+export DK_REGISTRY_TOKEN=mytoken
 ```
 
 ### Push Denied
 
-**Symptom**: `dp publish` says push denied
+**Symptom**: `dk publish` says push denied
 
 **Common Causes**:
 
@@ -308,7 +308,7 @@ export DP_REGISTRY_TOKEN=mytoken
 
 2. **Wrong registry URL**
    ```bash
-   dp publish --registry ghcr.io/correct-org
+   dk publish --registry ghcr.io/correct-org
    ```
 
 3. **Token expired**
@@ -327,8 +327,8 @@ export DP_REGISTRY_TOKEN=mytoken
 
 ```bash
 # Use a new version
-dp build --tag v1.0.1
-dp publish
+dk build --tag v1.0.1
+dk publish
 ```
 
 ---
@@ -337,7 +337,7 @@ dp publish
 
 ### PR Not Created
 
-**Symptom**: `dp promote` doesn't create a PR
+**Symptom**: `dk promote` doesn't create a PR
 
 **Solutions**:
 
@@ -349,7 +349,7 @@ dp publish
 
 2. **Check GitOps repository**
    ```yaml
-   # ~/.dp/config.yaml
+   # ~/.dk/config.yaml
    environments:
      dev:
        gitops: https://github.com/org/gitops.git  # Verify URL
@@ -369,11 +369,11 @@ dp publish
 1. Check the PR for failure details
 2. Run lint locally first:
    ```bash
-   dp lint --strict
+   dk lint --strict
    ```
 3. Verify package exists in registry:
    ```bash
-   dp versions my-pipeline
+   dk versions my-pipeline
    ```
 
 ### Sync Failed in ArgoCD
@@ -387,8 +387,8 @@ dp publish
 3. Resource quotas/limits
 
 ```bash
-dp status my-pipeline --env dev
-dp logs my-pipeline --env dev --sync
+dk status my-pipeline --env dev
+dk logs my-pipeline --env dev --sync
 ```
 
 ---
@@ -401,7 +401,7 @@ dp logs my-pipeline --env dev --sync
 
 1. **Increase resources**
    ```yaml
-   # dp.yaml
+   # dk.yaml
    spec:
      runtime:
        resources:
@@ -411,7 +411,7 @@ dp logs my-pipeline --env dev --sync
 
 2. **Increase batch size**
    ```bash
-   dp run --env BATCH_SIZE=5000
+   dk run --env BATCH_SIZE=5000
    ```
 
 3. **Check I/O bottlenecks**
@@ -463,7 +463,7 @@ dp logs my-pipeline --env dev --sync
    ```bash
    docker rm -f dev-registry-cache
    docker volume rm dev_registry_cache
-   dp dev up --runtime=k3d
+   dk dev up --runtime=k3d
    ```
 
 ### Image Pulls Still Slow
@@ -486,8 +486,8 @@ dp logs my-pipeline --env dev --sync
 3. **Ensure cluster uses the registry config**
    ```bash
    # Delete cluster and recreate
-   dp dev down --runtime=k3d
-   dp dev up --runtime=k3d
+   dk dev down --runtime=k3d
+   dk dev up --runtime=k3d
    ```
 
 ### Cache Not Created in CI
@@ -514,7 +514,7 @@ docker network create devcache
 
 # Or remove and let it recreate
 docker network rm devcache
-dp dev up --runtime=k3d
+dk dev up --runtime=k3d
 ```
 
 ---
@@ -546,7 +546,7 @@ dp dev up --runtime=k3d
 **Solution**:
 
 ```bash
-# Planned: dp lineage my-pipeline --refresh
+# Planned: dk lineage my-pipeline --refresh
 # For now, query Marquez directly:
 curl http://localhost:5000/api/v1/namespaces/default/jobs/my-pipeline/runs
 ```
@@ -559,7 +559,7 @@ If you can't resolve your issue:
 
 1. **Check debug logs**
    ```bash
-   DP_LOG_LEVEL=debug dp <command>
+   DK_LOG_LEVEL=debug dk <command>
    ```
 
 2. **Search existing issues**

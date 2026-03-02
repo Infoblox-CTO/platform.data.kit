@@ -168,7 +168,7 @@ spec:
   capabilities:
     - source
 `
-				path := filepath.Join(dir, "dp.yaml")
+				path := filepath.Join(dir, "dk.yaml")
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to write file: %v", err)
 				}

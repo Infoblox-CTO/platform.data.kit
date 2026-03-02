@@ -1,11 +1,11 @@
 ---
 title: CLI Reference
-description: Complete reference for all dp CLI commands
+description: Complete reference for all dk CLI commands
 ---
 
 # CLI Reference
 
-Complete reference for all `dp` CLI commands with examples and flags.
+Complete reference for all `dk` CLI commands with examples and flags.
 
 ## Global Flags
 
@@ -23,41 +23,41 @@ These flags apply to all commands:
 
 | Command | Description |
 |---------|-------------|
-| [`dp init`](#dp-init) | Create a new data package |
-| [`dp dev`](#dp-dev) | Manage local development stack |
-| [`dp dev seed`](#dp-dev-seed) | Load seed data into local dev stores |
-| [`dp config`](#dp-config) | Manage dp configuration |
-| [`dp lint`](#dp-lint) | Validate package manifests |
-| [`dp run`](#dp-run) | Execute pipeline locally |
-| [`dp show`](#dp-show) | Show effective manifest |
-| [`dp test`](#dp-test) | Run pipeline tests |
-| [`dp build`](#dp-build) | Build OCI artifact |
-| [`dp publish`](#dp-publish) | Publish to registry |
-| [`dp promote`](#dp-promote) | Promote to environment |
-| [`dp cell list`](#dp-cell-list) | List cells in the cluster |
-| [`dp cell show`](#dp-cell-show) | Show cell details |
-| [`dp cell stores`](#dp-cell-stores) | List stores in a cell |
-| [`dp status`](#dp-status) | Show package status |
-| [`dp logs`](#dp-logs) | Stream logs |
-| [`dp rollback`](#dp-rollback) | Rollback to previous version |
-| [`dp lineage`](#dp-lineage) | View data lineage *(not yet implemented)* |
-| [`dp asset create`](#dp-asset-create) | Create a new asset from an extension |
-| [`dp asset validate`](#dp-asset-validate) | Validate asset configuration |
-| [`dp asset list`](#dp-asset-list) | List all assets in the project |
-| [`dp asset show`](#dp-asset-show) | Show details of an asset |
-| [`dp pipeline create`](#dp-pipeline-create) | Create a pipeline workflow from a template |
-| [`dp pipeline run`](#dp-pipeline-run) | Execute the pipeline workflow |
-| [`dp pipeline backfill`](#dp-pipeline-backfill) | Re-execute sync steps for a date range |
-| [`dp pipeline show`](#dp-pipeline-show) | Display pipeline definition and schedule |
+| [`dk init`](#dk-init) | Create a new data package |
+| [`dk dev`](#dk-dev) | Manage local development stack |
+| [`dk dev seed`](#dk-dev-seed) | Load seed data into local dev stores |
+| [`dk config`](#dk-config) | Manage dk configuration |
+| [`dk lint`](#dk-lint) | Validate package manifests |
+| [`dk run`](#dk-run) | Execute pipeline locally |
+| [`dk show`](#dk-show) | Show effective manifest |
+| [`dk test`](#dk-test) | Run pipeline tests |
+| [`dk build`](#dk-build) | Build OCI artifact |
+| [`dk publish`](#dk-publish) | Publish to registry |
+| [`dk promote`](#dk-promote) | Promote to environment |
+| [`dk cell list`](#dk-cell-list) | List cells in the cluster |
+| [`dk cell show`](#dk-cell-show) | Show cell details |
+| [`dk cell stores`](#dk-cell-stores) | List stores in a cell |
+| [`dk status`](#dk-status) | Show package status |
+| [`dk logs`](#dk-logs) | Stream logs |
+| [`dk rollback`](#dk-rollback) | Rollback to previous version |
+| [`dk lineage`](#dk-lineage) | View data lineage *(not yet implemented)* |
+| [`dk asset create`](#dk-asset-create) | Create a new asset from an extension |
+| [`dk asset validate`](#dk-asset-validate) | Validate asset configuration |
+| [`dk asset list`](#dk-asset-list) | List all assets in the project |
+| [`dk asset show`](#dk-asset-show) | Show details of an asset |
+| [`dk pipeline create`](#dk-pipeline-create) | Create a pipeline workflow from a template |
+| [`dk pipeline run`](#dk-pipeline-run) | Execute the pipeline workflow |
+| [`dk pipeline backfill`](#dk-pipeline-backfill) | Re-execute sync steps for a date range |
+| [`dk pipeline show`](#dk-pipeline-show) | Display pipeline definition and schedule |
 
 ---
 
-## dp init
+## dk init
 
 Create a new data package.
 
 ```bash
-dp init <package-name> [flags]
+dk init <package-name> [flags]
 ```
 
 ### Flags
@@ -74,22 +74,22 @@ dp init <package-name> [flags]
 
 ```bash
 # Create a Transform with CloudQuery runtime
-dp init my-sync --runtime cloudquery
+dk init my-sync --runtime cloudquery
 ```
 
 ```bash
 # Create a streaming Python Transform
-dp init kafka-processor --runtime generic-python --mode streaming
+dk init kafka-processor --runtime generic-python --mode streaming
 ```
 
 ```bash
 # Create a Go Transform
-dp init etl-job --runtime generic-go
+dk init etl-job --runtime generic-go
 ```
 
 ```bash
 # Create a dbt Transform
-dp init user-aggregation --runtime dbt
+dk init user-aggregation --runtime dbt
 ```
 
 ### Output
@@ -98,7 +98,7 @@ Creates the following directory structure (varies by runtime):
 
 ```
 my-pipeline/
-├── dp.yaml
+├── dk.yaml
 ├── main.py (or main.go)
 └── requirements.txt (Python only)
 ```
@@ -107,22 +107,22 @@ For CloudQuery runtime:
 
 ```
 my-model/
-├── dp.yaml
+├── dk.yaml
 └── config.yaml
 ```
 
 ---
 
-## dp dev
+## dk dev
 
 Manage the local development stack.
 
-### dp dev up
+### dk dev up
 
 Start the local development stack.
 
 ```bash
-dp dev up [flags]
+dk dev up [flags]
 ```
 
 #### Flags
@@ -137,20 +137,20 @@ dp dev up [flags]
 
 ```bash
 # Start local stack with k3d (default)
-dp dev up
+dk dev up
 ```
 
 ```bash
 # Start in background
-dp dev up --detach
+dk dev up --detach
 ```
 
-### dp dev down
+### dk dev down
 
 Stop the local development stack.
 
 ```bash
-dp dev down [flags]
+dk dev down [flags]
 ```
 
 #### Flags
@@ -164,20 +164,20 @@ dp dev down [flags]
 
 ```bash
 # Stop stack
-dp dev down
+dk dev down
 ```
 
 ```bash
 # Stop compose stack and remove volumes
-dp dev down --runtime=compose --volumes
+dk dev down --runtime=compose --volumes
 ```
 
-### dp dev seed
+### dk dev seed
 
 Load seed data into local dev stores.
 
 ```bash
-dp dev seed [package-dir] [flags]
+dk dev seed [package-dir] [flags]
 ```
 
 Reads each input asset in the package and, for assets that declare a
@@ -205,32 +205,32 @@ seed spec exactly — no stale rows, no duplicate-key errors.
 
 ```bash
 # Seed all input assets (skips if data unchanged)
-dp dev seed
+dk dev seed
 ```
 
 ```bash
 # Use a named seed profile for integration tests
-dp dev seed --profile edge-cases
+dk dev seed --profile edge-cases
 ```
 
 ```bash
 # Force re-seed even if data hasn't changed
-dp dev seed --force
+dk dev seed --force
 ```
 
 ```bash
 # Drop and recreate tables (full reset)
-dp dev seed --clean
+dk dev seed --clean
 ```
 
 ```bash
 # Seed only a specific asset
-dp dev seed --asset users-source-table
+dk dev seed --asset users-source-table
 ```
 
 ```bash
 # Seed from a specific package directory
-dp dev seed ./my-pipeline
+dk dev seed ./my-pipeline
 ```
 
 #### Output Example
@@ -249,16 +249,16 @@ Skipping users-source-table (profile=default): data unchanged
 ✓ Seeded 0 asset(s), 0 row(s) inserted, 1 unchanged (skipped)
 ```
 
-!!! tip "Auto-seeding during `dp run`"
-    Seed data is also loaded automatically before each `dp run` execution.
+!!! tip "Auto-seeding during `dk run`"
+    Seed data is also loaded automatically before each `dk run` execution.
     The checksum skip ensures this adds no overhead when data is unchanged.
 
-### dp dev status
+### dk dev status
 
 Show status of local development stack.
 
 ```bash
-dp dev status [flags]
+dk dev status [flags]
 ```
 
 #### Flags
@@ -289,22 +289,22 @@ Endpoints:
 
 ---
 
-## dp config
+## dk config
 
-Manage dp CLI configuration settings.
+Manage dk CLI configuration settings.
 
 Configuration is stored in YAML files at three scopes (highest to lowest precedence):
 
-- **repo**: `{git-root}/.dp/config.yaml`
-- **user**: `~/.config/dp/config.yaml`
+- **repo**: `{git-root}/.dk/config.yaml`
+- **user**: `~/.config/dk/config.yaml`
 - **system**: `/etc/datakit/config.yaml`
 
-### dp config set
+### dk config set
 
 Set a configuration value.
 
 ```bash
-dp config set <key> <value> [--scope <scope>]
+dk config set <key> <value> [--scope <scope>]
 ```
 
 #### Flags
@@ -330,27 +330,27 @@ dp config set <key> <value> [--scope <scope>]
 
 ```bash
 # Set default plugin registry
-dp config set plugins.registry ghcr.io/myteam
+dk config set plugins.registry ghcr.io/myteam
 
 # Pin a plugin version
-dp config set plugins.overrides.postgresql.version v8.13.0
+dk config set plugins.overrides.postgresql.version v8.13.0
 
 # Override a dev chart version
-dp config set dev.charts.redpanda.version 25.2.0
+dk config set dev.charts.redpanda.version 25.2.0
 
 # Override a Helm value for a dev chart
-dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
+dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 
 # Set for this project only
-dp config set plugins.registry internal.registry.io --scope repo
+dk config set plugins.registry internal.registry.io --scope repo
 ```
 
-### dp config get
+### dk config get
 
 Get the effective value of a configuration key.
 
 ```bash
-dp config get <key>
+dk config get <key>
 ```
 
 Shows the resolved value and which scope it comes from (repo, user, system, or built-in).
@@ -358,19 +358,19 @@ Shows the resolved value and which scope it comes from (repo, user, system, or b
 #### Examples
 
 ```bash
-dp config get plugins.registry
+dk config get plugins.registry
 # ghcr.io/infobloxopen (source: built-in)
 
-dp config get dev.runtime
+dk config get dev.runtime
 # k3d (source: built-in)
 ```
 
-### dp config unset
+### dk config unset
 
 Remove a configuration value from a scope.
 
 ```bash
-dp config unset <key> [--scope <scope>]
+dk config unset <key> [--scope <scope>]
 ```
 
 #### Flags
@@ -382,16 +382,16 @@ dp config unset <key> [--scope <scope>]
 #### Examples
 
 ```bash
-dp config unset plugins.registry
-dp config unset plugins.overrides.postgresql.version --scope repo
+dk config unset plugins.registry
+dk config unset plugins.overrides.postgresql.version --scope repo
 ```
 
-### dp config list
+### dk config list
 
 List all effective configuration settings.
 
 ```bash
-dp config list [--scope <scope>]
+dk config list [--scope <scope>]
 ```
 
 #### Flags
@@ -405,16 +405,16 @@ dp config list [--scope <scope>]
 ```
 KEY                    VALUE                     SOURCE
 dev.runtime            k3d                       built-in
-dev.k3d.clusterName    dp-local                  built-in
+dev.k3d.clusterName    dk-local                  built-in
 plugins.registry       ghcr.io/myteam            repo
 ```
 
-### dp config add-mirror
+### dk config add-mirror
 
 Add a fallback registry mirror.
 
 ```bash
-dp config add-mirror <registry> [--scope <scope>]
+dk config add-mirror <registry> [--scope <scope>]
 ```
 
 Mirrors are tried in order when the primary registry is unreachable.
@@ -422,32 +422,32 @@ Mirrors are tried in order when the primary registry is unreachable.
 #### Examples
 
 ```bash
-dp config add-mirror ghcr.io/backup-org
-dp config add-mirror internal.registry.io --scope repo
+dk config add-mirror ghcr.io/backup-org
+dk config add-mirror internal.registry.io --scope repo
 ```
 
-### dp config remove-mirror
+### dk config remove-mirror
 
 Remove a fallback registry mirror.
 
 ```bash
-dp config remove-mirror <registry> [--scope <scope>]
+dk config remove-mirror <registry> [--scope <scope>]
 ```
 
 #### Examples
 
 ```bash
-dp config remove-mirror ghcr.io/backup-org
+dk config remove-mirror ghcr.io/backup-org
 ```
 
 ---
 
-## dp lint
+## dk lint
 
 Validate package manifests.
 
 ```bash
-dp lint [package-dir] [flags]
+dk lint [package-dir] [flags]
 ```
 
 ### Flags
@@ -463,7 +463,7 @@ dp lint [package-dir] [flags]
 
 | File | Description |
 |------|-------------|
-| `dp.yaml` | Package manifest (includes runtime config) |
+| `dk.yaml` | Package manifest (includes runtime config) |
 | `schemas/` | Schema files |
 
 ### Validation Rules
@@ -481,35 +481,35 @@ dp lint [package-dir] [flags]
 
 ```bash
 # Lint current directory
-dp lint
+dk lint
 ```
 
 ```bash
 # Lint specific package
-dp lint ./my-pipeline
+dk lint ./my-pipeline
 ```
 
 ```bash
 # Lint with overrides applied
-dp lint ./my-pipeline -f production.yaml
+dk lint ./my-pipeline -f production.yaml
 
 # Lint with inline override
-dp lint ./my-pipeline --set spec.image=myimage:v2
+dk lint ./my-pipeline --set spec.image=myimage:v2
 ```
 
 ```bash
 # Strict mode (warnings become errors)
-dp lint --strict
+dk lint --strict
 ```
 
 ---
 
-## dp run
+## dk run
 
 Execute pipeline locally.
 
 ```bash
-dp run [package-dir] [flags]
+dk run [package-dir] [flags]
 ```
 
 ### Flags
@@ -518,7 +518,7 @@ dp run [package-dir] [flags]
 |------|-------|-------------|---------|
 | `--cell` | - | Cell name for store resolution (overrides `store/` directory) | - |
 | `--context` | - | kubectl context for multi-cluster cell access | current context |
-| `--network` | - | Docker network | dp-network |
+| `--network` | - | Docker network | dk-network |
 | `--env` | - | Environment variables (KEY=VALUE) | - |
 | `--dry-run` | - | Print what would run | false |
 | `--detach` | - | Run in background | false |
@@ -543,19 +543,19 @@ The run command behaves differently based on the pipeline mode:
 - Runs indefinitely
 - `--attach`: Stream logs (Ctrl+C sends SIGTERM)
 - `--detach`: Returns immediately with container ID
-- Use `dp logs` to view detached output
-- Use `dp stop` to stop
+- Use `dk logs` to view detached output
+- Use `dk stop` to stop
 
 ### Runtime Configuration
 
-The pipeline runs using the container image specified in `spec.image` and the execution engine specified in `spec.runtime` of dp.yaml.
+The pipeline runs using the container image specified in `spec.image` and the execution engine specified in `spec.runtime` of dk.yaml.
 Environment variables are automatically mapped from Store connection details (e.g., `events-store.brokers` → `EVENTS_STORE_BROKERS`).
 
 ### Override Precedence
 
 When using `-f` and `--set` flags:
 
-1. **Base**: dp.yaml values
+1. **Base**: dk.yaml values
 2. **Files**: Values from `-f` files (applied in order)
 3. **Set flags**: `--set` values (applied in order, highest precedence)
 
@@ -563,55 +563,55 @@ When using `-f` and `--set` flags:
 
 ```bash
 # Run batch pipeline
-dp run ./my-pipeline
+dk run ./my-pipeline
 ```
 
 ```bash
 # Run streaming pipeline (attached by default)
-dp run ./my-streaming-pipeline
+dk run ./my-streaming-pipeline
 
 # Run streaming pipeline detached
-dp run ./my-streaming-pipeline --detach
+dk run ./my-streaming-pipeline --detach
 ```
 
 ```bash
 # Override image for testing
-dp run ./my-pipeline --set spec.image=local:dev
+dk run ./my-pipeline --set spec.image=local:dev
 ```
 
 ```bash
 # Apply environment-specific overrides
-dp run ./my-pipeline -f production.yaml
+dk run ./my-pipeline -f production.yaml
 ```
 
 ```bash
 # Combine overrides (--set wins over -f)
-dp run ./my-pipeline -f production.yaml --set spec.timeout=1h
+dk run ./my-pipeline -f production.yaml --set spec.timeout=1h
 ```
 
 ```bash
 # With environment variables
-dp run ./my-pipeline --env API_KEY=secret --env DEBUG=true
+dk run ./my-pipeline --env API_KEY=secret --env DEBUG=true
 ```
 
 ```bash
 # Run against a cell (stores resolved from cell, not store/ dir)
-dp run --cell canary
+dk run --cell canary
 ```
 
 ```bash
 # Run against a cell in a specific cluster
-dp run --cell us-east --context arn:aws:eks:us-east-1:...:dp-prod
+dk run --cell us-east --context arn:aws:eks:us-east-1:...:dk-prod
 ```
 
 ```bash
-# Run a CloudQuery plugin (auto-detected from dp.yaml type: cloudquery)
-dp run ./my-source
+# Run a CloudQuery plugin (auto-detected from dk.yaml type: cloudquery)
+dk run ./my-source
 ```
 
 **CloudQuery Mode** (when `spec.runtime: cloudquery`):
 
-When `dp run` detects a CloudQuery package, it orchestrates a full sync:
+When `dk run` detects a CloudQuery package, it orchestrates a full sync:
 
 1. Checks for `cloudquery` CLI in PATH
 2. Builds the plugin Docker image
@@ -624,12 +624,12 @@ When `dp run` detects a CloudQuery package, it orchestrates a full sync:
 
 ---
 
-## dp show
+## dk show
 
 Show the effective manifest after applying overrides.
 
 ```bash
-dp show [package-dir] [flags]
+dk show [package-dir] [flags]
 ```
 
 ### Flags
@@ -642,44 +642,44 @@ dp show [package-dir] [flags]
 
 ### Description
 
-The `dp show` command displays the merged manifest that would be used when running the pipeline.
+The `dk show` command displays the merged manifest that would be used when running the pipeline.
 This is useful for previewing the effect of override files and `--set` flags before executing.
 
 ### Examples
 
 ```bash
 # Show manifest as-is
-dp show ./my-pipeline
+dk show ./my-pipeline
 ```
 
 ```bash
 # Show with override file applied
-dp show ./my-pipeline -f production.yaml
+dk show ./my-pipeline -f production.yaml
 ```
 
 ```bash
 # Show with inline overrides
-dp show ./my-pipeline --set spec.image=myimage:v2
+dk show ./my-pipeline --set spec.image=myimage:v2
 ```
 
 ```bash
 # Show combined overrides (--set wins over -f)
-dp show ./my-pipeline -f base.yaml --set spec.timeout=1h
+dk show ./my-pipeline -f base.yaml --set spec.timeout=1h
 ```
 
 ```bash
 # Output as JSON
-dp show ./my-pipeline -o json
+dk show ./my-pipeline -o json
 ```
 
 ---
 
-## dp test
+## dk test
 
 Run tests for a data package.
 
 ```bash
-dp test [package-dir] [flags]
+dk test [package-dir] [flags]
 ```
 
 ### Flags
@@ -715,57 +715,57 @@ dp test [package-dir] [flags]
 
 ```bash
 # Run batch test
-dp test ./my-pipeline
+dk test ./my-pipeline
 ```
 
 ```bash
 # With custom test data
-dp test ./my-pipeline --data ./test/fixtures
+dk test ./my-pipeline --data ./test/fixtures
 ```
 
 ```bash
 # Test streaming pipeline for 60 seconds
-dp test ./my-streaming-pipeline --duration 60s
+dk test ./my-streaming-pipeline --duration 60s
 
 # Test with longer startup wait
-dp test ./my-streaming-pipeline --startup-timeout 120s
+dk test ./my-streaming-pipeline --startup-timeout 120s
 ```
 
 ```bash
 # Run CloudQuery unit tests
-dp test ./my-source
+dk test ./my-source
 
 # Run CloudQuery integration test (full sync)
-dp test ./my-source --integration
+dk test ./my-source --integration
 ```
 
 ---
 
-## dp build
+## dk build
 
 Build OCI artifact for package.
 
 ```bash
-dp build [package-dir] [flags]
+dk build [package-dir] [flags]
 ```
 
 ### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--tag` | Artifact tag | `<version from dp.yaml>` |
+| `--tag` | Artifact tag | `<version from dk.yaml>` |
 | `--no-cache` | Build without cache | false |
 
 ### Examples
 
 ```bash
 # Build package
-dp build ./my-pipeline
+dk build ./my-pipeline
 ```
 
 ```bash
 # With custom tag
-dp build ./my-pipeline --tag v1.0.0-rc1
+dk build ./my-pipeline --tag v1.0.0-rc1
 ```
 
 ### Output
@@ -783,19 +783,19 @@ Size: 2.3 MB
 
 ---
 
-## dp publish
+## dk publish
 
 Publish package to OCI registry.
 
 ```bash
-dp publish [package-dir] [flags]
+dk publish [package-dir] [flags]
 ```
 
 ### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--registry` | Registry URL | `$DP_REGISTRY` |
+| `--registry` | Registry URL | `$DK_REGISTRY` |
 | `--tag` | Override tag | - |
 | `--dry-run` | Print what would publish | false |
 
@@ -803,35 +803,35 @@ dp publish [package-dir] [flags]
 
 | Variable | Description |
 |----------|-------------|
-| `DP_REGISTRY` | Default registry URL |
-| `DP_REGISTRY_USER` | Registry username |
-| `DP_REGISTRY_TOKEN` | Registry access token |
+| `DK_REGISTRY` | Default registry URL |
+| `DK_REGISTRY_USER` | Registry username |
+| `DK_REGISTRY_TOKEN` | Registry access token |
 
 ### Examples
 
 ```bash
 # Publish to default registry
-dp publish ./my-pipeline
+dk publish ./my-pipeline
 ```
 
 ```bash
 # Publish to specific registry
-dp publish ./my-pipeline --registry ghcr.io/myorg
+dk publish ./my-pipeline --registry ghcr.io/myorg
 ```
 
 ```bash
 # Dry run
-dp publish ./my-pipeline --dry-run
+dk publish ./my-pipeline --dry-run
 ```
 
 ---
 
-## dp promote
+## dk promote
 
 Promote package to an environment.
 
 ```bash
-dp promote <package-name> <version> [flags]
+dk promote <package-name> <version> [flags]
 ```
 
 ### Flags
@@ -847,17 +847,17 @@ dp promote <package-name> <version> [flags]
 
 ```bash
 # Promote to dev
-dp promote my-pipeline v1.0.0 --to dev
+dk promote my-pipeline v1.0.0 --to dev
 ```
 
 ```bash
 # Promote to production with dry run
-dp promote my-pipeline v1.0.0 --to prod --dry-run
+dk promote my-pipeline v1.0.0 --to prod --dry-run
 ```
 
 ```bash
 # Emergency rollback
-dp promote my-pipeline v0.9.0 --to prod --rollback
+dk promote my-pipeline v0.9.0 --to prod --rollback
 ```
 
 ### Output
@@ -876,16 +876,16 @@ Created PR: https://github.com/org/deploys/pull/123
 
 ---
 
-## dp cell
+## dk cell
 
 Manage and inspect cells in the cluster.
 
-### dp cell list
+### dk cell list
 
 List all cells in the current cluster.
 
 ```bash
-dp cell list [flags]
+dk cell list [flags]
 ```
 
 #### Flags
@@ -897,27 +897,27 @@ dp cell list [flags]
 #### Example
 
 ```bash
-dp cell list
+dk cell list
 ```
 
 ```
 NAME      NAMESPACE    READY   STORES   PACKAGES   LABELS
-local     dp-local     true    2        3          tier=local
-canary    dp-canary    true    2        1          tier=canary,region=us-east-1
-stable    dp-stable    true    2        5          tier=production,region=us-east-1
+local     dk-local     true    2        3          tier=local
+canary    dk-canary    true    2        1          tier=canary,region=us-east-1
+stable    dk-stable    true    2        5          tier=production,region=us-east-1
 ```
 
 ```bash
 # List cells in a different cluster
-dp cell list --context arn:aws:eks:us-east-1:...:cluster/dp-prod
+dk cell list --context arn:aws:eks:us-east-1:...:cluster/dk-prod
 ```
 
-### dp cell show
+### dk cell show
 
 Show details of a specific cell.
 
 ```bash
-dp cell show <cell-name> [flags]
+dk cell show <cell-name> [flags]
 ```
 
 #### Flags
@@ -929,12 +929,12 @@ dp cell show <cell-name> [flags]
 #### Example
 
 ```bash
-dp cell show canary
+dk cell show canary
 ```
 
 ```
 Cell: canary
-  Namespace:  dp-canary
+  Namespace:  dk-canary
   Ready:      true
   Stores:     2
   Packages:   1
@@ -948,12 +948,12 @@ Stores:
   dest-bucket    s3          true
 ```
 
-### dp cell stores
+### dk cell stores
 
 List stores in a specific cell.
 
 ```bash
-dp cell stores <cell-name> [flags]
+dk cell stores <cell-name> [flags]
 ```
 
 #### Flags
@@ -965,7 +965,7 @@ dp cell stores <cell-name> [flags]
 #### Example
 
 ```bash
-dp cell stores canary
+dk cell stores canary
 ```
 
 ```
@@ -977,12 +977,12 @@ warehouse      postgres    true    5h
 
 ---
 
-## dp status
+## dk status
 
 Show package status across environments.
 
 ```bash
-dp status [package-name] [flags]
+dk status [package-name] [flags]
 ```
 
 ### Flags
@@ -996,17 +996,17 @@ dp status [package-name] [flags]
 
 ```bash
 # Show status of all packages
-dp status
+dk status
 ```
 
 ```bash
 # Show specific package
-dp status my-pipeline
+dk status my-pipeline
 ```
 
 ```bash
 # Filter by environment
-dp status --env prod
+dk status --env prod
 ```
 
 ### Output
@@ -1024,12 +1024,12 @@ prod         v0.9.0    Synced    6 hours ago
 
 ---
 
-## dp logs
+## dk logs
 
 Stream logs from a running or completed pipeline.
 
 ```bash
-dp logs <run-id> [flags]
+dk logs <run-id> [flags]
 ```
 
 ### Flags
@@ -1045,32 +1045,32 @@ dp logs <run-id> [flags]
 
 ```bash
 # Get logs (follows by default)
-dp logs my-pipeline-20250122-120000
+dk logs my-pipeline-20250122-120000
 ```
 
 ```bash
 # Get last 100 lines without following
-dp logs my-pipeline-20250122-120000 --tail 100 --follow=false
+dk logs my-pipeline-20250122-120000 --tail 100 --follow=false
 ```
 
 ```bash
 # Show logs from last hour
-dp logs my-pipeline-20250122-120000 --since 1h
+dk logs my-pipeline-20250122-120000 --since 1h
 ```
 
 ```bash
 # Show timestamps
-dp logs my-pipeline-20250122-120000 --timestamps
+dk logs my-pipeline-20250122-120000 --timestamps
 ```
 
 ---
 
-## dp rollback
+## dk rollback
 
 Rollback to a previous version.
 
 ```bash
-dp rollback <package-name> [flags]
+dk rollback <package-name> [flags]
 ```
 
 ### Flags
@@ -1085,25 +1085,25 @@ dp rollback <package-name> [flags]
 
 ```bash
 # Rollback to previous version
-dp rollback my-pipeline --env prod
+dk rollback my-pipeline --env prod
 ```
 
 ```bash
 # Rollback to specific version
-dp rollback my-pipeline --to v1.0.0 --env prod
+dk rollback my-pipeline --to v1.0.0 --env prod
 ```
 
 ---
 
-## dp lineage
+## dk lineage
 
 !!! warning "Not Yet Implemented"
-    The `dp lineage` command is planned but not yet available. For now, view lineage through the Marquez UI at http://localhost:3000 when the local dev stack is running (`dp dev up`).
+    The `dk lineage` command is planned but not yet available. For now, view lineage through the Marquez UI at http://localhost:3000 when the local dev stack is running (`dk dev up`).
 
 View data lineage for a package.
 
 ```bash
-dp lineage <package-name> [flags]
+dk lineage <package-name> [flags]
 ```
 
 ### Planned Flags
@@ -1119,12 +1119,12 @@ dp lineage <package-name> [flags]
 
 ```bash
 # View lineage
-dp lineage my-pipeline
+dk lineage my-pipeline
 ```
 
 ```bash
 # Only downstream impact
-dp lineage my-pipeline --upstream=false
+dk lineage my-pipeline --upstream=false
 ```
 
 ### Output
@@ -1144,12 +1144,12 @@ Downstream:
 
 ---
 
-## dp asset create
+## dk asset create
 
 Create a new asset from an extension.
 
 ```bash
-dp asset create <name> --ext <vendor.kind.name> [flags]
+dk asset create <name> --ext <vendor.kind.name> [flags]
 ```
 
 ### Flags
@@ -1165,16 +1165,16 @@ dp asset create <name> --ext <vendor.kind.name> [flags]
 
 ```bash
 # Create a source asset
-dp asset create aws-security --ext cloudquery.source.aws
+dk asset create aws-security --ext cloudquery.source.aws
 
 # Create with a specific version
-dp asset create aws-security --ext cloudquery.source.aws --version v24.0.2
+dk asset create aws-security --ext cloudquery.source.aws --version v24.0.2
 
 # Overwrite an existing asset
-dp asset create aws-security --ext cloudquery.source.aws --force
+dk asset create aws-security --ext cloudquery.source.aws --force
 
 # Interactive mode
-dp asset create aws-security --ext cloudquery.source.aws --interactive
+dk asset create aws-security --ext cloudquery.source.aws --interactive
 ```
 
 ### Output
@@ -1185,18 +1185,18 @@ dp asset create aws-security --ext cloudquery.source.aws --interactive
 Next steps:
   1. Edit assets/sources/aws-security/asset.yaml to configure your asset
   2. Set ownerTeam to your team name
-  3. Run 'dp asset validate' to validate the config
-  4. Add 'aws-security' to the assets section in dp.yaml
+  3. Run 'dk asset validate' to validate the config
+  4. Add 'aws-security' to the assets section in dk.yaml
 ```
 
 ---
 
-## dp asset validate
+## dk asset validate
 
 Validate asset configuration against the extension's JSON Schema.
 
 ```bash
-dp asset validate [path] [flags]
+dk asset validate [path] [flags]
 ```
 
 ### Flags
@@ -1215,13 +1215,13 @@ dp asset validate [path] [flags]
 
 ```bash
 # Validate a single asset
-dp asset validate assets/sources/aws-security/
+dk asset validate assets/sources/aws-security/
 
 # Validate all assets
-dp asset validate
+dk asset validate
 
 # Structural checks only (offline)
-dp asset validate --offline
+dk asset validate --offline
 ```
 
 ### Error Codes
@@ -1237,12 +1237,12 @@ dp asset validate --offline
 
 ---
 
-## dp asset list
+## dk asset list
 
 List all assets in the project.
 
 ```bash
-dp asset list [flags]
+dk asset list [flags]
 ```
 
 ### Flags
@@ -1255,7 +1255,7 @@ dp asset list [flags]
 
 ```bash
 # Table output
-dp asset list
+dk asset list
 ```
 
 ```
@@ -1267,17 +1267,17 @@ raw-output       sink     cloudquery.sink.s3       v1.2.0    data-team
 
 ```bash
 # JSON output
-dp asset list --output json
+dk asset list --output json
 ```
 
 ---
 
-## dp asset show
+## dk asset show
 
 Show details of a specific asset.
 
 ```bash
-dp asset show <name> [flags]
+dk asset show <name> [flags]
 ```
 
 ### Flags
@@ -1290,7 +1290,7 @@ dp asset show <name> [flags]
 
 ```bash
 # YAML output (default)
-dp asset show aws-security
+dk asset show aws-security
 ```
 
 ```yaml
@@ -1312,17 +1312,17 @@ config:
 
 ```bash
 # JSON output
-dp asset show aws-security --output json
+dk asset show aws-security --output json
 ```
 
 ---
 
-## dp pipeline create
+## dk pipeline create
 
 Create a pipeline workflow from a template.
 
 ```bash
-dp pipeline create <name> [flags]
+dk pipeline create <name> [flags]
 ```
 
 ### Flags
@@ -1345,22 +1345,22 @@ dp pipeline create <name> [flags]
 
 ```bash
 # Create with default template
-dp pipeline create my-pipeline
+dk pipeline create my-pipeline
 ```
 
 ```bash
 # Use a specific template
-dp pipeline create my-pipeline --template sync-only
+dk pipeline create my-pipeline --template sync-only
 ```
 
 ```bash
 # Overwrite existing pipeline.yaml
-dp pipeline create my-pipeline --force
+dk pipeline create my-pipeline --force
 ```
 
 ```bash
 # List available templates
-dp pipeline create --list-templates
+dk pipeline create --list-templates
 ```
 
 ### Output
@@ -1369,12 +1369,12 @@ Creates `pipeline.yaml` in the current directory with the selected template.
 
 ---
 
-## dp pipeline run
+## dk pipeline run
 
 Execute the pipeline workflow defined in `pipeline.yaml`.
 
 ```bash
-dp pipeline run [dir] [flags]
+dk pipeline run [dir] [flags]
 ```
 
 ### Flags
@@ -1388,22 +1388,22 @@ dp pipeline run [dir] [flags]
 
 ```bash
 # Run all steps in the current directory
-dp pipeline run
+dk pipeline run
 ```
 
 ```bash
 # Run all steps in a specific directory
-dp pipeline run ./my-pipeline
+dk pipeline run ./my-pipeline
 ```
 
 ```bash
 # Run a single step
-dp pipeline run --step sync-data
+dk pipeline run --step sync-data
 ```
 
 ```bash
 # Pass environment variables
-dp pipeline run --env DEBUG=true --env LOG_LEVEL=info
+dk pipeline run --env DEBUG=true --env LOG_LEVEL=info
 ```
 
 ### Output
@@ -1426,12 +1426,12 @@ Results:
 
 ---
 
-## dp pipeline backfill
+## dk pipeline backfill
 
 Re-execute sync steps for a historical date range. Only sync-type steps are executed; transform, test, publish, and custom steps are skipped.
 
 ```bash
-dp pipeline backfill [dir] [flags]
+dk pipeline backfill [dir] [flags]
 ```
 
 ### Flags
@@ -1446,30 +1446,30 @@ dp pipeline backfill [dir] [flags]
 
 ```bash
 # Backfill January 2026
-dp pipeline backfill --from 2026-01-01 --to 2026-01-31
+dk pipeline backfill --from 2026-01-01 --to 2026-01-31
 ```
 
 ```bash
 # Backfill with extra env vars
-dp pipeline backfill --from 2026-01-01 --to 2026-01-31 --env BATCH_SIZE=1000
+dk pipeline backfill --from 2026-01-01 --to 2026-01-31 --env BATCH_SIZE=1000
 ```
 
 ### Environment Variables Injected
 
 | Variable | Description |
 |----------|-------------|
-| `DP_BACKFILL_FROM` | Start date in YYYY-MM-DD format |
-| `DP_BACKFILL_TO` | End date in YYYY-MM-DD format |
+| `DK_BACKFILL_FROM` | Start date in YYYY-MM-DD format |
+| `DK_BACKFILL_TO` | End date in YYYY-MM-DD format |
 
 ---
 
-## dp pipeline show
+## dk pipeline show
 
 Display the pipeline definition, steps, and schedule — or visualize the
 reactive dependency graph of transforms and assets.
 
 ```bash
-dp pipeline show [dir] [flags]
+dk pipeline show [dir] [flags]
 ```
 
 ### Modes
@@ -1477,7 +1477,7 @@ dp pipeline show [dir] [flags]
 The command operates in two modes:
 
 - **Graph mode**: activated with `--all` or `--destination`. Scans directories for
-  `dp.yaml` files (Transform and Asset manifests) and renders the dependency graph.
+  `dk.yaml` files (Transform and Asset manifests) and renders the dependency graph.
 - **Legacy mode**: activated when neither `--all` nor `--destination` is given. Reads
   a `pipeline.yaml` workflow definition from the current directory.
 
@@ -1488,7 +1488,7 @@ The command operates in two modes:
 | `--output` | `-o` | Output format (see below) | auto |
 | `--all` | | Show full dependency graph (graph mode) | false |
 | `--destination` | | Show dependency chain leading to this asset (graph mode) | |
-| `--scan-dir` | | Directories to scan for dp.yaml files (repeatable) | `.` |
+| `--scan-dir` | | Directories to scan for dk.yaml files (repeatable) | `.` |
 
 **Graph mode output formats:** `text` (default), `mermaid`, `json`, `dot`
 
@@ -1498,31 +1498,31 @@ The command operates in two modes:
 
 ```bash
 # Show full reactive dependency graph (text tree)
-dp pipeline show --all
+dk pipeline show --all
 
 # Show graph leading to a specific destination asset
-dp pipeline show --destination event-summary
+dk pipeline show --destination event-summary
 
 # Render the graph as a Mermaid diagram
-dp pipeline show --all --output mermaid
+dk pipeline show --all --output mermaid
 
 # Render as Graphviz DOT
-dp pipeline show --all --output dot
+dk pipeline show --all --output dot
 
 # JSON adjacency list
-dp pipeline show --all --output json
+dk pipeline show --all --output json
 
 # Scan specific directories
-dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+dk pipeline show --all --scan-dir ./transforms --scan-dir ./assets
 
 # Legacy: table view (default)
-dp pipeline show
+dk pipeline show
 
 # Legacy: JSON output
-dp pipeline show --output json
+dk pipeline show --output json
 
 # Legacy: YAML output
-dp pipeline show --output yaml
+dk pipeline show --output yaml
 ```
 
 ### Output Example (Graph — Text)
@@ -1590,4 +1590,4 @@ Schedule: 0 6 * * * (America/New_York)
 
 - [Configuration Reference](configuration.md) - Configuration file and environment variables
 - [Manifest Schema](manifest-schema.md) - Package manifest reference
-- [Quickstart](../getting-started/quickstart.md) - Get started with dp CLI
+- [Quickstart](../getting-started/quickstart.md) - Get started with dk CLI

@@ -78,9 +78,9 @@ func (r *RegistryAuth) GetCredentials(registry string) (*Credentials, error) {
 // getCredentialsFromEnv gets credentials from environment variables.
 func (r *RegistryAuth) getCredentialsFromEnv(registry string) *Credentials {
 	// Check for registry-specific environment variables
-	// Format: DP_REGISTRY_<HOSTNAME>_USERNAME
-	// or generic: DP_REGISTRY_USERNAME
-	envPrefix := "DP_REGISTRY"
+	// Format: DK_REGISTRY_<HOSTNAME>_USERNAME
+	// or generic: DK_REGISTRY_USERNAME
+	envPrefix := "DK_REGISTRY"
 
 	// Try generic first
 	username := os.Getenv(envPrefix + "_USERNAME")

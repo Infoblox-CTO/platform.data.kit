@@ -79,7 +79,7 @@ func TestArtifact(t *testing.T) {
 				Manifest: &ArtifactManifest{
 					MediaType:     "application/vnd.oci.image.manifest.v1+json",
 					SchemaVersion: 2,
-					ArtifactType:  "application/vnd.dp.package",
+					ArtifactType:  "application/vnd.dk.package",
 				},
 				Layers: []Layer{},
 				Config: nil,
@@ -100,15 +100,15 @@ func TestArtifactManifest(t *testing.T) {
 	manifest := &ArtifactManifest{
 		MediaType:     "application/vnd.oci.image.manifest.v1+json",
 		SchemaVersion: 2,
-		ArtifactType:  "application/vnd.dp.package",
+		ArtifactType:  "application/vnd.dk.package",
 		Config: Descriptor{
-			MediaType: "application/vnd.dp.config+json",
+			MediaType: "application/vnd.dk.config+json",
 			Digest:    "sha256:abc123",
 			Size:      1024,
 		},
 		Layers: []Descriptor{
 			{
-				MediaType: "application/vnd.dp.manifest+tar.gzip",
+				MediaType: "application/vnd.dk.manifest+tar.gzip",
 				Digest:    "sha256:def456",
 				Size:      2048,
 			},
@@ -200,7 +200,7 @@ func TestArtifactConfig(t *testing.T) {
 	config := &ArtifactConfig{
 		BuildInfo: &BuildInfo{
 			Timestamp: "2024-01-01T00:00:00Z",
-			Builder:   "dp-cli-v1.0.0",
+			Builder:   "dk-cli-v1.0.0",
 			GitCommit: "abc123",
 		},
 	}
@@ -216,7 +216,7 @@ func TestArtifactConfig(t *testing.T) {
 func TestBuildInfo(t *testing.T) {
 	info := &BuildInfo{
 		Timestamp: "2024-01-01T00:00:00Z",
-		Builder:   "dp-cli-v1.0.0",
+		Builder:   "dk-cli-v1.0.0",
 		GitCommit: "abc123def456",
 		GitBranch: "main",
 		GitTag:    "v1.0.0",

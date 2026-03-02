@@ -24,9 +24,9 @@ type PackageDeploymentReconciler struct {
 	DeploymentGenerator *DeploymentGenerator
 }
 
-// +kubebuilder:rbac:groups=dp.io,resources=packagedeployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=dp.io,resources=packagedeployments/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=dp.io,resources=packagedeployments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=datakit.infoblox.dev,resources=packagedeployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=datakit.infoblox.dev,resources=packagedeployments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datakit.infoblox.dev,resources=packagedeployments/finalizers,verbs=update
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch

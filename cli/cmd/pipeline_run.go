@@ -29,16 +29,16 @@ Each step's output is prefixed with [step-name] for easy identification.
 
 Examples:
   # Run pipeline in current directory
-  dp pipeline run
+  dk pipeline run
 
   # Run pipeline in a specific directory
-  dp pipeline run ./my-pipeline
+  dk pipeline run ./my-pipeline
 
   # Pass environment variables
-  dp pipeline run --env KEY=VALUE --env OTHER=VAL
+  dk pipeline run --env KEY=VALUE --env OTHER=VAL
 
   # Run a single step
-  dp pipeline run --step sync-data`,
+  dk pipeline run --step sync-data`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipelineRun,
 }

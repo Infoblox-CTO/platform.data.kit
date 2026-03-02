@@ -1,4 +1,4 @@
-// Package cmd contains all CLI commands for dp.
+// Package cmd contains all CLI commands for dk.
 package cmd
 
 import (
@@ -13,12 +13,12 @@ var configScope string
 // configCmd is the parent command for config management.
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "Manage dp configuration",
-	Long: `Manage dp CLI configuration settings.
+	Short: "Manage dk configuration",
+	Long: `Manage dk CLI configuration settings.
 
 Configuration is stored in YAML files at three scopes (highest to lowest precedence):
-  repo:   {git-root}/.dp/config.yaml
-  user:   ~/.config/dp/config.yaml
+  repo:   {git-root}/.dk/config.yaml
+  user:   ~/.config/dk/config.yaml
   system: /etc/datakit/config.yaml
 
 Use subcommands to set, get, unset, and list configuration values.`,
@@ -32,19 +32,19 @@ var configSetCmd = &cobra.Command{
 
 Valid keys:
   dev.runtime                            Runtime type (k3d, compose)
-  dev.workspace                          Path to DP workspace
+  dev.workspace                          Path to DK workspace
   dev.k3d.clusterName                    k3d cluster name
   plugins.registry                       Default OCI registry for plugins
   plugins.overrides.<name>.version       Override version for a plugin
   plugins.overrides.<name>.image         Override image for a plugin`,
 	Example: `  # Set default plugin registry
-  dp config set plugins.registry ghcr.io/myteam
+  dk config set plugins.registry ghcr.io/myteam
 
   # Pin a plugin version
-  dp config set plugins.overrides.postgresql.version v8.13.0
+  dk config set plugins.overrides.postgresql.version v8.13.0
 
   # Set for this project only
-  dp config set plugins.registry internal.registry.io --scope repo`,
+  dk config set plugins.registry internal.registry.io --scope repo`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key, value := args[0], args[1]
@@ -79,8 +79,8 @@ var configGetCmd = &cobra.Command{
 	Long: `Get the effective value of a configuration key.
 
 Shows the resolved value and which scope it comes from (repo, user, system, or built-in).`,
-	Example: `  dp config get plugins.registry
-  dp config get dev.runtime`,
+	Example: `  dk config get plugins.registry
+  dk config get dev.runtime`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key := args[0]
@@ -104,8 +104,8 @@ var configUnsetCmd = &cobra.Command{
 	Use:   "unset <key>",
 	Short: "Remove a configuration value from a scope",
 	Long:  `Remove a configuration value from the specified scope, reverting to the next lower scope's value or the built-in default.`,
-	Example: `  dp config unset plugins.registry
-  dp config unset plugins.overrides.postgresql.version --scope repo`,
+	Example: `  dk config unset plugins.registry
+  dk config unset plugins.overrides.postgresql.version --scope repo`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key := args[0]
@@ -134,8 +134,8 @@ var configListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all effective configuration settings",
 	Long:  `List all configuration settings showing the effective value and source scope for each key.`,
-	Example: `  dp config list
-  dp config list --scope repo`,
+	Example: `  dk config list
+  dk config list --scope repo`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		formatter := GetFormatter()
 
@@ -242,8 +242,8 @@ var configAddMirrorCmd = &cobra.Command{
 	Use:   "add-mirror <registry>",
 	Short: "Add a fallback registry mirror",
 	Long:  `Add a fallback registry mirror that is tried when the primary registry is unreachable.`,
-	Example: `  dp config add-mirror ghcr.io/backup-org
-  dp config add-mirror internal.registry.io --scope repo`,
+	Example: `  dk config add-mirror ghcr.io/backup-org
+  dk config add-mirror internal.registry.io --scope repo`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		registry := args[0]
@@ -281,8 +281,8 @@ var configRemoveMirrorCmd = &cobra.Command{
 	Use:   "remove-mirror <registry>",
 	Short: "Remove a fallback registry mirror",
 	Long:  `Remove a fallback registry mirror from the specified scope.`,
-	Example: `  dp config remove-mirror ghcr.io/backup-org
-  dp config remove-mirror internal.registry.io --scope repo`,
+	Example: `  dk config remove-mirror ghcr.io/backup-org
+  dk config remove-mirror internal.registry.io --scope repo`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		registry := args[0]

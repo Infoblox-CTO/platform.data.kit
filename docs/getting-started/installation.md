@@ -1,11 +1,11 @@
 ---
 title: Installation
-description: Install the DP CLI on macOS and Linux
+description: Install the DK CLI on macOS and Linux
 ---
 
 # Installation
 
-This guide covers how to install the `dp` CLI on your machine.
+This guide covers how to install the `dk` CLI on your machine.
 
 ## Quick Install
 
@@ -21,13 +21,13 @@ cd data-platform
 # Build the CLI
 make build
 
-# The binary is created in bin/dp
-./bin/dp version
+# The binary is created in bin/dk
+./bin/dk version
 ```
 
 ### Add to PATH
 
-Add the `dp` binary to your PATH for easy access:
+Add the `dk` binary to your PATH for easy access:
 
 === "Temporary (current session)"
 
@@ -54,13 +54,13 @@ Add the `dp` binary to your PATH for easy access:
 Confirm the CLI is installed correctly:
 
 ```bash
-dp version
+dk version
 ```
 
 Expected output:
 
 ```
-dp version v0.1.0
+dk version v0.1.0
   commit: abc1234
   built:  2025-01-22T10:00:00Z
   go:     go1.22.0
@@ -74,20 +74,20 @@ Enable tab completion for your shell:
 
     ```bash
     # Add to ~/.bashrc
-    source <(dp completion bash)
+    source <(dk completion bash)
     ```
 
 === "Zsh"
 
     ```bash
     # Add to ~/.zshrc
-    source <(dp completion zsh)
+    source <(dk completion zsh)
     ```
 
 === "Fish"
 
     ```bash
-    dp completion fish | source
+    dk completion fish | source
     ```
 
 ## Configuration
@@ -98,21 +98,21 @@ The CLI uses sensible defaults, but you can customize behavior with environment 
 
 ```bash
 # Set default output format
-export DP_OUTPUT_FORMAT=json
+export DK_OUTPUT_FORMAT=json
 
 # Set log level
-export DP_LOG_LEVEL=debug
+export DK_LOG_LEVEL=debug
 
 # Set default registry
-export DP_REGISTRY=ghcr.io/my-org
+export DK_REGISTRY=ghcr.io/my-org
 ```
 
 ### Configuration File (Optional)
 
-Create a configuration file at `~/.dp/config.yaml`:
+Create a configuration file at `~/.dk/config.yaml`:
 
 ```yaml
-# ~/.dp/config.yaml
+# ~/.dk/config.yaml
 registry: ghcr.io/my-org
 namespace: my-team
 output: table
@@ -123,11 +123,11 @@ log_level: info
 
 ### Command Not Found
 
-If you get `command not found: dp`:
+If you get `command not found: dk`:
 
-1. Verify the binary exists: `ls -la bin/dp`
+1. Verify the binary exists: `ls -la bin/dk`
 2. Check your PATH: `echo $PATH`
-3. Ensure the binary is executable: `chmod +x bin/dp`
+3. Ensure the binary is executable: `chmod +x bin/dk`
 
 ### Build Errors
 
@@ -143,10 +143,10 @@ If you get permission errors:
 
 ```bash
 # Make the binary executable
-chmod +x bin/dp
+chmod +x bin/dk
 
 # Or run with explicit path
-./bin/dp version
+./bin/dk version
 ```
 
 ## Upgrading
@@ -163,19 +163,19 @@ git pull origin main
 make build
 
 # Verify new version
-dp version
+dk version
 ```
 
 ## Uninstalling
 
-To remove the DP CLI:
+To remove the DK CLI:
 
 ```bash
 # Remove the binary
-rm /path/to/data-platform/bin/dp
+rm /path/to/data-platform/bin/dk
 
 # Remove configuration (optional)
-rm -rf ~/.dp
+rm -rf ~/.dk
 
 # Remove from PATH (edit ~/.bashrc or ~/.zshrc)
 ```

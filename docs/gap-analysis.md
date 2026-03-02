@@ -22,7 +22,7 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 2. **Three kinds, nothing else.** The only valid manifest kinds are `Source`, `Destination`, and `Model`. There is no `DataPackage` kind. There is no `Pipeline` kind. Code that checks for or accepts these old kinds must be deleted.
 
-3. **`runtime` is always a string.** The `runtime` field in `dp.yaml` is a plain string (`cloudquery`, `generic-go`, `generic-python`, `dbt`). The legacy `RuntimeSpec` object form is dead. Custom `UnmarshalYAML` dual-format handling must be removed.
+3. **`runtime` is always a string.** The `runtime` field in `dk.yaml` is a plain string (`cloudquery`, `generic-go`, `generic-python`, `dbt`). The legacy `RuntimeSpec` object form is dead. Custom `UnmarshalYAML` dual-format handling must be removed.
 
 4. **Delete, don't deprecate.** When replacing a concept, delete the old code entirely. Do not add `// Deprecated` comments, hidden flags, type aliases, or translation layers. If something is replaced, it is gone.
 
@@ -49,12 +49,12 @@ These principles govern all implementation decisions for the revised taxonomy. T
 | Delete `PackageType` | ✅ | `PackageType` and all `spec.type` references deleted from `contracts/types.go` and all CLI/SDK code |
 | Delete `KindDataPackage` constant | ✅ | Removed from `contracts/types.go`. `Kind.IsValid()` only accepts Source/Destination/Model |
 | Delete `PipelineMode` alias | ✅ | `PipelineMode` alias and `PipelineModeBatch`/`PipelineModeStreaming` constants removed from `contracts/types.go` |
-| Delete legacy JSON schemas | ✅ | `dp-manifest.schema.json` and `pipeline-manifest.schema.json` deleted |
+| Delete legacy JSON schemas | ✅ | `dk-manifest.schema.json` and `pipeline-manifest.schema.json` deleted |
 | New JSON schemas for Source/Destination/Model | ❌ | No JSON schemas exist for the new taxonomy kinds. Need `source.schema.json`, `destination.schema.json`, `model.schema.json` |
 
 ---
 
-## 2. CLI — `dp init`
+## 2. CLI — `dk init`
 
 | Item | Status | Details |
 |------|--------|---------|
@@ -65,12 +65,12 @@ These principles govern all implementation decisions for the revised taxonomy. T
 | Template directories for Source | ⚠️ | `source/cloudquery/` ✅, `source/generic-go/` ✅, **`source/generic-python/` ❌** |
 | Template directories for Destination | ⚠️ | `destination/cloudquery/` ✅, `destination/generic-go/` ✅, **`destination/generic-python/` ❌** |
 | Template directories for Model | ✅ | `model/cloudquery/` ✅, `model/generic-go/` ✅, `model/generic-python/` ✅, `model/dbt/` ✅ |
-| Delete legacy root `dp.yaml.tmpl` | ❌ | Still present at templates root |
+| Delete legacy root `dk.yaml.tmpl` | ❌ | Still present at templates root |
 | Delete legacy `cloudquery/` template dir | ❌ | Still present alongside new kind-based dirs |
 
 ---
 
-## 3. CLI — `dp lint` / Validation
+## 3. CLI — `dk lint` / Validation
 
 | Item | Status | Details |
 |------|--------|---------|
@@ -94,7 +94,7 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 ---
 
-## 4. CLI — `dp build`
+## 4. CLI — `dk build`
 
 | Item | Status | Details |
 |------|--------|---------|
@@ -106,7 +106,7 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 ---
 
-## 5. CLI — `dp run`
+## 5. CLI — `dk run`
 
 | Item | Status | Details |
 |------|--------|---------|
@@ -119,7 +119,7 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 ---
 
-## 6. CLI — `dp show`
+## 6. CLI — `dk show`
 
 | Item | Status | Details |
 |------|--------|---------|
@@ -132,10 +132,10 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 | Item | Status | Details |
 |------|--------|---------|
-| `dp publish` command | ❌ | Exists but says "Push not implemented yet" |
+| `dk publish` command | ❌ | Exists but says "Push not implemented yet" |
 | Extension registry for Source/Destination | ❌ | No mechanism to publish extensions separately from data packages |
 | ExtensionRef resolution at runtime | ❌ | `ExtensionRef` struct exists but nothing resolves it |
-| Extension discovery / search | ❌ | No `dp extension list` or `dp extension search` |
+| Extension discovery / search | ❌ | No `dk extension list` or `dk extension search` |
 
 ---
 
@@ -202,20 +202,20 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 1. ✅ **Delete `DataPackage` struct and all references** — `contracts/datapackage.go` deleted (`DataPackage`, `DataPackageSpec`, `RuntimeSpec`, `UnmarshalYAML`). `KindDataPackage`, `PackageType`, `PipelineMode` alias all removed. `contracts/pipeline.go` renamed to `contracts/shared.go` (shared types preserved).
 2. ✅ **Delete legacy code paths in CLI** — `spec.type` checks deleted from `build.go` and `run.go`. `--type`/`--language`/`--role` flags deleted from `init.go`. `datapackage` compat shim deleted. `ParseDataPackage()`/`ParsePipeline()` deleted from SDK. `root.go` example text fixed.
-3. ✅ **Delete legacy templates and schemas** — root `dp.yaml.tmpl` deleted, `cloudquery/` template dir deleted, `dp-manifest.schema.json` and `pipeline-manifest.schema.json` deleted.
+3. ✅ **Delete legacy templates and schemas** — root `dk.yaml.tmpl` deleted, `cloudquery/` template dir deleted, `dk-manifest.schema.json` and `pipeline-manifest.schema.json` deleted.
 4. ✅ **Rewrite all tests** — all unit tests purged of `DataPackage`, `--type pipeline`, `spec.type`, legacy fixtures. CLI testdata updated. SDK testdata updated. E2E tests still need rewrite (separate P1 item).
 5. ✅ **Fix error messages/comments** — `contracts/errors.go` comments and message templates updated from legacy `PipelineManifest`/`RuntimeSpec`/`PackageType` references.
 
 ### P1 — New Taxonomy Implementation (core functionality)
 
 6. **Kind-specific validators** — `validateSource()`, `validateDestination()`, `validateModel()` exist but missing E102/E103/E208/E209 rules.
-7. **Kind-aware `dp build`** — Legacy removed, Kind detected. No kind-specific build routing yet.
-8. **Kind-aware `dp run`** — Legacy removed, Mode read correctly. No kind-specific run dispatch yet.
+7. **Kind-aware `dk build`** — Legacy removed, Kind detected. No kind-specific build routing yet.
+8. **Kind-aware `dk run`** — Legacy removed, Mode read correctly. No kind-specific run dispatch yet.
 9. **Test coverage** — Unit tests exist for types, parsers, validators, templates. E2E tests need rewrite.
 
 ### P2 — Feature Completion
 
-10. **Extension Registry** — `dp publish`, ExtensionRef resolution, extension discovery.
+10. **Extension Registry** — `dk publish`, ExtensionRef resolution, extension discovery.
 11. Missing templates — `source/generic-python/`, `destination/generic-python/`.
 12. New JSON schemas — `source.schema.json`, `destination.schema.json`, `model.schema.json`.
 13. Classification *required* on all outputs.
@@ -224,4 +224,4 @@ These principles govern all implementation decisions for the revised taxonomy. T
 
 14. Lineage auto-derivation from extension contracts.
 15. Docs rewrite around two personas.
-16. `dp show` enrichment with ExtensionRef/configSchema display.
+16. `dk show` enrichment with ExtensionRef/configSchema display.

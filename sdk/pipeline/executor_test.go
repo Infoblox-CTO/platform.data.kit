@@ -500,11 +500,11 @@ func TestBuildStepArgs_SyncStep(t *testing.T) {
 	}
 
 	argsStr := strings.Join(args, " ")
-	if !strings.Contains(argsStr, "DP_INPUT=aws-source") {
-		t.Errorf("expected DP_INPUT, got %q", argsStr)
+	if !strings.Contains(argsStr, "DK_INPUT=aws-source") {
+		t.Errorf("expected DK_INPUT, got %q", argsStr)
 	}
-	if !strings.Contains(argsStr, "DP_OUTPUT=postgres-sink") {
-		t.Errorf("expected DP_OUTPUT, got %q", argsStr)
+	if !strings.Contains(argsStr, "DK_OUTPUT=postgres-sink") {
+		t.Errorf("expected DK_OUTPUT, got %q", argsStr)
 	}
 }
 

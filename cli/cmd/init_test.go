@@ -182,22 +182,22 @@ func TestInitCmd_TransformCloudQuery(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	content, err := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
+	content, err := os.ReadFile(filepath.Join(pkgDir, "dk.yaml"))
 	if err != nil {
-		t.Fatalf("dp.yaml not created: %v", err)
+		t.Fatalf("dk.yaml not created: %v", err)
 	}
 	dpStr := string(content)
 	if !strings.Contains(dpStr, "kind: Transform") {
-		t.Error("dp.yaml should contain 'kind: Transform'")
+		t.Error("dk.yaml should contain 'kind: Transform'")
 	}
 	if !strings.Contains(dpStr, "runtime: cloudquery") {
-		t.Error("dp.yaml should contain 'runtime: cloudquery'")
+		t.Error("dk.yaml should contain 'runtime: cloudquery'")
 	}
 	if !strings.Contains(dpStr, "mode: batch") {
-		t.Error("dp.yaml should contain 'mode: batch'")
+		t.Error("dk.yaml should contain 'mode: batch'")
 	}
 
-	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dp run.
+	// config.yaml should NOT be scaffolded — it is auto-generated at runtime by dk run.
 	configPath := filepath.Join(pkgDir, "config.yaml")
 	if _, err := os.Stat(configPath); err == nil {
 		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
@@ -212,13 +212,13 @@ func TestInitCmd_TransformDBT(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
+	content, _ := os.ReadFile(filepath.Join(pkgDir, "dk.yaml"))
 	dpStr := string(content)
 	if !strings.Contains(dpStr, "kind: Transform") {
-		t.Error("dp.yaml should contain 'kind: Transform'")
+		t.Error("dk.yaml should contain 'kind: Transform'")
 	}
 	if !strings.Contains(dpStr, "runtime: dbt") {
-		t.Error("dp.yaml should contain 'runtime: dbt'")
+		t.Error("dk.yaml should contain 'runtime: dbt'")
 	}
 
 	for _, f := range []string{"dbt_project.yml", "profiles.yml", "models/example.sql"} {
@@ -236,13 +236,13 @@ func TestInitCmd_TransformGenericPython(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
+	content, _ := os.ReadFile(filepath.Join(pkgDir, "dk.yaml"))
 	dpStr := string(content)
 	if !strings.Contains(dpStr, "kind: Transform") {
-		t.Error("dp.yaml should contain 'kind: Transform'")
+		t.Error("dk.yaml should contain 'kind: Transform'")
 	}
 	if !strings.Contains(dpStr, "mode: streaming") {
-		t.Error("dp.yaml should contain 'mode: streaming'")
+		t.Error("dk.yaml should contain 'mode: streaming'")
 	}
 
 	for _, f := range []string{"main.py", "requirements.txt"} {
@@ -260,7 +260,7 @@ func TestInitCmd_TransformGenericGo(t *testing.T) {
 		t.Fatalf("runInit() error = %v", err)
 	}
 
-	for _, f := range []string{"dp.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
+	for _, f := range []string{"dk.yaml", "go.mod", "main.go", "cmd/root.go", ".gitignore", ".dockerignore"} {
 		if _, err := os.Stat(filepath.Join(pkgDir, f)); os.IsNotExist(err) {
 			t.Errorf("expected file %q was not created", f)
 		}
@@ -322,9 +322,9 @@ func TestInitCmd_DefaultKindIsTransform(t *testing.T) {
 	if err != nil {
 		t.Fatalf("runInit() error = %v", err)
 	}
-	content, _ := os.ReadFile(filepath.Join(pkgDir, "dp.yaml"))
+	content, _ := os.ReadFile(filepath.Join(pkgDir, "dk.yaml"))
 	if !strings.Contains(string(content), "kind: Transform") {
-		t.Error("dp.yaml should contain 'kind: Transform'")
+		t.Error("dk.yaml should contain 'kind: Transform'")
 	}
 }
 
@@ -356,9 +356,9 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 		return
 	}
 
-	dpPath := filepath.Join(pkgDir, "dp.yaml")
+	dpPath := filepath.Join(pkgDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		t.Error("dp.yaml was not created in current directory")
+		t.Error("dk.yaml was not created in current directory")
 	}
 }
 

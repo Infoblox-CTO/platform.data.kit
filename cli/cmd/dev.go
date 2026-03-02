@@ -21,7 +21,7 @@ var (
 var devCmd = &cobra.Command{
 	Use:   "dev",
 	Short: "Manage local development environment",
-	Long: `Manage the local development environment for DP.
+	Long: `Manage the local development environment for DK.
 
 The dev command provides subcommands to start, stop, and monitor the
 local development stack which includes:
@@ -32,13 +32,13 @@ local development stack which includes:
 
 Examples:
   # Start the local development stack
-  dp dev up
+  dk dev up
 
   # Check status of running services
-  dp dev status
+  dk dev status
 
   # Stop the stack and remove volumes
-  dp dev down --volumes`,
+  dk dev down --volumes`,
 }
 
 // devUpCmd starts the local development stack
@@ -57,9 +57,9 @@ Each chart includes init jobs that automatically create topics, buckets,
 database schemas, and lineage namespaces. The command waits for all
 services to become healthy before returning.
 
-Chart versions and Helm values can be overridden via dp config:
-  dp config set dev.charts.redpanda.version 25.2.0
-  dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi`,
+Chart versions and Helm values can be overridden via dk config:
+  dk config set dev.charts.redpanda.version 25.2.0
+  dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi`,
 	RunE: runDevUp,
 }
 
@@ -92,10 +92,10 @@ func init() {
 	devDownCmd.Flags().BoolVar(&devRemoveVolumes, "volumes", false, "Remove data volumes when stopping")
 }
 
-// getWorkspacePath returns the DP workspace path from environment or config.
+// getWorkspacePath returns the DK workspace path from environment or config.
 func getWorkspacePath() string {
-	// Check DP_WORKSPACE_PATH environment variable first
-	if envPath := os.Getenv("DP_WORKSPACE_PATH"); envPath != "" {
+	// Check DK_WORKSPACE_PATH environment variable first
+	if envPath := os.Getenv("DK_WORKSPACE_PATH"); envPath != "" {
 		return envPath
 	}
 
@@ -135,7 +135,7 @@ func getRuntime() (localdev.RuntimeType, error) {
 func getRuntimeManager(runtime localdev.RuntimeType) (localdev.RuntimeManager, error) {
 	switch runtime {
 	case localdev.RuntimeK3d:
-		k3dManager, err := localdev.NewK3dManager("dp-local")
+		k3dManager, err := localdev.NewK3dManager("dk-local")
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +198,7 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 		if err := formatter.Format(os.Stdout, data); err != nil {
 			return err
 		}
-		fmt.Println("\nUse 'dp dev down' to stop the stack")
+		fmt.Println("\nUse 'dk dev down' to stop the stack")
 		return nil
 	}
 
@@ -220,7 +220,7 @@ func runDevUp(cmd *cobra.Command, args []string) error {
 	// Wait for healthy with timeout
 	if err := manager.WaitForHealthy(ctx, 2*time.Minute); err != nil {
 		fmt.Println("Warning: Some services may not be fully healthy yet")
-		fmt.Println("Use 'dp dev status' to check service status")
+		fmt.Println("Use 'dk dev status' to check service status")
 	}
 
 	// Show status
@@ -299,7 +299,7 @@ func runDevStatus(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		// Not an error for status - just means stack isn't set up
 		fmt.Println("Local development stack is not configured")
-		fmt.Println("Run 'dp dev up' to start the stack")
+		fmt.Println("Run 'dk dev up' to start the stack")
 		return nil
 	}
 
@@ -311,7 +311,7 @@ func runDevStatus(cmd *cobra.Command, args []string) error {
 
 	if !status.Running || len(status.Services) == 0 {
 		fmt.Println("Local development stack is not running")
-		fmt.Println("Run 'dp dev up' to start the stack")
+		fmt.Println("Run 'dk dev up' to start the stack")
 		return nil
 	}
 

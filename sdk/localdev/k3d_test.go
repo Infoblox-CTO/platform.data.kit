@@ -16,7 +16,7 @@ func TestNewK3dManager(t *testing.T) {
 		{
 			name:        "default cluster name",
 			clusterName: "",
-			expectName:  "dp-local",
+			expectName:  "dk-local",
 		},
 		{
 			name:        "custom cluster name",
@@ -101,14 +101,14 @@ func TestGetPortsForService(t *testing.T) {
 }
 
 func TestDefaultClusterName(t *testing.T) {
-	if DefaultClusterName != "dp-local" {
-		t.Errorf("DefaultClusterName = %q, want %q", DefaultClusterName, "dp-local")
+	if DefaultClusterName != "dk-local" {
+		t.Errorf("DefaultClusterName = %q, want %q", DefaultClusterName, "dk-local")
 	}
 }
 
 func TestDefaultNamespace(t *testing.T) {
-	if DefaultNamespace != "dp-local" {
-		t.Errorf("DefaultNamespace = %q, want %q", DefaultNamespace, "dp-local")
+	if DefaultNamespace != "dk-local" {
+		t.Errorf("DefaultNamespace = %q, want %q", DefaultNamespace, "dk-local")
 	}
 }
 
@@ -125,8 +125,8 @@ func TestK3dManager_StructFields(t *testing.T) {
 		t.Errorf("clusterName = %q, want %q", manager.clusterName, "test-cluster")
 	}
 
-	if manager.namespace != "dp-local" {
-		t.Errorf("namespace = %q, want %q", manager.namespace, "dp-local")
+	if manager.namespace != "dk-local" {
+		t.Errorf("namespace = %q, want %q", manager.namespace, "dk-local")
 	}
 
 	if manager.kubeContext != "k3d-test-cluster" {

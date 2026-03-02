@@ -1,11 +1,11 @@
 ---
 title: Architecture Overview
-description: High-level architecture of the Data Platform
+description: High-level architecture of DataKit
 ---
 
 # Architecture Overview
 
-The Data Platform provides a comprehensive system for building, publishing, and operating data pipelines with built-in governance, lineage tracking, and GitOps deployment.
+DataKit provides a comprehensive system for building, publishing, and operating data pipelines with built-in governance, lineage tracking, and GitOps deployment.
 
 ## System Architecture
 
@@ -15,7 +15,7 @@ The Data Platform provides a comprehensive system for building, publishing, and 
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────────────┐ │
-│   │   dp     │───▶│   dp     │───▶│   dp     │───▶│       dp promote     │ │
+│   │   dk     │───▶│   dk     │───▶│   dk     │───▶│       dk promote     │ │
 │   │   init   │    │   dev    │    │  build   │    │  (GitOps PR/Deploy)  │ │
 │   └──────────┘    └──────────┘    └──────────┘    └──────────────────────┘ │
 │        │               │               │                     │              │
@@ -30,7 +30,7 @@ The Data Platform provides a comprehensive system for building, publishing, and 
 
 ## Core Components
 
-### 1. DP CLI
+### 1. DK CLI
 
 The command-line interface is the primary interaction point for developers:
 
@@ -48,11 +48,11 @@ A data package is a self-contained unit containing:
 
 ```
 my-package/
-├── dp.yaml          # Transform manifest (metadata, runtime, inputs, outputs)
+├── dk.yaml          # Transform manifest (metadata, runtime, inputs, outputs)
 └── src/             # Implementation code
 ```
 
-The `dp.yaml` manifest consolidates all configuration in a single file, including runtime, inputs, and outputs.
+The `dk.yaml` manifest consolidates all configuration in a single file, including runtime, inputs, and outputs.
 
 !!! info "Learn More"
     See [Data Packages](data-packages.md) for detailed structure and fields.
@@ -82,7 +82,7 @@ Data packages are published as OCI artifacts to container registries:
 Environment promotion uses GitOps principles:
 
 ```
-dp promote my-package v1.0.0 --to dev
+dk promote my-package v1.0.0 --to dev
            │
            ▼
 ┌──────────────────────────────────────────────────────┐
@@ -100,7 +100,7 @@ dp promote my-package v1.0.0 --to dev
 ### Development Flow
 
 ```
-Developer → dp init → Local files → dp dev → Local stack → dp run → Results
+Developer → dk init → Local files → dk dev → Local stack → dk run → Results
                                       │
                                       ▼
                               Marquez (lineage)
@@ -109,7 +109,7 @@ Developer → dp init → Local files → dp dev → Local stack → dp run → 
 ### Production Flow
 
 ```
-dp build → OCI Registry → dp promote → GitOps PR → ArgoCD → Kubernetes
+dk build → OCI Registry → dk promote → GitOps PR → ArgoCD → Kubernetes
                                           │
                                           ▼
                                   Marquez (production lineage)
@@ -138,7 +138,7 @@ metadata:
 spec:
   connector: postgres
   connection:
-    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
     database: dataplatform
   secrets:

@@ -175,7 +175,7 @@ go test -short ./...
 ```
 
 E2E tests:
-- Use the real `dp` CLI binary
+- Use the real `dk` CLI binary
 - Run in isolated temp directories
 - Clean up after themselves
 - Skip automatically if Docker is unavailable
@@ -283,19 +283,19 @@ Switch between profiles to run the same pipeline against different data:
 
 ```bash
 # Reset to default data
-dp dev seed
+dk dev seed
 
 # Run with edge-case data
-dp dev seed --profile edge-cases
-dp run
+dk dev seed --profile edge-cases
+dk run
 
 # Run with a large data set
-dp dev seed --profile large
-dp run
+dk dev seed --profile large
+dk run
 
 # Test with an empty table
-dp dev seed --profile empty --clean
-dp run
+dk dev seed --profile empty --clean
+dk run
 ```
 
 ### Idempotency

@@ -9,7 +9,7 @@ import (
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 )
 
-// ManifestValidator validates dp.yaml manifests for all supported kinds
+// ManifestValidator validates dk.yaml manifests for all supported kinds
 // (Connector, Store, Asset, AssetGroup, Transform).
 type ManifestValidator struct {
 	manifest manifest.Manifest
@@ -23,7 +23,7 @@ type ManifestValidator struct {
 	rawTransform  *contracts.Transform
 }
 
-// NewManifestValidatorFromFile creates a validator from a dp.yaml file.
+// NewManifestValidatorFromFile creates a validator from a dk.yaml file.
 func NewManifestValidatorFromFile(path string) (*ManifestValidator, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

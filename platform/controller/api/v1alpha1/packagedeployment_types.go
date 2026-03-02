@@ -1,4 +1,4 @@
-// Package v1alpha1 contains API Schema definitions for the dp v1alpha1 API group.
+// Package v1alpha1 contains API Schema definitions for the dk v1alpha1 API group.
 package v1alpha1
 
 import (

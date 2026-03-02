@@ -85,7 +85,7 @@ type SeedSpec struct {
 	// Profiles defines named alternative seed data sets. Each profile can
 	// supply its own inline rows or file, enabling different test scenarios
 	// (e.g., "large-dataset", "edge-cases", "empty").
-	// Use `dp dev seed --profile <name>` to activate a specific profile.
+	// Use `dk dev seed --profile <name>` to activate a specific profile.
 	Profiles map[string]*SeedProfileSpec `json:"profiles,omitempty" yaml:"profiles,omitempty"`
 }
 
@@ -201,14 +201,14 @@ func (ag *AssetGroupManifest) GetOwner() string { return "" }
 
 const (
 	// MediaTypeDPTransform is the OCI media type for Transform manifest layers.
-	MediaTypeDPTransform = "application/vnd.dp.transform.v1+yaml"
+	MediaTypeDPTransform = "application/vnd.dk.transform.v1+yaml"
 
 	// MediaTypeDPAsset is the OCI media type for Asset manifest layers.
-	MediaTypeDPAsset = "application/vnd.dp.asset.v1+yaml"
+	MediaTypeDPAsset = "application/vnd.dk.asset.v1+yaml"
 
 	// MediaTypeDPConnector is the OCI media type for Connector manifest layers.
-	MediaTypeDPConnector = "application/vnd.dp.connector.v1+yaml"
+	MediaTypeDPConnector = "application/vnd.dk.connector.v1+yaml"
 
 	// MediaTypeDPStore is the OCI media type for Store manifest layers.
-	MediaTypeDPStore = "application/vnd.dp.store.v1+yaml"
+	MediaTypeDPStore = "application/vnd.dk.store.v1+yaml"
 )

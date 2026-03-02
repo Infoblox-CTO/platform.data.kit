@@ -9,10 +9,10 @@ func TestCellResolver_CellNamespace(t *testing.T) {
 		cellName string
 		want     string
 	}{
-		{"canary", "dp-canary"},
-		{"stable", "dp-stable"},
-		{"dev-dgarcia", "dp-dev-dgarcia"},
-		{"local", "dp-local"},
+		{"canary", "dk-canary"},
+		{"stable", "dk-stable"},
+		{"dev-dgarcia", "dk-dev-dgarcia"},
+		{"local", "dk-local"},
 	}
 	for _, tt := range tests {
 		r := NewCellResolver(tt.cellName, "", nil)
@@ -24,11 +24,11 @@ func TestCellResolver_CellNamespace(t *testing.T) {
 
 func TestParseStoreFromJSON(t *testing.T) {
 	input := `{
-		"apiVersion": "dp.io/v1alpha1",
+		"apiVersion": "datakit.infoblox.dev/v1alpha1",
 		"kind": "Store",
 		"metadata": {
 			"name": "warehouse",
-			"namespace": "dp-canary"
+			"namespace": "dk-canary"
 		},
 		"spec": {
 			"connector": "postgres",
@@ -49,8 +49,8 @@ func TestParseStoreFromJSON(t *testing.T) {
 	if store.Metadata.Name != "warehouse" {
 		t.Errorf("Name = %q, want %q", store.Metadata.Name, "warehouse")
 	}
-	if store.Metadata.Namespace != "dp-canary" {
-		t.Errorf("Namespace = %q, want %q", store.Metadata.Namespace, "dp-canary")
+	if store.Metadata.Namespace != "dk-canary" {
+		t.Errorf("Namespace = %q, want %q", store.Metadata.Namespace, "dk-canary")
 	}
 	if store.Spec.Connector != "postgres" {
 		t.Errorf("Connector = %q, want %q", store.Spec.Connector, "postgres")
@@ -73,16 +73,16 @@ func TestParseStoreListFromJSON(t *testing.T) {
 		"kind": "List",
 		"items": [
 			{
-				"apiVersion": "dp.io/v1alpha1",
+				"apiVersion": "datakit.infoblox.dev/v1alpha1",
 				"kind": "Store",
-				"metadata": {"name": "warehouse", "namespace": "dp-canary"},
+				"metadata": {"name": "warehouse", "namespace": "dk-canary"},
 				"spec": {"connector": "postgres", "connection": {"connection_string": "pg://localhost:5432/db"}}
 			},
 			{
-				"apiVersion": "dp.io/v1alpha1",
+				"apiVersion": "datakit.infoblox.dev/v1alpha1",
 				"kind": "Store",
-				"metadata": {"name": "lake-raw", "namespace": "dp-canary"},
-				"spec": {"connector": "s3", "connection": {"bucket": "dp-canary-raw"}}
+				"metadata": {"name": "lake-raw", "namespace": "dk-canary"},
+				"spec": {"connector": "s3", "connection": {"bucket": "dk-canary-raw"}}
 			}
 		]
 	}`

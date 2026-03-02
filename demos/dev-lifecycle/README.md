@@ -4,22 +4,22 @@ A scripted walkthrough of the local development lifecycle: **dev up → status �
 
 ## What It Shows
 
-1. Starting the local development stack with `dp dev up`
-2. Checking service status with `dp dev status`
-3. Tearing down the stack with `dp dev down`
+1. Starting the local development stack with `dk dev up`
+2. Checking service status with `dk dev status`
+3. Tearing down the stack with `dk dev down`
 
 ## Prerequisites
 
-- **dp binary**: Build with `make build` from the repository root
-- **k3d cluster**: A running k3d cluster named `dp-local`
-- **DP_E2E_DEV=1**: Set this environment variable to enable infrastructure demos
+- **dk binary**: Build with `make build` from the repository root
+- **k3d cluster**: A running k3d cluster named `dk-local`
+- **DK_E2E_DEV=1**: Set this environment variable to enable infrastructure demos
 
 ## How to Run
 
 ```bash
 # From the repository root
 make build
-export DP_E2E_DEV=1
+export DK_E2E_DEV=1
 ./demos/run_demo.sh demos/dev-lifecycle/demo.txt
 ```
 
@@ -41,7 +41,7 @@ To record this demo as a `.cast` file for sharing or embedding:
 # macOS: Terminal → Window → Columns: 120, Rows: 30
 
 # Record the demo (requires running k3d cluster)
-export DP_E2E_DEV=1
+export DK_E2E_DEV=1
 asciinema rec demos/dev-lifecycle/recordings/dev-lifecycle.cast \
   -c "./demos/run_demo.sh demos/dev-lifecycle/demo.txt" \
   --overwrite \

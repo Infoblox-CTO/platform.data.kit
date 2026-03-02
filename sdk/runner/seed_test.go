@@ -2,6 +2,7 @@ package runner
 
 import (
 	"testing"
+	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 )
@@ -28,7 +29,7 @@ func TestGenerateSeedSQL_Basic(t *testing.T) {
 		"CREATE TABLE IF NOT EXISTS example_table",
 		"id INTEGER",
 		"name TEXT",
-		"created_at TIMESTAMP",
+		"created_at TIMESTAMPTZ",
 		"TRUNCATE TABLE example_table",
 		"INSERT INTO example_table",
 		"'alice'",
@@ -123,8 +124,8 @@ func TestSchemaTypeToSQL(t *testing.T) {
 		{"double", "DOUBLE PRECISION"},
 		{"boolean", "BOOLEAN"},
 		{"bool", "BOOLEAN"},
-		{"timestamp", "TIMESTAMP"},
-		{"datetime", "TIMESTAMP"},
+		{"timestamp", "TIMESTAMPTZ"},
+		{"datetime", "TIMESTAMPTZ"},
 		{"date", "DATE"},
 		{"string", "TEXT"},
 		{"text", "TEXT"},
@@ -268,6 +269,8 @@ func TestSqlLiteral(t *testing.T) {
 		{false, "FALSE"},
 		{"hello", "'hello'"},
 		{"it's", "'it''s'"},
+		{time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), "'2026-01-01T00:00:00Z'"},
+		{time.Date(2026, 3, 15, 14, 30, 0, 0, time.UTC), "'2026-03-15T14:30:00Z'"},
 	}
 
 	for _, tt := range tests {

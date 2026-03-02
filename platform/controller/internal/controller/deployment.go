@@ -30,9 +30,9 @@ func (g *DeploymentGenerator) Generate(deployment *dpv1alpha1.PackageDeployment)
 	labels := map[string]string{
 		"app.kubernetes.io/name":       deployment.Spec.Package.Name,
 		"app.kubernetes.io/version":    deployment.Spec.Package.Version,
-		"app.kubernetes.io/managed-by": "dp-controller",
-		"dp.io/package":                deployment.Spec.Package.Name,
-		"dp.io/mode":                   "streaming",
+		"app.kubernetes.io/managed-by": "dk-controller",
+		"datakit.infoblox.dev/package":                deployment.Spec.Package.Name,
+		"datakit.infoblox.dev/mode":                   "streaming",
 	}
 
 	// Build container
@@ -89,7 +89,7 @@ func (g *DeploymentGenerator) Generate(deployment *dpv1alpha1.PackageDeployment)
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app.kubernetes.io/name": deployment.Spec.Package.Name,
-					"dp.io/package":          deployment.Spec.Package.Name,
+				"datakit.infoblox.dev/package":          deployment.Spec.Package.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
@@ -134,7 +134,7 @@ func (g *DeploymentGenerator) buildContainer(deployment *dpv1alpha1.PackageDeplo
 	return container
 }
 
-// buildProbe converts a dp Probe to a Kubernetes Probe.
+// buildProbe converts a dk Probe to a Kubernetes Probe.
 func (g *DeploymentGenerator) buildProbe(probe *dpv1alpha1.Probe) *corev1.Probe {
 	if probe == nil {
 		return nil

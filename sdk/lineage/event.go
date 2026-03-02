@@ -82,7 +82,7 @@ const SchemaVersion = "https://openlineage.io/spec/2-0-2/OpenLineage.json"
 func NewEvent(eventType EventType, runID, namespace, jobName string) *Event {
 	return &Event{
 		EventTime: time.Now().UTC(),
-		Producer:  "dp",
+		Producer:  "dk",
 		SchemaURL: SchemaVersion,
 		EventType: eventType,
 		Run: Run{

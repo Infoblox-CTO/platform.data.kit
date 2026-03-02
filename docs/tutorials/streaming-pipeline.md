@@ -4,7 +4,7 @@ This tutorial walks you through building a streaming data pipeline that continuo
 
 ## Prerequisites
 
-- [dp CLI installed](../getting-started/installation.md)
+- [dk CLI installed](../getting-started/installation.md)
 - [Local development stack running](../getting-started/quickstart.md)
 - Basic understanding of [pipeline modes](../concepts/pipeline-modes.md)
 
@@ -22,7 +22,7 @@ We'll build a real-time event aggregator that:
 Create a new streaming Transform:
 
 ```bash
-dp init user-aggregator --runtime generic-go
+dk init user-aggregator --runtime generic-go
 cd user-aggregator
 ```
 
@@ -30,7 +30,7 @@ This creates a project structure:
 
 ```
 user-aggregator/
-├── dp.yaml                 # Transform manifest
+├── dk.yaml                 # Transform manifest
 ├── connector/              # Connector definitions
 ├── store/                  # Store definitions
 ├── asset/                  # Asset definitions
@@ -42,7 +42,7 @@ user-aggregator/
 
 ## Step 2: Configure the Transform
 
-Edit `dp.yaml` to configure streaming behavior:
+Edit `dk.yaml` to configure streaming behavior:
 
 ```yaml
 apiVersion: data.infoblox.com/v1alpha1
@@ -306,14 +306,14 @@ func (w *S3Writer) Close() error { return nil }
 Start the local development stack:
 
 ```bash
-dp dev up
+dk dev up
 ```
 
 Run the streaming pipeline test:
 
 ```bash
 # Test for 60 seconds
-dp test --duration 60s
+dk test --duration 60s
 ```
 
 The test will:
@@ -327,11 +327,11 @@ For interactive development:
 
 ```bash
 # Run attached (see logs, Ctrl+C to stop)
-dp run
+dk run
 
 # Or run detached
-dp run --detach
-dp logs --follow
+dk run --detach
+dk logs --follow
 ```
 
 ## Step 6: Monitor Health
@@ -353,13 +353,13 @@ When ready for deployment:
 
 ```bash
 # Build the OCI artifact
-dp build
+dk build
 
 # Publish to registry
-dp publish
+dk publish
 
 # Promote to development
-dp promote --to dev
+dk promote --to dev
 ```
 
 In Kubernetes, the controller will create a Deployment with:

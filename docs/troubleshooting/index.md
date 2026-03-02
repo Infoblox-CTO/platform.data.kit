@@ -33,7 +33,7 @@ If you can't find a solution here:
 
 1. **Search existing issues**: [GitHub Issues](https://github.com/Infoblox-CTO/platform.data.kit/issues)
 2. **Check the logs**: Run commands with `--log-level debug`
-3. **Validate your setup**: Run `dp version` and `dp dev status`
+3. **Validate your setup**: Run `dk version` and `dk dev status`
 4. **Open a new issue**: Include error messages and environment details
 
 ## Quick Diagnostics
@@ -41,20 +41,20 @@ If you can't find a solution here:
 Run these commands to gather diagnostic information:
 
 ```bash
-# Check DP CLI version
-dp version
+# Check DK CLI version
+dk version
 
 # Verify Docker is running
 docker info
 
 # Check local dev stack status
-dp dev status
+dk dev status
 
 # Validate a package
-dp lint ./my-package
+dk lint ./my-package
 
 # Run with debug logging
-dp --log-level debug run ./my-package
+dk --log-level debug run ./my-package
 ```
 
 ## Common Error Categories
@@ -71,7 +71,7 @@ dp --log-level debug run ./my-package
 
 When reporting a bug, please include:
 
-- DP CLI version (`dp version`)
+- DK CLI version (`dk version`)
 - Operating system and version
 - Docker version (`docker version`)
 - Complete error message

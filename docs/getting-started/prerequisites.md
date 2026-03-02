@@ -1,17 +1,17 @@
 ---
 title: Prerequisites
-description: Required tools and setup before installing the DP CLI
+description: Required tools and setup before installing the DK CLI
 ---
 
 # Prerequisites
 
-Before installing the DP CLI, make sure you have the following tools installed and configured.
+Before installing the DK CLI, make sure you have the following tools installed and configured.
 
 ## Required Tools
 
 ### Go 1.22+
 
-The DP CLI is built with Go. You'll need Go 1.22 or later to build from source.
+The DK CLI is built with Go. You'll need Go 1.22 or later to build from source.
 
 === "macOS (Homebrew)"
 
@@ -85,7 +85,7 @@ docker info
 
 ### kubectl (Optional)
 
-Required only for Kubernetes operations like `dp promote` to production.
+Required only for Kubernetes operations like `dk promote` to production.
 
 === "macOS (Homebrew)"
 
@@ -117,7 +117,7 @@ kubectl version --client
 
 ## Network Requirements
 
-The DP CLI requires network access to:
+The DK CLI requires network access to:
 
 | Destination | Purpose |
 |-------------|---------|
@@ -141,4 +141,4 @@ The DP CLI requires network access to:
 
 Once you have all prerequisites installed, proceed to:
 
-[Install the DP CLI →](installation.md){ .md-button .md-button--primary }
+[Install the DK CLI →](installation.md){ .md-button .md-button--primary }

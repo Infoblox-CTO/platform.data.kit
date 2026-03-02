@@ -21,11 +21,11 @@ var (
 	publishDryRun    bool
 )
 
-// publishCmd publishes a DP package to an OCI registry
+// publishCmd publishes a DK package to an OCI registry
 var publishCmd = &cobra.Command{
 	Use:   "publish [package-dir]",
-	Short: "Publish a DP package to an OCI registry",
-	Long: `Publish a DP data package to an OCI-compliant registry.
+	Short: "Publish a DK package to an OCI registry",
+	Long: `Publish a DK data package to an OCI-compliant registry.
 
 The publish command builds (if not already built) and pushes the package
 artifact to the specified OCI registry.
@@ -35,16 +35,16 @@ twice will fail. Use a new version or use --force for development.
 
 Examples:
   # Publish to default registry
-  dp publish
+  dk publish
 
   # Publish to specific registry
-  dp publish --registry ghcr.io/myorg
+  dk publish --registry ghcr.io/myorg
 
   # Publish with custom tag
-  dp publish --tag v1.0.0
+  dk publish --tag v1.0.0
 
   # Dry run (build but don't push)
-  dp publish --dry-run`,
+  dk publish --dry-run`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPublish,
 }
@@ -53,7 +53,7 @@ func init() {
 	rootCmd.AddCommand(publishCmd)
 
 	publishCmd.Flags().StringVar(&publishRegistry, "registry", "", "OCI registry URL (e.g., ghcr.io/myorg)")
-	publishCmd.Flags().StringVarP(&publishTag, "tag", "t", "", "Tag for the artifact (default: version from dp.yaml)")
+	publishCmd.Flags().StringVarP(&publishTag, "tag", "t", "", "Tag for the artifact (default: version from dk.yaml)")
 	publishCmd.Flags().BoolVar(&publishInsecure, "insecure", false, "Allow insecure registry connections")
 	publishCmd.Flags().BoolVar(&publishPlainHTTP, "plain-http", false, "Use plain HTTP instead of HTTPS")
 	publishCmd.Flags().BoolVar(&publishDryRun, "dry-run", false, "Build artifact but don't push")
@@ -72,18 +72,18 @@ func runPublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Verify dp.yaml exists
-	dpPath := filepath.Join(absDir, "dp.yaml")
+	// Verify dk.yaml exists
+	dpPath := filepath.Join(absDir, "dk.yaml")
 	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
-		return fmt.Errorf("dp.yaml not found in %s - is this a valid DP package?", packageDir)
+		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
 	fmt.Printf("Publishing package: %s\n\n", packageDir)
 
-	// Parse dp.yaml to get package info
+	// Parse dk.yaml to get package info
 	dpData, err := os.ReadFile(dpPath)
 	if err != nil {
-		return fmt.Errorf("failed to read dp.yaml: %w", err)
+		return fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
 
 	parser := manifest.NewParser()
@@ -91,7 +91,7 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	_ = parser // parser still used elsewhere; keep import
 	_ = kind
 	if err != nil {
-		return fmt.Errorf("failed to parse dp.yaml: %w", err)
+		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
 
 	// Determine version/tag
@@ -100,14 +100,14 @@ func runPublish(cmd *cobra.Command, args []string) error {
 		version = m.GetVersion()
 	}
 	if version == "" {
-		return fmt.Errorf("no version specified - use --tag or set metadata.version in dp.yaml")
+		return fmt.Errorf("no version specified - use --tag or set metadata.version in dk.yaml")
 	}
 
 	// Determine registry
 	reg := publishRegistry
 	if reg == "" {
 		// Check environment
-		reg = os.Getenv("DP_REGISTRY")
+		reg = os.Getenv("DK_REGISTRY")
 	}
 	if reg == "" {
 		// Default to ghcr.io with namespace
@@ -223,7 +223,7 @@ func runPublish(cmd *cobra.Command, args []string) error {
 
 	// Print next steps
 	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  dp promote %s %s --to dev  # Deploy to dev environment\n",
+	fmt.Printf("  dk promote %s %s --to dev  # Deploy to dev environment\n",
 		m.GetName(), version)
 	fmt.Printf("  helm install %s oci://%s/%s/%s --version %s --set cell=<cell>  # Deploy to cell\n",
 		m.GetName(), reg, m.GetNamespace(), m.GetName(), version)

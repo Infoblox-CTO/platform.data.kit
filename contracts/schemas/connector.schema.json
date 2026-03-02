@@ -28,7 +28,7 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" },
-          "description": "Key-value labels for filtering. Convention: dp.infoblox.com/provider for indexed lookups."
+          "description": "Key-value labels for filtering. Convention: datakit.infoblox.dev/provider for indexed lookups."
         },
         "annotations": {
           "type": "object",

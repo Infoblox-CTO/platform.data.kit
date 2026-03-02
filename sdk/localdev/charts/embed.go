@@ -18,11 +18,11 @@ var ChartNames = []string{"redpanda", "localstack", "postgres", "marquez"}
 var DefaultCharts = []ChartDefinition{
 	{
 		Name:        "redpanda",
-		ReleaseName: "dp-redpanda",
-		Namespace:   "dp-local",
+		ReleaseName: "dk-redpanda",
+		Namespace:   "dk-local",
 		PortForwards: []PortForwardRule{
-			{ServiceName: "dp-redpanda", LocalPort: 19092, RemotePort: 9092},
-			{ServiceName: "dp-redpanda", LocalPort: 18081, RemotePort: 8081},
+			{ServiceName: "dk-redpanda", LocalPort: 19092, RemotePort: 9092},
+			{ServiceName: "dk-redpanda", LocalPort: 18081, RemotePort: 8081},
 		},
 		HealthLabels:  map[string]string{"app.kubernetes.io/name": "redpanda"},
 		HealthTimeout: 120 * time.Second,
@@ -33,10 +33,10 @@ var DefaultCharts = []ChartDefinition{
 	},
 	{
 		Name:        "localstack",
-		ReleaseName: "dp-localstack",
-		Namespace:   "dp-local",
+		ReleaseName: "dk-localstack",
+		Namespace:   "dk-local",
 		PortForwards: []PortForwardRule{
-			{ServiceName: "dp-localstack", LocalPort: 4566, RemotePort: 4566},
+			{ServiceName: "dk-localstack", LocalPort: 4566, RemotePort: 4566},
 		},
 		HealthLabels:  map[string]string{"app": "localstack"},
 		HealthTimeout: 60 * time.Second,
@@ -46,10 +46,10 @@ var DefaultCharts = []ChartDefinition{
 	},
 	{
 		Name:        "postgres",
-		ReleaseName: "dp-postgres",
-		Namespace:   "dp-local",
+		ReleaseName: "dk-postgres",
+		Namespace:   "dk-local",
 		PortForwards: []PortForwardRule{
-			{ServiceName: "dp-postgres-postgresql", LocalPort: 5432, RemotePort: 5432},
+			{ServiceName: "dk-postgres-postgresql", LocalPort: 5432, RemotePort: 5432},
 		},
 		HealthLabels:  map[string]string{"app.kubernetes.io/name": "postgresql"},
 		HealthTimeout: 60 * time.Second,
@@ -59,12 +59,12 @@ var DefaultCharts = []ChartDefinition{
 	},
 	{
 		Name:        "marquez",
-		ReleaseName: "dp-marquez",
-		Namespace:   "dp-local",
+		ReleaseName: "dk-marquez",
+		Namespace:   "dk-local",
 		PortForwards: []PortForwardRule{
-			{ServiceName: "dp-marquez", LocalPort: 5000, RemotePort: 5000},
-			{ServiceName: "dp-marquez", LocalPort: 5001, RemotePort: 5001},
-			{ServiceName: "dp-marquez-web", LocalPort: 3000, RemotePort: 3000},
+			{ServiceName: "dk-marquez", LocalPort: 5000, RemotePort: 5000},
+			{ServiceName: "dk-marquez", LocalPort: 5001, RemotePort: 5001},
+			{ServiceName: "dk-marquez-web", LocalPort: 3000, RemotePort: 3000},
 		},
 		HealthLabels:  map[string]string{"app": "marquez"},
 		HealthTimeout: 90 * time.Second,

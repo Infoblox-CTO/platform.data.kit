@@ -62,9 +62,9 @@ spec:
   runtime: generic-go
   image: test:v1
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -112,9 +112,9 @@ spec:
   runtime: generic-go
   image: test:v1
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -159,9 +159,9 @@ spec:
   image: original:v1
   timeout: 30m
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Create override file
@@ -220,7 +220,7 @@ func containsStr(s, substr string) bool {
 func TestShowCmd_DisplaysSchedule(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Write a minimal dp.yaml
+	// Write a minimal dk.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -234,7 +234,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -282,7 +282,7 @@ timezone: America/Chicago
 func TestShowCmd_NoSchedule(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Write dp.yaml only, no schedule.yaml
+	// Write dk.yaml only, no schedule.yaml
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -296,7 +296,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 

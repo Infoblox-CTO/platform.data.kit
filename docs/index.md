@@ -1,6 +1,6 @@
 ---
 title: Home
-description: Data Platform (DP) - A Kubernetes-native data pipeline platform
+description: DataKit (DK) - A Kubernetes-native data pipeline platform
 hide:
   - navigation
   - toc
@@ -8,7 +8,7 @@ hide:
 
 <div class="hero" markdown>
 
-# Data Platform Documentation
+# DataKit Documentation
 
 A Kubernetes-native data pipeline platform enabling teams to contribute reusable, versioned "data packages" with a complete developer workflow.
 
@@ -21,9 +21,9 @@ A Kubernetes-native data pipeline platform enabling teams to contribute reusable
 
 ---
 
-## What is DP?
+## What is DK?
 
-DP (Data Platform) is a developer-first platform for building, testing, and deploying data pipelines. It provides:
+DK (DataKit) is a developer-first platform for building, testing, and deploying data pipelines. It provides:
 
 - **📦 Data Packages**: Self-contained units of data processing with Transforms, Assets, Stores, and Connectors
 - **🔄 GitOps Workflow**: PR-based promotion through dev → int → prod environments
@@ -38,7 +38,7 @@ DP (Data Platform) is a developer-first platform for building, testing, and depl
 
 <div class="card" markdown>
 ### :rocket: Getting Started
-New to DP? Start here to install the CLI and run your first pipeline in under 30 minutes.
+New to DK? Start here to install the CLI and run your first pipeline in under 30 minutes.
 
 [Get Started →](getting-started/index.md)
 </div>
@@ -68,27 +68,27 @@ Complete CLI reference, manifest schemas, and configuration options.
 
 ---
 
-## The DP Workflow
+## The DK Workflow
 
 ```bash
 # 1. Create a new data package
-dp init my-pipeline --runtime generic-python
+dk init my-pipeline --runtime generic-python
 
 # 2. Start local development environment
-dp dev up
+dk dev up
 
 # 3. Validate your package
-dp lint ./my-pipeline
+dk lint ./my-pipeline
 
 # 4. Run locally
-dp run ./my-pipeline
+dk run ./my-pipeline
 
 # 5. Build and publish
-dp build ./my-pipeline
-dp publish ./my-pipeline
+dk build ./my-pipeline
+dk publish ./my-pipeline
 
 # 6. Promote to an environment
-dp promote my-pipeline v0.1.0 --to dev
+dk promote my-pipeline v0.1.0 --to dev
 ```
 
 ---
@@ -101,7 +101,7 @@ dp promote my-pipeline v0.1.0 --to dev
 │                            │                                 │
 │                            ▼                                 │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │                   DP CLI (dp)                        │   │
+│  │                   DK CLI (dk)                        │   │
 │  │  init, dev, run, lint, build, publish, promote      │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                            │                                 │
@@ -133,5 +133,5 @@ dp promote my-pipeline v0.1.0 --to dev
 
 - **[Troubleshooting](troubleshooting/index.md)** - Common issues and solutions
 - **[FAQ](troubleshooting/faq.md)** - Frequently asked questions
-- **[Contributing](contributing.md)** - How to contribute to DP
+- **[Contributing](contributing.md)** - How to contribute to DK
 - **[GitHub Issues](https://github.com/Infoblox-CTO/platform.data.kit/issues)** - Report bugs or request features

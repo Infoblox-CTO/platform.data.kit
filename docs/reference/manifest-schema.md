@@ -21,13 +21,13 @@ The platform uses five manifest kinds, each with a clear ownership boundary:
 
 ## Transform Schema
 
-The Transform manifest (`dp.yaml`) defines a unit of computation.
+The Transform manifest (`dk.yaml`) defines a unit of computation.
 It is the **only manifest kind that runs** — Connectors, Stores, and Assets are declarative metadata.
 
 ### Full Schema
 
 ```yaml
-# dp.yaml
+# dk.yaml
 apiVersion: data.infoblox.com/v1alpha1          # Required: API version
 kind: Transform                                 # Required: Resource type
 
@@ -406,8 +406,8 @@ spec:                               # Required: Asset specification
 
 !!! info "Dev-only section"
     The `dev` block is ignored in production deployments. It exists solely to
-    support the local development workflow (`dp dev seed` and auto-seeding
-    during `dp run`).
+    support the local development workflow (`dk dev seed` and auto-seeding
+    during `dk run`).
 
 ### Field Reference
 
@@ -560,7 +560,7 @@ spec:
 | `file` | string | Path (relative to package root) to a CSV or JSON seed file (default profile). |
 | `profiles` | map of objects | Named alternative data sets. Each profile has its own `inline` or `file`. |
 
-Seed data is loaded by `dp dev seed` or automatically before `dp run`. A SHA-256
+Seed data is loaded by `dk dev seed` or automatically before `dk run`. A SHA-256
 checksum is tracked in a `_dp_seed_meta` table so that unchanged data is skipped
 on subsequent runs.
 
@@ -763,7 +763,7 @@ metadata:
 spec:
   connector: postgres
   connection:
-    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
     database: dataplatform
     schema: public
@@ -786,7 +786,7 @@ spec:
   connection:
     bucket: cdpp-raw
     region: us-east-1
-    endpoint: http://dp-localstack-localstack.dp-local.svc.cluster.local:4566
+    endpoint: http://dk-localstack-localstack.dk-local.svc.cluster.local:4566
   secrets:
     accessKeyId: ${AWS_ACCESS_KEY_ID}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
@@ -975,10 +975,10 @@ my-pipeline/
 │   └── orders-parquet.yaml
 ├── asset-group/
 │   └── pg-snapshot.yaml
-└── dp.yaml                  # Transform manifest
+└── dk.yaml                  # Transform manifest
 ```
 
-### dp.yaml (Transform)
+### dk.yaml (Transform)
 
 ```yaml
 apiVersion: data.infoblox.com/v1alpha1
@@ -1029,7 +1029,7 @@ metadata:
 spec:
   connector: postgres
   connection:
-    host: dp-postgres.svc.cluster.local
+    host: dk-postgres.svc.cluster.local
     port: 5432
     database: analytics
   secrets:
@@ -1084,6 +1084,6 @@ spec:
 
 ## See Also
 
-- [CLI Reference](cli.md) — `dp lint` and `dp init` commands
+- [CLI Reference](cli.md) — `dk lint` and `dk init` commands
 - [Concepts: Manifests](../concepts/manifests.md) — Conceptual overview of all manifest kinds
 - [Concepts: Data Packages](../concepts/data-packages.md) — Package structure and runtimes

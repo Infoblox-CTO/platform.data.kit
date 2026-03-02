@@ -5,7 +5,7 @@ description: Complete reference for data package manifest files
 
 # Manifests
 
-The manifest (`dp.yaml`) is the central configuration file for every data package. It defines metadata, runtime, inputs, outputs, and governance requirements.
+The manifest (`dk.yaml`) is the central configuration file for every data package. It defines metadata, runtime, inputs, outputs, and governance requirements.
 
 ## Manifest Kinds
 
@@ -23,7 +23,7 @@ The platform defines five manifest kinds:
 
 The Transform is the primary manifest kind for data packages:
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -64,7 +64,7 @@ metadata:
     domain: events
     cost-center: analytics
   annotations:                     # Optional: arbitrary metadata
-    dp.io/documentation: https://wiki.example.com/my-pipeline
+    datakit.infoblox.dev/documentation: https://wiki.example.com/my-pipeline
 ```
 
 #### Naming Rules
@@ -191,7 +191,7 @@ metadata:
 spec:
   connector: postgres
   connection:
-    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
     database: dataplatform
     schema: public
@@ -208,7 +208,7 @@ spec:
 Validate your manifest:
 
 ```bash
-dp lint ./my-package
+dk lint ./my-package
 ```
 
 The linter checks:

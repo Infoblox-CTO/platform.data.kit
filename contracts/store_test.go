@@ -18,7 +18,7 @@ spec:
   connector: postgres
   connectorVersion: "^1.0.0"
   connection:
-    host: dp-postgres-postgresql.dp-local.svc.cluster.local
+    host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
     database: dataplatform
     schema: public
@@ -51,7 +51,7 @@ spec:
 	if s.Spec.ConnectorVersion != "^1.0.0" {
 		t.Errorf("Spec.ConnectorVersion = %q, want %q", s.Spec.ConnectorVersion, "^1.0.0")
 	}
-	if s.Spec.Connection["host"] != "dp-postgres-postgresql.dp-local.svc.cluster.local" {
+	if s.Spec.Connection["host"] != "dk-postgres-postgresql.dk-local.svc.cluster.local" {
 		t.Errorf("Spec.Connection[host] = %v", s.Spec.Connection["host"])
 	}
 	// YAML numeric values decode as int
@@ -131,7 +131,7 @@ spec:
   connection:
     bucket: cdpp-raw
     region: us-east-1
-    endpoint: http://dp-localstack-localstack.dp-local.svc.cluster.local:4566
+    endpoint: http://dk-localstack-localstack.dk-local.svc.cluster.local:4566
   secrets:
     accessKeyId: ${AWS_ACCESS_KEY_ID}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}

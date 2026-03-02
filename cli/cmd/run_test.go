@@ -106,7 +106,7 @@ func TestRunCmd_MissingDpYaml(t *testing.T) {
 	err := runPipeline(cmd, []string{tmpDir})
 
 	if err == nil {
-		t.Error("expected error for missing dp.yaml")
+		t.Error("expected error for missing dk.yaml")
 	}
 }
 
@@ -129,8 +129,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -231,8 +231,8 @@ spec:
   description: Test invalid kind
   owner: data-team
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	oldDryRun := runDryRun
@@ -290,9 +290,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -318,7 +318,7 @@ spec:
 	// Verify the file was modified
 	data, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Fatalf("failed to read modified dp.yaml: %v", err)
+		t.Fatalf("failed to read modified dk.yaml: %v", err)
 	}
 
 	content := string(data)
@@ -348,9 +348,9 @@ spec:
   runtime: generic-go
   image: test:v1
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -386,9 +386,9 @@ spec:
   image: original:v1
   timeout: 30m
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Create override file
@@ -418,7 +418,7 @@ spec:
 
 	data, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Fatalf("failed to read modified dp.yaml: %v", err)
+		t.Fatalf("failed to read modified dk.yaml: %v", err)
 	}
 
 	content := string(data)
@@ -445,9 +445,9 @@ spec:
   runtime: generic-go
   image: base:v1
 `
-	dpPath := filepath.Join(tmpDir, "dp.yaml")
+	dpPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Create override file
@@ -477,7 +477,7 @@ spec:
 
 	data, err := os.ReadFile(dpPath)
 	if err != nil {
-		t.Fatalf("failed to read modified dp.yaml: %v", err)
+		t.Fatalf("failed to read modified dk.yaml: %v", err)
 	}
 
 	content := string(data)
@@ -516,7 +516,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -552,7 +552,7 @@ spec:
   outputs:
     - asset: example-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -566,7 +566,7 @@ spec:
 	// Transform kind should be parseable; may fail at Docker step
 	if err != nil {
 		errMsg := err.Error()
-		if contains(errMsg, "failed to parse dp.yaml") {
+		if contains(errMsg, "failed to parse dk.yaml") {
 			t.Errorf("Transform kind should be parseable, got: %v", err)
 		}
 	}

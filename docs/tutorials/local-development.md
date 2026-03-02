@@ -21,7 +21,7 @@ This tutorial covers the local development stack in detail, including how to use
 
 ## The Development Stack
 
-The `dp dev` command manages a local k3d cluster with these services:
+The `dk dev` command manages a local k3d cluster with these services:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -35,7 +35,7 @@ The `dp dev` command manages a local k3d cluster with these services:
 ### Basic Start
 
 ```bash
-dp dev up
+dk dev up
 ```
 
 This starts all services in the foreground. Press `Ctrl+C` to stop.
@@ -45,7 +45,7 @@ This starts all services in the foreground. Press `Ctrl+C` to stop.
 For development sessions, run in background:
 
 ```bash
-dp dev up --detach
+dk dev up --detach
 ```
 
 ### With Custom Timeout
@@ -53,7 +53,7 @@ dp dev up --detach
 If services are slow to start:
 
 ```bash
-dp dev up --timeout 120s
+dk dev up --timeout 120s
 ```
 
 ## Checking Status
@@ -61,7 +61,7 @@ dp dev up --timeout 120s
 View the status of all services:
 
 ```bash
-dp dev status
+dk dev status
 ```
 
 Example output:
@@ -98,7 +98,7 @@ The local Kafka is accessible at `localhost:9092`.
 Topics are auto-created by default, but you can create them explicitly:
 
 ```bash
-docker exec -it dp-kafka kafka-topics \
+docker exec -it dk-kafka kafka-topics \
   --bootstrap-server localhost:9092 \
   --create \
   --topic user-events \
@@ -109,7 +109,7 @@ docker exec -it dp-kafka kafka-topics \
 ### Listing Topics
 
 ```bash
-docker exec -it dp-kafka kafka-topics \
+docker exec -it dk-kafka kafka-topics \
   --bootstrap-server localhost:9092 \
   --list
 ```
@@ -117,7 +117,7 @@ docker exec -it dp-kafka kafka-topics \
 ### Producing Test Messages
 
 ```bash
-echo '{"id": "123", "event": "test"}' | docker exec -i dp-kafka kafka-console-producer \
+echo '{"id": "123", "event": "test"}' | docker exec -i dk-kafka kafka-console-producer \
   --bootstrap-server localhost:9092 \
   --topic user-events
 ```
@@ -125,7 +125,7 @@ echo '{"id": "123", "event": "test"}' | docker exec -i dp-kafka kafka-console-pr
 ### Consuming Messages
 
 ```bash
-docker exec -it dp-kafka kafka-console-consumer \
+docker exec -it dk-kafka kafka-console-consumer \
   --bootstrap-server localhost:9092 \
   --topic user-events \
   --from-beginning
@@ -229,7 +229,7 @@ curl http://localhost:5000/api/v1/namespaces/default/datasets
 
 ### Lineage Events
 
-When you run `dp run`, these events are emitted:
+When you run `dk run`, these events are emitted:
 
 ```json
 {
@@ -252,7 +252,7 @@ When you run `dp run`, these events are emitted:
 ### Basic Run
 
 ```bash
-dp run ./my-pipeline
+dk run ./my-pipeline
 ```
 
 ### With Local Store Overrides
@@ -290,13 +290,13 @@ spec:
 ```
 
 ```bash
-dp run ./my-pipeline
+dk run ./my-pipeline
 ```
 
 ### With Environment Variables
 
 ```bash
-dp run ./my-pipeline \
+dk run ./my-pipeline \
   --env DEBUG=true \
   --env BATCH_SIZE=100
 ```
@@ -306,7 +306,7 @@ dp run ./my-pipeline \
 See what would run without executing:
 
 ```bash
-dp run ./my-pipeline --dry-run
+dk run ./my-pipeline --dry-run
 ```
 
 ## Debugging
@@ -315,14 +315,14 @@ dp run ./my-pipeline --dry-run
 
 ```bash
 # Check pod logs
-kubectl --context k3d-dp-local logs -l app=redpanda
-kubectl --context k3d-dp-local logs -l app=marquez
+kubectl --context k3d-dk-local logs -l app=redpanda
+kubectl --context k3d-dk-local logs -l app=marquez
 ```
 
 ### Access Container Shell
 
 ```bash
-docker exec -it dp-kafka /bin/bash
+docker exec -it dk-kafka /bin/bash
 ```
 
 ### Check Resource Usage
@@ -337,10 +337,10 @@ docker stats
 
 ```bash
 # Check if Kafka is healthy
-dp dev status
+dk dev status
 
 # Check Redpanda logs
-kubectl --context k3d-dp-local logs -l app=redpanda
+kubectl --context k3d-dk-local logs -l app=redpanda
 ```
 
 #### MinIO Access Denied
@@ -367,11 +367,11 @@ curl http://localhost:5000/api/v1/namespaces/default/jobs
 
 ### Override Configuration
 
-Chart versions and Helm values can be overridden via `dp config`:
+Chart versions and Helm values can be overridden via `dk config`:
 
 ```bash
-dp config set dev.charts.redpanda.version 25.2.0
-dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
+dk config set dev.charts.redpanda.version 25.2.0
+dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ```
 
 ## Stopping the Stack
@@ -379,7 +379,7 @@ dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ### Stop and Keep Data
 
 ```bash
-dp dev down
+dk dev down
 ```
 
 Data persists in persistent volumes.
@@ -387,7 +387,7 @@ Data persists in persistent volumes.
 ### Stop and Remove Data
 
 ```bash
-dp dev down --volumes
+dk dev down --volumes
 ```
 
 Removes all data (topics, objects, lineage).
@@ -400,10 +400,10 @@ Create environment-specific Store manifests for development:
 
 ```bash
 # Development — uses local store manifests
-dp run
+dk run
 
 # Production builds use environment-specific stores
-dp build && dp publish
+dk build && dk publish
 ```
 
 ### 2. Clean Up Regularly
@@ -411,8 +411,8 @@ dp build && dp publish
 Remove old data when testing:
 
 ```bash
-dp dev down --volumes
-dp dev up
+dk dev down --volumes
+dk dev up
 ```
 
 ### 3. Use Seed Data for Testing
@@ -432,7 +432,7 @@ spec:
 Then seed the database:
 
 ```bash
-dp dev seed
+dk dev seed
 ```
 
 Use **named profiles** for different test scenarios:
@@ -452,13 +452,13 @@ dev:
 
 ```bash
 # Load edge-case data
-dp dev seed --profile edge-cases
+dk dev seed --profile edge-cases
 
 # Reset to an empty table
-dp dev seed --profile empty --clean
+dk dev seed --profile empty --clean
 
-# The default profile is used automatically during dp run
-dp run
+# The default profile is used automatically during dk run
+dk run
 ```
 
 Seed runs are idempotent — unchanged data is skipped automatically via

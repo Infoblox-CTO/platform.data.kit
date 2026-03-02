@@ -1,6 +1,6 @@
-# Releasing DP CLI
+# Releasing DK CLI
 
-This document describes the process for releasing new versions of the DP CLI.
+This document describes the process for releasing new versions of the DK CLI.
 
 ## Prerequisites
 
@@ -63,15 +63,15 @@ After the workflow completes:
 
 1. Check [GitHub Releases](https://github.com/Infoblox-CTO/platform.data.kit/releases) for the new version
 2. Verify all artifacts are present:
-   - `dp_X.Y.Z_darwin_amd64.tar.gz`
-   - `dp_X.Y.Z_darwin_arm64.tar.gz`
-   - `dp_X.Y.Z_linux_amd64.tar.gz`
-   - `dp_X.Y.Z_windows_amd64.zip`
+   - `dk_X.Y.Z_darwin_amd64.tar.gz`
+   - `dk_X.Y.Z_darwin_arm64.tar.gz`
+   - `dk_X.Y.Z_linux_amd64.tar.gz`
+   - `dk_X.Y.Z_windows_amd64.zip`
    - `checksums.txt`
 
-3. Verify the Homebrew formula was updated in [homebrew-tap](https://github.com/Infoblox-CTO/homebrew-tap/blob/main/Formula/dp.rb)
+3. Verify the Homebrew formula was updated in [homebrew-tap](https://github.com/Infoblox-CTO/homebrew-tap/blob/main/Formula/dk.rb)
 
-4. Verify the Scoop manifest was updated in [scoop-bucket](https://github.com/Infoblox-CTO/scoop-bucket/blob/main/dp.json)
+4. Verify the Scoop manifest was updated in [scoop-bucket](https://github.com/Infoblox-CTO/scoop-bucket/blob/main/dk.json)
 
 ## Testing Installation Methods
 
@@ -80,13 +80,13 @@ After the workflow completes:
 ```bash
 # Update tap and upgrade
 brew update
-brew upgrade dp
+brew upgrade dk
 
 # Or install fresh
-brew install Infoblox-CTO/tap/dp
+brew install Infoblox-CTO/tap/dk
 
 # Verify
-dp version
+dk version
 ```
 
 ### Linux (Install Script)
@@ -99,21 +99,21 @@ export GITHUB_TOKEN=your_token
 curl -sSfL https://raw.githubusercontent.com/Infoblox-CTO/platform.data.kit/main/scripts/install.sh | sh
 
 # Verify
-dp version
+dk version
 ```
 
 ### Windows (Scoop)
 
 ```powershell
 # Update and install
-scoop update dp
+scoop update dk
 
 # Or install fresh
 scoop bucket add infoblox https://github.com/Infoblox-CTO/scoop-bucket
-scoop install dp
+scoop install dk
 
 # Verify
-dp version
+dk version
 ```
 
 ## Troubleshooting

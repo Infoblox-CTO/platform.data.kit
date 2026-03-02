@@ -23,7 +23,7 @@ type HeartbeatConfig struct {
 func DefaultHeartbeatConfig() HeartbeatConfig {
 	return HeartbeatConfig{
 		Interval: 30 * time.Second,
-		Producer: "dp-runner",
+		Producer: "dk-runner",
 	}
 }
 
@@ -45,7 +45,7 @@ func NewHeartbeat(emitter Emitter, config HeartbeatConfig) *Heartbeat {
 		config.Interval = 30 * time.Second
 	}
 	if config.Producer == "" {
-		config.Producer = "dp-runner"
+		config.Producer = "dk-runner"
 	}
 
 	return &Heartbeat{

@@ -15,10 +15,10 @@ const (
 	BackfillDateFormat = "2006-01-02"
 
 	// EnvBackfillFrom is the env var injected into sync steps for the backfill start date.
-	EnvBackfillFrom = "DP_BACKFILL_FROM"
+	EnvBackfillFrom = "DK_BACKFILL_FROM"
 
 	// EnvBackfillTo is the env var injected into sync steps for the backfill end date.
-	EnvBackfillTo = "DP_BACKFILL_TO"
+	EnvBackfillTo = "DK_BACKFILL_TO"
 )
 
 // BackfillOpts configures pipeline backfill execution.

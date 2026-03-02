@@ -83,14 +83,14 @@ func TestPublishCmd_DirectoryNotFound(t *testing.T) {
 }
 
 func TestPublishCmd_MissingDpYaml(t *testing.T) {
-	// Test that publishing a directory without dp.yaml returns an error
+	// Test that publishing a directory without dk.yaml returns an error
 	tmpDir := t.TempDir()
 
 	cmd := &cobra.Command{}
 	err := runPublish(cmd, []string{tmpDir})
 
 	if err == nil {
-		t.Error("expected error for missing dp.yaml")
+		t.Error("expected error for missing dk.yaml")
 	}
 }
 
@@ -113,8 +113,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -151,8 +151,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -185,8 +185,8 @@ metadata:
 spec:
   runtime: generic-go
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -205,7 +205,7 @@ spec:
 }
 
 func TestPublishCmd_CloudQueryPackage(t *testing.T) {
-	// Test that dp publish works for a CloudQuery Transform package in dry-run mode
+	// Test that dk publish works for a CloudQuery Transform package in dry-run mode
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
@@ -223,8 +223,8 @@ spec:
   outputs:
     - asset: example-resource
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -243,9 +243,9 @@ spec:
 }
 
 func TestPublishCmd_CloudQueryInvalidPackage(t *testing.T) {
-	// Test that dp publish handles a CloudQuery Transform package with missing fields
+	// Test that dk publish handles a CloudQuery Transform package with missing fields
 	// Note: publish does not run validation - it only builds and pushes the OCI artifact.
-	// Validation is the responsibility of dp lint / dp build.
+	// Validation is the responsibility of dk lint / dk build.
 	tmpDir := t.TempDir()
 
 	dpContent := `apiVersion: data.infoblox.com/v1alpha1
@@ -258,8 +258,8 @@ spec:
   runtime: cloudquery
   image: bad-source:latest
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644); err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	// Save and restore global flags
@@ -272,7 +272,7 @@ spec:
 	err := runPublish(cmd, []string{tmpDir})
 
 	// Publish dry-run still succeeds because publish does not validate —
-	// validation is done by dp lint and dp build
+	// validation is done by dk lint and dk build
 	if err != nil {
 		t.Errorf("runPublish() dry-run error = %v, want nil (publish doesn't validate)", err)
 	}

@@ -96,11 +96,11 @@ func TestJobGenerator_Generate(t *testing.T) {
 				}
 
 				// Verify labels
-				if job.Labels["dp.io/package"] != tt.deployment.Spec.Package.Name {
-					t.Errorf("Job label dp.io/package = %v, want %v", job.Labels["dp.io/package"], tt.deployment.Spec.Package.Name)
+				if job.Labels["datakit.infoblox.dev/package"] != tt.deployment.Spec.Package.Name {
+					t.Errorf("Job label datakit.infoblox.dev/package = %v, want %v", job.Labels["datakit.infoblox.dev/package"], tt.deployment.Spec.Package.Name)
 				}
-				if job.Labels["dp.io/mode"] != "batch" {
-					t.Errorf("Job label dp.io/mode = %v, want batch", job.Labels["dp.io/mode"])
+				if job.Labels["datakit.infoblox.dev/mode"] != "batch" {
+					t.Errorf("Job label datakit.infoblox.dev/mode = %v, want batch", job.Labels["datakit.infoblox.dev/mode"])
 				}
 
 				// Verify owner reference

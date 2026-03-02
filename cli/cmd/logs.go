@@ -1,4 +1,4 @@
-// Package cmd contains the CLI commands for DP.
+// Package cmd contains the CLI commands for DK.
 package cmd
 
 import (
@@ -23,16 +23,16 @@ Use --run to specify a specific run ID, or --environment to change the target.
 
 Example:
   # Show logs from last run in dev
-  dp logs kafka-s3-pipeline
+  dk logs kafka-s3-pipeline
 
   # Follow logs in real-time
-  dp logs kafka-s3-pipeline --follow
+  dk logs kafka-s3-pipeline --follow
 
   # Show logs from specific run
-  dp logs kafka-s3-pipeline --run 20240115-120000
+  dk logs kafka-s3-pipeline --run 20240115-120000
 
   # Show logs from production
-  dp logs kafka-s3-pipeline --environment prod`,
+  dk logs kafka-s3-pipeline --environment prod`,
 	Args: cobra.ExactArgs(1),
 	RunE: runLogs,
 }
@@ -75,7 +75,7 @@ func runLogs(cmd *cobra.Command, args []string) error {
 }
 
 func streamDockerLogs(packageName string) error {
-	containerName := fmt.Sprintf("dp-%s-runner", packageName)
+	containerName := fmt.Sprintf("dk-%s-runner", packageName)
 
 	// Check if container exists
 	checkCmd := exec.Command("docker", "ps", "-a", "--filter", fmt.Sprintf("name=%s", containerName), "--format", "{{.Names}}")
@@ -88,7 +88,7 @@ func streamDockerLogs(packageName string) error {
 		// No container found, show sample output
 		fmt.Printf("No recent runs found for %s in local environment.\n", packageName)
 		fmt.Println("\nTo run the package locally:")
-		fmt.Printf("  dp run %s\n", packageName)
+		fmt.Printf("  dk run %s\n", packageName)
 		return nil
 	}
 
@@ -116,8 +116,8 @@ func streamDockerLogs(packageName string) error {
 }
 
 func streamKubernetesLogs(packageName, environment string) error {
-	namespace := fmt.Sprintf("dp-%s", environment)
-	labelSelector := fmt.Sprintf("dp.io/package=%s", packageName)
+	namespace := fmt.Sprintf("dk-%s", environment)
+	labelSelector := fmt.Sprintf("datakit.infoblox.dev/package=%s", packageName)
 
 	// Check for kubeconfig
 	if os.Getenv("KUBECONFIG") == "" {

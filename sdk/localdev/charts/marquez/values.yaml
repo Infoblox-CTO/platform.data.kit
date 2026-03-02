@@ -30,7 +30,7 @@ web:
       memory: 128Mi
 
 db:
-  host: dp-postgres-postgresql
+  host: dk-postgres-postgresql
   port: 5432
   name: marquez
   user: postgres

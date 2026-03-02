@@ -22,21 +22,21 @@ A simple data processing model that:
 Initialize a new data package:
 
 ```bash
-dp init my-first-pipeline --runtime generic-python
+dk init my-first-pipeline --runtime generic-python
 ```
 
 This creates the following structure:
 
 ```
 my-first-pipeline/
-├── dp.yaml           # Package manifest
+├── dk.yaml           # Package manifest
 ├── main.py           # Your pipeline code
 └── requirements.txt  # Python dependencies
 ```
 
 Let's look at the generated manifest:
 
-```yaml title="dp.yaml"
+```yaml title="dk.yaml"
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -71,7 +71,7 @@ Start the local development stack. This deploys four services as Helm charts int
 - **Marquez** — Data lineage tracking (ports 5000, 3000)
 
 ```bash
-dp dev up
+dk dev up
 ```
 
 Each chart includes init jobs that automatically create topics, buckets, database schemas, and lineage namespaces — no manual setup required.
@@ -79,15 +79,15 @@ Each chart includes init jobs that automatically create topics, buckets, databas
 !!! tip "Seed Data"
     If your input assets declare `dev.seed` data, you can load it now:
     ```bash
-    dp dev seed
+    dk dev seed
     ```
     This creates tables and inserts sample rows into the local PostgreSQL.
-    Seed data is also loaded automatically before each `dp run`.
+    Seed data is also loaded automatically before each `dk run`.
 
 Check the status:
 
 ```bash
-dp dev status
+dk dev status
 ```
 
 Expected output:
@@ -116,8 +116,8 @@ Endpoints:
 !!! info "Chart Customization"
     You can override chart versions or Helm values via the config system:
     ```bash
-    dp config set dev.charts.redpanda.version 25.2.0
-    dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
+    dk config set dev.charts.redpanda.version 25.2.0
+    dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
     ```
 
 ## Step 3: Validate Your Package
@@ -125,13 +125,13 @@ Endpoints:
 Check your package for errors:
 
 ```bash
-dp lint ./my-first-pipeline
+dk lint ./my-first-pipeline
 ```
 
 Expected output:
 
 ```
-✓ dp.yaml: valid
+✓ dk.yaml: valid
 
 All validations passed!
 ```
@@ -141,7 +141,7 @@ All validations passed!
 Execute your pipeline against the local stack:
 
 ```bash
-dp run ./my-first-pipeline
+dk run ./my-first-pipeline
 ```
 
 You'll see output like:
@@ -164,7 +164,7 @@ Run ID: run-abc123
 View the lineage for your run:
 
 !!! warning "Not Yet Implemented"
-    The `dp lineage` command is planned but not yet implemented. For now, use the Marquez UI directly.
+    The `dk lineage` command is planned but not yet implemented. For now, use the Marquez UI directly.
 
 Open the Marquez UI to view the lineage graph:
 
@@ -174,7 +174,7 @@ Open the Marquez UI to view the lineage graph:
 You can also check the logs from your run:
 
 ```bash
-dp logs my-first-pipeline --follow
+dk logs my-first-pipeline --follow
 ```
 
 ## Step 6: Build the Package
@@ -182,7 +182,7 @@ dp logs my-first-pipeline --follow
 Create an OCI artifact from your package:
 
 ```bash
-dp build ./my-first-pipeline
+dk build ./my-first-pipeline
 ```
 
 Output:
@@ -203,7 +203,7 @@ Size: 2.3 MB
 Push the artifact to your OCI registry:
 
 ```bash
-dp publish ./my-first-pipeline
+dk publish ./my-first-pipeline
 ```
 
 !!! note "Authentication Required"
@@ -217,7 +217,7 @@ dp publish ./my-first-pipeline
 Deploy to the development environment:
 
 ```bash
-dp promote my-first-pipeline v0.1.0 --to dev
+dk promote my-first-pipeline v0.1.0 --to dev
 ```
 
 This creates a GitOps PR that will be reviewed and merged.
@@ -227,7 +227,7 @@ This creates a GitOps PR that will be reviewed and merged.
 Monitor your package across environments:
 
 ```bash
-dp status my-first-pipeline
+dk status my-first-pipeline
 ```
 
 Output:
@@ -247,7 +247,7 @@ prod         -         -         -
 When you're done, stop the local stack:
 
 ```bash
-dp dev down
+dk dev down
 ```
 
 ## Summary
@@ -256,18 +256,18 @@ You've completed the full DP workflow:
 
 | Step | Command | What It Does |
 |------|---------|--------------|
-| 1 | `dp init` | Create a new data package |
-| 2 | `dp dev up` | Start local infrastructure |
-| 2b | `dp dev seed` | Load sample data into local stores |
-| 3 | `dp lint` | Validate manifests |
-| 4 | `dp run` | Execute locally (auto-seeds if needed) |
-| 5 | ~~`dp lineage`~~ | View data lineage *(not yet implemented — use Marquez UI)* |
-| 6 | `dp logs` | Stream logs from a run |
-| 7 | `dp build` | Create OCI artifact |
-| 8 | `dp publish` | Push to registry |
-| 9 | `dp promote` | Deploy to environment |
-| 10 | `dp status` | Check deployment status |
-| 11 | `dp dev down` | Stop local stack |
+| 1 | `dk init` | Create a new data package |
+| 2 | `dk dev up` | Start local infrastructure |
+| 2b | `dk dev seed` | Load sample data into local stores |
+| 3 | `dk lint` | Validate manifests |
+| 4 | `dk run` | Execute locally (auto-seeds if needed) |
+| 5 | ~~`dk lineage`~~ | View data lineage *(not yet implemented — use Marquez UI)* |
+| 6 | `dk logs` | Stream logs from a run |
+| 7 | `dk build` | Create OCI artifact |
+| 8 | `dk publish` | Push to registry |
+| 9 | `dk promote` | Deploy to environment |
+| 10 | `dk status` | Check deployment status |
+| 11 | `dk dev down` | Stop local stack |
 
 ## Next Steps
 
@@ -287,7 +287,7 @@ Now that you understand the basics:
 This section walks you through creating and running a CloudQuery sync model.
 
 !!! info "What is a CloudQuery Model?"
-    CloudQuery models use the [CloudQuery CLI](https://cloudquery.io) to sync data between sources and destinations. The `dp init --runtime cloudquery` command generates a `config.yaml` file that you run with `cloudquery sync`.
+    CloudQuery models use the [CloudQuery CLI](https://cloudquery.io) to sync data between sources and destinations. The `dk init --runtime cloudquery` command generates a `config.yaml` file that you run with `cloudquery sync`.
 
 ### Prerequisites
 
@@ -298,12 +298,12 @@ In addition to the standard prerequisites, you need:
 ### Step 1: Create a CloudQuery Model
 
 ```bash
-dp init my-sync --runtime cloudquery
+dk init my-sync --runtime cloudquery
 ```
 
 This creates:
 
-- `dp.yaml` — Package manifest with CloudQuery configuration
+- `dk.yaml` — Package manifest with CloudQuery configuration
 - `config.yaml` — CloudQuery sync configuration
 
 ### Step 2: Configure the Sync
@@ -335,7 +335,7 @@ spec:
 ### Step 3: Start Local Dev Stack
 
 ```bash
-dp dev up
+dk dev up
 ```
 
 This starts PostgreSQL and LocalStack for local testing.
@@ -349,20 +349,20 @@ export CONNECTION_STRING="postgres://postgres:postgres@localhost:5432/postgres"
 cloudquery sync config.yaml
 ```
 
-!!! note "Why not `dp run`?"
+!!! note "Why not `dk run`?"
     CloudQuery models use configuration files rather than application code.
     The CloudQuery CLI handles the actual sync execution.
 
 ### Step 5: Validate and Publish
 
 ```bash
-dp lint           # Validate manifest
-dp build          # Build OCI artifact  
-dp publish        # Push to registry
+dk lint           # Validate manifest
+dk build          # Build OCI artifact  
+dk publish        # Push to registry
 ```
 
 ### Step 6: Clean Up
 
 ```bash
-dp dev down
+dk dev down
 ```

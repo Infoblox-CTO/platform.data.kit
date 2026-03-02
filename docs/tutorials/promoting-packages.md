@@ -56,12 +56,12 @@ First, make sure your package is ready:
 cd my-pipeline
 
 # Validate manifests
-dp lint
+dk lint
 
 # Run locally to verify
-dp dev up
-dp run
-dp dev down
+dk dev up
+dk run
+dk dev down
 ```
 
 ## Step 2: Build the Package
@@ -69,7 +69,7 @@ dp dev down
 Create an OCI artifact:
 
 ```bash
-dp build --tag v1.0.0
+dk build --tag v1.0.0
 ```
 
 Output:
@@ -93,7 +93,7 @@ Artifact details:
 Push the artifact to your registry:
 
 ```bash
-dp publish
+dk publish
 ```
 
 !!! note "Authentication"
@@ -122,7 +122,7 @@ Digest: sha256:abc123...
 Deploy to the development environment:
 
 ```bash
-dp promote my-pipeline v1.0.0 --to dev
+dk promote my-pipeline v1.0.0 --to dev
 ```
 
 Output:
@@ -179,7 +179,7 @@ PR #123: Promote my-pipeline v1.0.0 to dev
 Check the deployment status:
 
 ```bash
-dp status my-pipeline
+dk status my-pipeline
 ```
 
 ```
@@ -196,7 +196,7 @@ prod         -         -          -
 Watch logs for the first run:
 
 ```bash
-dp logs my-pipeline --env dev --follow
+dk logs my-pipeline --env dev --follow
 ```
 
 ## Step 6: Promote to Int
@@ -204,7 +204,7 @@ dp logs my-pipeline --env dev --follow
 After testing in dev, promote to integration:
 
 ```bash
-dp promote my-pipeline v1.0.0 --to int
+dk promote my-pipeline v1.0.0 --to int
 ```
 
 This creates a PR requiring 1 approval:
@@ -248,7 +248,7 @@ Request review from your team lead:
 After int testing, promote to production:
 
 ```bash
-dp promote my-pipeline v1.0.0 --to prod
+dk promote my-pipeline v1.0.0 --to prod
 ```
 
 Production requires more scrutiny:
@@ -287,7 +287,7 @@ Once promoted, monitor the deployment:
 ### Check Status
 
 ```bash
-dp status my-pipeline
+dk status my-pipeline
 ```
 
 ```
@@ -304,12 +304,12 @@ prod         v1.0.0    Synced    5 min ago        ✓ success
 ### View Logs
 
 ```bash
-dp logs my-pipeline --env prod --tail 100
+dk logs my-pipeline --env prod --tail 100
 ```
 
 ### View Lineage
 
-<!-- dp lineage is not yet implemented -->
+<!-- dk lineage is not yet implemented -->
 Open the Marquez UI at http://localhost:3000 to view the lineage graph.
 
 Check Marquez for production lineage graph.
@@ -321,7 +321,7 @@ If something goes wrong, rollback to the previous version:
 ### Quick Rollback
 
 ```bash
-dp rollback my-pipeline --env prod
+dk rollback my-pipeline --env prod
 ```
 
 This promotes the previous version:
@@ -340,7 +340,7 @@ Creating expedited PR:
 ### Rollback to Specific Version
 
 ```bash
-dp rollback my-pipeline --to v0.8.0 --env prod
+dk rollback my-pipeline --to v0.8.0 --env prod
 ```
 
 ### Using Promote with Rollback Flag
@@ -348,7 +348,7 @@ dp rollback my-pipeline --to v0.8.0 --env prod
 For the same result:
 
 ```bash
-dp promote my-pipeline v0.9.0 --to prod --rollback
+dk promote my-pipeline v0.9.0 --to prod --rollback
 ```
 
 The `--rollback` flag:
@@ -362,7 +362,7 @@ The `--rollback` flag:
 Preview what would happen:
 
 ```bash
-dp promote my-pipeline v1.0.0 --to prod --dry-run
+dk promote my-pipeline v1.0.0 --to prod --dry-run
 ```
 
 ```
@@ -389,7 +389,7 @@ Would perform:
 See all published versions:
 
 ```bash
-dp versions my-pipeline
+dk versions my-pipeline
 ```
 
 ```
@@ -407,7 +407,7 @@ v0.7.0    3 weeks ago        -
 ### Version Comparison
 
 ```bash
-dp diff my-pipeline v0.9.0 v1.0.0
+dk diff my-pipeline v0.9.0 v1.0.0
 ```
 
 ## Best Practices
@@ -418,14 +418,14 @@ Always follow: dev → int → prod
 
 ```bash
 # Good
-dp promote pkg v1.0.0 --to dev
+dk promote pkg v1.0.0 --to dev
 # Test...
-dp promote pkg v1.0.0 --to int
+dk promote pkg v1.0.0 --to int
 # Test...
-dp promote pkg v1.0.0 --to prod
+dk promote pkg v1.0.0 --to prod
 
 # Bad: Skipping environments
-dp promote pkg v1.0.0 --to prod  # ⚠️
+dk promote pkg v1.0.0 --to prod  # ⚠️
 ```
 
 ### 2. Small, Frequent Releases
@@ -444,8 +444,8 @@ v1.0.0 → v2.0.0
 
 ```bash
 # Immediately after promotion
-dp status my-pipeline --watch
-dp logs my-pipeline --env prod --follow
+dk status my-pipeline --watch
+dk logs my-pipeline --env prod --follow
 ```
 
 ### 4. Document Changes
@@ -453,7 +453,7 @@ dp logs my-pipeline --env prod --follow
 Use meaningful version messages:
 
 ```bash
-dp build --tag v1.0.1 --message "Fix: Handle null user IDs"
+dk build --tag v1.0.1 --message "Fix: Handle null user IDs"
 ```
 
 ## Summary

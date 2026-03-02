@@ -1,4 +1,4 @@
-# Redpanda values for dp local development
+# Redpanda values for dk local development
 # These values configure the upstream redpanda subchart for single-node dev use.
 # developer_mode skips hardware/memory checks that fail inside k3d.
 

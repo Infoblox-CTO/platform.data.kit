@@ -15,7 +15,7 @@ import (
 // helm upgrade --install in parallel.
 // Returns a DeployResult with per-chart success/failure status.
 func DeployCharts(ctx context.Context, defs []ChartDefinition, overrides map[string]ChartOverride, kubeContext string) (*DeployResult, error) {
-	tempDir, err := os.MkdirTemp("", "dp-charts-*")
+	tempDir, err := os.MkdirTemp("", "dk-charts-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}

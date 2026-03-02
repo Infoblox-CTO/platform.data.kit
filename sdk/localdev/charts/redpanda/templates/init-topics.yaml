@@ -36,7 +36,7 @@ spec:
               done
 
               echo "Creating topics..."
-              {{- range $topic := list "dp.raw.events" "dp.processed.events" "dp.errors.dlq" "dp.audit.logs" "dp.test.input" "dp.test.output" }}
+              {{- range $topic := list "dk.raw.events" "dk.processed.events" "dk.errors.dlq" "dk.audit.logs" "dk.test.input" "dk.test.output" }}
               rpk topic create "{{ $topic }}" --brokers "$BROKER" --partitions 1 --replicas 1 2>/dev/null || echo "Topic {{ $topic }} already exists"
               {{- end }}
 

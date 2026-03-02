@@ -37,13 +37,13 @@ Before using k3d runtime, ensure you have:
 
 ```bash
 # Start k3d cluster with all services
-dp dev up --runtime=k3d
+dk dev up --runtime=k3d
 ```
 
 Expected output:
 ```
 Starting k3d local development stack...
-✓ k3d cluster 'dp-local' created
+✓ k3d cluster 'dk-local' created
 ✓ Deploying Redpanda...
 ✓ Deploying LocalStack...
 ✓ Deploying PostgreSQL...
@@ -57,21 +57,21 @@ Services available at:
   • LocalStack (S3):  localhost:4566
   • PostgreSQL:       localhost:5432
 
-kubectl context: k3d-dp-local
+kubectl context: k3d-dk-local
 ```
 
 ### Check Status
 
 ```bash
-dp dev status --runtime=k3d
+dk dev status --runtime=k3d
 ```
 
 Expected output:
 ```
 k3d Local Development Stack: RUNNING
 
-Cluster: dp-local
-Context: k3d-dp-local
+Cluster: dk-local
+Context: k3d-dk-local
 
 Services:
   ✓ redpanda    Running  Healthy  localhost:19092
@@ -85,24 +85,24 @@ Port Forwards: 3 active
 
 ```bash
 # Stop but preserve data
-dp dev down --runtime=k3d
+dk dev down --runtime=k3d
 
 # Stop and delete all data
-dp dev down --runtime=k3d --volumes
+dk dev down --runtime=k3d --volumes
 ```
 
 ## Configuration
 
 ### Set k3d as Default Runtime
 
-Create or edit `~/.config/dp/config.yaml`:
+Create or edit `~/.config/dk/config.yaml`:
 
 ```yaml
 dev:
   runtime: k3d
 ```
 
-Now `dp dev up` will use k3d by default.
+Now `dk dev up` will use k3d by default.
 
 ## Registry Pull-Through Cache
 
@@ -114,7 +114,7 @@ The k3d runtime includes an automatic Docker registry pull-through cache that:
 
 ### How It Works
 
-When you run `dp dev up --runtime=k3d`:
+When you run `dk dev up --runtime=k3d`:
 
 1. A local registry cache container (`dev-registry-cache`) starts on port 5000
 2. The k3d cluster is configured to use this cache as a mirror
@@ -124,7 +124,7 @@ When you run `dp dev up --runtime=k3d`:
 ### Verify Cache is Running
 
 ```bash
-dp dev status --runtime=k3d
+dk dev status --runtime=k3d
 ```
 
 The output will include:
@@ -138,8 +138,8 @@ Registry Cache:
 
 The cache stores image layers in a Docker volume (`dev_registry_cache`). This volume:
 
-- **Persists across restarts**: Cached images survive `dp dev down`
-- **Removed with --volumes**: Use `dp dev down --volumes` to clear the cache
+- **Persists across restarts**: Cached images survive `dk dev down`
+- **Removed with --volumes**: Use `dk dev down --volumes` to clear the cache
 
 ### CI/CD Environments
 
@@ -163,26 +163,26 @@ docker inspect dev-registry-cache
 **Force cache rebuild:**
 ```bash
 # Stop everything including cache
-dp dev down --volumes
+dk dev down --volumes
 
 # Restart
-dp dev up --runtime=k3d
+dk dev up --runtime=k3d
 ```
 
 **Custom mirror host:**
 For advanced setups, override the mirror host with:
 ```bash
 export DEV_REGISTRY_MIRROR_HOST=my-registry.local
-dp dev up --runtime=k3d
+dk dev up --runtime=k3d
 ```
 
 ### Using from Any Directory
 
-With k3d runtime, you can run `dp dev up` from any directory - no need to be in the DP workspace:
+With k3d runtime, you can run `dk dev up` from any directory - no need to be in the DP workspace:
 
 ```bash
 cd /tmp/my-pipeline
-dp dev up --runtime=k3d  # Works!
+dk dev up --runtime=k3d  # Works!
 ```
 
 ## Connecting Your Data Package
@@ -261,13 +261,13 @@ Stop conflicting services before starting the k3d stack.
 
 1. Check Docker is running: `docker info`
 2. Check available resources: `docker system df`
-3. Try deleting and recreating: `dp dev down --runtime=k3d --volumes && dp dev up --runtime=k3d`
+3. Try deleting and recreating: `dk dev down --runtime=k3d --volumes && dk dev up --runtime=k3d`
 
 ### "Services not healthy"
 
 Check pod status:
 ```bash
-kubectl --context k3d-dp-local get pods
-kubectl --context k3d-dp-local describe pod <pod-name>
-kubectl --context k3d-dp-local logs <pod-name>
+kubectl --context k3d-dk-local get pods
+kubectl --context k3d-dk-local describe pod <pod-name>
+kubectl --context k3d-dk-local logs <pod-name>
 ```

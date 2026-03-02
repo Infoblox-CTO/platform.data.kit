@@ -1,10 +1,10 @@
 # Demo: Dev Lifecycle
-# Shows: dp dev up → dp dev status → dp dev down
-# Prerequisites: dp binary (make build), k3d cluster, DP_E2E_DEV=1
+# Shows: dk dev up → dk dev status → dk dev down
+# Prerequisites: dk binary (make build), k3d cluster, DK_E2E_DEV=1
 
 REQUIRE: k3d
 REQUIRE: docker
-REQUIRE: DP_E2E_DEV
+REQUIRE: DK_E2E_DEV
 
 SAY: Welcome to the Data Platform dev lifecycle demo
 
@@ -12,17 +12,17 @@ SAY: This demo shows the local development stack lifecycle
 SAY: We'll deploy Helm charts to k3d, check status, and tear down
 
 SAY: Starting the local development stack
-CMD: dp dev up
+CMD: dk dev up
 
 WAIT: 2
 
 SAY: Let's check the status of all services
-CMD: dp dev status
+CMD: dk dev status
 
 WAIT: 1
 
 SAY: All services are running. Now let's tear everything down
-CMD: dp dev down
+CMD: dk dev down
 
 SAY: The local development stack has been cleaned up.
 SAY: That's the complete dev lifecycle: up → status → down

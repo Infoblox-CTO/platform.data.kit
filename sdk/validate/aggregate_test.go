@@ -66,9 +66,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644)
 	if err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	v := NewAggregateValidator(tmpDir)
@@ -86,18 +86,18 @@ func TestAggregateValidator_Validate_MissingDpYaml(t *testing.T) {
 	result := v.Validate(context.Background())
 
 	if result.Valid {
-		t.Error("expected invalid when dp.yaml is missing")
+		t.Error("expected invalid when dk.yaml is missing")
 	}
 
 	hasError := false
 	for _, err := range result.Errors {
-		if err.Field == "dp.yaml" {
+		if err.Field == "dk.yaml" {
 			hasError = true
 			break
 		}
 	}
 	if !hasError {
-		t.Error("expected error about missing dp.yaml")
+		t.Error("expected error about missing dk.yaml")
 	}
 }
 
@@ -108,16 +108,16 @@ func TestAggregateValidator_Validate_InvalidDpYaml(t *testing.T) {
   - broken indentation
 apiVersion: data.infoblox.com/v1alpha1
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644)
 	if err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	v := NewAggregateValidator(tmpDir)
 	result := v.Validate(context.Background())
 
 	if result.Valid {
-		t.Error("expected invalid for malformed dp.yaml")
+		t.Error("expected invalid for malformed dk.yaml")
 	}
 }
 
@@ -137,9 +137,9 @@ spec:
   outputs:
     - asset: output-data
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "dp.yaml"), []byte(dpContent), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644)
 	if err != nil {
-		t.Fatalf("failed to write dp.yaml: %v", err)
+		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
 	v := NewAggregateValidator(tmpDir)

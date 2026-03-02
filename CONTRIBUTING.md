@@ -38,7 +38,7 @@ The project is organized as a Go monorepo with independent modules:
 data-platform/
 ├── contracts/     # Shared types, schemas, validation errors
 ├── sdk/           # Core functionality (validate, lineage, registry, runner)
-├── cli/           # DP CLI implementation
+├── cli/           # DK CLI implementation
 ├── platform/
 │   └── controller/  # Kubernetes PackageDeployment controller
 ├── specs/         # Feature specifications (speckit workflow)
@@ -125,7 +125,7 @@ go test -cover ./...
 
 # Build and try CLI
 make build
-./bin/dp lint examples/kafka-s3-pipeline
+./bin/dk lint examples/kafka-s3-pipeline
 ```
 
 ### 5. Submit PR
@@ -232,7 +232,7 @@ refactor: simplify validation context
 
 Include:
 
-1. **Version**: `dp version`
+1. **Version**: `dk version`
 2. **Environment**: OS, Go version, Docker version
 3. **Steps to reproduce**
 4. **Expected behavior**

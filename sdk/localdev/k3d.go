@@ -16,9 +16,9 @@ import (
 
 const (
 	// DefaultClusterName is the default k3d cluster name for local development.
-	DefaultClusterName = "dp-local"
+	DefaultClusterName = "dk-local"
 	// DefaultNamespace is the Kubernetes namespace for local dev services.
-	DefaultNamespace = "dp-local"
+	DefaultNamespace = "dk-local"
 )
 
 // K3dManager manages k3d cluster operations for local development.

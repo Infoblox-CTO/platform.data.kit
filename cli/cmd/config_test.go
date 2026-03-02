@@ -73,9 +73,9 @@ func TestConfigSetCmd(t *testing.T) {
 			// Use a temp dir for config files
 			tmpDir := t.TempDir()
 
-			// For repo scope, we need a .dp dir
+			// For repo scope, we need a .dk dir
 			if tt.scope == "repo" {
-				dpDir := filepath.Join(tmpDir, ".dp")
+				dpDir := filepath.Join(tmpDir, ".dk")
 				os.MkdirAll(dpDir, 0755)
 			}
 

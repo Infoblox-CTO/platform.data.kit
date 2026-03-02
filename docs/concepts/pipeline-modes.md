@@ -1,6 +1,6 @@
 # Pipeline Execution Modes
 
-Data packages in DP support two execution modes that determine how your pipeline runs: **batch** and **streaming**. Understanding the difference is essential for designing pipelines that meet your data processing needs.
+Data packages in DK support two execution modes that determine how your pipeline runs: **batch** and **streaming**. Understanding the difference is essential for designing pipelines that meet your data processing needs.
 
 ## Overview
 
@@ -15,7 +15,7 @@ Data packages in DP support two execution modes that determine how your pipeline
 
 ## Batch Mode
 
-Batch pipelines process a finite dataset and exit when complete. This is the default mode for DP packages.
+Batch pipelines process a finite dataset and exit when complete. This is the default mode for DK packages.
 
 ### When to Use Batch Mode
 
@@ -28,7 +28,7 @@ Batch pipelines process a finite dataset and exit when complete. This is the def
 ### Batch Configuration
 
 ```yaml
-# dp.yaml
+# dk.yaml
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -63,13 +63,13 @@ spec:
 
 ```bash
 # Run batch pipeline locally
-dp run
+dk run
 
 # Run with timeout
-dp run --timeout 10m
+dk run --timeout 10m
 
 # Test with sample data
-dp test
+dk test
 ```
 
 ## Streaming Mode
@@ -87,7 +87,7 @@ Streaming pipelines run continuously, processing data as it arrives. They never 
 ### Streaming Configuration
 
 ```yaml
-# dp.yaml
+# dk.yaml
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -183,19 +183,19 @@ func main() {
 
 ```bash
 # Run streaming pipeline (logs streamed)
-dp run
+dk run
 
 # Run in background
-dp run --detach
+dk run --detach
 
 # Follow logs for detached container
-dp logs --follow
+dk logs --follow
 
 # Test streaming behavior
-dp test --duration 60s --startup-timeout 30s
+dk test --duration 60s --startup-timeout 30s
 
 # Stop a running pipeline
-dp stop <run-id>
+dk stop <run-id>
 ```
 
 ## Choosing Between Modes
@@ -231,9 +231,9 @@ Both modes emit OpenLineage events for tracking:
 
 To change a pipeline's mode:
 
-1. Update `spec.mode` in dp.yaml
+1. Update `spec.mode` in dk.yaml
 2. Add/remove mode-specific fields (probes, timeout, etc.)
-3. Run `dp build` to update the package
+3. Run `dk build` to update the package
 4. Deploy the new version
 
 **Note**: Mode changes in production require redeployment. Streaming→Batch will stop the running Deployment and create a Job. Batch→Streaming will create a Deployment after the current Job completes.

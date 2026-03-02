@@ -1,4 +1,4 @@
-// Package cmd contains the CLI commands for DP.
+// Package cmd contains the CLI commands for DK.
 package cmd
 
 import (
@@ -21,13 +21,13 @@ creating a PR to update the environment overlay.
 
 Example:
   # Rollback to previous version in prod
-  dp rollback kafka-s3-pipeline --environment prod
+  dk rollback kafka-s3-pipeline --environment prod
 
   # Rollback to a specific version
-  dp rollback kafka-s3-pipeline --environment prod --to-version v1.0.0
+  dk rollback kafka-s3-pipeline --environment prod --to-version v1.0.0
 
   # Dry run to see what would happen
-  dp rollback kafka-s3-pipeline --environment prod --dry-run`,
+  dk rollback kafka-s3-pipeline --environment prod --dry-run`,
 	Args: cobra.ExactArgs(1),
 	RunE: runRollback,
 }

@@ -170,11 +170,11 @@ func TestBackfill_EnvVarInjection(t *testing.T) {
 	}
 
 	argsStr := strings.Join(capturedArgs, " ")
-	if !strings.Contains(argsStr, "DP_BACKFILL_FROM=2026-01-01") {
-		t.Errorf("expected DP_BACKFILL_FROM in args, got: %s", argsStr)
+	if !strings.Contains(argsStr, "DK_BACKFILL_FROM=2026-01-01") {
+		t.Errorf("expected DK_BACKFILL_FROM in args, got: %s", argsStr)
 	}
-	if !strings.Contains(argsStr, "DP_BACKFILL_TO=2026-01-31") {
-		t.Errorf("expected DP_BACKFILL_TO in args, got: %s", argsStr)
+	if !strings.Contains(argsStr, "DK_BACKFILL_TO=2026-01-31") {
+		t.Errorf("expected DK_BACKFILL_TO in args, got: %s", argsStr)
 	}
 }
 

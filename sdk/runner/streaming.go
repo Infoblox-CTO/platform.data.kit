@@ -55,7 +55,7 @@ func (r *DockerRunner) runStreamingDetached(ctx context.Context, opts RunOptions
 
 	if opts.Output != nil {
 		fmt.Fprintf(opts.Output, "Container started: %s\n", containerID[:12])
-		fmt.Fprintf(opts.Output, "Use 'dp logs' to view output\n")
+		fmt.Fprintf(opts.Output, "Use 'dk logs' to view output\n")
 	}
 
 	return nil

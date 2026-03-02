@@ -22,7 +22,7 @@ Build a pipeline that reads from Kafka and writes to S3.
 
 <div class="card" markdown>
 ### :computer: Local Development
-Master the local development workflow with `dp dev`.
+Master the local development workflow with `dk dev`.
 
 **Time**: ~20 minutes
 
@@ -71,7 +71,7 @@ Build a package and deploy it across multiple cells using Helm and GitOps.
 
 Before starting any tutorial, make sure you've completed:
 
-1. [Installation](../getting-started/installation.md) - DP CLI installed
+1. [Installation](../getting-started/installation.md) - DK CLI installed
 2. [Quickstart](../getting-started/quickstart.md) - Basic workflow understood
 
 ## Tutorial Structure
@@ -89,10 +89,10 @@ Each tutorial follows a consistent structure:
 | Tutorial | Difficulty | Prerequisites |
 |----------|------------|---------------|
 | Kafka to S3 | Intermediate | Quickstart completed |
-| Local Development | Beginner | DP CLI installed |
+| Local Development | Beginner | DK CLI installed |
 | Promoting Packages | Intermediate | Quickstart completed |
-| CloudQuery Python Plugin | Beginner | DP CLI + Python 3.12+ |
-| CloudQuery Go Plugin | Beginner | DP CLI + Go 1.25+ |
+| CloudQuery Python Plugin | Beginner | DK CLI + Python 3.12+ |
+| CloudQuery Go Plugin | Beginner | DK CLI + Go 1.25+ |
 
 ## Suggest a Tutorial
 

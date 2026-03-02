@@ -87,7 +87,7 @@ type PackageConfig struct {
 	Runtime     string // cloudquery, generic-go, generic-python, dbt (new taxonomy)
 	GRPCPort    int    // gRPC server port (cloudquery, default 7777)
 	Concurrency int    // max concurrent resolvers (cloudquery, default 10000)
-	Version     string // dp CLI version (for managed file stamps)
+	Version     string // dk CLI version (for managed file stamps)
 }
 
 // Renderer renders package templates.

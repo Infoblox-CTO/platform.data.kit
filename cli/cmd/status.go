@@ -1,4 +1,4 @@
-// Package cmd contains the CLI commands for DP.
+// Package cmd contains the CLI commands for DK.
 package cmd
 
 import (
@@ -21,10 +21,10 @@ for dev, int, and prod environments.
 
 Example:
   # Show status for a specific package
-  dp status kafka-s3-pipeline
+  dk status kafka-s3-pipeline
 
   # Show status for all packages
-  dp status --all`,
+  dk status --all`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runStatus,
 }

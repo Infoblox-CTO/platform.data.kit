@@ -42,7 +42,7 @@ func (r *EmbeddedResolver) ResolveSchema(_ context.Context, fqn, _ string) ([]by
 }
 
 // CachingResolver wraps another resolver and caches schemas on the local filesystem.
-// Cache location: ~/.cache/dp/schemas/<fqn>/<version>/schema.json
+// Cache location: ~/.cache/dk/schemas/<fqn>/<version>/schema.json
 type CachingResolver struct {
 	inner    SchemaResolver
 	cacheDir string
@@ -50,14 +50,14 @@ type CachingResolver struct {
 }
 
 // NewCachingResolver creates a resolver that caches schemas locally.
-// If cacheDir is empty, it defaults to ~/.cache/dp/schemas/.
+// If cacheDir is empty, it defaults to ~/.cache/dk/schemas/.
 func NewCachingResolver(inner SchemaResolver, cacheDir string) *CachingResolver {
 	if cacheDir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			cacheDir = filepath.Join(os.TempDir(), "dp", "schemas")
+			cacheDir = filepath.Join(os.TempDir(), "dk", "schemas")
 		} else {
-			cacheDir = filepath.Join(home, ".cache", "dp", "schemas")
+			cacheDir = filepath.Join(home, ".cache", "dk", "schemas")
 		}
 	}
 	return &CachingResolver{

@@ -169,9 +169,9 @@ func (p *Promoter) generateVersionFile(req *PromotionRequest) (string, error) {
 		Metadata: VersionMeta{
 			Name: req.Package,
 			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": "dp",
-				"dp.io/package":                req.Package,
-				"dp.io/environment":            req.TargetEnv.String(),
+				"app.kubernetes.io/managed-by": "dk",
+				"datakit.infoblox.dev/package":     req.Package,
+				"datakit.infoblox.dev/environment":  req.TargetEnv.String(),
 			},
 		},
 		Spec: VersionSpec{

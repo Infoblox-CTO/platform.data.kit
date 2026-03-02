@@ -1,4 +1,4 @@
-// Package cmd contains the CLI commands for DP.
+// Package cmd contains the CLI commands for DK.
 package cmd
 
 import (
@@ -22,13 +22,13 @@ ArgoCD will automatically deploy the new version.
 
 Example:
   # Promote to dev environment
-  dp promote kafka-s3-pipeline v1.0.0 --to dev
+  dk promote kafka-s3-pipeline v1.0.0 --to dev
 
   # Promote to integration with digest verification
-  dp promote kafka-s3-pipeline v1.0.0 --to int --digest sha256:abc123
+  dk promote kafka-s3-pipeline v1.0.0 --to int --digest sha256:abc123
 
   # Dry run to see what would happen
-  dp promote kafka-s3-pipeline v1.0.0 --to prod --dry-run`,
+  dk promote kafka-s3-pipeline v1.0.0 --to prod --dry-run`,
 	Args: cobra.ExactArgs(2),
 	RunE: runPromote,
 }

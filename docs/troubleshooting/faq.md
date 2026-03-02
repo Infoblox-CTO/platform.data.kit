@@ -60,18 +60,18 @@ DP supports any containerized runtime:
 ### How do I start developing locally?
 
 ```bash
-# 1. Install dp CLI
+# 1. Install dk CLI
 make build
 export PATH=$PATH:$(pwd)/bin
 
 # 2. Start local stack
-dp dev up
+dk dev up
 
 # 3. Create a Transform package
-dp init my-pipeline --runtime generic-python
+dk init my-pipeline --runtime generic-python
 
 # 4. Run locally
-dp run ./my-pipeline
+dk run ./my-pipeline
 ```
 
 See the [Quickstart](../getting-started/quickstart.md) for details.
@@ -104,11 +104,11 @@ Assets reference the Store by name — no additional configuration is needed.
 
 ### How do I add custom services to the dev stack?
 
-Use `dp config` to customize chart versions and Helm values:
+Use `dk config` to customize chart versions and Helm values:
 
 ```bash
-dp config set dev.charts.redpanda.version 25.2.0
-dp config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
+dk config set dev.charts.redpanda.version 25.2.0
+dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
 ```
 
 ### How do I persist data between runs?
@@ -117,10 +117,10 @@ Data is stored in Docker volumes. To reset:
 
 ```bash
 # Keep data
-dp dev down
+dk dev down
 
 # Remove data
-dp dev down --volumes
+dk dev down --volumes
 ```
 
 ---
@@ -131,13 +131,13 @@ dp dev down --volumes
 
 | File/Directory | Purpose | Required |
 |------|---------|----------|
-| `dp.yaml` | Transform manifest (runtime, inputs, outputs, schedule) | Yes |
+| `dk.yaml` | Transform manifest (runtime, inputs, outputs, schedule) | Yes |
 | `connector/` | Connector definitions (technology types) | No |
 | `store/` | Store definitions (instances with connection details) | No |
 | `asset/` | Asset definitions (data contracts with schema) | No |
 | `asset-group/` | AssetGroup definitions (bundled assets) | No |
 
-The `dp.yaml` file is a Transform manifest that references Assets by name. Assets reference Stores, and Stores reference Connectors.
+The `dk.yaml` file is a Transform manifest that references Assets by name. Assets reference Stores, and Stores reference Connectors.
 
 ### What runtimes are available?
 
@@ -149,8 +149,8 @@ The `dp.yaml` file is a Transform manifest that references Assets by name. Asset
 | `dbt` | dbt transformations |
 
 ```bash
-dp init my-pkg --runtime generic-python
-dp init my-pkg --runtime cloudquery
+dk init my-pkg --runtime generic-python
+dk init my-pkg --runtime cloudquery
 ```
 
 ### How do I version packages?
@@ -159,7 +159,7 @@ Packages use semantic versioning:
 
 ```bash
 # Build with version
-dp build --tag v1.0.0
+dk build --tag v1.0.0
 
 # Increment for changes
 v1.0.0 → v1.0.1  # Bug fix
@@ -173,7 +173,7 @@ Yes! Push to a private registry:
 
 ```bash
 # Use private registry
-dp publish --registry ghcr.io/my-private-org
+dk publish --registry ghcr.io/my-private-org
 
 # Ensure authentication
 docker login ghcr.io
@@ -187,7 +187,7 @@ docker login ghcr.io
 
 DP uses GitOps for deployment:
 
-1. `dp promote` creates a PR in the GitOps repository
+1. `dk promote` creates a PR in the GitOps repository
 2. PR is reviewed and approved
 3. After merge, ArgoCD syncs to Kubernetes
 4. Package runs in the target environment
@@ -206,7 +206,7 @@ Not recommended, but possible:
 
 ```bash
 # This will work but triggers a warning
-dp promote my-pkg v1.0.0 --to prod
+dk promote my-pkg v1.0.0 --to prod
 # Warning: Skipping dev and int environments
 ```
 
@@ -214,16 +214,16 @@ dp promote my-pkg v1.0.0 --to prod
 
 ```bash
 # Rollback to previous version
-dp rollback my-pkg --env prod
+dk rollback my-pkg --env prod
 
 # Rollback to specific version
-dp rollback my-pkg --to v1.0.0 --env prod
+dk rollback my-pkg --to v1.0.0 --env prod
 ```
 
 ### How do I know what version is deployed?
 
 ```bash
-dp status my-pkg
+dk status my-pkg
 ```
 
 ```
@@ -250,7 +250,7 @@ Lineage tracks:
 
 DP automatically emits [OpenLineage](https://openlineage.io/) events:
 
-1. Reads inputs/outputs from `dp.yaml`
+1. Reads inputs/outputs from `dk.yaml`
 2. Emits START event when pipeline begins
 3. Emits COMPLETE/FAIL event when pipeline ends
 4. Events sent to Marquez (or configured backend)
@@ -258,12 +258,12 @@ DP automatically emits [OpenLineage](https://openlineage.io/) events:
 ### Where can I view lineage?
 
 - **Local**: http://localhost:3000 (Marquez Web UI)
-- **CLI**: `dp lineage my-pipeline` *(not yet implemented)*
+- **CLI**: `dk lineage my-pipeline` *(not yet implemented)*
 - **Production**: Your organization's lineage backend
 
 ### Can I use a different lineage backend?
 
-Yes! Configure in `~/.dp/config.yaml`:
+Yes! Configure in `~/.dk/config.yaml`:
 
 ```yaml
 lineage:
@@ -275,7 +275,7 @@ lineage:
 
 Common causes:
 
-1. Marquez not running: `dp dev status`
+1. Marquez not running: `dk dev status`
 2. Wrong endpoint: Check `OPENLINEAGE_URL`
 3. Pipeline never completed successfully
 
@@ -315,24 +315,24 @@ spec:
 
 ### Are classification policies enforced?
 
-Yes! `dp lint` enforces policies:
+Yes! `dk lint` enforces policies:
 
 ```bash
-dp lint
+dk lint
 # Error: output 'customer-data': pii=true requires sensitivity level
 ```
 
 ### How do I view what packages handle PII?
 
 ```bash
-dp governance report --filter pii=true
+dk governance report --filter pii=true
 ```
 
 ---
 
 ## Troubleshooting Questions
 
-### dp command not found
+### dk command not found
 
 Add the binary to your PATH:
 
@@ -340,16 +340,16 @@ Add the binary to your PATH:
 export PATH=$PATH:/path/to/data-platform/bin
 ```
 
-### dp dev up fails
+### dk dev up fails
 
 1. Check Docker is running: `docker info`
 2. Check port conflicts: `lsof -i :9092`
-3. Clean up: `dp dev down --volumes`
+3. Clean up: `dk dev down --volumes`
 
 ### Pipeline can't connect to Kafka
 
-1. Wait for Kafka to be ready: `dp dev status`
-2. Check Kafka logs: `kubectl --context k3d-dp-local logs -l app=redpanda`
+1. Wait for Kafka to be ready: `dk dev status`
+2. Check Kafka logs: `kubectl --context k3d-dk-local logs -l app=redpanda`
 3. Verify bootstrap server: `localhost:9092`
 
 ### Push to registry fails

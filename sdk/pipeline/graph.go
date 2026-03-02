@@ -43,7 +43,7 @@ type PipelineGraph struct {
 
 // GraphOptions configures graph building.
 type GraphOptions struct {
-	// ScanDirs is the list of directories to scan for dp.yaml files.
+	// ScanDirs is the list of directories to scan for dk.yaml files.
 	ScanDirs []string
 	// Destination filters the graph to show only the chain leading to this asset.
 	Destination string
@@ -468,7 +468,7 @@ func scanManifests(dirs []string) ([]scannedTransform, map[string]*contracts.Ass
 			if info.IsDir() {
 				return nil
 			}
-			if info.Name() != "dp.yaml" {
+			if info.Name() != "dk.yaml" {
 				return nil
 			}
 
