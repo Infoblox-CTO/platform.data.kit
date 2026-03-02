@@ -18,15 +18,18 @@ This page covers common issues you may encounter and how to resolve them.
 **Solution**:
 
 ```bash
-# Check if binary exists
-ls -la bin/dk
+# Reinstall to ~/go/bin (default)
+make install
 
-# Add to PATH temporarily
-export PATH=$PATH:$(pwd)/bin
+# Verify it's on your PATH
+which dk
 
-# Or add to shell config permanently
-echo 'export PATH=$PATH:/path/to/data-platform/bin' >> ~/.zshrc
+# If ~/go/bin is not on your PATH, add it
+echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc
 source ~/.zshrc
+
+# Or install to a directory already on your PATH
+make install DESTDIR=/usr/local/bin
 ```
 
 ### Build Fails with Go Errors
@@ -56,8 +59,8 @@ go mod download
 **Solution**:
 
 ```bash
-chmod +x bin/dk
-./bin/dk version
+chmod +x "$(which dk)"
+dk version
 ```
 
 ---

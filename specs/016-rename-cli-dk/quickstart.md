@@ -9,24 +9,26 @@
 - k3d (for local dev environment)
 - Make
 
-## Step 1: Build the CLI
+## Step 1: Build and Install the CLI
 
 ```bash
-make build-cli
+make build-cli && make install
 ```
 
-**Verify**: Binary exists at `bin/dk`:
+**Verify**: `dk` is on your PATH and reports the expected version:
 
 ```bash
-ls -la bin/dk
-bin/dk version
+which dk
+# Expected: path to the dk binary (e.g. /usr/local/bin/dk)
+
+dk version
 # Expected: dk version dev
 ```
 
 ## Step 2: Verify Help Output
 
 ```bash
-bin/dk --help
+dk --help
 ```
 
 **Verify**: Output shows "DK (DataKit)" branding, all example commands use `dk`, and no references to `dp` appear.
@@ -35,10 +37,10 @@ bin/dk --help
 
 ```bash
 # Interactive mode — should show banner
-bin/dk init
+dk init
 
 # Non-interactive mode — should NOT show banner
-bin/dk init my-pipeline --runtime cloudquery
+dk init my-pipeline --runtime cloudquery
 ```
 
 **Verify**: In interactive mode, an ASCII art "DataKit" banner appears before the first prompt. In non-interactive mode, no banner is shown.
@@ -47,10 +49,10 @@ bin/dk init my-pipeline --runtime cloudquery
 
 ```bash
 # Piped output — should NOT show banner
-echo "" | bin/dk init
+echo "" | dk init
 
 # Redirected output — banner should not appear in file
-bin/dk init 2>&1 | grep -c "DataKit"
+dk init 2>&1 | grep -c "DataKit"
 # Expected: 0 (banner goes to stderr or is suppressed)
 ```
 
@@ -58,13 +60,13 @@ bin/dk init 2>&1 | grep -c "DataKit"
 
 ```bash
 # Create a new project
-bin/dk init test-project --runtime cloudquery
+dk init test-project --runtime cloudquery
 
 # Validate
-cd test-project && ../bin/dk lint
+cd test-project && dk lint
 
 # Show manifest
-../bin/dk show
+dk show
 
 # Clean up
 cd .. && rm -rf test-project
@@ -75,7 +77,7 @@ cd .. && rm -rf test-project
 ## Step 6: Verify Config Paths
 
 ```bash
-bin/dk config list
+dk config list
 ```
 
 **Verify**: Config paths reference `.dk/config.yaml` and `~/.config/dk/config.yaml`.
@@ -95,7 +97,7 @@ cd ../platform/controller && go test ./... -count=1
 ## Step 8: Verify Manifest Filename
 
 ```bash
-bin/dk init verify-manifest --runtime cloudquery
+dk init verify-manifest --runtime cloudquery
 ls verify-manifest/dk.yaml
 # Expected: file exists
 rm -rf verify-manifest
@@ -108,14 +110,13 @@ rm -rf verify-manifest
 grep -rn '"dp ' cli/cmd/ | grep -v '_test.go' | grep -v 'dp.yaml'
 # Expected: no matches
 
-bin/dk --help 2>&1 | grep -i '\bdp\b'
+dk --help 2>&1 | grep -i '\bdp\b'
 # Expected: no matches
 ```
 
-## Step 10: Install Globally
+## Step 10: Verify Version
 
 ```bash
-make install
 dk version
 # Expected: dk version dev
 ```

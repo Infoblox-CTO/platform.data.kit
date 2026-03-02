@@ -1,8 +1,9 @@
 # dk Makefile
 # Multi-module Go workspace build system
 
-# Install location for binaries
-GOPATH := $(HOME)/go
+# Install destination for `make install`. Override with:
+#   make install DESTDIR=/usr/local/bin
+DESTDIR ?= $(HOME)/go/bin
 
 .PHONY: all build test lint clean help
 .PHONY: build-contracts build-sdk build-cli build-controller
@@ -125,10 +126,11 @@ tidy: ## Tidy all go.mod files
 	@cd cli && go mod tidy
 	@cd platform/controller && go mod tidy
 
-install: ## Install dk to GOPATH/bin
-	@echo "Installing dk to $(GOPATH)/bin..."
-	@cd cli && go build -o $(GOPATH)/bin/dk .
-	@echo "✓ Installed dk to $(GOPATH)/bin/dk"
+install: ## Install dk to DESTDIR (default: ~/go/bin)
+	@echo "Installing dk to $(DESTDIR)..."
+	@mkdir -p $(DESTDIR)
+	@cd cli && go build -o $(DESTDIR)/dk .
+	@echo "✓ Installed dk to $(DESTDIR)/dk"
 
 run-local: ## Start local dev stack
 	@echo "Starting local development stack..."

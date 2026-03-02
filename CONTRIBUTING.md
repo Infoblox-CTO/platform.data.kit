@@ -124,8 +124,8 @@ go test ./sdk/validate/...
 go test -cover ./...
 
 # Build and try CLI
-make build
-./bin/dk lint examples/kafka-s3-pipeline
+make build && make install
+dk lint examples/kafka-s3-pipeline
 ```
 
 ### 5. Submit PR

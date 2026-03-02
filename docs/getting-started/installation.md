@@ -18,36 +18,38 @@ Build the latest version from source:
 git clone https://github.com/Infoblox-CTO/platform.data.kit.git
 cd data-platform
 
-# Build the CLI
-make build
+# Build and install the CLI (installs to ~/go/bin by default)
+make build-cli && make install
 
-# The binary is created in bin/dk
-./bin/dk version
+# Verify dk is on your PATH
+which dk
+dk version
 ```
 
 ### Add to PATH
 
-Add the `dk` binary to your PATH for easy access:
+By default `make install` places the binary in `~/go/bin`. Ensure that
+directory is on your PATH:
 
-=== "Temporary (current session)"
-
-    ```bash
-    export PATH=$PATH:$(pwd)/bin
-    ```
-
-=== "Permanent (bash)"
+=== "bash"
 
     ```bash
-    echo 'export PATH=$PATH:/path/to/data-platform/bin' >> ~/.bashrc
+    echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
     source ~/.bashrc
     ```
 
-=== "Permanent (zsh)"
+=== "zsh"
 
     ```bash
-    echo 'export PATH=$PATH:/path/to/data-platform/bin' >> ~/.zshrc
+    echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc
     source ~/.zshrc
     ```
+
+To install elsewhere, override `DESTDIR`:
+
+```bash
+make install DESTDIR=/usr/local/bin
+```
 
 ## Verify Installation
 
@@ -125,9 +127,10 @@ log_level: info
 
 If you get `command not found: dk`:
 
-1. Verify the binary exists: `ls -la bin/dk`
-2. Check your PATH: `echo $PATH`
-3. Ensure the binary is executable: `chmod +x bin/dk`
+1. Re-run the install: `make install`
+2. Verify it was installed: `ls ~/go/bin/dk`
+3. Check your PATH includes `~/go/bin`: `echo $PATH`
+4. Or install to a directory already on your PATH: `make install DESTDIR=/usr/local/bin`
 
 ### Build Errors
 
@@ -142,11 +145,11 @@ If `make build` fails:
 If you get permission errors:
 
 ```bash
-# Make the binary executable
-chmod +x bin/dk
+# Install to a user-writable location (default)
+make install
 
-# Or run with explicit path
-./bin/dk version
+# Or fix permissions on the installed binary
+chmod +x ~/go/bin/dk
 ```
 
 ## Upgrading
@@ -159,8 +162,8 @@ cd data-platform
 # Pull latest changes
 git pull origin main
 
-# Rebuild
-make build
+# Rebuild and reinstall
+make build && make install
 
 # Verify new version
 dk version
@@ -172,12 +175,10 @@ To remove the DK CLI:
 
 ```bash
 # Remove the binary
-rm /path/to/data-platform/bin/dk
+rm "$(which dk)"
 
 # Remove configuration (optional)
 rm -rf ~/.dk
-
-# Remove from PATH (edit ~/.bashrc or ~/.zshrc)
 ```
 
 ## Next Steps
