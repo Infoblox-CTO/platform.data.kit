@@ -155,8 +155,8 @@ func (u *FileKustomizeUpdater) newVersionFile(pkg, version, digest string) *Vers
 		Metadata: VersionMeta{
 			Name: pkg,
 			Labels: map[string]string{
-				"app.kubernetes.io/managed-by":  "dk",
-				"datakit.infoblox.dev/package":  pkg,
+				"app.kubernetes.io/managed-by": "dk",
+				"datakit.infoblox.dev/package": pkg,
 			},
 		},
 		Spec: VersionSpec{

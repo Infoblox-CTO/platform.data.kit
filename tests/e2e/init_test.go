@@ -10,7 +10,7 @@ func TestInit_CreatesPackageStructure(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "my-package")
+	result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "my-package")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -21,7 +21,7 @@ func TestInit_CreatesPackageStructure(t *testing.T) {
 
 	pkgDir := filepath.Join(tmpDir, "my-package")
 	assertFileExists(t, pkgDir)
-	assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
+	assertFileExists(t, filepath.Join(pkgDir, "dk.yaml"))
 }
 
 func TestInit_ValidatesPackageName(t *testing.T) {
@@ -68,7 +68,7 @@ func TestInit_ValidatesPackageName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := createTempDir(t)
 
-			result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", tt.packageName)
+			result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", tt.packageName)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -92,7 +92,7 @@ func TestInit_WithNamespaceFlag(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "--namespace", "custom-namespace", "my-package")
+	result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "--namespace", "custom-namespace", "my-package")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -102,8 +102,8 @@ func TestInit_WithNamespaceFlag(t *testing.T) {
 	}
 
 	pkgDir := filepath.Join(tmpDir, "my-package")
-	assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-	assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "namespace: custom-namespace")
+	assertFileExists(t, filepath.Join(pkgDir, "dk.yaml"))
+	assertFileContains(t, filepath.Join(pkgDir, "dk.yaml"), "namespace: custom-namespace")
 }
 
 func TestInit_WithOwnerFlag(t *testing.T) {
@@ -111,7 +111,7 @@ func TestInit_WithOwnerFlag(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "--owner", "platform-team", "my-package")
+	result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "--owner", "platform-team", "my-package")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -121,6 +121,6 @@ func TestInit_WithOwnerFlag(t *testing.T) {
 	}
 
 	pkgDir := filepath.Join(tmpDir, "my-package")
-	assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-	assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "owner: platform-team")
+	assertFileExists(t, filepath.Join(pkgDir, "dk.yaml"))
+	assertFileContains(t, filepath.Join(pkgDir, "dk.yaml"), "owner: platform-team")
 }

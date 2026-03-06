@@ -2,7 +2,7 @@
 
 ## Problem
 
-Once data lands in an asset (a Postgres table, an S3 prefix, a Kafka topic), there's no way to interact with it through `dp`. Users manually piece together connection strings, look up secrets, and figure out the right CLI flags for `psql`, `aws s3`, etc. This should be a first-class workflow.
+Once data lands in an asset (a Postgres table, an S3 prefix, a Kafka topic), there's no way to interact with it through `dk`. Users manually piece together connection strings, look up secrets, and figure out the right CLI flags for `psql`, `aws s3`, etc. This should be a first-class workflow.
 
 Additionally, connectors today are static YAML files duplicated across every package with no versioning, no central source of truth, and no distribution mechanism — even though OCI infrastructure already exists for Transforms.
 
@@ -292,9 +292,9 @@ spec:
 ### Tool execution
 
 ```
-dp asset connect <asset-name> [--tool <tool>] [--cell <cell>] [--dry-run]
-dp store connect <store-name> [--tool <tool>] [--cell <cell>] [--dry-run]
-dp store tools   <store-name> [--cell <cell>]
+dk asset connect <asset-name> [--tool <tool>] [--cell <cell>] [--dry-run]
+dk store connect <store-name> [--tool <tool>] [--cell <cell>] [--dry-run]
+dk store tools   <store-name> [--cell <cell>]
 ```
 
 | Flag | Description |
@@ -312,24 +312,24 @@ dp store tools   <store-name> [--cell <cell>]
 
 A `config` tool with `format: env` is designed for shell eval:
 ```bash
-eval $(dp asset connect my-bucket --tool env)
+eval $(dk asset connect my-bucket --tool env)
 aws s3 ls s3://cdpp-raw/foo/
 ```
 
 ### Connector management
 
 ```
-dp connector list                              # list available connectors (local + registry)
-dp connector show postgres                     # show connector details, version, tools
-dp connector install postgres@^1.0.0           # pull from OCI, cache locally
-dp connector publish ./connector/postgres.yaml  # build & push OCI artifact
-dp connector tools postgres                    # list tools for a connector
+dk connector list                              # list available connectors (local + registry)
+dk connector show postgres                     # show connector details, version, tools
+dk connector install postgres@^1.0.0           # pull from OCI, cache locally
+dk connector publish ./connector/postgres.yaml  # build & push OCI artifact
+dk connector tools postgres                    # list tools for a connector
 ```
 
 ## Resolution Flow
 
 ```
-dp asset connect foo-source-table --tool psql
+dk asset connect foo-source-table --tool psql
         │
         ▼
 ┌─ Load local manifests ────────────────────────┐
@@ -379,7 +379,7 @@ artifact
 └── config:          artifact-config.json
 ```
 
-Connectors can bundle a Helm chart for their dev infrastructure (e.g., postgres connector carries Bitnami postgres chart). `dp dev up` becomes connector-driven — the infrastructure deployed is determined by the connectors your stores reference.
+Connectors can bundle a Helm chart for their dev infrastructure (e.g., postgres connector carries Bitnami postgres chart). `dk dev up` becomes connector-driven — the infrastructure deployed is determined by the connectors your stores reference.
 
 ## Versioning Contract
 
@@ -404,10 +404,10 @@ All changes are additive:
 1. ✅ Add `Provider`, `Version`, `Tools`, `ConnectionSchema` to `ConnectorSpec`
 2. ✅ Add `ConnectorVersion` to `StoreSpec`
 3. Update JSON schemas, validation, tests, example YAMLs
-4. Implement `dp connector list/show/tools` CLI commands
-5. Implement `dp asset connect` / `dp store connect` CLI commands
+4. Implement `dk connector list/show/tools` CLI commands
+5. Implement `dk asset connect` / `dk store connect` CLI commands
 6. Implement OCI publish/install for connectors (reuse `sdk/registry`)
-7. Refactor `dp dev up` to be connector-driven (incremental, keep hardcoded charts as fallback)
+7. Refactor `dk dev up` to be connector-driven (incremental, keep hardcoded charts as fallback)
 
 Steps 1-5 work without OCI distribution. Steps 6-7 are layered on top.
 
@@ -415,8 +415,8 @@ Steps 1-5 work without OCI distribution. Steps 6-7 are layered on top.
 
 | Question | Current lean |
 |----------|-------------|
-| Should local `connector/` files be gitignored? | No — keep committed for self-containment. Mark as "managed" via annotation so `dp connector install` can update. |
+| Should local `connector/` files be gitignored? | No — keep committed for self-containment. Mark as "managed" via annotation so `dk connector install` can update. |
 | Connector lock file? | `connector.lock` recording exact resolved versions (like `go.sum`). Good for reproducibility, add later. |
 | Should `devInfra` (Helm chart) live in the YAML or OCI layer? | Separate OCI layer. Connector YAML stays portable; Helm chart is a packaging concern. |
-| How does this interact with `dp init`? | `dp init --connector postgres@^1.0.0` pulls connector, scaffolds store template, wires up asset. |
+| How does this interact with `dk init`? | `dk init --connector postgres@^1.0.0` pulls connector, scaffolds store template, wires up asset. |
 | Should stores also be OCI-distributed? | Not yet. Stores are instance-specific. The cell/k8s CRD path handles shared stores. |

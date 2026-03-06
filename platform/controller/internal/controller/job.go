@@ -31,8 +31,8 @@ func (g *JobGenerator) Generate(deployment *dpv1alpha1.PackageDeployment) (*batc
 		"app.kubernetes.io/name":       deployment.Spec.Package.Name,
 		"app.kubernetes.io/version":    deployment.Spec.Package.Version,
 		"app.kubernetes.io/managed-by": "dk-controller",
-		"datakit.infoblox.dev/package":                deployment.Spec.Package.Name,
-		"datakit.infoblox.dev/mode":                   "batch",
+		"datakit.infoblox.dev/package": deployment.Spec.Package.Name,
+		"datakit.infoblox.dev/mode":    "batch",
 	}
 
 	// Build container
@@ -107,8 +107,8 @@ func (g *JobGenerator) GenerateCronJob(deployment *dpv1alpha1.PackageDeployment)
 		"app.kubernetes.io/name":       deployment.Spec.Package.Name,
 		"app.kubernetes.io/version":    deployment.Spec.Package.Version,
 		"app.kubernetes.io/managed-by": "dk-controller",
-		"datakit.infoblox.dev/package":                deployment.Spec.Package.Name,
-		"datakit.infoblox.dev/mode":                   "batch",
+		"datakit.infoblox.dev/package": deployment.Spec.Package.Name,
+		"datakit.infoblox.dev/mode":    "batch",
 	}
 
 	// Build container

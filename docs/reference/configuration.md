@@ -25,7 +25,7 @@ Higher-precedence scopes override lower ones. Command-line flags override all sc
 # Local development settings
 dev:
   runtime: k3d               # Runtime type: k3d or compose
-  workspace: /path/to/work   # Path to DP workspace (optional)
+  workspace: /path/to/work   # Path to DK workspace (optional)
   k3d:
     clusterName: dk-local    # k3d cluster name (DNS-safe)
 
@@ -60,7 +60,7 @@ Local development settings.
 | Field | Type | Description | Default |
 |-------|------|-------------|---------|
 | `dev.runtime` | string | Runtime type: `k3d` or `compose` | `k3d` |
-| `dev.workspace` | string | Path to DP workspace | (none) |
+| `dev.workspace` | string | Path to DK workspace | (none) |
 | `dev.k3d.clusterName` | string | k3d cluster name (DNS-safe) | `dk-local` |
 
 #### plugins

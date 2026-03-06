@@ -1,8 +1,8 @@
-# DP Documentation Site Configuration
+# DK Documentation Site Configuration
 # https://www.mkdocs.org/user-guide/configuration/
 
 site_name: Data Platform Documentation
-site_description: Documentation for the DP CLI and Data Platform
+site_description: Documentation for the Data Kit CLI (dk) and Data Platform
 site_url: https://datakit.internal.infoblox.dev/
 repo_url: https://github.com/Infoblox-CTO/platform.data.kit
 repo_name: Infoblox-CTO/platform.data.kit

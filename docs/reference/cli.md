@@ -2,7 +2,6 @@
 title: CLI Reference
 description: Complete reference for all dk CLI commands
 ---
-
 # CLI Reference
 
 Complete reference for all `dk` CLI commands with examples and flags.
@@ -11,44 +10,44 @@ Complete reference for all `dk` CLI commands with examples and flags.
 
 These flags apply to all commands:
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--output` | `-o` | Output format (table, json, yaml) | table |
-| `--help` | `-h` | Show help | - |
-| `--version` | `-v` | Show version | - |
+| Flag          | Short  | Description                       | Default |
+| ------------- | ------ | --------------------------------- | ------- |
+| `--output`  | `-o` | Output format (table, json, yaml) | table   |
+| `--help`    | `-h` | Show help                         | -       |
+| `--version` | `-v` | Show version                      | -       |
 
 ---
 
 ## Commands Overview
 
-| Command | Description |
-|---------|-------------|
-| [`dk init`](#dk-init) | Create a new data package |
-| [`dk dev`](#dk-dev) | Manage local development stack |
-| [`dk dev seed`](#dk-dev-seed) | Load seed data into local dev stores |
-| [`dk config`](#dk-config) | Manage dk configuration |
-| [`dk lint`](#dk-lint) | Validate package manifests |
-| [`dk run`](#dk-run) | Execute pipeline locally |
-| [`dk show`](#dk-show) | Show effective manifest |
-| [`dk test`](#dk-test) | Run pipeline tests |
-| [`dk build`](#dk-build) | Build OCI artifact |
-| [`dk publish`](#dk-publish) | Publish to registry |
-| [`dk promote`](#dk-promote) | Promote to environment |
-| [`dk cell list`](#dk-cell-list) | List cells in the cluster |
-| [`dk cell show`](#dk-cell-show) | Show cell details |
-| [`dk cell stores`](#dk-cell-stores) | List stores in a cell |
-| [`dk status`](#dk-status) | Show package status |
-| [`dk logs`](#dk-logs) | Stream logs |
-| [`dk rollback`](#dk-rollback) | Rollback to previous version |
-| [`dk lineage`](#dk-lineage) | View data lineage *(not yet implemented)* |
-| [`dk asset create`](#dk-asset-create) | Create a new asset from an extension |
-| [`dk asset validate`](#dk-asset-validate) | Validate asset configuration |
-| [`dk asset list`](#dk-asset-list) | List all assets in the project |
-| [`dk asset show`](#dk-asset-show) | Show details of an asset |
-| [`dk pipeline create`](#dk-pipeline-create) | Create a pipeline workflow from a template |
-| [`dk pipeline run`](#dk-pipeline-run) | Execute the pipeline workflow |
-| [`dk pipeline backfill`](#dk-pipeline-backfill) | Re-execute sync steps for a date range |
-| [`dk pipeline show`](#dk-pipeline-show) | Display pipeline definition and schedule |
+| Command                                        | Description                                |
+| ---------------------------------------------- | ------------------------------------------ |
+| [`dk init`](#dk-init)                           | Create a new data package                  |
+| [`dk dev`](#dk-dev)                             | Manage local development stack             |
+| [`dk dev seed`](#dk-dev-seed)                   | Load seed data into local dev stores       |
+| [`dk config`](#dk-config)                       | Manage dk configuration                    |
+| [`dk lint`](#dk-lint)                           | Validate package manifests                 |
+| [`dk run`](#dk-run)                             | Execute pipeline locally                   |
+| [`dk show`](#dk-show)                           | Show effective manifest                    |
+| [`dk test`](#dk-test)                           | Run pipeline tests                         |
+| [`dk build`](#dk-build)                         | Build OCI artifact                         |
+| [`dk publish`](#dk-publish)                     | Publish to registry                        |
+| [`dk promote`](#dk-promote)                     | Promote to environment                     |
+| [`dk cell list`](#dk-cell-list)                 | List cells in the cluster                  |
+| [`dk cell show`](#dk-cell-show)                 | Show cell details                          |
+| [`dk cell stores`](#dk-cell-stores)             | List stores in a cell                      |
+| [`dk status`](#dk-status)                       | Show package status                        |
+| [`dk logs`](#dk-logs)                           | Stream logs                                |
+| [`dk rollback`](#dk-rollback)                   | Rollback to previous version               |
+| [`dk lineage`](#dk-lineage)                     | View data lineage*(not yet implemented)* |
+| [`dk asset create`](#dk-asset-create)           | Create a new asset from an extension       |
+| [`dk asset validate`](#dk-asset-validate)       | Validate asset configuration               |
+| [`dk asset list`](#dk-asset-list)               | List all assets in the project             |
+| [`dk asset show`](#dk-asset-show)               | Show details of an asset                   |
+| [`dk pipeline create`](#dk-pipeline-create)     | Create a pipeline workflow from a template |
+| [`dk pipeline run`](#dk-pipeline-run)           | Execute the pipeline workflow              |
+| [`dk pipeline backfill`](#dk-pipeline-backfill) | Re-execute sync steps for a date range     |
+| [`dk pipeline show`](#dk-pipeline-show)         | Display pipeline definition and schedule   |
 
 ---
 
@@ -62,13 +61,13 @@ dk init <package-name> [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--runtime` | `-r` | Runtime (cloudquery, generic-go, generic-python, dbt) | |
-| `--mode` | `-m` | Execution mode: batch, streaming | batch |
-| `--namespace` | `-n` | Package namespace | default |
-| `--owner` | | Package owner | current user |
-| `--team` | | Team label | my-team |
+| Flag            | Short  | Description                                           | Default      |
+| --------------- | ------ | ----------------------------------------------------- | ------------ |
+| `--runtime`   | `-r` | Runtime (cloudquery, generic-go, generic-python, dbt) |              |
+| `--mode`      | `-m` | Execution mode: batch, streaming                      | batch        |
+| `--namespace` | `-n` | Package namespace                                     | default      |
+| `--owner`     |        | Package owner                                         | current user |
+| `--team`      |        | Team label                                            | my-team      |
 
 ### Examples
 
@@ -127,11 +126,11 @@ dk dev up [flags]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--runtime` | Runtime to use | k3d |
-| `--detach` | Run in background | false |
-| `--timeout` | Startup timeout | 60s |
+| Flag          | Description       | Default |
+| ------------- | ----------------- | ------- |
+| `--runtime` | Runtime to use    | k3d     |
+| `--detach`  | Run in background | false   |
+| `--timeout` | Startup timeout   | 60s     |
 
 #### Examples
 
@@ -155,10 +154,10 @@ dk dev down [flags]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--runtime` | Runtime to use (k3d, compose) | k3d |
-| `--volumes` | Remove volumes | false |
+| Flag          | Description                   | Default |
+| ------------- | ----------------------------- | ------- |
+| `--runtime` | Runtime to use (k3d, compose) | k3d     |
+| `--volumes` | Remove volumes                | false   |
 
 #### Examples
 
@@ -185,7 +184,7 @@ Reads each input asset in the package and, for assets that declare a
 into the backing database in the local k3d cluster.
 
 Seed runs are **idempotent**: a SHA-256 checksum of the resolved rows is
-stored in a `_dp_seed_meta` table. If the data hasn't changed since the
+stored in a `_dk_seed_meta` table. If the data hasn't changed since the
 last seed, the asset is skipped entirely.
 
 When the data *does* change (or when `--force` / `--clean` is used), the
@@ -194,12 +193,12 @@ seed spec exactly — no stale rows, no duplicate-key errors.
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|--------|
-| `--profile` | Use a named seed profile instead of the default | |
-| `--force` | Re-seed even when data is unchanged | false |
-| `--clean` | Drop and recreate tables before seeding | false |
-| `--asset` | Seed only a specific asset by name | (all) |
+| Flag          | Description                                     | Default |
+| ------------- | ----------------------------------------------- | ------- |
+| `--profile` | Use a named seed profile instead of the default |         |
+| `--force`   | Re-seed even when data is unchanged             | false   |
+| `--clean`   | Drop and recreate tables before seeding         | false   |
+| `--asset`   | Seed only a specific asset by name              | (all)   |
 
 #### Examples
 
@@ -263,9 +262,9 @@ dk dev status [flags]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--runtime` | Runtime to use (k3d, compose) | k3d |
+| Flag          | Description                   | Default |
+| ------------- | ----------------------------- | ------- |
+| `--runtime` | Runtime to use (k3d, compose) | k3d     |
 
 #### Output Example
 
@@ -309,22 +308,22 @@ dk config set <key> <value> [--scope <scope>]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--scope` | Config scope: repo, user, or system | user |
+| Flag        | Description                         | Default |
+| ----------- | ----------------------------------- | ------- |
+| `--scope` | Config scope: repo, user, or system | user    |
 
 #### Valid Keys
 
-| Key | Description | Allowed Values |
-|-----|-------------|----------------|
-| `dev.runtime` | Runtime type | `k3d`, `compose` |
-| `dev.workspace` | Path to DP workspace | any path |
-| `dev.k3d.clusterName` | k3d cluster name | DNS-safe name |
-| `dev.charts.<name>.version` | Override chart version | semver (e.g., `25.2.0`) |
-| `dev.charts.<name>.values.<path>` | Override Helm values | any value |
-| `plugins.registry` | Default OCI registry | valid registry URL |
-| `plugins.overrides.<name>.version` | Pin plugin version | semver (e.g., `v8.13.0`) |
-| `plugins.overrides.<name>.image` | Override plugin image | full image reference |
+| Key                                  | Description            | Allowed Values            |
+| ------------------------------------ | ---------------------- | ------------------------- |
+| `dev.runtime`                      | Runtime type           | `k3d`, `compose`      |
+| `dev.workspace`                    | Path to DK workspace   | any path                  |
+| `dev.k3d.clusterName`              | k3d cluster name       | DNS-safe name             |
+| `dev.charts.<name>.version`        | Override chart version | semver (e.g.,`25.2.0`)  |
+| `dev.charts.<name>.values.<path>`  | Override Helm values   | any value                 |
+| `plugins.registry`                 | Default OCI registry   | valid registry URL        |
+| `plugins.overrides.<name>.version` | Pin plugin version     | semver (e.g.,`v8.13.0`) |
+| `plugins.overrides.<name>.image`   | Override plugin image  | full image reference      |
 
 #### Examples
 
@@ -375,9 +374,9 @@ dk config unset <key> [--scope <scope>]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--scope` | Config scope: repo, user, or system | user |
+| Flag        | Description                         | Default |
+| ----------- | ----------------------------------- | ------- |
+| `--scope` | Config scope: repo, user, or system | user    |
 
 #### Examples
 
@@ -396,8 +395,8 @@ dk config list [--scope <scope>]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
+| Flag        | Description                              | Default      |
+| ----------- | ---------------------------------------- | ------------ |
 | `--scope` | Show settings from a specific scope only | (all scopes) |
 
 #### Output Example
@@ -452,29 +451,29 @@ dk lint [package-dir] [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--strict` | - | Treat warnings as errors | false |
-| `--skip-pii` | - | Skip PII classification validation | false |
-| `--set` | - | Override values (key=value, repeatable) | - |
-| `--values` | `-f` | Override files (repeatable) | - |
+| Flag           | Short  | Description                             | Default |
+| -------------- | ------ | --------------------------------------- | ------- |
+| `--strict`   | -      | Treat warnings as errors                | false   |
+| `--skip-pii` | -      | Skip PII classification validation      | false   |
+| `--set`      | -      | Override values (key=value, repeatable) | -       |
+| `--values`   | `-f` | Override files (repeatable)             | -       |
 
 ### Validated Files
 
-| File | Description |
-|------|-------------|
-| `dk.yaml` | Package manifest (includes runtime config) |
-| `schemas/` | Schema files |
+| File         | Description                                |
+| ------------ | ------------------------------------------ |
+| `dk.yaml`  | Package manifest (includes runtime config) |
+| `schemas/` | Schema files                               |
 
 ### Validation Rules
 
-| Code | Description |
-|------|-------------|
-| E001-E003 | Required fields |
-| E004-E005 | Schema references |
-| E010-E011 | Binding configuration |
-| E025 | PII classification required |
-| E030-E031 | Runtime configuration |
+| Code      | Description                    |
+| --------- | ------------------------------ |
+| E001-E003 | Required fields                |
+| E004-E005 | Schema references              |
+| E010-E011 | Binding configuration          |
+| E025      | PII classification required    |
+| E030-E031 | Runtime configuration          |
 | E040-E041 | Runtime required for transform |
 
 ### Examples
@@ -514,32 +513,34 @@ dk run [package-dir] [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--cell` | - | Cell name for store resolution (overrides `store/` directory) | - |
-| `--context` | - | kubectl context for multi-cluster cell access | current context |
-| `--network` | - | Docker network | dk-network |
-| `--env` | - | Environment variables (KEY=VALUE) | - |
-| `--dry-run` | - | Print what would run | false |
-| `--detach` | - | Run in background | false |
-| `--attach` | - | Attach to logs (streaming mode) | true |
-| `--timeout` | - | Execution timeout | 30m |
-| `--set` | - | Override values (key=value, repeatable) | - |
-| `--values` | `-f` | Override files (repeatable) | - |
-| `--sync` | - | Run a full CloudQuery sync (source → destination) | false |
-| `--destination` | - | Destination plugin for sync (file, postgresql, s3) | file |
-| `--registry` | - | Override plugin registry for this invocation | (from config) |
+| Flag              | Short  | Description                                                     | Default         |
+| ----------------- | ------ | --------------------------------------------------------------- | --------------- |
+| `--cell`        | -      | Cell name for store resolution (overrides `store/` directory) | -               |
+| `--context`     | -      | kubectl context for multi-cluster cell access                   | current context |
+| `--network`     | -      | Docker network                                                  | dk-network      |
+| `--env`         | -      | Environment variables (KEY=VALUE)                               | -               |
+| `--dry-run`     | -      | Print what would run                                            | false           |
+| `--detach`      | -      | Run in background                                               | false           |
+| `--attach`      | -      | Attach to logs (streaming mode)                                 | true            |
+| `--timeout`     | -      | Execution timeout                                               | 30m             |
+| `--set`         | -      | Override values (key=value, repeatable)                         | -               |
+| `--values`      | `-f` | Override files (repeatable)                                     | -               |
+| `--sync`        | -      | Run a full CloudQuery sync (source → destination)              | false           |
+| `--destination` | -      | Destination plugin for sync (file, postgresql, s3)              | file            |
+| `--registry`    | -      | Override plugin registry for this invocation                    | (from config)   |
 
 ### Mode-aware Behavior
 
 The run command behaves differently based on the pipeline mode:
 
 **Batch Mode (default)**:
+
 - Runs to completion
 - Streams logs until exit
 - Returns exit code
 
 **Streaming Mode**:
+
 - Runs indefinitely
 - `--attach`: Stream logs (Ctrl+C sends SIGTERM)
 - `--detach`: Returns immediately with container ID
@@ -634,11 +635,11 @@ dk show [package-dir] [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--set` | - | Override values (key=value, repeatable) | - |
-| `--values` | `-f` | Override files (repeatable) | - |
-| `--output` | `-o` | Output format (yaml, json) | yaml |
+| Flag         | Short  | Description                             | Default |
+| ------------ | ------ | --------------------------------------- | ------- |
+| `--set`    | -      | Override values (key=value, repeatable) | -       |
+| `--values` | `-f` | Override files (repeatable)             | -       |
+| `--output` | `-o` | Output format (yaml, json)              | yaml    |
 
 ### Description
 
@@ -684,22 +685,24 @@ dk test [package-dir] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--data` | Test data directory | testdata/ |
-| `--timeout` | Test timeout | 5m |
-| `--duration` | Test duration (streaming mode) | 30s |
-| `--startup-timeout` | Wait for healthy (streaming mode) | 60s |
-| `--integration` | Run CloudQuery integration test (full sync) | false |
+| Flag                  | Description                                 | Default   |
+| --------------------- | ------------------------------------------- | --------- |
+| `--data`            | Test data directory                         | testdata/ |
+| `--timeout`         | Test timeout                                | 5m        |
+| `--duration`        | Test duration (streaming mode)              | 30s       |
+| `--startup-timeout` | Wait for healthy (streaming mode)           | 60s       |
+| `--integration`     | Run CloudQuery integration test (full sync) | false     |
 
 ### Mode-aware Testing
 
 **Batch Mode**:
+
 - Runs pipeline with test data
 - Waits for completion
 - Reports success/failure based on exit code
 
 **Streaming Mode**:
+
 - Starts pipeline container
 - Waits for health check (up to `--startup-timeout`)
 - Runs for `--duration`
@@ -707,6 +710,7 @@ dk test [package-dir] [flags]
 - Reports success if no errors during run
 
 **CloudQuery Mode** (when `spec.type: cloudquery`):
+
 - Automatically detects project language (Python or Go)
 - Runs `pytest` (Python) or `go test ./...` (Go) for unit tests
 - With `--integration`: builds container, starts gRPC server, runs `cloudquery sync`
@@ -751,10 +755,10 @@ dk build [package-dir] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--tag` | Artifact tag | `<version from dk.yaml>` |
-| `--no-cache` | Build without cache | false |
+| Flag           | Description         | Default                    |
+| -------------- | ------------------- | -------------------------- |
+| `--tag`      | Artifact tag        | `<version from dk.yaml>` |
+| `--no-cache` | Build without cache | false                      |
 
 ### Examples
 
@@ -793,18 +797,18 @@ dk publish [package-dir] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--registry` | Registry URL | `$DK_REGISTRY` |
-| `--tag` | Override tag | - |
-| `--dry-run` | Print what would publish | false |
+| Flag           | Description              | Default          |
+| -------------- | ------------------------ | ---------------- |
+| `--registry` | Registry URL             | `$DK_REGISTRY` |
+| `--tag`      | Override tag             | -                |
+| `--dry-run`  | Print what would publish | false            |
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DK_REGISTRY` | Default registry URL |
-| `DK_REGISTRY_USER` | Registry username |
+| Variable              | Description           |
+| --------------------- | --------------------- |
+| `DK_REGISTRY`       | Default registry URL  |
+| `DK_REGISTRY_USER`  | Registry username     |
 | `DK_REGISTRY_TOKEN` | Registry access token |
 
 ### Examples
@@ -836,12 +840,12 @@ dk promote <package-name> <version> [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--to` | Target environment | **required** |
-| `--dry-run` | Print what would change | false |
-| `--auto-merge` | Automatically merge PR | false |
-| `--rollback` | Mark as rollback (expedited) | false |
+| Flag             | Description                  | Default            |
+| ---------------- | ---------------------------- | ------------------ |
+| `--to`         | Target environment           | **required** |
+| `--dry-run`    | Print what would change      | false              |
+| `--auto-merge` | Automatically merge PR       | false              |
+| `--rollback`   | Mark as rollback (expedited) | false              |
 
 ### Examples
 
@@ -890,8 +894,8 @@ dk cell list [flags]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
+| Flag          | Description            | Default         |
+| ------------- | ---------------------- | --------------- |
 | `--context` | kubectl context to use | current context |
 
 #### Example
@@ -922,8 +926,8 @@ dk cell show <cell-name> [flags]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
+| Flag          | Description            | Default         |
+| ------------- | ---------------------- | --------------- |
 | `--context` | kubectl context to use | current context |
 
 #### Example
@@ -958,8 +962,8 @@ dk cell stores <cell-name> [flags]
 
 #### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
+| Flag          | Description            | Default         |
+| ------------- | ---------------------- | --------------- |
 | `--context` | kubectl context to use | current context |
 
 #### Example
@@ -987,10 +991,10 @@ dk status [package-name] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--env` | Filter by environment | all |
-| `--namespace` | Filter by namespace | all |
+| Flag            | Description           | Default |
+| --------------- | --------------------- | ------- |
+| `--env`       | Filter by environment | all     |
+| `--namespace` | Filter by namespace   | all     |
 
 ### Examples
 
@@ -1034,12 +1038,12 @@ dk logs <run-id> [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--follow` | `-f` | Follow log output | true |
-| `--tail` | `-n` | Lines to show | all |
-| `--since` | - | Show logs since (e.g., "1h", "2024-01-01") | - |
-| `--timestamps` | `-t` | Show timestamps | false |
+| Flag             | Short  | Description                                | Default |
+| ---------------- | ------ | ------------------------------------------ | ------- |
+| `--follow`     | `-f` | Follow log output                          | true    |
+| `--tail`       | `-n` | Lines to show                              | all     |
+| `--since`      | -      | Show logs since (e.g., "1h", "2024-01-01") | -       |
+| `--timestamps` | `-t` | Show timestamps                            | false   |
 
 ### Examples
 
@@ -1075,11 +1079,11 @@ dk rollback <package-name> [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--to` | Target version | previous |
-| `--env` | Environment | **required** |
-| `--dry-run` | Print what would change | false |
+| Flag          | Description             | Default            |
+| ------------- | ----------------------- | ------------------ |
+| `--to`      | Target version          | previous           |
+| `--env`     | Environment             | **required** |
+| `--dry-run` | Print what would change | false              |
 
 ### Examples
 
@@ -1108,12 +1112,12 @@ dk lineage <package-name> [flags]
 
 ### Planned Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--upstream` | Show upstream sources | true |
-| `--downstream` | Show downstream consumers | true |
-| `--depth` | Maximum depth to traverse | 3 |
-| `--refresh` | Force refresh from backend | false |
+| Flag             | Description                | Default |
+| ---------------- | -------------------------- | ------- |
+| `--upstream`   | Show upstream sources      | true    |
+| `--downstream` | Show downstream consumers  | true    |
+| `--depth`      | Maximum depth to traverse  | 3       |
+| `--refresh`    | Force refresh from backend | false   |
 
 ### Examples
 
@@ -1154,12 +1158,12 @@ dk asset create <name> --ext <vendor.kind.name> [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--ext` | | Extension FQN (required) | - |
-| `--version` | | Extension version | latest known |
-| `--force` | | Overwrite existing asset | false |
-| `--interactive` | `-i` | Prompt for each required config field | false |
+| Flag              | Short  | Description                           | Default      |
+| ----------------- | ------ | ------------------------------------- | ------------ |
+| `--ext`         |        | Extension FQN (required)              | -            |
+| `--version`     |        | Extension version                     | latest known |
+| `--force`       |        | Overwrite existing asset              | false        |
+| `--interactive` | `-i` | Prompt for each required config field | false        |
 
 ### Examples
 
@@ -1201,14 +1205,14 @@ dk asset validate [path] [flags]
 
 ### Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--offline` | Skip schema validation (structural checks only) | false |
+| Flag          | Description                                     | Default |
+| ------------- | ----------------------------------------------- | ------- |
+| `--offline` | Skip schema validation (structural checks only) | false   |
 
 ### Arguments
 
-| Argument | Description |
-|----------|-------------|
+| Argument | Description                                                                                              |
+| -------- | -------------------------------------------------------------------------------------------------------- |
 | `path` | Optional path to a specific asset directory or file. If omitted, validates all assets under `assets/`. |
 
 ### Examples
@@ -1226,14 +1230,14 @@ dk asset validate --offline
 
 ### Error Codes
 
-| Code | Description |
-|------|-------------|
-| E070 | Required field missing |
-| E071 | Invalid extension FQN format |
-| E072 | Invalid version format |
+| Code | Description                              |
+| ---- | ---------------------------------------- |
+| E070 | Required field missing                   |
+| E071 | Invalid extension FQN format             |
+| E072 | Invalid version format                   |
 | E073 | Asset type does not match extension kind |
-| E074 | Config block fails schema validation |
-| E075 | Extension schema not found |
+| E074 | Config block fails schema validation     |
+| E075 | Extension schema not found               |
 
 ---
 
@@ -1247,9 +1251,9 @@ dk asset list [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--output` | `-o` | Output format (table, json) | table |
+| Flag         | Short  | Description                 | Default |
+| ------------ | ------ | --------------------------- | ------- |
+| `--output` | `-o` | Output format (table, json) | table   |
 
 ### Examples
 
@@ -1282,9 +1286,9 @@ dk asset show <name> [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--output` | `-o` | Output format (yaml, json) | yaml |
+| Flag         | Short  | Description                | Default |
+| ------------ | ------ | -------------------------- | ------- |
+| `--output` | `-o` | Output format (yaml, json) | yaml    |
 
 ### Examples
 
@@ -1327,19 +1331,19 @@ dk pipeline create <name> [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--template` | `-t` | Template to use | sync-transform-test |
-| `--force` | | Overwrite existing pipeline.yaml | false |
-| `--list-templates` | | List available templates and exit | false |
+| Flag                 | Short  | Description                       | Default             |
+| -------------------- | ------ | --------------------------------- | ------------------- |
+| `--template`       | `-t` | Template to use                   | sync-transform-test |
+| `--force`          |        | Overwrite existing pipeline.yaml  | false               |
+| `--list-templates` |        | List available templates and exit | false               |
 
 ### Available Templates
 
-| Template | Description |
-|----------|-------------|
+| Template                | Description                                    |
+| ----------------------- | ---------------------------------------------- |
 | `sync-transform-test` | Sync → Transform → Test → Publish (default) |
-| `sync-only` | Single sync step |
-| `custom` | Single custom step with arbitrary image |
+| `sync-only`           | Single sync step                               |
+| `custom`              | Single custom step with arbitrary image        |
 
 ### Examples
 
@@ -1379,10 +1383,10 @@ dk pipeline run [dir] [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--env` | `-e` | Environment variables (KEY=VALUE, repeatable) | - |
-| `--step` | | Run a single step by name | - |
+| Flag       | Short  | Description                                   | Default |
+| ---------- | ------ | --------------------------------------------- | ------- |
+| `--env`  | `-e` | Environment variables (KEY=VALUE, repeatable) | -       |
+| `--step` |        | Run a single step by name                     | -       |
 
 ### Examples
 
@@ -1436,11 +1440,11 @@ dk pipeline backfill [dir] [flags]
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--from` | | Start date (YYYY-MM-DD, required) | - |
-| `--to` | | End date (YYYY-MM-DD, required) | - |
-| `--env` | `-e` | Additional environment variables (KEY=VALUE) | - |
+| Flag       | Short  | Description                                  | Default |
+| ---------- | ------ | -------------------------------------------- | ------- |
+| `--from` |        | Start date (YYYY-MM-DD, required)            | -       |
+| `--to`   |        | End date (YYYY-MM-DD, required)              | -       |
+| `--env`  | `-e` | Additional environment variables (KEY=VALUE) | -       |
 
 ### Examples
 
@@ -1456,10 +1460,10 @@ dk pipeline backfill --from 2026-01-01 --to 2026-01-31 --env BATCH_SIZE=1000
 
 ### Environment Variables Injected
 
-| Variable | Description |
-|----------|-------------|
+| Variable             | Description                     |
+| -------------------- | ------------------------------- |
 | `DK_BACKFILL_FROM` | Start date in YYYY-MM-DD format |
-| `DK_BACKFILL_TO` | End date in YYYY-MM-DD format |
+| `DK_BACKFILL_TO`   | End date in YYYY-MM-DD format   |
 
 ---
 
@@ -1483,12 +1487,12 @@ The command operates in two modes:
 
 ### Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--output` | `-o` | Output format (see below) | auto |
-| `--all` | | Show full dependency graph (graph mode) | false |
-| `--destination` | | Show dependency chain leading to this asset (graph mode) | |
-| `--scan-dir` | | Directories to scan for dk.yaml files (repeatable) | `.` |
+| Flag              | Short  | Description                                              | Default |
+| ----------------- | ------ | -------------------------------------------------------- | ------- |
+| `--output`      | `-o` | Output format (see below)                                | auto    |
+| `--all`         |        | Show full dependency graph (graph mode)                  | false   |
+| `--destination` |        | Show dependency chain leading to this asset (graph mode) |         |
+| `--scan-dir`    |        | Directories to scan for dk.yaml files (repeatable)       | `.`   |
 
 **Graph mode output formats:** `text` (default), `mermaid`, `json`, `dot`
 
@@ -1576,13 +1580,13 @@ Schedule: 0 6 * * * (America/New_York)
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Validation error |
-| 3 | Network/connectivity error |
-| 4 | Authentication error |
+| Code | Meaning                    |
+| ---- | -------------------------- |
+| 0    | Success                    |
+| 1    | General error              |
+| 2    | Validation error           |
+| 3    | Network/connectivity error |
+| 4    | Authentication error       |
 
 ---
 

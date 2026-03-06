@@ -10,13 +10,13 @@ import (
 // runner script and verifies all commands succeed. This demo requires
 // Docker and k3d for the dev environment, build, and run steps.
 //
-// It is skipped in short mode and when DP_E2E_DEV is not set.
+// It is skipped in short mode and when DK_E2E_DEV is not set.
 func TestDemo_Quickstart(t *testing.T) {
 	skipIfShort(t)
 	skipIfNoDocker(t)
 
-	if os.Getenv("DP_E2E_DEV") == "" {
-		t.Skip("set DP_E2E_DEV=1 to enable quickstart demo test (requires k3d)")
+	if os.Getenv("DK_E2E_DEV") == "" {
+		t.Skip("set DK_E2E_DEV=1 to enable quickstart demo test (requires k3d)")
 	}
 
 	result := runDemo(t, "quickstart")
@@ -54,14 +54,14 @@ func TestDemo_Quickstart(t *testing.T) {
 
 // TestDemo_DevLifecycle runs the dev-lifecycle demo dialog file through
 // the runner script. This demo requires a running k3d cluster and the
-// DP_E2E_DEV environment variable to be set.
+// DK_E2E_DEV environment variable to be set.
 //
-// It is skipped in short mode and when DP_E2E_DEV is not set.
+// It is skipped in short mode and when DK_E2E_DEV is not set.
 func TestDemo_DevLifecycle(t *testing.T) {
 	skipIfShort(t)
 
-	if os.Getenv("DP_E2E_DEV") == "" {
-		t.Skip("set DP_E2E_DEV=1 to enable dev lifecycle demo test (requires k3d cluster)")
+	if os.Getenv("DK_E2E_DEV") == "" {
+		t.Skip("set DK_E2E_DEV=1 to enable dev lifecycle demo test (requires k3d cluster)")
 	}
 
 	result := runDemo(t, "dev-lifecycle")

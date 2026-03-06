@@ -2,13 +2,12 @@
 title: "CloudQuery Python Plugin"
 description: "Build a Python CloudQuery source plugin from scratch"
 ---
-
 # CloudQuery Python Plugin
 
 Build a Python-based CloudQuery source plugin that fetches data from an API and syncs it to file or PostgreSQL destinations.
 
-**Time**: ~15 minutes  
-**Difficulty**: Beginner  
+**Time**: ~15 minutes
+**Difficulty**: Beginner
 **Prerequisites**: DK CLI installed, Docker running, `dk dev up` completed
 
 ## Overview
@@ -82,7 +81,7 @@ spec:
   timeout: 30m
 ```
 
-The `kind: Transform` with `runtime: cloudquery` tells DP that this package is a CloudQuery plugin.
+The `kind: Transform` with `runtime: cloudquery` tells DK that this package is a CloudQuery plugin.
 The `inputs` and `outputs` declare the assets this transform reads from and writes to.
 No container `image` is required — plugin images come from the Connector manifest.
 
@@ -361,17 +360,17 @@ dk run --sync --destination postgresql  # Sync to PostgreSQL
 
 ## Command Reference
 
-| Command | What it does | Needs Docker/k3d? |
-|---------|--------------|-------------------|
-| `dk init <name> --runtime cloudquery` | Scaffold a new plugin | No |
-| `dk test` | Create venv, install deps, run pytest | No |
-| `dk run` | Build container, deploy to k3d, discover tables | Yes |
-| `dk run --sync` | Sync data to local JSON files | Yes |
-| `dk run --sync --destination postgresql` | Sync data to PostgreSQL | Yes |
-| `dk test --integration` | Full build + sync integration test | Yes |
-| `make` | Show all available Make targets | No |
-| `make test` | Create venv + run pytest (same as `dk test`) | No |
-| `make sync` | Build + sync to local files | Yes |
+| Command                                    | What it does                                    | Needs Docker/k3d? |
+| ------------------------------------------ | ----------------------------------------------- | ----------------- |
+| `dk init <name> --runtime cloudquery`    | Scaffold a new plugin                           | No                |
+| `dk test`                                | Create venv, install deps, run pytest           | No                |
+| `dk run`                                 | Build container, deploy to k3d, discover tables | Yes               |
+| `dk run --sync`                          | Sync data to local JSON files                   | Yes               |
+| `dk run --sync --destination postgresql` | Sync data to PostgreSQL                         | Yes               |
+| `dk test --integration`                  | Full build + sync integration test              | Yes               |
+| `make`                                   | Show all available Make targets                 | No                |
+| `make test`                              | Create venv + run pytest (same as `dk test`)  | No                |
+| `make sync`                              | Build + sync to local files                     | Yes               |
 
 ## Troubleshooting
 

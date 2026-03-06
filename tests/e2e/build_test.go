@@ -13,7 +13,7 @@ func TestBuild_ValidPackage(t *testing.T) {
 	validPkg := validPipelinePath(t)
 
 	// Use --dry-run to avoid needing docker/registry
-	result, err := runDP(t, "build", "--dry-run", validPkg)
+	result, err := runDK(t, "build", "--dry-run", validPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestBuild_InvalidPackage(t *testing.T) {
 	invalidPkg := filepath.Join(tmpDir, "invalid-package")
 	copyDir(t, invalidPackagePath(t), invalidPkg)
 
-	result, err := runDP(t, "build", "--dry-run", invalidPkg)
+	result, err := runDK(t, "build", "--dry-run", invalidPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestBuild_NonExistentDirectory(t *testing.T) {
 	tmpDir := createTempDir(t)
 	nonExistent := filepath.Join(tmpDir, "does-not-exist")
 
-	result, err := runDP(t, "build", nonExistent)
+	result, err := runDK(t, "build", nonExistent)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestBuild_WithCustomTag(t *testing.T) {
 
 	validPkg := validPipelinePath(t)
 
-	result, err := runDP(t, "build", "--dry-run", "--tag", "v1.2.3", validPkg)
+	result, err := runDK(t, "build", "--dry-run", "--tag", "v1.2.3", validPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestBuild_DryRunNoArtifact(t *testing.T) {
 	testPkg := filepath.Join(tmpDir, "test-package")
 	copyDir(t, validPkg, testPkg)
 
-	result, err := runDP(t, "build", "--dry-run", testPkg)
+	result, err := runDK(t, "build", "--dry-run", testPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestBuild_WithPath(t *testing.T) {
 	t.Run("absolute path", func(t *testing.T) {
 		validPkg := validPipelinePath(t)
 
-		result, err := runDP(t, "build", "--dry-run", validPkg)
+		result, err := runDK(t, "build", "--dry-run", validPkg)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -126,7 +126,7 @@ func TestBuild_WithPath(t *testing.T) {
 	t.Run("relative path from package dir", func(t *testing.T) {
 		validPkg := validPipelinePath(t)
 
-		result, err := runDPInDir(t, validPkg, "build", "--dry-run", ".")
+		result, err := runDKInDir(t, validPkg, "build", "--dry-run", ".")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -139,7 +139,7 @@ func TestBuild_WithPath(t *testing.T) {
 	t.Run("no path argument uses current directory", func(t *testing.T) {
 		validPkg := validPipelinePath(t)
 
-		result, err := runDPInDir(t, validPkg, "build", "--dry-run")
+		result, err := runDKInDir(t, validPkg, "build", "--dry-run")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -149,7 +149,7 @@ func TestBuild_WithPath(t *testing.T) {
 		}
 	})
 
-	t.Run("missing dp.yaml", func(t *testing.T) {
+	t.Run("missing dk.yaml", func(t *testing.T) {
 		tmpDir := createTempDir(t)
 
 		// Create empty directory
@@ -158,13 +158,13 @@ func TestBuild_WithPath(t *testing.T) {
 			t.Fatalf("failed to create directory: %v", err)
 		}
 
-		result, err := runDP(t, "build", "--dry-run", emptyDir)
+		result, err := runDK(t, "build", "--dry-run", emptyDir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
 		if result.ExitCode == 0 {
-			t.Error("expected non-zero exit code for directory without dp.yaml")
+			t.Error("expected non-zero exit code for directory without dk.yaml")
 		}
 	})
 }
