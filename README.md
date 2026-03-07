@@ -1,4 +1,4 @@
-# DP - DataKit CLI
+# DK - DataKit CLI
 
 [![Build Status](https://github.com/Infoblox-CTO/platform.data.kit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Infoblox-CTO/platform.data.kit/actions)
 [![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8?logo=go)](https://go.dev)
@@ -27,7 +27,7 @@ A Kubernetes-native data pipeline platform enabling teams to contribute reusable
 ```bash
 # Clone the repository
 git clone https://github.com/Infoblox-CTO/platform.data.kit.git
-cd data-platform
+cd platform.data.kit
 
 # Build the CLI
 make build
@@ -91,19 +91,19 @@ spec:
 
 ## 🛠️ CLI Commands
 
-| Command | Description |
-|---------|-------------|
-| `dk init` | Create a new data package |
-| `dk dev up/down/status` | Manage local development stack |
-| `dk lint` | Validate package manifests |
-| `dk run` | Execute pipeline locally |
-| `dk test` | Run tests with sample data |
-| `dk build` | Build OCI artifact |
-| `dk publish` | Publish to OCI registry |
-| `dk promote` | Promote to environment via GitOps |
-| `dk status` | Show package status across environments |
-| `dk logs` | Stream logs from running pipeline |
-| `dk rollback` | Rollback to previous version |
+| Command                   | Description                             |
+| ------------------------- | --------------------------------------- |
+| `dk init`               | Create a new data package               |
+| `dk dev up/down/status` | Manage local development stack          |
+| `dk lint`               | Validate package manifests              |
+| `dk run`                | Execute pipeline locally                |
+| `dk test`               | Run tests with sample data              |
+| `dk build`              | Build OCI artifact                      |
+| `dk publish`            | Publish to OCI registry                 |
+| `dk promote`            | Promote to environment via GitOps       |
+| `dk status`             | Show package status across environments |
+| `dk logs`               | Stream logs from running pipeline       |
+| `dk rollback`           | Rollback to previous version            |
 
 ## 🏗️ Architecture
 
@@ -180,7 +180,7 @@ Validate with: `dk lint --strict`
 
 ### Data Lineage
 
-DP automatically tracks lineage via OpenLineage:
+DK automatically tracks lineage via OpenLineage:
 
 - **START** event when pipeline begins
 - **COMPLETE** event on success

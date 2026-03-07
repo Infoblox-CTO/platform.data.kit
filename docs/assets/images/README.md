@@ -1,6 +1,6 @@
 # Documentation Images
 
-This directory contains images and diagrams for the DP documentation.
+This directory contains images and diagrams for the DK documentation.
 
 ## Directory Structure
 

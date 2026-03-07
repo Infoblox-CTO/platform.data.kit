@@ -1,4 +1,4 @@
-// Package auth provides authentication handling for DP CLI.
+// Package auth provides authentication handling for DK CLI.
 package auth
 
 import (

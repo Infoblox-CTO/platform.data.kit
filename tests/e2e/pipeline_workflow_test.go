@@ -13,7 +13,7 @@ func TestPipelineWorkflow_CreateAndShow(t *testing.T) {
 
 	// Step 1: Initialize a package
 	t.Run("init", func(t *testing.T) {
-		result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-pipeline-wf")
+		result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-pipeline-wf")
 		if err != nil {
 			t.Fatalf("init failed: %v", err)
 		}
@@ -24,9 +24,9 @@ func TestPipelineWorkflow_CreateAndShow(t *testing.T) {
 
 	pkgDir := filepath.Join(tmpDir, "test-pipeline-wf")
 
-	// Step 2: Create a pipeline workflow (use --force since dp init already creates pipeline.yaml)
+	// Step 2: Create a pipeline workflow (use --force since dk init already creates pipeline.yaml)
 	t.Run("pipeline_create", func(t *testing.T) {
-		result, err := runDPInDir(t, pkgDir, "pipeline", "create", "my-workflow", "--force")
+		result, err := runDKInDir(t, pkgDir, "pipeline", "create", "my-workflow", "--force")
 		if err != nil {
 			t.Fatalf("pipeline create failed: %v", err)
 		}
@@ -39,7 +39,7 @@ func TestPipelineWorkflow_CreateAndShow(t *testing.T) {
 
 	// Step 3: Show the pipeline
 	t.Run("pipeline_show", func(t *testing.T) {
-		result, err := runDPInDir(t, pkgDir, "pipeline", "show")
+		result, err := runDKInDir(t, pkgDir, "pipeline", "show")
 		if err != nil {
 			t.Fatalf("pipeline show failed: %v", err)
 		}
@@ -54,7 +54,7 @@ func TestPipelineWorkflow_CreateAndShow(t *testing.T) {
 
 	// Step 4: Show as JSON
 	t.Run("pipeline_show_json", func(t *testing.T) {
-		result, err := runDPInDir(t, pkgDir, "pipeline", "show", "--output", "json")
+		result, err := runDKInDir(t, pkgDir, "pipeline", "show", "--output", "json")
 		if err != nil {
 			t.Fatalf("pipeline show --output json failed: %v", err)
 		}
@@ -71,7 +71,7 @@ func TestPipelineWorkflow_CreateAndShow(t *testing.T) {
 func TestPipelineWorkflow_ListTemplates(t *testing.T) {
 	skipIfShort(t)
 
-	result, err := runDP(t, "pipeline", "create", "--list-templates")
+	result, err := runDK(t, "pipeline", "create", "--list-templates")
 	if err != nil {
 		t.Fatalf("pipeline create --list-templates failed: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestPipelineWorkflow_CreateWithTemplates(t *testing.T) {
 		t.Run(tmpl, func(t *testing.T) {
 			tmpDir := createTempDir(t)
 
-			result, err := runDPInDir(t, tmpDir, "pipeline", "create", "test-"+tmpl, "--template", tmpl)
+			result, err := runDKInDir(t, tmpDir, "pipeline", "create", "test-"+tmpl, "--template", tmpl)
 			if err != nil {
 				t.Fatalf("pipeline create --template %s failed: %v", tmpl, err)
 			}
@@ -114,7 +114,7 @@ func TestPipelineWorkflow_CreateForceOverwrite(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Create first
-	result, err := runDPInDir(t, tmpDir, "pipeline", "create", "original")
+	result, err := runDKInDir(t, tmpDir, "pipeline", "create", "original")
 	if err != nil {
 		t.Fatalf("first create failed: %v", err)
 	}
@@ -123,13 +123,13 @@ func TestPipelineWorkflow_CreateForceOverwrite(t *testing.T) {
 	}
 
 	// Create again without --force should fail
-	result, err = runDPInDir(t, tmpDir, "pipeline", "create", "overwritten")
+	result, err = runDKInDir(t, tmpDir, "pipeline", "create", "overwritten")
 	if err == nil && result.ExitCode == 0 {
 		t.Fatal("expected error when creating pipeline without --force, but succeeded")
 	}
 
 	// Create again with --force should succeed
-	result, err = runDPInDir(t, tmpDir, "pipeline", "create", "overwritten", "--force")
+	result, err = runDKInDir(t, tmpDir, "pipeline", "create", "overwritten", "--force")
 	if err != nil {
 		t.Fatalf("create --force failed: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestPipelineWorkflow_BackfillMissingFlags(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Backfill without --from and --to should error
-	result, _ := runDPInDir(t, tmpDir, "pipeline", "backfill")
+	result, _ := runDKInDir(t, tmpDir, "pipeline", "backfill")
 	if result.ExitCode == 0 {
 		t.Error("expected non-zero exit code when backfill called without required flags")
 	}
@@ -158,7 +158,7 @@ func TestPipelineWorkflow_RunNoPipeline(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Run in a directory with no pipeline.yaml
-	result, _ := runDPInDir(t, tmpDir, "pipeline", "run")
+	result, _ := runDKInDir(t, tmpDir, "pipeline", "run")
 	if result.ExitCode == 0 {
 		t.Error("expected non-zero exit code when running in directory without pipeline.yaml")
 	}
@@ -170,7 +170,7 @@ func TestPipelineWorkflow_ShowNoPipeline(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Show in a directory with no pipeline.yaml
-	result, _ := runDPInDir(t, tmpDir, "pipeline", "show")
+	result, _ := runDKInDir(t, tmpDir, "pipeline", "show")
 	if result.ExitCode == 0 {
 		t.Error("expected non-zero exit code when showing in directory without pipeline.yaml")
 	}

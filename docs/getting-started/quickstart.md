@@ -2,10 +2,9 @@
 title: Quickstart
 description: Create, run, and publish your first data package in 10 minutes
 ---
-
 # Quickstart
 
-This tutorial walks you through the complete DP workflow: from creating a new data package to promoting it to an environment.
+This tutorial walks you through the complete Data Kit workflow: from creating a new data package to promoting it to an environment.
 
 **Time to complete**: ~10 minutes
 
@@ -36,7 +35,7 @@ my-first-pipeline/
 
 Let's look at the generated manifest:
 
-```yaml title="dk.yaml"
+```yaml
 apiVersion: data.infoblox.com/v1alpha1
 kind: Transform
 metadata:
@@ -78,9 +77,7 @@ Each chart includes init jobs that automatically create topics, buckets, databas
 
 !!! tip "Seed Data"
     If your input assets declare `dev.seed` data, you can load it now:
-    ```bash
-    dk dev seed
-    ```
+    ``bash     dk dev seed     ``
     This creates tables and inserts sample rows into the local PostgreSQL.
     Seed data is also loaded automatically before each `dk run`.
 
@@ -115,10 +112,7 @@ Endpoints:
 
 !!! info "Chart Customization"
     You can override chart versions or Helm values via the config system:
-    ```bash
-    dk config set dev.charts.redpanda.version 25.2.0
-    dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi
-    ```
+    ``bash     dk config set dev.charts.redpanda.version 25.2.0     dk config set dev.charts.postgres.values.primary.resources.limits.memory 1Gi     ``
 
 ## Step 3: Validate Your Package
 
@@ -208,9 +202,7 @@ dk publish ./my-first-pipeline
 
 !!! note "Authentication Required"
     You may need to authenticate with your registry first:
-    ```bash
-    docker login ghcr.io
-    ```
+    ``bash     docker login ghcr.io     ``
 
 ## Step 8: Promote to Environment
 
@@ -252,22 +244,22 @@ dk dev down
 
 ## Summary
 
-You've completed the full DP workflow:
+You've completed the full DK workflow:
 
-| Step | Command | What It Does |
-|------|---------|--------------|
-| 1 | `dk init` | Create a new data package |
-| 2 | `dk dev up` | Start local infrastructure |
-| 2b | `dk dev seed` | Load sample data into local stores |
-| 3 | `dk lint` | Validate manifests |
-| 4 | `dk run` | Execute locally (auto-seeds if needed) |
-| 5 | ~~`dk lineage`~~ | View data lineage *(not yet implemented — use Marquez UI)* |
-| 6 | `dk logs` | Stream logs from a run |
-| 7 | `dk build` | Create OCI artifact |
-| 8 | `dk publish` | Push to registry |
-| 9 | `dk promote` | Deploy to environment |
-| 10 | `dk status` | Check deployment status |
-| 11 | `dk dev down` | Stop local stack |
+| Step | Command             | What It Does                                                 |
+| ---- | ------------------- | ------------------------------------------------------------ |
+| 1    | `dk init`         | Create a new data package                                    |
+| 2    | `dk dev up`       | Start local infrastructure                                   |
+| 2b   | `dk dev seed`     | Load sample data into local stores                           |
+| 3    | `dk lint`         | Validate manifests                                           |
+| 4    | `dk run`          | Execute locally (auto-seeds if needed)                       |
+| 5    | ~~`dk lineage`~~ | View data lineage*(not yet implemented — use Marquez UI)* |
+| 6    | `dk logs`         | Stream logs from a run                                       |
+| 7    | `dk build`        | Create OCI artifact                                          |
+| 8    | `dk publish`      | Push to registry                                             |
+| 9    | `dk promote`      | Deploy to environment                                        |
+| 10   | `dk status`       | Check deployment status                                      |
+| 11   | `dk dev down`     | Stop local stack                                             |
 
 ## Next Steps
 
@@ -310,7 +302,7 @@ This creates:
 
 Edit `config.yaml` to configure your source and destination:
 
-```yaml title="config.yaml"
+```yaml
 kind: source
 spec:
   name: my-source

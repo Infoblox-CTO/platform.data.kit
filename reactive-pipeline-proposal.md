@@ -21,7 +21,7 @@ model** where:
    `trigger` policy (on-change, schedule, manual, or composite).
 3. **Assets carry version + tags** — inputs can match by exact name *or* by
    tag selectors with semver ranges, enabling loose coupling.
-4. **Pipeline is a query** — `dp pipeline show` walks the dependency graph
+4. **Pipeline is a query** — `dk pipeline show` walks the dependency graph
    starting from a root asset and renders the chain of transforms that
    produce that data. Multiple output formats are supported (text, mermaid,
    JSON, DOT).
@@ -97,7 +97,7 @@ spec:
 |-------------|----------------------------------------------------------|
 | `schedule`  | Runs on cron (same as before, cron spec nested)          |
 | `on-change` | Runs when any input asset's data is updated              |
-| `manual`    | Only runs on explicit `dp pipeline run` / API call       |
+| `manual`    | Only runs on explicit `dk pipeline run` / API call       |
 | `composite` | Combines multiple policies (any of them can trigger)     |
 
 The existing `spec.schedule` field is kept for backward compatibility and is
@@ -105,11 +105,11 @@ treated as shorthand for `trigger: { policy: schedule, schedule: { ... } }`.
 
 ## Pipeline as a Query
 
-`dp pipeline show` is enhanced to walk the asset dependency graph.
+`dk pipeline show` is enhanced to walk the asset dependency graph.
 
 ### How it works
 
-1. Scan all `dp.yaml` files (recursively or in a configured set of dirs).
+1. Scan all `dk.yaml` files (recursively or in a configured set of dirs).
 2. Build a DAG: each Transform becomes a node, edges are asset dependencies.
 3. Render the graph starting from a root, destination, or showing everything.
 
@@ -117,38 +117,38 @@ treated as shorthand for `trigger: { policy: schedule, schedule: { ... } }`.
 
 ```bash
 # Show full dependency graph (text tree)
-dp pipeline show --all
+dk pipeline show --all
 
 # From a specific output asset
-dp pipeline show --destination users-enriched
+dk pipeline show --destination users-enriched
 
 # Different output formats
-dp pipeline show --all --output text      # default
-dp pipeline show --all --output mermaid   # Mermaid diagram
-dp pipeline show --all --output json      # JSON adjacency list
-dp pipeline show --all --output dot       # Graphviz DOT
+dk pipeline show --all --output text      # default
+dk pipeline show --all --output mermaid   # Mermaid diagram
+dk pipeline show --all --output json      # JSON adjacency list
+dk pipeline show --all --output dot       # Graphviz DOT
 
 # Scan specific directories
-dp pipeline show --all --scan-dir ./transforms --scan-dir ./assets
+dk pipeline show --all --scan-dir ./transforms --scan-dir ./assets
 ```
 
 ### Example: Three Chained Transforms
 
 ```
 transforms/
-  ingest/dp.yaml        → reads: raw-events          → writes: raw-events-parquet
-  enrich/dp.yaml        → reads: raw-events-parquet  → writes: enriched-events
-  aggregate/dp.yaml     → reads: enriched-events     → writes: event-summary
+  ingest/dk.yaml        → reads: raw-events          → writes: raw-events-parquet
+  enrich/dk.yaml        → reads: raw-events-parquet  → writes: enriched-events
+  aggregate/dk.yaml     → reads: enriched-events     → writes: event-summary
 
 assets/
-  raw-events/dp.yaml
-  raw-events-parquet/dp.yaml
-  enriched-events/dp.yaml
-  event-summary/dp.yaml
+  raw-events/dk.yaml
+  raw-events-parquet/dk.yaml
+  enriched-events/dk.yaml
+  event-summary/dk.yaml
 ```
 
 ```bash
-$ dp pipeline show --destination event-summary
+$ dk pipeline show --destination event-summary
 
 Pipeline Graph → event-summary
 ═══════════════════════════════
@@ -198,7 +198,7 @@ graph TD
 
 - **Existing transforms** that use `spec.schedule` continue to work — the
   field is kept and treated as shorthand for `trigger.policy: schedule`.
-- **Existing `PipelineWorkflow`** manifests are still parseable but `dp
+- **Existing `PipelineWorkflow`** manifests are still parseable but `dk
   pipeline show` now favours the graph-based view.
 - **AssetRef** with only `asset` still works unchanged. `tags` and `version`
   are optional.
@@ -211,6 +211,6 @@ graph TD
 3. Update JSON schemas (`transform.schema.json`, `asset.schema.json`).
 4. Update `sdk/validate/manifest.go` — validate trigger policies, semver
    ranges, asset-or-tags exclusivity.
-5. Add `dp pipeline show` graph mode to `cli/cmd/pipeline_show.go`.
+5. Add `dk pipeline show` graph mode to `cli/cmd/pipeline_show.go`.
 6. Add three-transform example under `examples/`.
 7. Update tests and documentation.

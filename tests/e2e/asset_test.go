@@ -9,31 +9,31 @@ import (
 )
 
 // TestAssetWorkflow tests the complete asset lifecycle:
-// create → validate → add to dp.yaml → validate project → list → show
+// create → validate → add to dk.yaml → validate project → list → show
 func TestAssetWorkflow(t *testing.T) {
 	skipIfShort(t)
 
 	tmpDir := createTempDir(t)
 
 	// Step 0: Initialize a data package project
-	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "asset-test")
+	result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "asset-test")
 	if err != nil {
-		t.Fatalf("dp init failed: %v", err)
+		t.Fatalf("dk init failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp init exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk init exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	projectDir := filepath.Join(tmpDir, "asset-test")
-	assertFileExists(t, filepath.Join(projectDir, "dp.yaml"))
+	assertFileExists(t, filepath.Join(projectDir, "dk.yaml"))
 
 	// Step 1: Create an asset from an extension
-	result, err = runDPInDir(t, projectDir, "asset", "create", "aws-security", "--ext", "cloudquery.source.aws")
+	result, err = runDKInDir(t, projectDir, "asset", "create", "aws-security", "--ext", "cloudquery.source.aws")
 	if err != nil {
-		t.Fatalf("dp asset create failed: %v", err)
+		t.Fatalf("dk asset create failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset create exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk asset create exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	// Verify asset file was created
@@ -70,41 +70,41 @@ config:
 	}
 
 	// Step 3: Validate the single asset
-	result, err = runDPInDir(t, projectDir, "asset", "validate", "assets/sources/aws-security/")
+	result, err = runDKInDir(t, projectDir, "asset", "validate", "assets/sources/aws-security/")
 	if err != nil {
-		t.Fatalf("dp asset validate failed: %v", err)
+		t.Fatalf("dk asset validate failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset validate exited %d: %s\n%s", result.ExitCode, result.Stderr, result.Stdout)
+		t.Fatalf("dk asset validate exited %d: %s\n%s", result.ExitCode, result.Stderr, result.Stdout)
 	}
 	validateOutput := result.Stdout + result.Stderr
 	if !strings.Contains(validateOutput, "valid") {
 		t.Errorf("expected validation success, got: %s", validateOutput)
 	}
 
-	// Step 4: Add the asset to dp.yaml
-	dpYamlPath := filepath.Join(projectDir, "dp.yaml")
-	dpData, err := os.ReadFile(dpYamlPath)
+	// Step 4: Add the asset to dk.yaml
+	dkYamlPath := filepath.Join(projectDir, "dk.yaml")
+	dkData, err := os.ReadFile(dkYamlPath)
 	if err != nil {
-		t.Fatalf("failed to read dp.yaml: %v", err)
+		t.Fatalf("failed to read dk.yaml: %v", err)
 	}
-	dpContent := string(dpData)
+	dkContent := string(dkData)
 
 	// Append assets section to the spec
-	if !strings.Contains(dpContent, "assets:") {
-		dpContent += "\n  assets:\n    - aws-security\n"
-		if err := os.WriteFile(dpYamlPath, []byte(dpContent), 0644); err != nil {
-			t.Fatalf("failed to write dp.yaml: %v", err)
+	if !strings.Contains(dkContent, "assets:") {
+		dkContent += "\n  assets:\n    - aws-security\n"
+		if err := os.WriteFile(dkYamlPath, []byte(dkContent), 0644); err != nil {
+			t.Fatalf("failed to write dk.yaml: %v", err)
 		}
 	}
 
 	// Step 5: List assets
-	result, err = runDPInDir(t, projectDir, "asset", "list")
+	result, err = runDKInDir(t, projectDir, "asset", "list")
 	if err != nil {
-		t.Fatalf("dp asset list failed: %v", err)
+		t.Fatalf("dk asset list failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset list exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk asset list exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	// Verify list output contains the asset
@@ -120,12 +120,12 @@ config:
 	}
 
 	// Step 6: List assets as JSON
-	result, err = runDPInDir(t, projectDir, "asset", "list", "--output", "json")
+	result, err = runDKInDir(t, projectDir, "asset", "list", "--output", "json")
 	if err != nil {
-		t.Fatalf("dp asset list --output json failed: %v", err)
+		t.Fatalf("dk asset list --output json failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset list --output json exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk asset list --output json exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	var jsonList []map[string]any
@@ -144,12 +144,12 @@ config:
 	}
 
 	// Step 7: Show asset details (YAML)
-	result, err = runDPInDir(t, projectDir, "asset", "show", "aws-security")
+	result, err = runDKInDir(t, projectDir, "asset", "show", "aws-security")
 	if err != nil {
-		t.Fatalf("dp asset show failed: %v", err)
+		t.Fatalf("dk asset show failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset show exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk asset show exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	showOutput := result.Stdout + result.Stderr
@@ -161,12 +161,12 @@ config:
 	}
 
 	// Step 8: Show asset details (JSON)
-	result, err = runDPInDir(t, projectDir, "asset", "show", "aws-security", "--output", "json")
+	result, err = runDKInDir(t, projectDir, "asset", "show", "aws-security", "--output", "json")
 	if err != nil {
-		t.Fatalf("dp asset show --output json failed: %v", err)
+		t.Fatalf("dk asset show --output json failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset show --output json exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk asset show --output json exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	var jsonShow map[string]any
@@ -189,18 +189,18 @@ func TestAssetCreateInvalidName(t *testing.T) {
 	tmpDir := createTempDir(t)
 
 	// Initialize a project first
-	result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-pkg")
+	result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-pkg")
 	if err != nil {
-		t.Fatalf("dp init failed: %v", err)
+		t.Fatalf("dk init failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp init exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk init exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	projectDir := filepath.Join(tmpDir, "test-pkg")
 
 	// Try creating an asset with an invalid name
-	result, err = runDPInDir(t, projectDir, "asset", "create", "AB", "--ext", "cloudquery.source.aws")
+	result, err = runDKInDir(t, projectDir, "asset", "create", "AB", "--ext", "cloudquery.source.aws")
 	if result.ExitCode == 0 {
 		t.Error("expected non-zero exit code for invalid asset name")
 	}
@@ -238,7 +238,7 @@ config:
 	}
 
 	// Validate should fail
-	result, _ := runDPInDir(t, projectDir, "asset", "validate", "assets/sources/bad-asset/")
+	result, _ := runDKInDir(t, projectDir, "asset", "validate", "assets/sources/bad-asset/")
 	if result.ExitCode == 0 {
 		t.Error("expected non-zero exit code for invalid asset config")
 	}
@@ -250,7 +250,7 @@ func TestAssetShowNotFound(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, _ := runDPInDir(t, tmpDir, "asset", "show", "nonexistent")
+	result, _ := runDKInDir(t, tmpDir, "asset", "show", "nonexistent")
 	if result.ExitCode == 0 {
 		t.Error("expected non-zero exit code for non-existent asset")
 	}
@@ -262,12 +262,12 @@ func TestAssetListEmpty(t *testing.T) {
 
 	tmpDir := createTempDir(t)
 
-	result, err := runDPInDir(t, tmpDir, "asset", "list")
+	result, err := runDKInDir(t, tmpDir, "asset", "list")
 	if err != nil {
-		t.Fatalf("dp asset list failed: %v", err)
+		t.Fatalf("dk asset list failed: %v", err)
 	}
 	if result.ExitCode != 0 {
-		t.Fatalf("dp asset list exited %d: %s", result.ExitCode, result.Stderr)
+		t.Fatalf("dk asset list exited %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	emptyOutput := result.Stdout + result.Stderr

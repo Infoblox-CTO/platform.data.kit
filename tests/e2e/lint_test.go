@@ -10,7 +10,7 @@ func TestLint_ValidPackage(t *testing.T) {
 
 	validPkg := validPipelinePath(t)
 
-	result, err := runDP(t, "lint", validPkg)
+	result, err := runDK(t, "lint", validPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestLint_InvalidPackage(t *testing.T) {
 	invalidPkg := filepath.Join(tmpDir, "invalid-package")
 	copyDir(t, invalidPackagePath(t), invalidPkg)
 
-	result, err := runDP(t, "lint", invalidPkg)
+	result, err := runDK(t, "lint", invalidPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestLint_NonExistentDirectory(t *testing.T) {
 	tmpDir := createTempDir(t)
 	nonExistent := filepath.Join(tmpDir, "does-not-exist")
 
-	result, err := runDP(t, "lint", nonExistent)
+	result, err := runDK(t, "lint", nonExistent)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestLint_StrictMode(t *testing.T) {
 
 	validPkg := validPipelinePath(t)
 
-	result, err := runDP(t, "lint", "--strict", validPkg)
+	result, err := runDK(t, "lint", "--strict", validPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestLint_SkipPII(t *testing.T) {
 
 	validPkg := validPipelinePath(t)
 
-	result, err := runDP(t, "lint", "--skip-pii", validPkg)
+	result, err := runDK(t, "lint", "--skip-pii", validPkg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestLint_WithPathArgument(t *testing.T) {
 	t.Run("absolute path", func(t *testing.T) {
 		validPkg := validPipelinePath(t)
 
-		result, err := runDP(t, "lint", validPkg)
+		result, err := runDK(t, "lint", validPkg)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -106,7 +106,7 @@ func TestLint_WithPathArgument(t *testing.T) {
 		validPkg := validPipelinePath(t)
 
 		// Run lint in the package directory with current directory
-		result, err := runDPInDir(t, validPkg, "lint", ".")
+		result, err := runDKInDir(t, validPkg, "lint", ".")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -119,7 +119,7 @@ func TestLint_WithPathArgument(t *testing.T) {
 	t.Run("no path argument uses current directory", func(t *testing.T) {
 		validPkg := validPipelinePath(t)
 
-		result, err := runDPInDir(t, validPkg, "lint")
+		result, err := runDKInDir(t, validPkg, "lint")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

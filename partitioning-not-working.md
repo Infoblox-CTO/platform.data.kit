@@ -18,26 +18,26 @@ These spec items are fully working and tested:
 | **PackageDeployment CRD** | Namespaced with cell, mode, schedule, resources | `platform/controller/api/v1alpha1/packagedeployment_types.go` |
 | **CellResolver** | kubectl-based store resolution from dp-\<cell\> namespace | `sdk/runner/cellresolver.go` — ResolveStore, ListStores, CellExists |
 | **3-tier store resolution** | (1) assetRef.Cell → per-asset cell, (2) --cell → deployment cell, (3) package store/ fallback | `sdk/runner/cqconfig.go` — resolveStore closure chain |
-| **dp run --cell** | `--cell` and `--context` flags on run command | `cli/cmd/run.go` |
-| **dp cell list/show/stores** | Cell management CLI with --context support | `cli/cmd/cell.go` |
-| **dp build** | 4-step: validate → git → OCI bundle → Helm chart | `cli/cmd/build.go` |
-| **dp publish** | Build + helm push to OCI registry | `cli/cmd/publish.go` |
+| **dk run --cell** | `--cell` and `--context` flags on run command | `cli/cmd/run.go` |
+| **dk cell list/show/stores** | Cell management CLI with --context support | `cli/cmd/cell.go` |
+| **dk build** | 4-step: validate → git → OCI bundle → Helm chart | `cli/cmd/build.go` |
+| **dk publish** | Build + helm push to OCI registry | `cli/cmd/publish.go` |
 | **Helm chart generation** | Chart.yaml + values.yaml + templates/packagedeployment.yaml + manifests/ (no store/) | `sdk/registry/helmchart.go` |
 | **PackageDeployment template** | namespace: dp-\{\{.Values.cell\}\}, correct spec fields | `sdk/registry/helmchart.go` — `generatePackageDeploymentTemplate()` |
-| **dp init scaffolding** | connector/, asset/, store/ directories with templates | `cli/internal/templates/transform/cloudquery/` |
-| **Package directory structure** | dp.yaml + connector/ + asset/ + store/ + src/ convention | Matches spec exactly |
+| **dk init scaffolding** | connector/, asset/, store/ directories with templates | `cli/internal/templates/transform/cloudquery/` |
+| **Package directory structure** | dk.yaml + connector/ + asset/ + store/ + src/ convention | Matches spec exactly |
 | **GitOps CRDs** | Cell + Store + PackageDeployment CRDs in gitops base | `gitops/base/crds/{cell,store,packagedeployment}.yaml` |
 
 ---
 
 ## What Is NOT Implemented
 
-### 1. `dp dev up --cell <name>` — Cell Lifecycle in Local Development
+### 1. `dk dev up --cell <name>` — Cell Lifecycle in Local Development
 
 **Spec requires** (partitioning.md §Cell Lifecycle, §Infrastructure Sharing):
 
 ```bash
-dp dev up --cell canary
+dk dev up --cell canary
 ```
 
 Should:
@@ -48,7 +48,7 @@ Should:
 5. Apply Cell CR and Store CRs to the k3d cluster
 
 **What exists:**
-- `cli/cmd/dev.go` — `dp dev up` only has `--compose`, `--runtime`, `--volumes` flags. No `--cell` flag.
+- `cli/cmd/dev.go` — `dk dev up` only has `--compose`, `--runtime`, `--volumes` flags. No `--cell` flag.
 - `sdk/localdev/` — Manages k3d clusters and Helm chart deployment. Zero cell awareness (no references to Cell CRs, namespace creation, per-cell databases, buckets, or topic prefixes).
 - Shared infrastructure provisioning (PostgreSQL, LocalStack, Redpanda, Marquez) works via Helm chart init jobs, but only for the default setup.
 
@@ -59,16 +59,16 @@ This requires significant new infrastructure code across two packages:
 - Each infrastructure type (PG, S3, Kafka) needs its own provisioning/teardown logic with error handling, idempotency, and cleanup on failure.
 - The provisioning depends on the specific Helm chart configurations (port numbers, credentials) which are managed by `sdk/localdev/charts/`.
 
-**Estimate:** 500-800 lines of new code across 3-4 files. This is a standalone feature that doesn't block any other functionality — `dp run --cell` works against any pre-existing Cell/Store CRs applied manually via kubectl.
+**Estimate:** 500-800 lines of new code across 3-4 files. This is a standalone feature that doesn't block any other functionality — `dk run --cell` works against any pre-existing Cell/Store CRs applied manually via kubectl.
 
 ---
 
-### 2. `dp promote` — Cell-Based Promotion (vs Environment-Based)
+### 2. `dk promote` — Cell-Based Promotion (vs Environment-Based)
 
 **Spec requires** (partitioning.md §Developer Journey Step 5, §CLI Commands):
 
 ```bash
-dp promote pg-to-s3 1.2.4-g29aef --to stable    # "stable" is a CELL
+dk promote pg-to-s3 1.2.4-g29aef --to stable    # "stable" is a CELL
 ```
 
 Should update `cm-repo/apps/pg-to-s3-stable/version.txt` with the new version. The `--to` target is a cell name, not an environment.
@@ -83,13 +83,13 @@ This requires rearchitecting the promotion flow:
 - The `promotion.Environment` type and its `Valid()` method constrain targets to dev/int/prod.
 - The `Promoter` creates PRs that modify Kustomize overlay files. The spec expects PRs that write `version.txt` + `values.yaml` in a `cm-repo/apps/<package>-<cell>/` directory structure.
 - The CM repo path convention changes from `gitops/environments/<env>/` to either `apps/<package>-<cell>/` or `clusters/<cluster>/apps/<package>-<cell>/`.
-- This also involves the `dp promote status` subcommand.
+- This also involves the `dk promote status` subcommand.
 
 **Estimate:** Requires redesign of `sdk/promotion/` package (~300 lines) + updates to `cli/cmd/promote.go` (~50 lines). The current environment-based promotion is functional for the existing gitops structure; migrating requires the gitops structure to change first (see item 8).
 
 ---
 
-### 3. `dp rollback` — Cell-Based Rollback
+### 3. `dk rollback` — Cell-Based Rollback
 
 **Spec requires:**
 
@@ -100,11 +100,11 @@ Rollback targeting cells rather than environments. The spec's promotion model (v
 - Automatic previous-version detection is a TODO.
 
 **Why not in this pass:**
-Same architectural dependency as `dp promote` — the rollback flow mirrors promotion and shares the same `sdk/promotion/` package. The rollback would need to read version history from the CM repo (git log on version.txt) to determine the previous version. Blocked on the promote/gitops migration.
+Same architectural dependency as `dk promote` — the rollback flow mirrors promotion and shares the same `sdk/promotion/` package. The rollback would need to read version history from the CM repo (git log on version.txt) to determine the previous version. Blocked on the promote/gitops migration.
 
 ---
 
-### 4. `dp status` — Cell-Aware Status Display
+### 4. `dk status` — Cell-Aware Status Display
 
 **Spec requires** (partitioning.md §CLI Commands):
 
@@ -131,17 +131,17 @@ The prerequisite is a functioning controller that maintains accurate PackageDepl
 
 ---
 
-### 5. `dp show` — Cell/Store Resolution Display
+### 5. `dk show` — Cell/Store Resolution Display
 
 **Spec implies:**
 
-`dp show` should resolve and display store connections when `--cell` is provided, showing where assets would actually connect.
+`dk show` should resolve and display store connections when `--cell` is provided, showing where assets would actually connect.
 
 **What exists:**
-- `cli/cmd/show.go` — Shows the effective dp.yaml manifest with overrides and resolved asset details (store name, classification). No `--cell` flag, no store resolution from cells, no connection string display.
+- `cli/cmd/show.go` — Shows the effective dk.yaml manifest with overrides and resolved asset details (store name, classification). No `--cell` flag, no store resolution from cells, no connection string display.
 
 **Why not in this pass:**
-Adding a `--cell` flag to `dp show` and using the CellResolver to display resolved store connections is technically feasible (~100 lines). However, it creates a UX question: should `dp show --cell canary` actually call kubectl, or should it remain a local-only manifest preview? The spec doesn't explicitly define this command's behavior with cells. Deferring to avoid premature UX decisions.
+Adding a `--cell` flag to `dk show` and using the CellResolver to display resolved store connections is technically feasible (~100 lines). However, it creates a UX question: should `dk show --cell canary` actually call kubectl, or should it remain a local-only manifest preview? The spec doesn't explicitly define this command's behavior with cells. Deferring to avoid premature UX decisions.
 
 **Note:** This is the most implementable of the deferred items. If cell-resolved preview becomes a priority, it can be added by importing `sdk/runner.CellResolver` into the show command and displaying resolved store connections alongside the manifest.
 
@@ -253,7 +253,7 @@ The localdev package should understand cells, creating per-cell infrastructure w
 - `sdk/localdev/` — Contains `cache.go`, `compose.go`, `config.go`, `k3d.go`, `portforward.go`, `ports.go`, `prerequisites.go`, `runtime.go`. Zero references to Cell, Store, or cell-related concepts.
 
 **Why not in this pass:**
-This is the backend for item 1 (`dp dev up --cell`). All the same reasons apply — it requires infrastructure provisioning code for PostgreSQL databases, S3 buckets, Kafka topics, and k8s resource application. This is the implementation layer that the CLI command would call.
+This is the backend for item 1 (`dk dev up --cell`). All the same reasons apply — it requires infrastructure provisioning code for PostgreSQL databases, S3 buckets, Kafka topics, and k8s resource application. This is the implementation layer that the CLI command would call.
 
 ---
 
@@ -261,11 +261,11 @@ This is the backend for item 1 (`dp dev up --cell`). All the same reasons apply 
 
 | # | Gap | Severity | Blocked By | Estimate |
 |---|---|---|---|---|
-| 1 | `dp dev up --cell` | Medium | Nothing — standalone feature | 500-800 LOC |
-| 2 | `dp promote` cell targets | Medium | GitOps migration (#8) | 350 LOC |
-| 3 | `dp rollback` cell targets | Low | Promote migration (#2) | 100 LOC |
-| 4 | `dp status` cell display | Low | Controller (#7) for real data | 200 LOC |
-| 5 | `dp show --cell` preview | Low | Nothing — standalone, smallest gap | 100 LOC |
+| 1 | `dk dev up --cell` | Medium | Nothing — standalone feature | 500-800 LOC |
+| 2 | `dk promote` cell targets | Medium | GitOps migration (#8) | 350 LOC |
+| 3 | `dk rollback` cell targets | Low | Promote migration (#2) | 100 LOC |
+| 4 | `dk status` cell display | Low | Controller (#7) for real data | 200 LOC |
+| 5 | `dk show --cell` preview | Low | Nothing — standalone, smallest gap | 100 LOC |
 | 6 | Cell/Store controllers | Medium | Nothing — standalone | 800-1200 LOC |
 | 7 | PackageDeployment TODOs | High | OCI library, envtest setup | 300-500 LOC |
 | 8 | GitOps ApplicationSet | Medium | External infrastructure decisions | Config change |
@@ -273,22 +273,22 @@ This is the backend for item 1 (`dp dev up --cell`). All the same reasons apply 
 
 ### Recommended Implementation Order
 
-1. **`dp show --cell`** (#5) — smallest gap, high developer value, no dependencies
-2. **`dp dev up --cell`** (#1 + #9) — enables local cell workflows, unblocks developer iteration
+1. **`dk show --cell`** (#5) — smallest gap, high developer value, no dependencies
+2. **`dk dev up --cell`** (#1 + #9) — enables local cell workflows, unblocks developer iteration
 3. **Cell/Store controllers** (#6) — enables real status data
 4. **PackageDeployment controller TODOs** (#7) — completes the deployment loop
 5. **GitOps + promote + rollback** (#8, #2, #3) — migration to cell-based gitops, done together
-6. **`dp status`** (#4) — useful only after controller produces real status data
+6. **`dk status`** (#4) — useful only after controller produces real status data
 
 ### What Works Today Without These Gaps
 
 The core developer workflow is complete:
-- `dp init` → scaffolds a package with connector/, asset/, store/
-- `dp run` → runs locally using package store/ fallback
-- `dp run --cell canary` → resolves stores from cell's k8s namespace (if Cell/Store CRs are applied manually)
-- `dp build` → validates and produces Helm chart
-- `dp publish` → pushes Helm chart to OCI registry
-- `dp cell list/show/stores` → discovers cells and stores via kubectl
+- `dk init` → scaffolds a package with connector/, asset/, store/
+- `dk run` → runs locally using package store/ fallback
+- `dk run --cell canary` → resolves stores from cell's k8s namespace (if Cell/Store CRs are applied manually)
+- `dk build` → validates and produces Helm chart
+- `dk publish` → pushes Helm chart to OCI registry
+- `dk cell list/show/stores` → discovers cells and stores via kubectl
 - Cross-cell routing via `AssetRef.Cell` is supported in the resolution chain
 
 The gaps are in **lifecycle automation** (cell provisioning, promotion, rollback) and **controller logic** (reconciliation, status). The data model, resolution chain, and CLI commands for the core workflow are solid.

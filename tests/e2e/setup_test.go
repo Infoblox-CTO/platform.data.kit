@@ -9,18 +9,18 @@ import (
 
 // TestMain is the global test entry point for E2E tests.
 func TestMain(m *testing.M) {
-	// Verify the dp binary exists before running tests
+	// Verify the dk binary exists before running tests
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		os.Exit(1)
 	}
 
 	repoRoot := filepath.Join(filepath.Dir(filename), "..", "..")
-	binaryPath := filepath.Join(repoRoot, "bin", "dp")
+	binaryPath := filepath.Join(repoRoot, "bin", "dk")
 
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		// Print a helpful message but don't fail - individual tests will skip
-		println("Warning: dp binary not found at", binaryPath)
+		println("Warning: dk binary not found at", binaryPath)
 		println("Run 'make build' to build the CLI before running E2E tests")
 	}
 

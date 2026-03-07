@@ -13,7 +13,7 @@ func TestWorkflow_InitLintBuild(t *testing.T) {
 
 	// Step 1: Initialize a new package
 	t.Run("init", func(t *testing.T) {
-		result, err := runDPInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-workflow")
+		result, err := runDKInDir(t, tmpDir, "init", "--runtime", "generic-go", "test-workflow")
 		if err != nil {
 			t.Fatalf("init failed: %v", err)
 		}
@@ -22,14 +22,14 @@ func TestWorkflow_InitLintBuild(t *testing.T) {
 			t.Fatalf("init returned non-zero exit code: %d\nstderr: %s", result.ExitCode, result.Stderr)
 		}
 
-		assertFileExists(t, filepath.Join(tmpDir, "test-workflow", "dp.yaml"))
+		assertFileExists(t, filepath.Join(tmpDir, "test-workflow", "dk.yaml"))
 	})
 
 	pkgDir := filepath.Join(tmpDir, "test-workflow")
 
 	// Step 2: Lint the package
 	t.Run("lint", func(t *testing.T) {
-		result, err := runDP(t, "lint", pkgDir)
+		result, err := runDK(t, "lint", pkgDir)
 		if err != nil {
 			t.Fatalf("lint failed: %v", err)
 		}
@@ -41,7 +41,7 @@ func TestWorkflow_InitLintBuild(t *testing.T) {
 
 	// Step 3: Build the package (dry-run)
 	t.Run("build", func(t *testing.T) {
-		result, err := runDP(t, "build", "--dry-run", pkgDir)
+		result, err := runDK(t, "build", "--dry-run", pkgDir)
 		if err != nil {
 			t.Fatalf("build failed: %v", err)
 		}
@@ -63,7 +63,7 @@ func TestWorkflow_AllRuntimes(t *testing.T) {
 			pkgName := "test-" + runtime
 
 			// Init
-			result, err := runDPInDir(t, tmpDir, "init", "--runtime", runtime, pkgName)
+			result, err := runDKInDir(t, tmpDir, "init", "--runtime", runtime, pkgName)
 			if err != nil {
 				t.Fatalf("init failed for runtime %s: %v", runtime, err)
 			}
@@ -74,11 +74,11 @@ func TestWorkflow_AllRuntimes(t *testing.T) {
 			}
 
 			pkgDir := filepath.Join(tmpDir, pkgName)
-			assertFileExists(t, filepath.Join(pkgDir, "dp.yaml"))
-			assertFileContains(t, filepath.Join(pkgDir, "dp.yaml"), "kind: Transform")
+			assertFileExists(t, filepath.Join(pkgDir, "dk.yaml"))
+			assertFileContains(t, filepath.Join(pkgDir, "dk.yaml"), "kind: Transform")
 
 			// Lint
-			result, err = runDP(t, "lint", pkgDir)
+			result, err = runDK(t, "lint", pkgDir)
 			if err != nil {
 				t.Fatalf("lint failed for runtime %s: %v", runtime, err)
 			}
@@ -89,7 +89,7 @@ func TestWorkflow_AllRuntimes(t *testing.T) {
 			}
 
 			// Build (dry-run)
-			result, err = runDP(t, "build", "--dry-run", pkgDir)
+			result, err = runDK(t, "build", "--dry-run", pkgDir)
 			if err != nil {
 				t.Fatalf("build failed for runtime %s: %v", runtime, err)
 			}
@@ -105,7 +105,7 @@ func TestWorkflow_AllRuntimes(t *testing.T) {
 func TestWorkflow_Version(t *testing.T) {
 	skipIfShort(t)
 
-	result, err := runDP(t, "version")
+	result, err := runDK(t, "version")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestWorkflow_Version(t *testing.T) {
 func TestWorkflow_Help(t *testing.T) {
 	skipIfShort(t)
 
-	result, err := runDP(t, "--help")
+	result, err := runDK(t, "--help")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestWorkflow_CommandHelp(t *testing.T) {
 
 	for _, cmd := range commands {
 		t.Run(cmd, func(t *testing.T) {
-			result, err := runDP(t, cmd, "--help")
+			result, err := runDK(t, cmd, "--help")
 			if err != nil {
 				t.Fatalf("unexpected error for '%s --help': %v", cmd, err)
 			}

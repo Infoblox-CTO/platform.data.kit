@@ -1,4 +1,4 @@
-// Package contracts defines the core types for DP data packages.
+// Package contracts defines the core types for DK data packages.
 package contracts
 
 // APIVersion represents the API version of a manifest.

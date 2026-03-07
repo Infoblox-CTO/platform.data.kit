@@ -1,17 +1,17 @@
-# GoReleaser configuration for DP CLI
+# GoReleaser configuration for DK CLI
 # Documentation: https://goreleaser.com
 version: 2
 
-project_name: dp
+project_name: dk
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: dp
+  - id: dk
     main: ./cli
-    binary: dp
+    binary: dk
     env:
       - CGO_ENABLED=0
     goos:
@@ -79,7 +79,7 @@ release:
     
     ### macOS (Homebrew)
     ```bash
-    brew install Infoblox-CTO/tap/dp
+    brew install Infoblox-CTO/tap/dk
     ```
     
     ### Linux
@@ -90,7 +90,7 @@ release:
     ### Windows (Scoop)
     ```powershell
     scoop bucket add infoblox https://github.com/Infoblox-CTO/scoop-bucket
-    scoop install dp
+    scoop install dk
     ```
     
     ### Manual Download
@@ -107,13 +107,13 @@ brews:
     description: Data Platform CLI - Kubernetes-native data pipeline platform
     license: Apache-2.0
     install: |
-      bin.install "dp"
+      bin.install "dk"
     test: |
-      system "#{bin}/dp", "version"
+      system "#{bin}/dk", "version"
     # For private repos, users need to set HOMEBREW_GITHUB_API_TOKEN
 
 scoops:
-  - name: dp
+  - name: dk
     repository:
       owner: Infoblox-CTO
       name: scoop-bucket

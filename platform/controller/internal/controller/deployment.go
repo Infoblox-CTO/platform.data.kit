@@ -31,8 +31,8 @@ func (g *DeploymentGenerator) Generate(deployment *dpv1alpha1.PackageDeployment)
 		"app.kubernetes.io/name":       deployment.Spec.Package.Name,
 		"app.kubernetes.io/version":    deployment.Spec.Package.Version,
 		"app.kubernetes.io/managed-by": "dk-controller",
-		"datakit.infoblox.dev/package":                deployment.Spec.Package.Name,
-		"datakit.infoblox.dev/mode":                   "streaming",
+		"datakit.infoblox.dev/package": deployment.Spec.Package.Name,
+		"datakit.infoblox.dev/mode":    "streaming",
 	}
 
 	// Build container
@@ -88,8 +88,8 @@ func (g *DeploymentGenerator) Generate(deployment *dpv1alpha1.PackageDeployment)
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app.kubernetes.io/name": deployment.Spec.Package.Name,
-				"datakit.infoblox.dev/package":          deployment.Spec.Package.Name,
+					"app.kubernetes.io/name":       deployment.Spec.Package.Name,
+					"datakit.infoblox.dev/package": deployment.Spec.Package.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{

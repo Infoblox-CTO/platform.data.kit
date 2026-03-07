@@ -39,6 +39,7 @@ This constitution defines the non-negotiable principles for building DataKit (DK
 ## Scope
 
 Applies to:
+
 - CLI tooling
 - Shared contracts/types and SDK
 - Platform runtime components (controllers/services/operators integrations)
@@ -116,6 +117,7 @@ Every runtime component and pipeline execution MUST expose observability signals
 Automated validation replaces manual heroics.
 
 Before a package can be published/promoted, it MUST pass:
+
 - Contract/schema validation
 - Unit tests (where applicable)
 - Basic integration sanity checks for the MVP example(s)
@@ -165,7 +167,7 @@ Extensions define the approved building blocks of the platform. They are APIs be
 - Every extension MUST have a machine-readable schema (`schema.json`) that validates consumer configuration.
 - Extension schemas MUST be versioned; breaking changes require a major version bump.
 - Extensions MUST be self-describing: schema, documentation, examples, and version policy travel together.
-- The platform MUST validate asset configuration against the referenced extension's schema at `dp validate` time — not at runtime.
+- The platform MUST validate asset configuration against the referenced extension's schema at `dk validate` time — not at runtime.
 
 **Rationale**: Unschematized configuration leads to runtime failures and support burden. Schema-validated extensions shift errors left and create a reliable contract between platform and domain teams.
 
@@ -250,14 +252,14 @@ The following are explicitly out of scope for MVP:
 
 Before implementing any major milestone, the following MUST be verified:
 
-| Gate | Requirement |
-|------|-------------|
-| **Workflow Demo** | The plan demonstrates the end-to-end developer workflow |
-| **Contract Schema** | Contract schemas and validation strategy are explicit |
-| **Promotion/Rollback** | Promotion and rollback mechanics are explicit |
-| **Observability** | Observability requirements are defined and addressed |
-| **Security/Compliance** | Secrets, least privilege, and PII metadata requirements are addressed (at minimum) |
-| **Persona Mapping** | The plan identifies which persona owns each artifact and validates that ownership boundaries are clean |
+| Gate                          | Requirement                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Workflow Demo**       | The plan demonstrates the end-to-end developer workflow                                                |
+| **Contract Schema**     | Contract schemas and validation strategy are explicit                                                  |
+| **Promotion/Rollback**  | Promotion and rollback mechanics are explicit                                                          |
+| **Observability**       | Observability requirements are defined and addressed                                                   |
+| **Security/Compliance** | Secrets, least privilege, and PII metadata requirements are addressed (at minimum)                     |
+| **Persona Mapping**     | The plan identifies which persona owns each artifact and validates that ownership boundaries are clean |
 
 ## Governance
 
@@ -270,6 +272,7 @@ Before implementing any major milestone, the following MUST be verified:
 ### Versioning Policy
 
 This constitution follows SemVer:
+
 - **MAJOR**: Backward-incompatible principle removals or redefinitions.
 - **MINOR**: New principles/sections added or materially expanded guidance.
 - **PATCH**: Clarifications, wording, typo fixes, non-semantic refinements.

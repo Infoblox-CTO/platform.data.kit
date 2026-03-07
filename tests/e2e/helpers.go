@@ -30,15 +30,15 @@ func repoRootDir(t *testing.T) string {
 	return absPath
 }
 
-// dpBinaryPath finds the dp CLI binary path.
+// dkBinaryPath finds the dk CLI binary path.
 // It looks for the binary in the bin directory at the root of the repository.
-func dpBinaryPath(t *testing.T) string {
+func dkBinaryPath(t *testing.T) string {
 	t.Helper()
 
-	binaryPath := filepath.Join(repoRootDir(t), "bin", "dp")
+	binaryPath := filepath.Join(repoRootDir(t), "bin", "dk")
 
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		t.Fatalf("dp binary not found at %s. Run 'make build' first.", binaryPath)
+		t.Fatalf("dk binary not found at %s. Run 'make build' first.", binaryPath)
 	}
 
 	return binaryPath
@@ -60,7 +60,7 @@ func demoRunnerPath(t *testing.T) string {
 
 // runDemo executes a demo dialog file through the runner script.
 // It sets the working directory to the repo root and prepends the bin/ directory
-// to PATH so that dp commands work without absolute paths.
+// to PATH so that dk commands work without absolute paths.
 func runDemo(t *testing.T, demoName string) *CommandResult {
 	t.Helper()
 
@@ -71,7 +71,7 @@ func runDemo(t *testing.T, demoName string) *CommandResult {
 	cmd := exec.Command("bash", runner, dialogFile)
 	cmd.Dir = root
 
-	// Prepend bin/ to PATH so dp is available
+	// Prepend bin/ to PATH so dk is available
 	binDir := filepath.Join(root, "bin")
 	cmd.Env = append(os.Environ(), "PATH="+binDir+":"+os.Getenv("PATH"))
 
@@ -105,17 +105,17 @@ type CommandResult struct {
 	ExitCode int
 }
 
-// runDP executes the dp command with the given arguments and returns the result.
-func runDP(t *testing.T, args ...string) (*CommandResult, error) {
+// runDK executes the dk command with the given arguments and returns the result.
+func runDK(t *testing.T, args ...string) (*CommandResult, error) {
 	t.Helper()
-	return runDPInDir(t, "", args...)
+	return runDKInDir(t, "", args...)
 }
 
-// runDPInDir executes the dp command in a specific directory with the given arguments.
-func runDPInDir(t *testing.T, dir string, args ...string) (*CommandResult, error) {
+// runDKInDir executes the dk command in a specific directory with the given arguments.
+func runDKInDir(t *testing.T, dir string, args ...string) (*CommandResult, error) {
 	t.Helper()
 
-	binaryPath := dpBinaryPath(t)
+	binaryPath := dkBinaryPath(t)
 
 	cmd := exec.Command(binaryPath, args...)
 	if dir != "" {

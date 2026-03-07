@@ -2,13 +2,12 @@
 title: "CloudQuery Go Plugin"
 description: "Build a Go CloudQuery source plugin from scratch"
 ---
-
 # CloudQuery Go Plugin
 
 Build a Go-based CloudQuery source plugin that fetches data from an API and syncs it to file or PostgreSQL destinations.
 
-**Time**: ~15 minutes  
-**Difficulty**: Beginner  
+**Time**: ~15 minutes
+**Difficulty**: Beginner
 **Prerequisites**: DK CLI installed, Go 1.25+, Docker running, `dk dev up` completed
 
 ## Overview
@@ -81,7 +80,7 @@ spec:
   timeout: 30m
 ```
 
-The `kind: Transform` with `runtime: cloudquery` tells DP that this package is a CloudQuery plugin.
+The `kind: Transform` with `runtime: cloudquery` tells DKDK that this package is a CloudQuery plugin.
 The `inputs` and `outputs` declare the assets this transform reads from and writes to.
 No container `image` is required — plugin images come from the Connector manifest.
 
@@ -344,29 +343,29 @@ dk run --sync --destination postgresql  # Sync to PostgreSQL
 
 ## Command Reference
 
-| Command | What it does | Needs Docker/k3d? |
-|---------|--------------|-------------------|
-| `dk init <name> --runtime cloudquery` | Scaffold a new Go plugin | No |
-| `dk test` | Run `go test ./... -v` | No |
-| `dk run` | Build container, deploy to k3d, discover tables | Yes |
-| `dk run --sync` | Sync data to local JSON files | Yes |
-| `dk run --sync --destination postgresql` | Sync data to PostgreSQL | Yes |
-| `dk test --integration` | Full build + sync integration test | Yes |
-| `make` | Show all available Make targets | No |
-| `make test` | Run `go test ./... -v` (same as `dk test`) | No |
-| `make sync` | Build + sync to local files | Yes |
+| Command                                    | What it does                                    | Needs Docker/k3d? |
+| ------------------------------------------ | ----------------------------------------------- | ----------------- |
+| `dk init <name> --runtime cloudquery`    | Scaffold a new Go plugin                        | No                |
+| `dk test`                                | Run `go test ./... -v`                        | No                |
+| `dk run`                                 | Build container, deploy to k3d, discover tables | Yes               |
+| `dk run --sync`                          | Sync data to local JSON files                   | Yes               |
+| `dk run --sync --destination postgresql` | Sync data to PostgreSQL                         | Yes               |
+| `dk test --integration`                  | Full build + sync integration test              | Yes               |
+| `make`                                   | Show all available Make targets                 | No                |
+| `make test`                              | Run `go test ./... -v` (same as `dk test`)  | No                |
+| `make sync`                              | Build + sync to local files                     | Yes               |
 
 ## Python vs Go Comparison
 
-| Aspect | Go | Python |
-|--------|----|----|
-| SDK | `plugin-sdk/v4` | `cloudquery-plugin-sdk` |
-| Table types | Apache Arrow Go | PyArrow |
-| Resolver pattern | `func(ctx, meta, parent, res chan<-)` | `def resolve(self, client, parent)` → yield |
-| Test runner | `go test` | pytest |
-| Build image | `golang:1.25-alpine` | `python:3.11-slim` |
-| Runtime image | `distroless/static-debian12` | `distroless/python3-debian12` |
-| Local deps | Go 1.25+ (auto-managed) | Python 3.12+ + venv (auto-created by `dk test`) |
+| Aspect           | Go                                      | Python                                            |
+| ---------------- | --------------------------------------- | ------------------------------------------------- |
+| SDK              | `plugin-sdk/v4`                       | `cloudquery-plugin-sdk`                         |
+| Table types      | Apache Arrow Go                         | PyArrow                                           |
+| Resolver pattern | `func(ctx, meta, parent, res chan<-)` | `def resolve(self, client, parent)` → yield    |
+| Test runner      | `go test`                             | pytest                                            |
+| Build image      | `golang:1.25-alpine`                  | `python:3.11-slim`                              |
+| Runtime image    | `distroless/static-debian12`          | `distroless/python3-debian12`                   |
+| Local deps       | Go 1.25+ (auto-managed)                 | Python 3.12+ + venv (auto-created by `dk test`) |
 
 ## Next Steps
 
