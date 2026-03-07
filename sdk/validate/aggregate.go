@@ -71,13 +71,6 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		}
 	}
 
-	// Validate schedule if schedule.yaml exists
-	schedulePath := filepath.Join(v.packageDir, ScheduleFileName)
-	if _, err := os.Stat(schedulePath); err == nil {
-		schedResult := v.validateSchedule(ctx, schedulePath)
-		result.Merge(schedResult)
-	}
-
 	return result
 }
 
@@ -244,27 +237,6 @@ func (v *AggregateValidator) validatePipelineWorkflow(ctx context.Context, path 
 			for _, e := range assetErrs {
 				result.Errors.Add(e)
 			}
-		}
-	}
-
-	return result
-}
-
-// validateSchedule validates a schedule.yaml file.
-func (v *AggregateValidator) validateSchedule(ctx context.Context, path string) *ValidationResult {
-	result := NewValidationResult()
-
-	schedValidator, err := NewScheduleValidatorFromFile(path)
-	if err != nil {
-		result.AddError(ErrParseError, "schedule.yaml", "failed to parse schedule.yaml: "+err.Error())
-		return result
-	}
-
-	errs := schedValidator.Validate(ctx)
-	if errs.HasErrors() {
-		result.Valid = false
-		for _, e := range errs {
-			result.Errors.Add(e)
 		}
 	}
 

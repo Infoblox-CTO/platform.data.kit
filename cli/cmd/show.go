@@ -10,7 +10,6 @@ import (
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/pipeline"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -66,9 +65,6 @@ Examples:
 		}
 
 		fmt.Fprint(cmd.OutOrStdout(), output)
-
-		// Show schedule info if schedule.yaml exists
-		showScheduleInfo(absPath, cmd.OutOrStdout())
 
 		return nil
 	},
@@ -199,26 +195,4 @@ func resolveAssetDetails(base map[string]any, packageDir string) {
 	}
 
 	spec["assets"] = resolved
-}
-
-// showScheduleInfo displays schedule information if schedule.yaml exists.
-func showScheduleInfo(packageDir string, w io.Writer) {
-	sched, err := pipeline.LoadSchedule(packageDir)
-	if err != nil || sched == nil {
-		return
-	}
-
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "--- Schedule ---")
-	fmt.Fprintf(w, "  Cron:     %s\n", sched.Cron)
-	tz := sched.Timezone
-	if tz == "" {
-		tz = "UTC"
-	}
-	fmt.Fprintf(w, "  Timezone: %s\n", tz)
-	if sched.Suspend {
-		fmt.Fprintln(w, "  Status:   SUSPENDED")
-	} else {
-		fmt.Fprintln(w, "  Status:   Active")
-	}
 }

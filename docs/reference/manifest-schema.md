@@ -78,10 +78,6 @@ spec:                               # Required: Transform specification
     policies:                       # Required when policy=composite
       - string                      # e.g., ["schedule", "on-change"]
 
-  schedule:                         # Optional: Cron scheduling (shorthand for trigger.policy=schedule)
-    cron: string                    # Cron expression (e.g., "0 */6 * * *")
-    timezone: string                # IANA timezone (default: UTC)
-
   timeout: string                   # Optional: Max execution time (e.g., "30m", "1h")
 
   resources:                        # Optional: Kubernetes resource limits
@@ -168,7 +164,7 @@ At runtime, the runner resolves the chain: **Transform → Asset → Store → C
 |----------|-------|
 | Type | object |
 | Required | No |
-| Description | Reactive trigger policy. Replaces or extends `spec.schedule`. |
+| Description | Reactive trigger policy. Defines when this transform executes. |
 
 **Trigger fields:**
 
@@ -196,15 +192,6 @@ At runtime, the runner resolves the chain: **Transform → Asset → Store → C
 | Default | `30m` |
 | Pattern | Go duration format (e.g., `30m`, `1h30m`, `2h`) |
 | Description | Maximum execution time before timeout. |
-
-#### spec.schedule
-
-| Property | Value |
-|----------|-------|
-| Type | object |
-| Required | No |
-| Fields | `cron` (string, 5-field cron), `timezone` (string, IANA) |
-| Description | Cron schedule for batch transforms. |
 
 #### spec.resources
 
@@ -263,8 +250,10 @@ spec:
     - asset: users
   outputs:
     - asset: users-parquet
-  schedule:
-    cron: "0 */6 * * *"
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"
   timeout: 30m
 ```
 
@@ -877,53 +866,6 @@ steps:                                  # Required: Ordered list of steps
 
 ---
 
-## schedule.yaml Schema
-
-Optional cron-based schedule for pipeline execution.
-
-### Full Schema
-
-```yaml
-# schedule.yaml
-apiVersion: datakit.infoblox.dev/v1alpha1  # Required: API version
-kind: Schedule                          # Required: Resource type
-
-cron: string                            # Required: 5-field cron expression
-timezone: string                        # Optional: IANA timezone (default: UTC)
-suspend: boolean                        # Optional: Pause execution (default: false)
-```
-
-### Cron Expression Format
-
-```
-┌───────────── minute (0-59)
-│ ┌───────────── hour (0-23)
-│ │ ┌───────────── day of month (1-31)
-│ │ │ ┌───────────── month (1-12)
-│ │ │ │ ┌───────────── day of week (0-6, Sun=0)
-│ │ │ │ │
-* * * * *
-```
-
-### Schedule Examples
-
-| Expression | Description |
-|-----------|-------------|
-| `0 6 * * *` | Every day at 6:00 AM |
-| `*/15 * * * *` | Every 15 minutes |
-| `0 0 * * 1` | Every Monday at midnight |
-| `0 8 1 * *` | First day of each month at 8:00 AM |
-
-### Schedule Validation Errors
-
-| Code | Message | Resolution |
-|------|---------|------------|
-| E100 | `cron expression is required` | Add a cron field |
-| E101 | `invalid cron expression` | Use valid 5-field cron syntax |
-| E102 | `invalid timezone` | Use a valid IANA timezone (e.g., America/New_York) |
-
----
-
 ## Validation Rules Summary
 
 ### Common Errors
@@ -998,8 +940,10 @@ spec:
   outputs:
     - asset: users-parquet
     - asset: orders-parquet
-  schedule:
-    cron: "0 2 * * *"
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 2 * * *"
   timeout: 30m
 ```
 

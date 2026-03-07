@@ -323,13 +323,13 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 		errs.AddError(contracts.ErrCodeTransformImageRequired, "spec.image", "spec.image is required for dbt runtime")
 	}
 
-	// W209: Schedule or trigger recommended for batch mode.
+	// W209: Trigger recommended for batch mode.
 	effectiveMode := tr.Spec.Mode
 	if effectiveMode == "" {
 		effectiveMode = effectiveMode.Default()
 	}
-	if effectiveMode == contracts.ModeBatch && tr.Spec.Schedule == nil && tr.Spec.Trigger == nil {
-		errs.AddWarning(contracts.WarnCodeScheduleBatchMode, "spec.schedule", "schedule or trigger is recommended for batch-mode transforms")
+	if effectiveMode == contracts.ModeBatch && tr.Spec.Trigger == nil {
+		errs.AddWarning(contracts.WarnCodeTriggerBatchMode, "spec.trigger", "trigger is recommended for batch-mode transforms")
 	}
 
 	// Validate trigger spec.

@@ -150,7 +150,7 @@ const (
 	ErrCodeRuntimeImageRequired = "E041"
 
 	// Model validation warnings (W200-W209)
-	WarnCodeScheduleBatchMode = "W209"
+	WarnCodeTriggerBatchMode = "W209"
 
 	// --- New kind validation errors (E200+) ---
 
@@ -191,7 +191,7 @@ var errorMessages = map[string]string{
 	ErrCodeInvalidTimeout:         "timeout must be a positive duration",
 	ErrCodeRuntimeRequired:        "spec.runtime is required",
 	ErrCodeRuntimeImageRequired:   "spec.image is required for generic-* runtimes",
-	WarnCodeScheduleBatchMode:     "schedule is recommended for batch mode transforms",
+	WarnCodeTriggerBatchMode:      "trigger is recommended for batch mode transforms",
 
 	// --- New kind error messages ---
 	ErrCodeConnectorTypeRequired:         "spec.type is required for Connector",

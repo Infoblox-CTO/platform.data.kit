@@ -62,35 +62,6 @@ func TestPipelineShow(t *testing.T) {
 			wantErr:   true,
 			errSubstr: "no pipeline.yaml",
 		},
-		{
-			name: "table with schedule",
-			args: []string{},
-			setup: func(dir string) {
-				writePipelineShowFile(t, dir)
-				schedContent := `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Schedule
-cron: "0 6 * * *"
-timezone: America/New_York
-`
-				if err := os.WriteFile(filepath.Join(dir, "schedule.yaml"), []byte(schedContent), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantOut: []string{
-				"Schedule:",
-				"0 6 * * *",
-				"America/New_York",
-				"Active",
-			},
-		},
-		{
-			name: "table without schedule",
-			args: []string{},
-			setup: func(dir string) {
-				writePipelineShowFile(t, dir)
-			},
-			notWant: []string{"Schedule:"},
-		},
 	}
 
 	for _, tt := range tests {

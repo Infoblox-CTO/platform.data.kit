@@ -187,23 +187,6 @@ func runPipelineShowLegacy(cmd *cobra.Command, args []string) error {
 		}
 		w.Flush()
 
-		sched, _ := pipeline.LoadSchedule(pipelineDir)
-		if sched != nil {
-			cmd.Println()
-			cmd.Println("Schedule:")
-			cmd.Printf("  Cron:     %s\n", sched.Cron)
-			tz := sched.Timezone
-			if tz == "" {
-				tz = "UTC"
-			}
-			cmd.Printf("  Timezone: %s\n", tz)
-			if sched.Suspend {
-				cmd.Println("  Status:   SUSPENDED")
-			} else {
-				cmd.Println("  Status:   Active")
-			}
-		}
-
 	default:
 		return fmt.Errorf("unsupported output format: %s (use table, json, yaml)", outputFmt)
 	}

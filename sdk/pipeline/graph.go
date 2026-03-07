@@ -82,9 +82,6 @@ func BuildGraph(opts GraphOptions) (*PipelineGraph, error) {
 			if t.manifest.Spec.Trigger.Policy == contracts.TriggerPolicySchedule && t.manifest.Spec.Trigger.Schedule != nil {
 				tNode.TriggerDetail = t.manifest.Spec.Trigger.Schedule.Cron
 			}
-		} else if t.manifest.Spec.Schedule != nil {
-			tNode.TriggerPolicy = "schedule"
-			tNode.TriggerDetail = t.manifest.Spec.Schedule.Cron
 		}
 
 		tNode.FilePath = t.path

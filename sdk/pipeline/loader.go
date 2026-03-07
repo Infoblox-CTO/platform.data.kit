@@ -66,33 +66,3 @@ func HasPipeline(dir string) bool {
 	_, err := os.Stat(pipelinePath)
 	return err == nil
 }
-
-// ScheduleFileName is the default filename for schedule definitions.
-const ScheduleFileName = "schedule.yaml"
-
-// LoadSchedule loads and parses a schedule.yaml from the given path.
-// The path can be a directory containing schedule.yaml or a direct file path.
-// Returns nil, nil if the file does not exist (schedule is optional).
-func LoadSchedule(path string) (*contracts.ScheduleManifest, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, nil // Schedule is optional
-	}
-
-	schedulePath := path
-	if info.IsDir() {
-		schedulePath = filepath.Join(path, ScheduleFileName)
-	}
-
-	data, err := os.ReadFile(schedulePath)
-	if err != nil {
-		return nil, nil // File doesn't exist — schedule is optional
-	}
-
-	var sm contracts.ScheduleManifest
-	if err := yaml.Unmarshal(data, &sm); err != nil {
-		return nil, fmt.Errorf("failed to parse schedule file %s: %w", schedulePath, err)
-	}
-
-	return &sm, nil
-}

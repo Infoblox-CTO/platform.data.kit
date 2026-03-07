@@ -157,16 +157,6 @@
           },
           "description": "Environment variables"
         },
-        "schedule": {
-          "type": "object",
-          "properties": {
-            "cron": {
-              "type": "string",
-              "description": "Cron expression"
-            }
-          },
-          "description": "Optional cron scheduling (shorthand for trigger.policy: schedule)"
-        },
         "trigger": {
           "type": "object",
           "required": ["policy"],

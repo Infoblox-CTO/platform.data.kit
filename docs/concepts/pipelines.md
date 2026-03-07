@@ -109,20 +109,23 @@ Each step's output is prefixed with `[step-name]` for easy identification in log
 
 ## Scheduling
 
-An optional `schedule.yaml` alongside `pipeline.yaml` defines cron-based execution timing:
+Scheduling is configured via the `trigger` field on a Transform manifest:
 
 ```yaml
-apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Schedule
-cron: "0 6 * * *"
-timezone: America/New_York
+# In dk.yaml (Transform)
+spec:
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 6 * * *"
+      timezone: America/New_York
 ```
 
-| Field      | Required | Default | Description                        |
-|------------|----------|---------|------------------------------------|
-| `cron`     | Yes      | —       | Standard 5-field cron expression   |
-| `timezone` | No       | UTC     | IANA timezone for cron evaluation  |
-| `suspend`  | No       | false   | Pause scheduled execution          |
+| Field                   | Required | Default | Description                        |
+|-------------------------|----------|---------|------------------------------------|
+| `trigger.policy`        | Yes      | —       | Trigger policy (schedule, on-change, manual, composite) |
+| `trigger.schedule.cron` | Yes*     | —       | Standard 5-field cron expression (* when policy is schedule) |
+| `trigger.schedule.timezone` | No   | UTC     | IANA timezone for cron evaluation  |
 
 ## Backfill
 

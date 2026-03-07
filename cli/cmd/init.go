@@ -176,7 +176,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	cmd.Printf("\nPackage %q initialized successfully!\n", name)
 	cmd.Printf("\nNext steps:\n")
 	cmd.Printf("  1. Edit dk.yaml to configure your transform\n")
-	cmd.Printf("  2. Configure inputs/outputs and schedule\n")
+	cmd.Printf("  2. Configure inputs/outputs and trigger\n")
 	cmd.Printf("  3. Run 'dk lint' to validate\n")
 	cmd.Printf("  4. Run 'dk dev up' to start local environment\n")
 	cmd.Printf("  5. Run 'dk run' to execute locally\n")

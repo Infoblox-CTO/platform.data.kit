@@ -1,7 +1,7 @@
 package contracts
 
 // Transform is a unit of computation that reads input Assets and produces output Assets.
-// It carries the runtime, mode, schedule, and timeout — everything about execution.
+// It carries the runtime, mode, trigger, and timeout — everything about execution.
 // Created by the data engineer.
 type Transform struct {
 	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
@@ -58,13 +58,7 @@ type TransformSpec struct {
 	// Env is a list of environment variables to set.
 	Env []EnvVar `json:"env,omitempty" yaml:"env,omitempty"`
 
-	// Schedule defines optional cron scheduling for batch transforms.
-	// Shorthand for trigger: { policy: schedule, schedule: { ... } }.
-	// Deprecated: prefer trigger.
-	Schedule *ScheduleSpec `json:"schedule,omitempty" yaml:"schedule,omitempty"`
-
 	// Trigger defines when this transform executes.
-	// If omitted but Schedule is set, trigger is inferred as policy: schedule.
 	Trigger *TriggerSpec `json:"trigger,omitempty" yaml:"trigger,omitempty"`
 
 	// Timeout is the maximum execution duration (e.g., "30m", "1h").

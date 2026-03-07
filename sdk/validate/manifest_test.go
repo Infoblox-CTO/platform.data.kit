@@ -93,12 +93,12 @@ func TestManifestValidator_Validate(t *testing.T) {
 					Name: "valid-transform",
 				},
 				Spec: contracts.TransformSpec{
-					Runtime:  contracts.RuntimeGenericGo,
-					Image:    "myimage:v1",
-					Mode:     contracts.ModeBatch,
-					Schedule: &contracts.ScheduleSpec{Cron: "0 * * * *"},
-					Inputs:   []contracts.AssetRef{{Asset: "in"}},
-					Outputs:  []contracts.AssetRef{{Asset: "out"}},
+					Runtime: contracts.RuntimeGenericGo,
+					Image:   "myimage:v1",
+					Mode:    contracts.ModeBatch,
+					Trigger: &contracts.TriggerSpec{Policy: contracts.TriggerPolicySchedule, Schedule: &contracts.ScheduleSpec{Cron: "0 * * * *"}},
+					Inputs:  []contracts.AssetRef{{Asset: "in"}},
+					Outputs: []contracts.AssetRef{{Asset: "out"}},
 				},
 			},
 			kind:      contracts.KindTransform,
@@ -327,11 +327,11 @@ func TestManifestValidator_TransformValidation(t *testing.T) {
 				Kind:       string(contracts.KindTransform),
 				Metadata:   contracts.TransformMetadata{Name: "test-transform"},
 				Spec: contracts.TransformSpec{
-					Runtime:  contracts.RuntimeGenericGo,
-					Image:    "myimage:v1",
-					Mode:     contracts.ModeBatch,
-					Schedule: &contracts.ScheduleSpec{Cron: "0 * * * *"},
-					Outputs:  []contracts.AssetRef{{Asset: "out"}},
+					Runtime: contracts.RuntimeGenericGo,
+					Image:   "myimage:v1",
+					Mode:    contracts.ModeBatch,
+					Trigger: &contracts.TriggerSpec{Policy: contracts.TriggerPolicySchedule, Schedule: &contracts.ScheduleSpec{Cron: "0 * * * *"}},
+					Outputs: []contracts.AssetRef{{Asset: "out"}},
 				},
 			},
 			wantValid:    false,
@@ -345,12 +345,12 @@ func TestManifestValidator_TransformValidation(t *testing.T) {
 				Kind:       string(contracts.KindTransform),
 				Metadata:   contracts.TransformMetadata{Name: "test-transform"},
 				Spec: contracts.TransformSpec{
-					Runtime:  contracts.RuntimeGenericGo,
-					Image:    "myimage:v1",
-					Mode:     contracts.ModeBatch,
-					Schedule: &contracts.ScheduleSpec{Cron: "0 * * * *"},
-					Inputs:   []contracts.AssetRef{{Asset: "in"}},
-					Outputs:  []contracts.AssetRef{{Asset: "out"}},
+					Runtime: contracts.RuntimeGenericGo,
+					Image:   "myimage:v1",
+					Mode:    contracts.ModeBatch,
+					Trigger: &contracts.TriggerSpec{Policy: contracts.TriggerPolicySchedule, Schedule: &contracts.ScheduleSpec{Cron: "0 * * * *"}},
+					Inputs:  []contracts.AssetRef{{Asset: "in"}},
+					Outputs: []contracts.AssetRef{{Asset: "out"}},
 				},
 			},
 			wantValid: true,
@@ -426,8 +426,8 @@ func TestManifestValidator_ScheduleBatchWarning(t *testing.T) {
 	if errs.HasErrors() {
 		t.Errorf("expected no errors, got: %v", errs)
 	}
-	if !hasErrorCode(errs, contracts.WarnCodeScheduleBatchMode) {
-		t.Errorf("expected W209 warning for batch without schedule, got: %v", errs)
+	if !hasErrorCode(errs, contracts.WarnCodeTriggerBatchMode) {
+		t.Errorf("expected W209 warning for batch without trigger, got: %v", errs)
 	}
 
 	// Streaming transform without schedule should NOT produce W209.
@@ -435,7 +435,7 @@ func TestManifestValidator_ScheduleBatchWarning(t *testing.T) {
 	v2 := NewManifestValidator(tr, contracts.KindTransform, "/path")
 	errs2 := v2.Validate(context.Background())
 
-	if hasErrorCode(errs2, contracts.WarnCodeScheduleBatchMode) {
+	if hasErrorCode(errs2, contracts.WarnCodeTriggerBatchMode) {
 		t.Errorf("streaming transform should not get W209 warning, got: %v", errs2)
 	}
 }

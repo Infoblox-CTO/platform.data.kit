@@ -18,8 +18,10 @@ spec:
     - asset: kafka-events
   outputs:
     - asset: processed-events
-  schedule:
-    cron: "0 */6 * * *"  # Every 6 hours
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"  # Every 6 hours
   timeout: 2h
   resources:
     cpu: "2"

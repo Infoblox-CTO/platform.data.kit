@@ -23,8 +23,10 @@ spec:
     - asset: users
   outputs:
     - asset: users-parquet
-  schedule:
-    cron: "0 */6 * * *"
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"
   timeout: 30m
 `
 
@@ -63,11 +65,17 @@ spec:
 	if tr.Spec.Outputs[0].Asset != "users-parquet" {
 		t.Errorf("Spec.Outputs[0].Asset = %q", tr.Spec.Outputs[0].Asset)
 	}
-	if tr.Spec.Schedule == nil {
-		t.Fatal("Spec.Schedule is nil")
+	if tr.Spec.Trigger == nil {
+		t.Fatal("Spec.Trigger is nil")
 	}
-	if tr.Spec.Schedule.Cron != "0 */6 * * *" {
-		t.Errorf("Spec.Schedule.Cron = %q", tr.Spec.Schedule.Cron)
+	if tr.Spec.Trigger.Policy != TriggerPolicySchedule {
+		t.Errorf("Spec.Trigger.Policy = %q, want %q", tr.Spec.Trigger.Policy, TriggerPolicySchedule)
+	}
+	if tr.Spec.Trigger.Schedule == nil {
+		t.Fatal("Spec.Trigger.Schedule is nil")
+	}
+	if tr.Spec.Trigger.Schedule.Cron != "0 */6 * * *" {
+		t.Errorf("Spec.Trigger.Schedule.Cron = %q", tr.Spec.Trigger.Schedule.Cron)
 	}
 	if tr.Spec.Timeout != "30m" {
 		t.Errorf("Spec.Timeout = %q", tr.Spec.Timeout)

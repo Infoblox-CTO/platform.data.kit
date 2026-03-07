@@ -34,7 +34,7 @@ DataKit serves two distinct roles with clear ownership boundaries.
 │   assets/                      pipelines/               models/             │
 │   ├── sources/                 └── aws_compliance/      └── dbt/            │
 │   │   └── aws_security/           ├── pipeline.yaml         ├── staging/    │
-│   │       └── asset.yaml          └── schedule.yaml         └── marts/     │
+│   │       └── asset.yaml          └── pipeline.yaml         └── marts/     │
 │   └── sinks/                                                                │
 │       └── snowflake_raw/                                                    │
 │           └── asset.yaml                                                    │
@@ -200,7 +200,7 @@ The target state is reached incrementally through five features, each independen
 |---|---------|----------|
 | 011 | Extension type system | `dk ext create/validate/publish`, extension.yaml + schema.json |
 | 012 | Asset instances | `dk asset create/validate`, asset.yaml referencing extensions |
-| 013 | Pipeline orchestration | Multi-step pipelines, `dk pipeline backfill`, schedule.yaml |
+| 013 | Pipeline orchestration | Multi-step pipelines, `dk pipeline backfill`, trigger configuration |
 | 014 | Environments and policies | `dk plan/apply`, declarative policies, version constraints |
 | 015 | dbt model engine | dbt as a first-class extension, sync → transform → test chains |
 

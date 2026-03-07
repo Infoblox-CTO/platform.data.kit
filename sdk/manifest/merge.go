@@ -308,7 +308,9 @@ var ValidOverridePaths = []string{
 	"spec.destination",
 	"spec.provides",
 	"spec.accepts",
-	"spec.schedule",
+	"spec.trigger",
+	"spec.trigger.policy",
+	"spec.trigger.schedule",
 	"spec.resources",
 	"spec.resources.cpu",
 	"spec.resources.memory",
@@ -330,7 +332,8 @@ var ValidPrefixes = []string{
 	"spec.accepts.",
 	"spec.source.",
 	"spec.destination.",
-	"spec.schedule.",
+	"spec.trigger.",
+	"spec.trigger.schedule.",
 	"spec.resources.",
 }
 
