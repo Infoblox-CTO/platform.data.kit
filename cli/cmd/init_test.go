@@ -356,8 +356,8 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 		return
 	}
 
-	dpPath := filepath.Join(pkgDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(pkgDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		t.Error("dk.yaml was not created in current directory")
 	}
 }

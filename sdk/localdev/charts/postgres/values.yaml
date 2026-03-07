@@ -8,7 +8,7 @@ postgresql:
     postgresPassword: devpassword
     username: dkuser
     password: dkpassword
-    database: dataplatform
+    database: datakit
 
   primary:
     persistence:
@@ -35,8 +35,8 @@ postgresql:
           -- Grant marquez user full access to its database
           GRANT ALL PRIVILEGES ON DATABASE marquez TO marquez;
 
-          -- Connect to dataplatform DB and create schemas
-          \c dataplatform
+          -- Connect to datakit DB and create schemas
+          \c datakit
           CREATE SCHEMA IF NOT EXISTS dk;
           CREATE SCHEMA IF NOT EXISTS staging;
           CREATE SCHEMA IF NOT EXISTS curated;

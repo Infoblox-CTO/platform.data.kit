@@ -5,7 +5,7 @@ package contracts
 // Secrets live ONLY on the Store — never on Assets or Transforms.
 // Created by the team that owns the infrastructure.
 type Store struct {
-	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
+	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "Store".

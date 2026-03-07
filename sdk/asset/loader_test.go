@@ -23,7 +23,7 @@ func TestLoadAsset(t *testing.T) {
 			setup: func(dir string) string {
 				assetDir := filepath.Join(dir, "assets", "my-source")
 				writeAssetYAML(t, assetDir, &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1",
+					APIVersion: "datakit.infoblox.dev/v1alpha1",
 					Kind:       "Asset",
 					Metadata:   contracts.AssetMetadata{Name: "my-source"},
 					Spec:       contracts.AssetSpec{Store: "my-s3", Prefix: "raw/"},
@@ -38,7 +38,7 @@ func TestLoadAsset(t *testing.T) {
 			setup: func(dir string) string {
 				assetDir := filepath.Join(dir, "assets", "my-sink")
 				writeAssetYAML(t, assetDir, &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1",
+					APIVersion: "datakit.infoblox.dev/v1alpha1",
 					Kind:       "Asset",
 					Metadata:   contracts.AssetMetadata{Name: "my-sink"},
 					Spec:       contracts.AssetSpec{Store: "my-pg", Table: "public.events"},
@@ -115,17 +115,17 @@ func TestLoadAllAssets(t *testing.T) {
 			name: "three assets in flat layout",
 			setup: func(dir string) {
 				writeAssetYAML(t, filepath.Join(dir, "assets", "src-a"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "src-a"},
 					Spec:     contracts.AssetSpec{Store: "my-s3", Prefix: "raw/"},
 				})
 				writeAssetYAML(t, filepath.Join(dir, "assets", "sink-b"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "sink-b"},
 					Spec:     contracts.AssetSpec{Store: "my-pg", Table: "public.events"},
 				})
 				writeAssetYAML(t, filepath.Join(dir, "assets", "model-c"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "model-c"},
 					Spec:     contracts.AssetSpec{Store: "my-pg", Table: "public.enriched"},
 				})
@@ -190,7 +190,7 @@ func TestLoadAllAssets(t *testing.T) {
 func TestFindAssetByName(t *testing.T) {
 	tmpDir := t.TempDir()
 	writeAssetYAML(t, filepath.Join(tmpDir, "assets", "my-source"), &contracts.AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+		APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 		Metadata: contracts.AssetMetadata{Name: "my-source"},
 		Spec:     contracts.AssetSpec{Store: "my-s3", Prefix: "raw/"},
 	})

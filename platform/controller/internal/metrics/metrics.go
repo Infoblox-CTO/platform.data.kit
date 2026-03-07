@@ -1,4 +1,4 @@
-// Package metrics provides Prometheus metrics for the DP controller.
+// Package metrics provides Prometheus metrics for the DataKit controller.
 package metrics
 
 import (

@@ -184,15 +184,15 @@ func runLint(cmd *cobra.Command, args []string) error {
 // applyLintOverrides applies overrides to dk.yaml for validation.
 // Creates a backup and modifies the file in place for validation.
 func applyLintOverrides(absDir string) error {
-	dpPath := filepath.Join(absDir, "dk.yaml")
+	dkPath := filepath.Join(absDir, "dk.yaml")
 
 	// Check if dk.yaml exists
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		return fmt.Errorf("dk.yaml not found in %s", absDir)
 	}
 
 	// Read base dk.yaml
-	baseData, err := os.ReadFile(dpPath)
+	baseData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
@@ -246,15 +246,15 @@ func applyLintOverrides(absDir string) error {
 	}
 
 	// Create backup of original
-	backupPath := dpPath + ".bak"
+	backupPath := dkPath + ".bak"
 	if err := os.WriteFile(backupPath, baseData, 0644); err != nil {
 		return fmt.Errorf("failed to create backup: %w", err)
 	}
 
 	// Write merged config for validation
-	if err := os.WriteFile(dpPath, mergedData, 0644); err != nil {
+	if err := os.WriteFile(dkPath, mergedData, 0644); err != nil {
 		// Restore from backup on failure
-		os.WriteFile(dpPath, baseData, 0644)
+		os.WriteFile(dkPath, baseData, 0644)
 		return fmt.Errorf("failed to write merged config: %w", err)
 	}
 

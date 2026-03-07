@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://data.infoblox.com/schemas/v1alpha1/asset.schema.json",
+  "$id": "https://datakit.infoblox.dev/schemas/v1alpha1/asset.schema.json",
   "title": "Asset Manifest",
   "description": "Schema for an Asset — a named data contract (table, prefix, or topic) in a Store",
   "type": "object",
@@ -8,7 +8,7 @@
   "properties": {
     "apiVersion": {
       "type": "string",
-      "const": "data.infoblox.com/v1alpha1",
+      "const": "datakit.infoblox.dev/v1alpha1",
       "description": "Schema version"
     },
     "kind": {

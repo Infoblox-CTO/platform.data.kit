@@ -88,13 +88,13 @@ func runTest(cmd *cobra.Command, args []string) error {
 	}
 
 	// Verify dk.yaml exists
-	dpPath := filepath.Join(absDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(absDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
 	// Detect package kind
-	m, kind, err := manifest.ParseManifestFile(dpPath)
+	m, kind, err := manifest.ParseManifestFile(dkPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}

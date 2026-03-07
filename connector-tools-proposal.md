@@ -22,7 +22,7 @@ Multiple versions of the same connector can coexist in a cluster. Since k8s does
 
 ```yaml
 # Two versions coexisting:
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres-1-2-0
@@ -34,7 +34,7 @@ spec:
   type: postgres
   # ...
 ---
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres-1-3-0
@@ -127,7 +127,7 @@ func (c *Connector) GetProvider() string {
 ## Example: Postgres Connector with Tools
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres-1-2-0
@@ -200,7 +200,7 @@ spec:
 ## Example: S3 Connector with Tools
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: s3-1-0-0
@@ -270,7 +270,7 @@ spec:
 ## Example: Store with Version Pinning
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: source-db
@@ -374,7 +374,7 @@ ghcr.io/infobloxopen/dp-connector-kafka:1.1.0
 OCI artifact structure:
 ```
 artifact
-├── manifest layer:  connector.yaml     (MediaTypeDPConnector)
+├── manifest layer:  connector.yaml     (MediaTypeDKConnector)
 ├── optional layer:  helm/chart.tgz     (for dev infrastructure)
 └── config:          artifact-config.json
 ```

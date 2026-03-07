@@ -81,7 +81,7 @@ func TestBuildCmd_DirectoryNotFound(t *testing.T) {
 	}
 }
 
-func TestBuildCmd_MissingDpYaml(t *testing.T) {
+func TestBuildCmd_MissingDkYaml(t *testing.T) {
 	// Test that building a directory without dk.yaml returns an error
 	tmpDir := t.TempDir()
 
@@ -97,7 +97,7 @@ func TestBuildCmd_DryRun(t *testing.T) {
 	// Test dry-run mode
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -110,7 +110,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -133,14 +133,14 @@ func TestBuildCmd_InvalidPackage(t *testing.T) {
 	// Test building an invalid package (missing required fields)
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: ""
 spec:
   runtime: generic-go
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -157,7 +157,7 @@ func TestBuildCmd_CustomTag(t *testing.T) {
 	// Test building with a custom tag
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -170,7 +170,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -197,7 +197,7 @@ func TestBuildCmd_CloudQueryPackage(t *testing.T) {
 	// Test that dk build works for a CloudQuery package in dry-run mode
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-cq-source
@@ -210,7 +210,7 @@ spec:
   outputs:
     - asset: cloud-resources
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -233,7 +233,7 @@ func TestBuildCmd_CloudQueryPackageValid(t *testing.T) {
 	// Test that dk build accepts a valid CloudQuery Transform package
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: cq-source
@@ -246,7 +246,7 @@ spec:
   outputs:
     - asset: cloud-resources
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 

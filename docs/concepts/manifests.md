@@ -24,7 +24,7 @@ The platform defines five manifest kinds:
 The Transform is the primary manifest kind for data packages:
 
 ```yaml title="dk.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-package
@@ -47,7 +47,7 @@ spec:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `apiVersion` | string | Always `data.infoblox.com/v1alpha1` |
+| `apiVersion` | string | Always `datakit.infoblox.dev/v1alpha1` |
 | `kind` | string | `Transform`, `Asset`, `AssetGroup`, `Connector`, or `Store` |
 | `metadata.name` | string | Package name (lowercase, hyphenated) |
 | `spec.runtime` | string | One of: `cloudquery`, `generic-go`, `generic-python`, `dbt` |
@@ -108,7 +108,7 @@ spec:
 An Asset declares a data contract — a table, S3 prefix, or topic that lives in a Store:
 
 ```yaml title="asset/users.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -130,7 +130,7 @@ spec:
 Output Assets can use `from` for column-level lineage:
 
 ```yaml title="asset/users-parquet.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users-parquet
@@ -165,7 +165,7 @@ spec:
 A Connector describes a storage technology type:
 
 ```yaml title="connector/postgres.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -183,7 +183,7 @@ spec:
 A Store is a named instance of a Connector with connection details and credentials:
 
 ```yaml title="store/warehouse.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse

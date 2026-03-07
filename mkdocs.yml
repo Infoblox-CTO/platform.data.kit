@@ -82,7 +82,7 @@ markdown_extensions:
   - pymdownx.magiclink:
       repo_url_shorthand: true
       user: Infoblox-CTO
-      repo: data-platform
+      repo: datakit
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.superfences:

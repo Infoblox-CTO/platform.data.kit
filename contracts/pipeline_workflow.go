@@ -39,7 +39,7 @@ func (s StepType) IsValid() bool {
 
 // PipelineWorkflow represents a multi-step pipeline workflow defined in pipeline.yaml.
 type PipelineWorkflow struct {
-	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
+	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "PipelineWorkflow".

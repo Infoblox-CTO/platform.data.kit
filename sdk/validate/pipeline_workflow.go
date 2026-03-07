@@ -24,7 +24,7 @@ const (
 )
 
 const (
-	pipelineWorkflowAPIVersion = "data.infoblox.com/v1alpha1"
+	pipelineWorkflowAPIVersion = "datakit.infoblox.dev/v1alpha1"
 	pipelineWorkflowKind       = "PipelineWorkflow"
 )
 

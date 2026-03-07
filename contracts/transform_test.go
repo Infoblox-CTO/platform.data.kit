@@ -8,14 +8,14 @@ import (
 )
 
 func TestTransform_CloudQueryYAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: pg-to-s3
   namespace: default
   version: 0.1.0
   labels:
-    team: data-platform
+    team: datakit
 spec:
   runtime: cloudquery
   mode: batch
@@ -33,7 +33,7 @@ spec:
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	if tr.APIVersion != "data.infoblox.com/v1alpha1" {
+	if tr.APIVersion != "datakit.infoblox.dev/v1alpha1" {
 		t.Errorf("APIVersion = %q", tr.APIVersion)
 	}
 	if tr.Kind != "Transform" {
@@ -91,7 +91,7 @@ spec:
 }
 
 func TestTransform_GenericPythonYAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich-users
@@ -165,7 +165,7 @@ func TestTransform_ManifestInterface(t *testing.T) {
 }
 
 func TestTransform_MultipleInputsOutputs(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: join-data
@@ -196,7 +196,7 @@ spec:
 func TestTransform_CrossCellOutputs(t *testing.T) {
 	// Integration test: cell-qualified AssetRef inside a full Transform YAML,
 	// matching the cross-cell routing pattern from partitioning.md.
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: tenant-router
@@ -364,7 +364,7 @@ func TestAssetRef_YAML_TagsOmitted(t *testing.T) {
 }
 
 func TestTransform_TriggerOnChange(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich
@@ -399,7 +399,7 @@ spec:
 }
 
 func TestTransform_TriggerSchedule(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: aggregate
@@ -442,7 +442,7 @@ spec:
 }
 
 func TestTransform_TriggerComposite(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: hybrid
@@ -501,7 +501,7 @@ func TestTriggerPolicy_IsValid(t *testing.T) {
 }
 
 func TestTransform_TagBasedInputs(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: loose-coupled

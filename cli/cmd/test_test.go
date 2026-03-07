@@ -40,7 +40,7 @@ func TestTestCmd_TransformDetection(t *testing.T) {
 	// Test that Transform kind is detected from dk.yaml
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-source
@@ -53,8 +53,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dk.yaml")
-	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+	dkPath := filepath.Join(tmpDir, "dk.yaml")
+	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -80,7 +80,7 @@ func TestTestCmd_TransformBatchDetection(t *testing.T) {
 	// Test that Transform kind with batch mode is detected correctly
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-model
@@ -93,8 +93,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dk.yaml")
-	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+	dkPath := filepath.Join(tmpDir, "dk.yaml")
+	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -115,7 +115,7 @@ spec:
 	}
 }
 
-func TestTestCmd_MissingDpYaml(t *testing.T) {
+func TestTestCmd_MissingDkYaml(t *testing.T) {
 	// Test that missing dk.yaml still returns proper error
 	tmpDir := t.TempDir()
 

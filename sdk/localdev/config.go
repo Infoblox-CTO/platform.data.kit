@@ -83,7 +83,7 @@ type PluginOverride struct {
 type DevConfig struct {
 	// Runtime is the default runtime to use (k3d).
 	Runtime string `yaml:"runtime"`
-	// Workspace is the path to the DP workspace.
+	// Workspace is the path to the DataKit workspace.
 	Workspace string `yaml:"workspace"`
 	// K3d contains k3d-specific configuration.
 	K3d K3dConfig `yaml:"k3d"`

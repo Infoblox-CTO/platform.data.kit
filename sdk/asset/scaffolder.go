@@ -72,7 +72,7 @@ func Scaffold(opts ScaffoldOpts) (*ScaffoldResult, error) {
 	// Build the asset manifest
 	store := opts.Store
 	asset := &contracts.AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Asset",
 		Metadata: contracts.AssetMetadata{
 			Name: opts.Name,
@@ -260,7 +260,7 @@ func ExtractSchemaFields(schemaBytes []byte) ([]SchemaFieldInfo, error) {
 func marshalAssetWithComments(asset *contracts.AssetManifest) ([]byte, error) {
 	var b strings.Builder
 
-	b.WriteString("apiVersion: data.infoblox.com/v1alpha1\n")
+	b.WriteString("apiVersion: datakit.infoblox.dev/v1alpha1\n")
 	b.WriteString("kind: Asset\n")
 
 	// Metadata section

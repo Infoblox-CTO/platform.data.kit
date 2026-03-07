@@ -1,4 +1,4 @@
-// Package metrics provides observability metrics for DP.
+// Package metrics provides observability metrics for DataKit.
 package metrics
 
 import (

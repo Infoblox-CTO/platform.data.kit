@@ -30,12 +30,12 @@ func TestRenderKindDirectory_TransformCloudQuery(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	dpPath := filepath.Join(outputDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(outputDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		t.Fatal("expected dk.yaml to be created")
 	}
 
-	data, err := os.ReadFile(dpPath)
+	data, err := os.ReadFile(dkPath)
 	if err != nil {
 		t.Fatalf("failed to read dk.yaml: %v", err)
 	}
@@ -162,8 +162,8 @@ func TestRenderKindDirectory_TransformCloudQuery_Legacy(t *testing.T) {
 		t.Fatalf("RenderKindDirectory() error: %v", err)
 	}
 
-	dpPath := filepath.Join(outputDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(outputDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		t.Fatal("expected dk.yaml to be created")
 	}
 

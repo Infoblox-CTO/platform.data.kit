@@ -52,7 +52,7 @@ func TestValidStepTypes(t *testing.T) {
 }
 
 func TestPipelineWorkflow_YAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: security-pipeline
@@ -81,8 +81,8 @@ steps:
 		t.Fatalf("failed to unmarshal pipeline workflow: %v", err)
 	}
 
-	if pw.APIVersion != "data.infoblox.com/v1alpha1" {
-		t.Errorf("APIVersion = %q, want %q", pw.APIVersion, "data.infoblox.com/v1alpha1")
+	if pw.APIVersion != "datakit.infoblox.dev/v1alpha1" {
+		t.Errorf("APIVersion = %q, want %q", pw.APIVersion, "datakit.infoblox.dev/v1alpha1")
 	}
 	if pw.Kind != "PipelineWorkflow" {
 		t.Errorf("Kind = %q, want %q", pw.Kind, "PipelineWorkflow")
@@ -150,7 +150,7 @@ steps:
 }
 
 func TestPipelineWorkflow_CustomStep_YAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: custom-pipeline

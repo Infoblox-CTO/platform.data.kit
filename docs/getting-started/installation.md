@@ -16,7 +16,7 @@ Build the latest version from source:
 ```bash
 # Clone the repository
 git clone https://github.com/Infoblox-CTO/platform.data.kit.git
-cd data-platform
+cd datakit
 
 # Build and install the CLI (installs to ~/go/bin by default)
 make build-cli && make install
@@ -157,7 +157,7 @@ chmod +x ~/go/bin/dk
 To upgrade to the latest version:
 
 ```bash
-cd data-platform
+cd datakit
 
 # Pull latest changes
 git pull origin main

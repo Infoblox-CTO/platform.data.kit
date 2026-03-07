@@ -34,7 +34,7 @@ func TestEmitterConfig(t *testing.T) {
 	config := EmitterConfig{
 		Type:                 "marquez",
 		Endpoint:             "http://localhost:5000",
-		Namespace:            "data-platform",
+		Namespace:            "datakit",
 		APIKey:               "secret-key",
 		TimeoutSeconds:       60,
 		BatchSize:            10,

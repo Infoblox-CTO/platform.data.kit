@@ -1,4 +1,4 @@
-// Package registry provides OCI registry integration for DP packages.
+// Package registry provides OCI registry integration for DataKit packages.
 package registry
 
 import (
@@ -28,7 +28,7 @@ type Client interface {
 	Delete(ctx context.Context, ref string) error
 }
 
-// Artifact represents a packaged DP artifact ready for push/pull.
+// Artifact represents a packaged DataKit artifact ready for push/pull.
 type Artifact struct {
 	// Manifest is the OCI manifest for this artifact.
 	Manifest *ArtifactManifest
@@ -48,7 +48,7 @@ type ArtifactManifest struct {
 	// SchemaVersion is the OCI schema version.
 	SchemaVersion int `json:"schemaVersion"`
 
-	// ArtifactType is the DP artifact type.
+	// ArtifactType is the DataKit artifact type.
 	ArtifactType string `json:"artifactType,omitempty"`
 
 	// Config is the config descriptor.
@@ -154,16 +154,16 @@ type ClientConfig struct {
 	Token string
 }
 
-// Media types for DP artifacts.
+// Media types for DataKit artifacts.
 const (
-	// MediaTypeDPManifest is the media type for DP manifests.
-	MediaTypeDPManifest = "application/vnd.infoblox.dk.manifest.v1+yaml"
+	// MediaTypeDKManifest is the media type for DataKit manifests.
+	MediaTypeDKManifest = "application/vnd.infoblox.dk.manifest.v1+yaml"
 
-	// MediaTypeDPConfig is the media type for DP artifact config.
-	MediaTypeDPConfig = "application/vnd.infoblox.dk.config.v1+json"
+	// MediaTypeDKConfig is the media type for DataKit artifact config.
+	MediaTypeDKConfig = "application/vnd.infoblox.dk.config.v1+json"
 
-	// MediaTypeDPPackage is the artifact type for DP packages.
-	MediaTypeDPPackage = "application/vnd.infoblox.dk.package.v1"
+	// MediaTypeDKPackage is the artifact type for DataKit packages.
+	MediaTypeDKPackage = "application/vnd.infoblox.dk.package.v1"
 
 	// MediaTypeTarGz is the media type for tar.gz archives.
 	MediaTypeTarGz = "application/vnd.oci.image.layer.v1.tar+gzip"

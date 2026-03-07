@@ -150,7 +150,7 @@ Creating PR:
 The PR creates/updates a deployment manifest:
 
 ```yaml title="environments/dev/my-pipeline.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DeployedPackage
 metadata:
   name: my-pipeline
@@ -373,7 +373,7 @@ Would perform:
   2. Check current prod version (v0.9.0)
   3. Create PR with these changes:
 
-  + apiVersion: data.infoblox.com/v1alpha1
+  + apiVersion: datakit.infoblox.dev/v1alpha1
   + kind: DeployedPackage
   + metadata:
   +   name: my-pipeline

@@ -117,13 +117,13 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 	}
 
 	// Verify dk.yaml exists
-	dpPath := filepath.Join(absDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(absDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
 	// Parse dk.yaml to detect package kind
-	m, kind, err := manifest.ParseManifestFile(dpPath)
+	m, kind, err := manifest.ParseManifestFile(dkPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
@@ -140,7 +140,7 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 
 	// Apply overrides if specified
 	if len(runValueFiles) > 0 || len(runSet) > 0 {
-		if err := applyOverrides(dpPath); err != nil {
+		if err := applyOverrides(dkPath); err != nil {
 			return fmt.Errorf("failed to apply overrides: %w", err)
 		}
 	}
@@ -247,9 +247,9 @@ func runPipeline(cmd *cobra.Command, args []string) error {
 // applyOverrides loads dk.yaml, applies override files and --set values,
 // and writes the merged result to a temporary file for the runner.
 // The runner will use this merged configuration.
-func applyOverrides(dpPath string) error {
+func applyOverrides(dkPath string) error {
 	// Read base dk.yaml
-	baseData, err := os.ReadFile(dpPath)
+	baseData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
@@ -304,15 +304,15 @@ func applyOverrides(dpPath string) error {
 	}
 
 	// Create backup of original
-	backupPath := dpPath + ".bak"
+	backupPath := dkPath + ".bak"
 	if err := os.WriteFile(backupPath, baseData, 0644); err != nil {
 		return fmt.Errorf("failed to create backup: %w", err)
 	}
 
 	// Write merged config
-	if err := os.WriteFile(dpPath, mergedData, 0644); err != nil {
+	if err := os.WriteFile(dkPath, mergedData, 0644); err != nil {
 		// Restore from backup on failure
-		os.WriteFile(dpPath, baseData, 0644)
+		os.WriteFile(dkPath, baseData, 0644)
 		return fmt.Errorf("failed to write merged config: %w", err)
 	}
 

@@ -7,7 +7,7 @@ import (
 )
 
 func TestScheduleManifest_YAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Schedule
 cron: "0 */6 * * *"
 timezone: America/New_York
@@ -19,8 +19,8 @@ suspend: false
 		t.Fatalf("failed to unmarshal schedule manifest: %v", err)
 	}
 
-	if sm.APIVersion != "data.infoblox.com/v1alpha1" {
-		t.Errorf("APIVersion = %q, want %q", sm.APIVersion, "data.infoblox.com/v1alpha1")
+	if sm.APIVersion != "datakit.infoblox.dev/v1alpha1" {
+		t.Errorf("APIVersion = %q, want %q", sm.APIVersion, "datakit.infoblox.dev/v1alpha1")
 	}
 	if sm.Kind != "Schedule" {
 		t.Errorf("Kind = %q, want %q", sm.Kind, "Schedule")
@@ -37,7 +37,7 @@ suspend: false
 }
 
 func TestScheduleManifest_MinimalYAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Schedule
 cron: "30 2 * * 1"
 `
@@ -59,7 +59,7 @@ cron: "30 2 * * 1"
 }
 
 func TestScheduleManifest_SuspendedYAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Schedule
 cron: "0 0 * * *"
 timezone: UTC
@@ -78,7 +78,7 @@ suspend: true
 
 func TestScheduleManifest_RoundTrip(t *testing.T) {
 	original := ScheduleManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Schedule",
 		Cron:       "0 */6 * * *",
 		Timezone:   "Europe/London",

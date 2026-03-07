@@ -7,7 +7,7 @@ package contracts
 // AssetManifest represents a data contract: a named piece of data in a Store
 // with schema, classification, and optional column-level lineage.
 type AssetManifest struct {
-	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
+	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "Asset".
@@ -200,15 +200,15 @@ func (ag *AssetGroupManifest) GetOwner() string { return "" }
 // ---------------------------------------------------------------------------
 
 const (
-	// MediaTypeDPTransform is the OCI media type for Transform manifest layers.
-	MediaTypeDPTransform = "application/vnd.dk.transform.v1+yaml"
+	// MediaTypeDKTransform is the OCI media type for Transform manifest layers.
+	MediaTypeDKTransform = "application/vnd.dk.transform.v1+yaml"
 
-	// MediaTypeDPAsset is the OCI media type for Asset manifest layers.
-	MediaTypeDPAsset = "application/vnd.dk.asset.v1+yaml"
+	// MediaTypeDKAsset is the OCI media type for Asset manifest layers.
+	MediaTypeDKAsset = "application/vnd.dk.asset.v1+yaml"
 
-	// MediaTypeDPConnector is the OCI media type for Connector manifest layers.
-	MediaTypeDPConnector = "application/vnd.dk.connector.v1+yaml"
+	// MediaTypeDKConnector is the OCI media type for Connector manifest layers.
+	MediaTypeDKConnector = "application/vnd.dk.connector.v1+yaml"
 
-	// MediaTypeDPStore is the OCI media type for Store manifest layers.
-	MediaTypeDPStore = "application/vnd.dk.store.v1+yaml"
+	// MediaTypeDKStore is the OCI media type for Store manifest layers.
+	MediaTypeDKStore = "application/vnd.dk.store.v1+yaml"
 )

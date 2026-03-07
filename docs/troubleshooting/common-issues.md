@@ -193,7 +193,7 @@ metadata:
 
 # Fix E010 - add missing store
 # store.yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: local-events
@@ -572,8 +572,8 @@ If you can't resolve your issue:
    - Include: command, error message, environment details
 
 4. **Contact the team**
-   - Slack: #data-platform-support
-   - Email: data-platform@example.com
+   - Slack: #datakit-support
+   - Email: datakit@example.com
 
 ---
 

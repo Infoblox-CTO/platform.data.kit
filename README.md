@@ -73,7 +73,7 @@ A data package is a self-contained unit of data processing that includes:
 
 ```yaml
 # dk.yaml example
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: kafka-s3-pipeline
@@ -142,7 +142,7 @@ spec:
 ## 📁 Repository Structure
 
 ```
-data-platform/
+datakit/
 ├── contracts/          # Shared types and schemas
 ├── sdk/                # Core SDK functionality
 │   ├── validate/       # Manifest validation

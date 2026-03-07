@@ -93,7 +93,7 @@ func TestRunCmd_DirectoryNotFound(t *testing.T) {
 	}
 }
 
-func TestRunCmd_MissingDpYaml(t *testing.T) {
+func TestRunCmd_MissingDkYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Save and restore global flags
@@ -113,7 +113,7 @@ func TestRunCmd_MissingDpYaml(t *testing.T) {
 func TestRunCmd_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pipeline
@@ -129,7 +129,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -220,7 +220,7 @@ func TestRunCmd_TimeoutFlag(t *testing.T) {
 func TestRunCmd_InvalidKind(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Invalid
 metadata:
   name: test-invalid
@@ -231,7 +231,7 @@ spec:
   description: Test invalid kind
   owner: data-team
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -276,7 +276,7 @@ func TestRunCmd_ValuesFlag(t *testing.T) {
 func TestApplyOverrides_SetValues(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pipeline
@@ -290,8 +290,8 @@ spec:
   outputs:
     - asset: output-data
 `
-	dpPath := filepath.Join(tmpDir, "dk.yaml")
-	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+	dkPath := filepath.Join(tmpDir, "dk.yaml")
+	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -311,12 +311,12 @@ spec:
 	runValueFiles = []string{}
 
 	// Apply overrides
-	if err := applyOverrides(dpPath); err != nil {
+	if err := applyOverrides(dkPath); err != nil {
 		t.Fatalf("applyOverrides() error = %v", err)
 	}
 
 	// Verify the file was modified
-	data, err := os.ReadFile(dpPath)
+	data, err := os.ReadFile(dkPath)
 	if err != nil {
 		t.Fatalf("failed to read modified dk.yaml: %v", err)
 	}
@@ -331,7 +331,7 @@ spec:
 	}
 
 	// Verify backup was created
-	backupPath := dpPath + ".bak"
+	backupPath := dkPath + ".bak"
 	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 		t.Error("expected backup file to be created")
 	}
@@ -340,7 +340,7 @@ spec:
 func TestApplyOverrides_InvalidPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pipeline
@@ -348,8 +348,8 @@ spec:
   runtime: generic-go
   image: test:v1
 `
-	dpPath := filepath.Join(tmpDir, "dk.yaml")
-	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+	dkPath := filepath.Join(tmpDir, "dk.yaml")
+	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -364,7 +364,7 @@ spec:
 	runSet = []string{"invalid.path.here=value"}
 	runValueFiles = []string{}
 
-	err := applyOverrides(dpPath)
+	err := applyOverrides(dkPath)
 	if err == nil {
 		t.Fatal("expected error for invalid path")
 	}
@@ -377,7 +377,7 @@ spec:
 func TestApplyOverrides_ValueFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pipeline
@@ -386,8 +386,8 @@ spec:
   image: original:v1
   timeout: 30m
 `
-	dpPath := filepath.Join(tmpDir, "dk.yaml")
-	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+	dkPath := filepath.Join(tmpDir, "dk.yaml")
+	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -412,11 +412,11 @@ spec:
 	runSet = []string{}
 	runValueFiles = []string{overridePath}
 
-	if err := applyOverrides(dpPath); err != nil {
+	if err := applyOverrides(dkPath); err != nil {
 		t.Fatalf("applyOverrides() error = %v", err)
 	}
 
-	data, err := os.ReadFile(dpPath)
+	data, err := os.ReadFile(dkPath)
 	if err != nil {
 		t.Fatalf("failed to read modified dk.yaml: %v", err)
 	}
@@ -437,7 +437,7 @@ spec:
 func TestApplyOverrides_Precedence(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pipeline
@@ -445,8 +445,8 @@ spec:
   runtime: generic-go
   image: base:v1
 `
-	dpPath := filepath.Join(tmpDir, "dk.yaml")
-	if err := os.WriteFile(dpPath, []byte(dpContent), 0644); err != nil {
+	dkPath := filepath.Join(tmpDir, "dk.yaml")
+	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -471,11 +471,11 @@ spec:
 	runValueFiles = []string{overridePath}
 	runSet = []string{"spec.image=from-set:v3"}
 
-	if err := applyOverrides(dpPath); err != nil {
+	if err := applyOverrides(dkPath); err != nil {
 		t.Fatalf("applyOverrides() error = %v", err)
 	}
 
-	data, err := os.ReadFile(dpPath)
+	data, err := os.ReadFile(dkPath)
 	if err != nil {
 		t.Fatalf("failed to read modified dk.yaml: %v", err)
 	}
@@ -503,7 +503,7 @@ func findSubstring(s, substr string) bool {
 func TestRunCmd_TransformWithBatchMode(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -516,7 +516,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -539,7 +539,7 @@ spec:
 func TestRunCmd_TransformCloudQuery(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-source
@@ -552,7 +552,7 @@ spec:
   outputs:
     - asset: example-data
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -101,7 +101,7 @@ PR: Promote my-package v1.0.0 to dev
 Changes:
   environments/dev/my-package.yaml
 
-+apiVersion: data.infoblox.com/v1alpha1
++apiVersion: datakit.infoblox.dev/v1alpha1
 +kind: DeployedPackage
 +metadata:
 +  name: my-package
@@ -152,7 +152,7 @@ spec:
 ### Environment-Specific Stores
 
 ```yaml title="environments/dev/stores/events-store.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: events-store
@@ -164,7 +164,7 @@ spec:
 ```
 
 ```yaml title="environments/prod/stores/events-store.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: events-store

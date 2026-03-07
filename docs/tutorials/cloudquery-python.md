@@ -63,7 +63,7 @@ cat dk.yaml
 The manifest declares this as a **Transform** with the CloudQuery runtime:
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-source

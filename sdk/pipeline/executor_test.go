@@ -126,7 +126,7 @@ func writePipelineYAML(t *testing.T, dir string, content string) {
 func TestExecute_AllStepsPass(t *testing.T) {
 	dir := t.TempDir()
 	writePipelineYAML(t, dir, `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: test-pipeline
@@ -171,7 +171,7 @@ steps:
 func TestExecute_StepFailureSkipsRemaining(t *testing.T) {
 	dir := t.TempDir()
 	writePipelineYAML(t, dir, `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: fail-pipeline
@@ -222,7 +222,7 @@ steps:
 func TestExecute_SingleStepFilter(t *testing.T) {
 	dir := t.TempDir()
 	writePipelineYAML(t, dir, `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: filter-pipeline
@@ -257,7 +257,7 @@ steps:
 func TestExecute_StepFilterNotFound(t *testing.T) {
 	dir := t.TempDir()
 	writePipelineYAML(t, dir, `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: filter-pipeline
@@ -285,7 +285,7 @@ steps:
 func TestExecute_Cancellation(t *testing.T) {
 	dir := t.TempDir()
 	writePipelineYAML(t, dir, `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: cancel-pipeline
@@ -343,7 +343,7 @@ func TestExecute_MissingPipeline(t *testing.T) {
 func TestExecute_PublishNoOp(t *testing.T) {
 	dir := t.TempDir()
 	writePipelineYAML(t, dir, `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: publish-pipeline

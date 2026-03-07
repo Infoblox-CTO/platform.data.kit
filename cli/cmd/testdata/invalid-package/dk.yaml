@@ -1,5 +1,5 @@
 # Invalid YAML - missing required fields
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   # missing name

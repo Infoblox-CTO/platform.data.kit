@@ -1,4 +1,4 @@
-# Contributing to DP (Data Platform)
+# Contributing to DataKit
 
 Thank you for your interest in contributing to the Data Platform! This document provides guidelines for contributing.
 
@@ -15,7 +15,7 @@ Thank you for your interest in contributing to the Data Platform! This document 
 ```bash
 # Clone repository
 git clone https://github.com/Infoblox-CTO/platform.data.kit.git
-cd data-platform
+cd datakit
 
 # Install dependencies
 make deps
@@ -35,7 +35,7 @@ make lint
 The project is organized as a Go monorepo with independent modules:
 
 ```
-data-platform/
+datakit/
 ├── contracts/     # Shared types, schemas, validation errors
 ├── sdk/           # Core functionality (validate, lineage, registry, runner)
 ├── cli/           # DK CLI implementation
@@ -249,7 +249,7 @@ For new features:
 
 ## 🏛️ Constitution
 
-All contributions must align with the [DP Constitution](.specify/memory/constitution.md), particularly:
+All contributions must align with the [DataKit Constitution](.specify/memory/constitution.md), particularly:
 
 - **Article I**: Developer Experience first
 - **Article II**: Maintain stable contracts
@@ -263,7 +263,7 @@ All contributions must align with the [DP Constitution](.specify/memory/constitu
 
 - **Discussions**: GitHub Discussions for questions
 - **Issues**: GitHub Issues for bugs
-- **Slack**: #data-platform channel (internal)
+- **Slack**: #datakit channel (internal)
 
 ## 📄 License
 

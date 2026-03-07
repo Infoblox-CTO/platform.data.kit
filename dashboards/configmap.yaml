@@ -493,7 +493,7 @@ data:
       },
       "timepicker": {},
       "timezone": "",
-      "title": "DP Pipeline Health",
+      "title": "DataKit Pipeline Health",
       "uid": "dp-pipeline-health",
       "version": 1,
       "weekStart": ""
@@ -1197,7 +1197,7 @@ data:
       },
       "timepicker": {},
       "timezone": "",
-      "title": "DP Controller",
+      "title": "DataKit Controller",
       "uid": "dp-controller",
       "version": 1,
       "weekStart": ""

@@ -73,15 +73,15 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	}
 
 	// Verify dk.yaml exists
-	dpPath := filepath.Join(absDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(absDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
 	fmt.Printf("Publishing package: %s\n\n", packageDir)
 
 	// Parse dk.yaml to get package info
-	dpData, err := os.ReadFile(dpPath)
+	dpData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return fmt.Errorf("failed to read dk.yaml: %w", err)
 	}

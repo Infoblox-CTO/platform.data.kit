@@ -1,4 +1,4 @@
-// Package runs provides run tracking and history for DP.
+// Package runs provides run tracking and history for DataKit.
 package runs
 
 import (

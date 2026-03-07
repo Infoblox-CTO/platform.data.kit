@@ -15,12 +15,12 @@ func TestDockerRunner_EnvVarsFromPackage(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		dpYAML      string
+		dkYAML      string
 		wantEnvVars map[string]string
 	}{
 		{
 			name: "explicit env vars extracted from transform manifest",
-			dpYAML: `apiVersion: data.infoblox.com/v1alpha1
+			dkYAML: `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-env-mapper
@@ -53,7 +53,7 @@ spec:
 			tmpDir := t.TempDir()
 
 			// Write dk.yaml
-			if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(tt.dpYAML), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(tt.dkYAML), 0644); err != nil {
 				t.Fatalf("failed to write dk.yaml: %v", err)
 			}
 
@@ -94,7 +94,7 @@ func TestDockerRunner_RuntimeFromDP(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	dpYAML := `apiVersion: data.infoblox.com/v1alpha1
+	dkYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-runtime
@@ -114,7 +114,7 @@ spec:
     - asset: output-data
 `
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpYAML), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkYAML), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 

@@ -260,7 +260,7 @@ dk run ./my-pipeline
 Create environment-specific Store manifests for local development:
 
 ```yaml title="store/local-events.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: local-events
@@ -274,7 +274,7 @@ spec:
 ```
 
 ```yaml title="store/local-output.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: local-output

@@ -11,7 +11,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestAssetManifest_YAMLRoundTrip(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -35,7 +35,7 @@ spec:
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	if a.APIVersion != "data.infoblox.com/v1alpha1" {
+	if a.APIVersion != "datakit.infoblox.dev/v1alpha1" {
 		t.Errorf("APIVersion = %q", a.APIVersion)
 	}
 	if a.Kind != "Asset" {
@@ -78,7 +78,7 @@ spec:
 }
 
 func TestAssetManifest_OutputWithLineage(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users-parquet
@@ -123,7 +123,7 @@ spec:
 }
 
 func TestAssetManifest_KafkaTopic(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: user-events
@@ -162,7 +162,7 @@ func TestAssetManifest_ManifestInterface(t *testing.T) {
 }
 
 func TestAssetManifest_Version(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -213,7 +213,7 @@ func TestAssetManifest_VersionEmpty(t *testing.T) {
 }
 
 func TestAssetGroupManifest_YAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: AssetGroup
 metadata:
   name: pg-snapshot
@@ -261,7 +261,7 @@ func TestAssetGroupManifest_ManifestInterface(t *testing.T) {
 }
 
 func TestAssetManifest_DevSeed_YAMLRoundTrip(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -299,7 +299,7 @@ spec:
 }
 
 func TestAssetManifest_DevSeed_File(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: orders
@@ -323,7 +323,7 @@ spec:
 }
 
 func TestAssetManifest_NoDev(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -341,7 +341,7 @@ spec:
 }
 
 func TestAssetManifest_DevSeed_Profiles(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users

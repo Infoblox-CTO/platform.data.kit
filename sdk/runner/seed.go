@@ -37,7 +37,7 @@ import (
 
 // SeedOptions controls the seeding behaviour.
 type SeedOptions struct {
-	// PackageDir is the root of the DP package (contains asset/, store/, etc.).
+	// PackageDir is the root of the DataKit package (contains asset/, store/, etc.).
 	PackageDir string
 	// Clean drops and recreates tables before inserting seed data.
 	Clean bool
@@ -422,9 +422,9 @@ func execPostgresSQL(ctx context.Context, opts SeedOptions, store *contracts.Sto
 // parsePostgresConnStr extracts user, password, and database from a
 // postgresql:// connection string.  Returns defaults if parsing fails.
 func parsePostgresConnStr(connStr string) (user, password, database string) {
-	user = "dpuser"
-	password = "dppassword"
-	database = "dataplatform"
+	user = "dkuser"
+	password = "dkpassword"
+	database = "datakit"
 
 	if connStr == "" {
 		return

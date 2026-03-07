@@ -8,7 +8,7 @@ import (
 
 func TestLoadPipeline_ValidFile(t *testing.T) {
 	dir := t.TempDir()
-	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: test-pipeline\n  description: A test pipeline\nsteps:\n  - name: sync-data\n    type: sync\n    input: my-source\n    output: my-sink\n  - name: transform-data\n    type: transform\n    asset: my-model\n"
+	content := "apiVersion: datakit.infoblox.dev/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: test-pipeline\n  description: A test pipeline\nsteps:\n  - name: sync-data\n    type: sync\n    input: my-source\n    output: my-sink\n  - name: transform-data\n    type: transform\n    asset: my-model\n"
 	if err := os.WriteFile(filepath.Join(dir, "pipeline.yaml"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -18,8 +18,8 @@ func TestLoadPipeline_ValidFile(t *testing.T) {
 		t.Fatalf("LoadPipeline() error = %v", err)
 	}
 
-	if pw.APIVersion != "data.infoblox.com/v1alpha1" {
-		t.Errorf("APIVersion = %q, want %q", pw.APIVersion, "data.infoblox.com/v1alpha1")
+	if pw.APIVersion != "datakit.infoblox.dev/v1alpha1" {
+		t.Errorf("APIVersion = %q, want %q", pw.APIVersion, "datakit.infoblox.dev/v1alpha1")
 	}
 	if pw.Kind != "PipelineWorkflow" {
 		t.Errorf("Kind = %q, want %q", pw.Kind, "PipelineWorkflow")
@@ -41,7 +41,7 @@ func TestLoadPipeline_ValidFile(t *testing.T) {
 func TestLoadPipeline_DirectFilePath(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "pipeline.yaml")
-	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: direct-path\nsteps:\n  - name: run-step\n    type: custom\n    image: my-image:latest\n"
+	content := "apiVersion: datakit.infoblox.dev/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: direct-path\nsteps:\n  - name: run-step\n    type: custom\n    image: my-image:latest\n"
 	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestLoadPipeline_InvalidYAML(t *testing.T) {
 
 func TestLoadPipeline_MalformedSteps(t *testing.T) {
 	dir := t.TempDir()
-	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: bad-steps\nsteps: not-an-array\n"
+	content := "apiVersion: datakit.infoblox.dev/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: bad-steps\nsteps: not-an-array\n"
 	if err := os.WriteFile(filepath.Join(dir, "pipeline.yaml"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestLoadPipeline_NonexistentPath(t *testing.T) {
 
 func TestFindPipeline_Found(t *testing.T) {
 	dir := t.TempDir()
-	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: found-pipeline\nsteps:\n  - name: step-one\n    type: custom\n    image: test:latest\n"
+	content := "apiVersion: datakit.infoblox.dev/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: found-pipeline\nsteps:\n  - name: step-one\n    type: custom\n    image: test:latest\n"
 	if err := os.WriteFile(filepath.Join(dir, "pipeline.yaml"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestFindPipeline_FoundInParent(t *testing.T) {
 	if err := os.MkdirAll(child, 0755); err != nil {
 		t.Fatal(err)
 	}
-	content := "apiVersion: data.infoblox.com/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: parent-pipeline\nsteps:\n  - name: step-one\n    type: custom\n    image: test:latest\n"
+	content := "apiVersion: datakit.infoblox.dev/v1alpha1\nkind: PipelineWorkflow\nmetadata:\n  name: parent-pipeline\nsteps:\n  - name: step-one\n    type: custom\n    image: test:latest\n"
 	if err := os.WriteFile(filepath.Join(parent, "pipeline.yaml"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ func TestHasPipeline_NotExists(t *testing.T) {
 
 func TestLoadSchedule_ValidFile(t *testing.T) {
 	dir := t.TempDir()
-	content := `apiVersion: data.infoblox.com/v1alpha1
+	content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Schedule
 cron: "0 6 * * *"
 timezone: America/New_York

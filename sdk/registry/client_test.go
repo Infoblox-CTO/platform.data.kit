@@ -246,14 +246,14 @@ func TestClientConfig(t *testing.T) {
 }
 
 func TestMediaTypes(t *testing.T) {
-	if MediaTypeDPManifest == "" {
-		t.Error("MediaTypeDPManifest should not be empty")
+	if MediaTypeDKManifest == "" {
+		t.Error("MediaTypeDKManifest should not be empty")
 	}
-	if MediaTypeDPConfig == "" {
-		t.Error("MediaTypeDPConfig should not be empty")
+	if MediaTypeDKConfig == "" {
+		t.Error("MediaTypeDKConfig should not be empty")
 	}
-	if MediaTypeDPPackage == "" {
-		t.Error("MediaTypeDPPackage should not be empty")
+	if MediaTypeDKPackage == "" {
+		t.Error("MediaTypeDKPackage should not be empty")
 	}
 	if MediaTypeTarGz == "" {
 		t.Error("MediaTypeTarGz should not be empty")

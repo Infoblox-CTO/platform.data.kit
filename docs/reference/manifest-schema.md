@@ -28,7 +28,7 @@ It is the **only manifest kind that runs** — Connectors, Stores, and Assets ar
 
 ```yaml
 # dk.yaml
-apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: Transform                                 # Required: Resource type
 
 metadata:                           # Required: Transform metadata
@@ -248,14 +248,14 @@ At runtime, the runner resolves the chain: **Transform → Asset → Store → C
 #### CloudQuery Transform (no image needed)
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: pg-to-s3
   namespace: default
   version: 0.1.0
   labels:
-    team: data-platform
+    team: datakit
 spec:
   runtime: cloudquery
   mode: batch
@@ -271,7 +271,7 @@ spec:
 #### Generic Python Transform
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich-users
@@ -291,7 +291,7 @@ spec:
 #### Streaming Transform
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: event-processor
@@ -317,7 +317,7 @@ spec:
 #### Reactive Transform with Trigger
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich
@@ -336,7 +336,7 @@ spec:
 #### Tag-based Input Resolution
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: aggregate-all
@@ -368,7 +368,7 @@ It declares the schema (with optional column-level lineage via `from`) and data 
 
 ```yaml
 # asset/<name>.yaml
-apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: Asset                                     # Required: Resource type
 
 metadata:                           # Required: Asset metadata
@@ -466,7 +466,7 @@ spec:                               # Required: Asset specification
 #### Input Asset (database table)
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -488,7 +488,7 @@ spec:
 #### Output Asset with column-level lineage
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users-parquet
@@ -514,7 +514,7 @@ spec:
 #### Input Asset with seed data and profiles
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -575,7 +575,7 @@ An AssetGroup bundles multiple Assets produced by a single materialisation
 
 ```yaml
 # asset-group/<name>.yaml
-apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: AssetGroup                                # Required: Resource type
 
 metadata:                           # Required: AssetGroup metadata
@@ -593,7 +593,7 @@ spec:                               # Required: AssetGroup specification
 ### Example
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: AssetGroup
 metadata:
   name: pg-snapshot
@@ -617,7 +617,7 @@ Maintained by the **platform team** and rarely changes.
 
 ```yaml
 # connector/<name>.yaml
-apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: Connector                                 # Required: Resource type
 
 metadata:                           # Required: Connector metadata
@@ -668,7 +668,7 @@ spec:                               # Required: Connector specification
 ### Examples
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -682,7 +682,7 @@ spec:
 ```
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: s3
@@ -705,7 +705,7 @@ with its connection details and credentials. Secrets live **only** on the Store.
 
 ```yaml
 # store/<name>.yaml
-apiVersion: data.infoblox.com/v1alpha1          # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: Store                                     # Required: Resource type
 
 metadata:                           # Required: Store metadata
@@ -753,13 +753,13 @@ spec:                               # Required: Store specification
 #### Postgres Store
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
   namespace: default
   labels:
-    team: data-platform
+    team: datakit
 spec:
   connector: postgres
   connection:
@@ -776,7 +776,7 @@ spec:
 #### S3 Store
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: lake-raw
@@ -803,7 +803,7 @@ This is a separate concept from Transform — it orchestrates multiple steps.
 
 ```yaml
 # pipeline.yaml
-apiVersion: data.infoblox.com/v1alpha1  # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1  # Required: API version
 kind: PipelineWorkflow                  # Required: Resource type
 
 metadata:                               # Required: Pipeline metadata
@@ -885,7 +885,7 @@ Optional cron-based schedule for pipeline execution.
 
 ```yaml
 # schedule.yaml
-apiVersion: data.infoblox.com/v1alpha1  # Required: API version
+apiVersion: datakit.infoblox.dev/v1alpha1  # Required: API version
 kind: Schedule                          # Required: Resource type
 
 cron: string                            # Required: 5-field cron expression
@@ -981,7 +981,7 @@ my-pipeline/
 ### dk.yaml (Transform)
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: pg-to-s3
@@ -1006,7 +1006,7 @@ spec:
 ### connector/postgres.yaml
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -1021,7 +1021,7 @@ spec:
 ### store/warehouse.yaml
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
@@ -1040,7 +1040,7 @@ spec:
 ### asset/users.yaml (input)
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -1060,7 +1060,7 @@ spec:
 ### asset/users-parquet.yaml (output with lineage)
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users-parquet

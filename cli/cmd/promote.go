@@ -76,7 +76,7 @@ func runPromote(cmd *cobra.Command, args []string) error {
 	}
 	repo := os.Getenv("GITHUB_REPO")
 	if repo == "" {
-		repo = "data-platform"
+		repo = "datakit"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -170,7 +170,7 @@ func runPromoteStatus(cmd *cobra.Command, args []string) error {
 	}
 	repo := os.Getenv("GITHUB_REPO")
 	if repo == "" {
-		repo = "data-platform"
+		repo = "datakit"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

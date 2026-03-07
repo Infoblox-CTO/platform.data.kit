@@ -131,7 +131,7 @@ Data packages reference infrastructure through **Stores** (named instances of **
 
 ```yaml
 # store/warehouse.yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse

@@ -9,7 +9,7 @@ import (
 
 func TestScheduleValidator_Valid(t *testing.T) {
 	sm := &contracts.ScheduleManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Schedule",
 		Cron:       "0 */6 * * *",
 		Timezone:   "UTC",
@@ -26,7 +26,7 @@ func TestScheduleValidator_ValidTimezones(t *testing.T) {
 	for _, tz := range timezones {
 		t.Run("timezone_"+tz, func(t *testing.T) {
 			sm := &contracts.ScheduleManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
+				APIVersion: "datakit.infoblox.dev/v1alpha1",
 				Kind:       "Schedule",
 				Cron:       "0 0 * * *",
 				Timezone:   tz,
@@ -50,7 +50,7 @@ func TestScheduleValidator_NilSchedule(t *testing.T) {
 
 func TestScheduleValidator_MissingCron(t *testing.T) {
 	sm := &contracts.ScheduleManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Schedule",
 	}
 	v := NewScheduleValidator(sm, "schedule.yaml")
@@ -74,7 +74,7 @@ func TestScheduleValidator_InvalidCron(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sm := &contracts.ScheduleManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
+				APIVersion: "datakit.infoblox.dev/v1alpha1",
 				Kind:       "Schedule",
 				Cron:       tt.cron,
 			}
@@ -89,7 +89,7 @@ func TestScheduleValidator_InvalidCron(t *testing.T) {
 
 func TestScheduleValidator_InvalidTimezone(t *testing.T) {
 	sm := &contracts.ScheduleManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Schedule",
 		Cron:       "0 0 * * *",
 		Timezone:   "Invalid/Timezone",
@@ -116,7 +116,7 @@ func TestScheduleValidator_InvalidAPIVersion(t *testing.T) {
 
 func TestScheduleValidator_InvalidKind(t *testing.T) {
 	sm := &contracts.ScheduleManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "WrongKind",
 		Cron:       "0 0 * * *",
 	}
@@ -157,7 +157,7 @@ func TestScheduleValidator_ValidCronExpressions(t *testing.T) {
 	for _, cron := range crons {
 		t.Run(cron, func(t *testing.T) {
 			sm := &contracts.ScheduleManifest{
-				APIVersion: "data.infoblox.com/v1alpha1",
+				APIVersion: "datakit.infoblox.dev/v1alpha1",
 				Kind:       "Schedule",
 				Cron:       cron,
 			}

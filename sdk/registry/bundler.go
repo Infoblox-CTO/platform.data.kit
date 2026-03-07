@@ -52,8 +52,8 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 	}
 
 	// Read and parse dk.yaml
-	dpPath := filepath.Join(absDir, "dk.yaml")
-	dpData, err := os.ReadFile(dpPath)
+	dkPath := filepath.Join(absDir, "dk.yaml")
+	dpData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
@@ -111,7 +111,7 @@ func (b *Bundler) Bundle(opts BundleOptions) (*Artifact, error) {
 		Manifest: &ArtifactManifest{
 			MediaType:     "application/vnd.oci.image.manifest.v1+json",
 			SchemaVersion: 2,
-			ArtifactType:  MediaTypeDPPackage,
+			ArtifactType:  MediaTypeDKPackage,
 			Annotations:   annotations,
 		},
 		Config: config,
@@ -165,7 +165,7 @@ func (b *Bundler) createManifestLayer(packageDir string) (Layer, error) {
 	}
 
 	return Layer{
-		MediaType: MediaTypeDPManifest,
+		MediaType: MediaTypeDKManifest,
 		Content:   buf.Bytes(),
 		Annotations: map[string]string{
 			"io.infoblox.dk.layer.type": "manifests",

@@ -150,7 +150,7 @@ func (u *FileKustomizeUpdater) writeVersionFile(path string, vf *VersionFile) er
 // newVersionFile creates a new version file.
 func (u *FileKustomizeUpdater) newVersionFile(pkg, version, digest string) *VersionFile {
 	return &VersionFile{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "PackageVersion",
 		Metadata: VersionMeta{
 			Name: pkg,

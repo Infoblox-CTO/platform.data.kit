@@ -19,7 +19,7 @@ func TestGenerateCQConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	writeFile(t, filepath.Join(connDir, "postgres.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -32,7 +32,7 @@ spec:
     destination: ghcr.io/cloudquery/cq-destination-postgresql:v8.0.0
 `)
 	writeFile(t, filepath.Join(connDir, "s3.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: s3
@@ -50,7 +50,7 @@ spec:
 		t.Fatal(err)
 	}
 	writeFile(t, filepath.Join(storeDir, "warehouse.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
@@ -60,7 +60,7 @@ spec:
     connection_string: "postgresql://user:pass@db:5432/mydb"
 `)
 	writeFile(t, filepath.Join(storeDir, "lake-raw.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: lake-raw
@@ -77,7 +77,7 @@ spec:
 		t.Fatal(err)
 	}
 	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -86,7 +86,7 @@ spec:
   table: public.users
 `)
 	writeFile(t, filepath.Join(assetDir, "orders.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: orders
@@ -95,7 +95,7 @@ spec:
   table: public.orders
 `)
 	writeFile(t, filepath.Join(assetDir, "users-parquet.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users-parquet
@@ -107,7 +107,7 @@ spec:
 
 	// Build a transform that reads two PG tables and writes to S3.
 	transform := &contracts.Transform{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Transform",
 		Metadata: contracts.TransformMetadata{
 			Name:      "pg-to-s3",
@@ -204,7 +204,7 @@ func TestGenerateCQConfig_NoRotate(t *testing.T) {
 	connDir := filepath.Join(pkgDir, "connector")
 	os.MkdirAll(connDir, 0755)
 	writeFile(t, filepath.Join(connDir, "s3.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: s3
@@ -215,7 +215,7 @@ spec:
     destination: ghcr.io/cloudquery/cq-destination-s3:v1.0.0
 `)
 	writeFile(t, filepath.Join(connDir, "postgres.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -230,7 +230,7 @@ spec:
 	storeDir := filepath.Join(pkgDir, "store")
 	os.MkdirAll(storeDir, 0755)
 	writeFile(t, filepath.Join(storeDir, "warehouse.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
@@ -240,7 +240,7 @@ spec:
     connection_string: "postgresql://user:pass@db:5432/mydb"
 `)
 	writeFile(t, filepath.Join(storeDir, "lake-raw.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: lake-raw
@@ -255,7 +255,7 @@ spec:
 	assetDir := filepath.Join(pkgDir, "asset")
 	os.MkdirAll(assetDir, 0755)
 	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -264,7 +264,7 @@ spec:
   table: public.users
 `)
 	writeFile(t, filepath.Join(assetDir, "users-parquet.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users-parquet
@@ -275,7 +275,7 @@ spec:
 `)
 
 	transform := &contracts.Transform{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Transform",
 		Metadata: contracts.TransformMetadata{
 			Name:      "test-no-rotate",
@@ -341,7 +341,7 @@ func TestGenerateCQConfig_MissingStore(t *testing.T) {
 	assetDir := filepath.Join(pkgDir, "asset")
 	os.MkdirAll(assetDir, 0755)
 	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -374,7 +374,7 @@ func TestGenerateCQConfig_MissingConnector(t *testing.T) {
 	assetDir := filepath.Join(pkgDir, "asset")
 	os.MkdirAll(assetDir, 0755)
 	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -386,7 +386,7 @@ spec:
 	storeDir := filepath.Join(pkgDir, "store")
 	os.MkdirAll(storeDir, 0755)
 	writeFile(t, filepath.Join(storeDir, "warehouse.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
@@ -421,7 +421,7 @@ func TestLoadPackageManifests(t *testing.T) {
 	connDir := filepath.Join(pkgDir, "connector")
 	os.MkdirAll(connDir, 0755)
 	writeFile(t, filepath.Join(connDir, "pg.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: pg
@@ -435,7 +435,7 @@ spec:
 	storeDir := filepath.Join(pkgDir, "store")
 	os.MkdirAll(storeDir, 0755)
 	writeFile(t, filepath.Join(storeDir, "mystore.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: mystore
@@ -448,7 +448,7 @@ spec:
 	assetDir := filepath.Join(pkgDir, "asset")
 	os.MkdirAll(assetDir, 0755)
 	writeFile(t, filepath.Join(assetDir, "myasset.yaml"), `
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: myasset

@@ -54,7 +54,7 @@ func TestScaffold(t *testing.T) {
 			opts: func(dir string) ScaffoldOpts {
 				// Pre-create an asset in flat layout
 				writeAssetYAML(t, filepath.Join(dir, "assets", "existing"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "existing"},
 					Spec:     contracts.AssetSpec{Store: "my-s3"},
 				})
@@ -71,7 +71,7 @@ func TestScaffold(t *testing.T) {
 			opts: func(dir string) ScaffoldOpts {
 				// Pre-create an asset in flat layout
 				writeAssetYAML(t, filepath.Join(dir, "assets", "existing"), &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "existing"},
 					Spec:     contracts.AssetSpec{Store: "old-store"},
 				})

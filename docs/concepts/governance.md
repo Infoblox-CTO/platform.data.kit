@@ -40,7 +40,7 @@ Each Asset declares its sensitivity level and PII status in its `spec`:
 
 ```yaml
 # asset/customer-records.yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: customer-records
@@ -215,7 +215,7 @@ Packages are organized into namespaces with RBAC:
 
 ```yaml
 # Role definition
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Role
 metadata:
   name: analytics-developer
@@ -249,7 +249,7 @@ Pre-flight Checks:
 Approval Required:
   This package contains PII data.
   A PR will be created requiring approval from:
-    - @data-platform-admins
+    - @datakit-admins
     - @security-team
 
 Created PR: https://github.com/org/deploys/pull/123

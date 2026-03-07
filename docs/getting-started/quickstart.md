@@ -36,7 +36,7 @@ my-first-pipeline/
 Let's look at the generated manifest:
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-first-pipeline

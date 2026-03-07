@@ -16,7 +16,7 @@ func TestGenerateHelmChart(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Write dk.yaml
-	dpYAML := `apiVersion: data.infoblox.com/v1alpha1
+	dkYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: pg-to-s3
@@ -30,11 +30,11 @@ spec:
   outputs:
     - asset: users-parquet
 `
-	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpYAML), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkYAML), 0644)
 
 	// Write connector/
 	os.MkdirAll(filepath.Join(tmpDir, "connector"), 0755)
-	connYAML := `apiVersion: data.infoblox.com/v1alpha1
+	connYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -46,7 +46,7 @@ spec:
 
 	// Write asset/
 	os.MkdirAll(filepath.Join(tmpDir, "asset"), 0755)
-	assetYAML := `apiVersion: data.infoblox.com/v1alpha1
+	assetYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -58,7 +58,7 @@ spec:
 
 	// Write store/ (should be excluded from chart)
 	os.MkdirAll(filepath.Join(tmpDir, "store"), 0755)
-	storeYAML := `apiVersion: data.infoblox.com/v1alpha1
+	storeYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: source-db
@@ -123,7 +123,7 @@ spec:
 func TestGenerateHelmChart_ChartYAMLContent(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpYAML := `apiVersion: data.infoblox.com/v1alpha1
+	dkYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-pipeline
@@ -135,7 +135,7 @@ spec:
   outputs:
     - asset: result
 `
-	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpYAML), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkYAML), 0644)
 
 	result, err := GenerateHelmChart(HelmChartOptions{
 		PackageDir: tmpDir,

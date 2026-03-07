@@ -11,18 +11,18 @@ Answers to common questions about the Data Platform.
 
 ### What is the Data Platform?
 
-The Data Platform (DP) is a system for building, publishing, and operating data pipelines with built-in governance, lineage tracking, and GitOps-based deployment. It provides:
+DataKit is a system for building, publishing, and operating data pipelines with built-in governance, lineage tracking, and GitOps-based deployment. It provides:
 
 - **Data Packages**: Self-contained, versioned bundles for data pipelines
 - **Local Development**: Docker-based development stack
 - **Lineage Tracking**: Automatic OpenLineage integration
 - **GitOps Deployment**: Environment promotion through pull requests
 
-### What problem does DP solve?
+### What problem does DataKit solve?
 
-DP addresses common challenges in data engineering:
+DataKit addresses common challenges in data engineering:
 
-| Challenge | DP Solution |
+| Challenge | DataKit Solution |
 |-----------|-------------|
 | Pipeline deployment complexity | GitOps-based promotion workflow |
 | Lack of data lineage | Automatic OpenLineage events |
@@ -30,22 +30,22 @@ DP addresses common challenges in data engineering:
 | Governance gaps | Built-in classification and policies |
 | Development friction | Local Docker stack |
 
-### How is DP different from Airflow/Dagster/Prefect?
+### How is DataKit different from Airflow/Dagster/Prefect?
 
-DP is complementary to orchestrators, not a replacement:
+DataKit is complementary to orchestrators, not a replacement:
 
-| Aspect | DP | Orchestrators |
+| Aspect | DataKit | Orchestrators |
 |--------|----|----|
 | Focus | Packaging & deployment | Workflow scheduling |
 | Unit of work | Data package | Task/DAG |
 | Runtime | OCI containers | Python/containers |
 | Lineage | Native OpenLineage | Plugin-based |
 
-DP packages can be scheduled by any orchestrator.
+DataKit packages can be scheduled by any orchestrator.
 
 ### What languages/runtimes are supported?
 
-DP supports any containerized runtime:
+DataKit supports any containerized runtime:
 
 - **Python** (most common)
 - **Java/Scala** (Spark, Flink)
@@ -90,7 +90,7 @@ See the [Quickstart](../getting-started/quickstart.md) for details.
 Yes! Override connection details in your Store manifests:
 
 ```yaml title="store/my-kafka.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: my-kafka
@@ -185,7 +185,7 @@ docker login ghcr.io
 
 ### How does promotion work?
 
-DP uses GitOps for deployment:
+DataKit uses GitOps for deployment:
 
 1. `dk promote` creates a PR in the GitOps repository
 2. PR is reviewed and approved
@@ -246,9 +246,9 @@ Lineage tracks:
 - What transformations were applied
 - When the pipeline ran
 
-### How does DP track lineage?
+### How does DataKit track lineage?
 
-DP automatically emits [OpenLineage](https://openlineage.io/) events:
+DataKit automatically emits [OpenLineage](https://openlineage.io/) events:
 
 1. Reads inputs/outputs from `dk.yaml`
 2. Emits START event when pipeline begins
@@ -296,7 +296,7 @@ Common causes:
 Use the `classification` and `pii` fields on Asset schemas:
 
 ```yaml title="asset/customer-data.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: customer-data
@@ -337,7 +337,7 @@ dk governance report --filter pii=true
 Add the binary to your PATH:
 
 ```bash
-export PATH=$PATH:/path/to/data-platform/bin
+export PATH=$PATH:/path/to/datakit/bin
 ```
 
 ### dk dev up fails
@@ -372,7 +372,7 @@ If your question isn't answered here:
 
 1. Check [Common Issues](common-issues.md)
 2. Search [GitHub Issues](https://github.com/Infoblox-CTO/platform.data.kit/issues)
-3. Ask in #data-platform-support on Slack
+3. Ask in #datakit-support on Slack
 4. Open a new issue on GitHub
 
 ---

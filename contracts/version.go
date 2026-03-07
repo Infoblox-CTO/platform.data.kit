@@ -6,13 +6,13 @@ type APIVersion string
 
 const (
 	// APIVersionV1Alpha1 is the initial development version.
-	APIVersionV1Alpha1 APIVersion = "data.infoblox.com/v1alpha1"
+	APIVersionV1Alpha1 APIVersion = "datakit.infoblox.dev/v1alpha1"
 
 	// APIVersionV1Beta1 is the beta version.
-	APIVersionV1Beta1 APIVersion = "data.infoblox.com/v1beta1"
+	APIVersionV1Beta1 APIVersion = "datakit.infoblox.dev/v1beta1"
 
 	// APIVersionV1 is the stable version.
-	APIVersionV1 APIVersion = "data.infoblox.com/v1"
+	APIVersionV1 APIVersion = "datakit.infoblox.dev/v1"
 )
 
 // PackageVersion represents a semantic version.

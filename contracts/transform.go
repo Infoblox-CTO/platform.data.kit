@@ -4,7 +4,7 @@ package contracts
 // It carries the runtime, mode, schedule, and timeout — everything about execution.
 // Created by the data engineer.
 type Transform struct {
-	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
+	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "Transform".

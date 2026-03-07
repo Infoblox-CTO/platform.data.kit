@@ -61,7 +61,7 @@ Exactly one of `asset` or `tags` must be specified (validated).
 ### Asset version
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users

@@ -12,7 +12,7 @@ Thank you for your interest in improving the Data Platform documentation! This g
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Infoblox-CTO/platform.data.kit.git
-   cd data-platform
+   cd datakit
    ```
 
 2. **Install dependencies**
@@ -176,7 +176,7 @@ dk init my-pipeline
 ```
 
 ```yaml title="dk.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 ```
 
@@ -294,7 +294,7 @@ dk version v0.1.0
 Use title to show filename:
 
 ```yaml title="dk.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 ```
 

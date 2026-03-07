@@ -69,8 +69,8 @@ func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
 	}
 
 	// Parse dk.yaml for metadata.
-	dpPath := filepath.Join(absDir, "dk.yaml")
-	dpData, err := os.ReadFile(dpPath)
+	dkPath := filepath.Join(absDir, "dk.yaml")
+	dpData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading dk.yaml: %w", err)
 	}
@@ -238,7 +238,7 @@ registry: ""
 }
 
 func generatePackageDeploymentTemplate() []byte {
-	return []byte(`apiVersion: data.infoblox.com/v1alpha1
+	return []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PackageDeployment
 metadata:
   name: {{ .Chart.Name }}

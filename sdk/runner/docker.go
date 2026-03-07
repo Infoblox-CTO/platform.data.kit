@@ -48,8 +48,8 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 		return nil, err
 	}
 
-	dpPath := filepath.Join(opts.PackageDir, "dk.yaml")
-	dpData, err := os.ReadFile(dpPath)
+	dkPath := filepath.Join(opts.PackageDir, "dk.yaml")
+	dpData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read dk.yaml: %w", err)
 	}
@@ -932,8 +932,8 @@ func (r *DockerRunner) buildImage(ctx context.Context, dir, imageName string, ou
 // buildEnvVarsFromPackage reads the package manifest and returns
 // explicit environment variables defined in the spec.
 func (r *DockerRunner) buildEnvVarsFromPackage(packageDir string) (map[string]string, error) {
-	dpPath := filepath.Join(packageDir, "dk.yaml")
-	dpData, err := os.ReadFile(dpPath)
+	dkPath := filepath.Join(packageDir, "dk.yaml")
+	dpData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read dk.yaml: %w", err)
 	}

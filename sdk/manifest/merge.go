@@ -1,4 +1,4 @@
-// Package manifest provides parsing and manipulation for DP manifests.
+// Package manifest provides parsing and manipulation for DataKit manifests.
 package manifest
 
 import (

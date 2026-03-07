@@ -6,7 +6,7 @@ package contracts
 // (e.g., "postgres-1-2-0", "postgres-1-3-0").
 // Created by the platform team.
 type Connector struct {
-	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
+	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "Connector".

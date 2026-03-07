@@ -9,7 +9,7 @@
   "properties": {
     "apiVersion": {
       "type": "string",
-      "const": "data.infoblox.com/v1alpha1",
+      "const": "datakit.infoblox.dev/v1alpha1",
       "description": "API version for the schedule manifest."
     },
     "kind": {

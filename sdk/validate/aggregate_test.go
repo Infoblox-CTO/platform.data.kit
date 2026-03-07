@@ -53,7 +53,7 @@ func TestAggregateValidator_Validate_DirectoryNotFound(t *testing.T) {
 func TestAggregateValidator_Validate_ValidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -66,7 +66,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644)
 	if err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
@@ -79,7 +79,7 @@ spec:
 	}
 }
 
-func TestAggregateValidator_Validate_MissingDpYaml(t *testing.T) {
+func TestAggregateValidator_Validate_MissingDkYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	v := NewAggregateValidator(tmpDir)
@@ -101,14 +101,14 @@ func TestAggregateValidator_Validate_MissingDpYaml(t *testing.T) {
 	}
 }
 
-func TestAggregateValidator_Validate_InvalidDpYaml(t *testing.T) {
+func TestAggregateValidator_Validate_InvalidDkYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `not: valid: yaml: here
+	dkContent := `not: valid: yaml: here
   - broken indentation
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644)
 	if err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
@@ -124,7 +124,7 @@ apiVersion: data.infoblox.com/v1alpha1
 func TestAggregateValidator_Validate_WithPipeline(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -137,7 +137,7 @@ spec:
   outputs:
     - asset: output-data
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644)
 	if err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}

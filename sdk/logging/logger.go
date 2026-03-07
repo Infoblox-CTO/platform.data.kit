@@ -1,4 +1,4 @@
-// Package logging provides structured logging for DP.
+// Package logging provides structured logging for DataKit.
 package logging
 
 import (

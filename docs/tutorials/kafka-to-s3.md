@@ -33,7 +33,7 @@ cd kafka-to-s3-pipeline
 Edit `dk.yaml` with your Transform configuration:
 
 ```yaml title="dk.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: kafka-to-s3-pipeline
@@ -68,7 +68,7 @@ spec:
 Create the input Asset referencing a Kafka Store:
 
 ```yaml title="asset/user-events.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: user-events
@@ -82,7 +82,7 @@ spec:
 Create the output Asset referencing an S3 Store:
 
 ```yaml title="asset/processed-events.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: processed-events
@@ -97,7 +97,7 @@ spec:
 Create the Stores with connection details:
 
 ```yaml title="store/local-kafka.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: local-kafka
@@ -110,7 +110,7 @@ spec:
 ```
 
 ```yaml title="store/local-s3.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: local-s3

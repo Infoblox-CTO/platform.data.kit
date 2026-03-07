@@ -152,7 +152,7 @@ func convertStoreResource(res *storeResource) *contracts.Store {
 	}
 
 	return &contracts.Store{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Store",
 		Metadata: contracts.StoreMetadata{
 			Name:      res.Metadata.Name,

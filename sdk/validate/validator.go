@@ -1,4 +1,4 @@
-// Package validate provides manifest validation for DP data packages.
+// Package validate provides manifest validation for DataKit data packages.
 package validate
 
 import (

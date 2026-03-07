@@ -178,7 +178,7 @@ dk dev up --runtime=k3d
 
 ### Using from Any Directory
 
-With k3d runtime, you can run `dk dev up` from any directory - no need to be in the DP workspace:
+With k3d runtime, you can run `dk dev up` from any directory - no need to be in the DataKit workspace:
 
 ```bash
 cd /tmp/my-pipeline

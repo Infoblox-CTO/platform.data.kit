@@ -93,7 +93,7 @@ func runRollback(cmd *cobra.Command, args []string) error {
 	}
 	repo := os.Getenv("GITHUB_REPO")
 	if repo == "" {
-		repo = "data-platform"
+		repo = "datakit"
 	}
 
 	// Create GitHub client

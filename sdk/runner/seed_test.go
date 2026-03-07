@@ -149,8 +149,8 @@ func TestParsePostgresConnStr(t *testing.T) {
 		database string
 	}{
 		{
-			"postgresql://dpuser:dppassword@host:5432/dataplatform?sslmode=disable",
-			"dpuser", "dppassword", "dataplatform",
+			"postgresql://dkuser:dkpassword@host:5432/datakit?sslmode=disable",
+			"dkuser", "dkpassword", "datakit",
 		},
 		{
 			"postgresql://admin:secret@db.example.com:5432/mydb",
@@ -158,7 +158,7 @@ func TestParsePostgresConnStr(t *testing.T) {
 		},
 		{
 			"", // empty -> defaults
-			"dpuser", "dppassword", "dataplatform",
+			"dkuser", "dkpassword", "datakit",
 		},
 		{
 			"postgres://u:p@h/d",

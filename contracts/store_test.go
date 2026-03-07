@@ -7,20 +7,20 @@ import (
 )
 
 func TestStore_YAMLRoundTrip(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
   namespace: default
   labels:
-    team: data-platform
+    team: datakit
 spec:
   connector: postgres
   connectorVersion: "^1.0.0"
   connection:
     host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
-    database: dataplatform
+    database: datakit
     schema: public
     sslmode: disable
   secrets:
@@ -33,7 +33,7 @@ spec:
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	if s.APIVersion != "data.infoblox.com/v1alpha1" {
+	if s.APIVersion != "datakit.infoblox.dev/v1alpha1" {
 		t.Errorf("APIVersion = %q", s.APIVersion)
 	}
 	if s.Kind != "Store" {
@@ -84,7 +84,7 @@ spec:
 
 func TestStore_WithoutConnectorVersion(t *testing.T) {
 	// ConnectorVersion is optional — existing stores without it should still work.
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: legacy-store
@@ -121,7 +121,7 @@ func TestStore_ManifestInterface(t *testing.T) {
 }
 
 func TestStore_S3(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: lake-raw

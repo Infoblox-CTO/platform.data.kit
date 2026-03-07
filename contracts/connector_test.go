@@ -7,7 +7,7 @@ import (
 )
 
 func TestConnector_YAMLRoundTrip(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres-1-2-0
@@ -60,8 +60,8 @@ spec:
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	if c.APIVersion != "data.infoblox.com/v1alpha1" {
-		t.Errorf("APIVersion = %q, want %q", c.APIVersion, "data.infoblox.com/v1alpha1")
+	if c.APIVersion != "datakit.infoblox.dev/v1alpha1" {
+		t.Errorf("APIVersion = %q, want %q", c.APIVersion, "datakit.infoblox.dev/v1alpha1")
 	}
 	if c.Kind != "Connector" {
 		t.Errorf("Kind = %q, want %q", c.Kind, "Connector")
@@ -202,7 +202,7 @@ func TestConnector_GetProviderFallback(t *testing.T) {
 }
 
 func TestConnector_MinimalYAML(t *testing.T) {
-	input := `apiVersion: data.infoblox.com/v1alpha1
+	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: s3

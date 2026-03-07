@@ -118,7 +118,7 @@ func TestBackfill_NoSyncSteps(t *testing.T) {
 	dir := t.TempDir()
 	// Pipeline with only custom steps
 	if err := os.WriteFile(filepath.Join(dir, PipelineFileName), []byte(`
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: no-sync
@@ -182,7 +182,7 @@ func TestBackfill_EnvVarInjection(t *testing.T) {
 
 func writePipelineWithSync(t *testing.T, dir string) {
 	t.Helper()
-	content := `apiVersion: data.infoblox.com/v1alpha1
+	content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: backfill-pipeline

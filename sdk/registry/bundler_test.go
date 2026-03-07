@@ -52,7 +52,7 @@ func TestBundleOptions_WithAllFields(t *testing.T) {
 	}
 }
 
-func TestBundle_MissingDpYaml(t *testing.T) {
+func TestBundle_MissingDkYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 	bundler := NewBundler("v1.0.0")
 
@@ -66,7 +66,7 @@ func TestBundle_MissingDpYaml(t *testing.T) {
 	}
 }
 
-func TestBundle_InvalidDpYaml(t *testing.T) {
+func TestBundle_InvalidDkYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Write invalid YAML
@@ -89,7 +89,7 @@ func TestBundle_InvalidDpYaml(t *testing.T) {
 func TestBundle_ValidPackage(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -109,7 +109,7 @@ spec:
         sensitivity: public
         pii: false
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
@@ -145,7 +145,7 @@ func TestBundle_NonExistentDirectory(t *testing.T) {
 func TestBundle_WithExcludePatterns(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dpContent := `apiVersion: data.infoblox.com/v1alpha1
+	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: test-pkg
@@ -165,7 +165,7 @@ spec:
         sensitivity: public
         pii: false
 `
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dpContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 

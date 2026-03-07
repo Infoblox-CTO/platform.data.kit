@@ -89,13 +89,13 @@ func init() {
 // The writer is for any status messages; the return value is the formatted manifest.
 func showManifest(packageDir string, w io.Writer) (string, error) {
 	// Find dk.yaml
-	dpPath := filepath.Join(packageDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(packageDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("dk.yaml not found in %s", packageDir)
 	}
 
 	// Read base dk.yaml
-	baseData, err := os.ReadFile(dpPath)
+	baseData, err := os.ReadFile(dkPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read dk.yaml: %w", err)
 	}

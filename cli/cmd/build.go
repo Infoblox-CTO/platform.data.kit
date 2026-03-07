@@ -69,8 +69,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Verify dk.yaml exists
-	dpPath := filepath.Join(absDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(absDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		return fmt.Errorf("dk.yaml not found in %s - is this a valid DK package?", packageDir)
 	}
 
@@ -101,7 +101,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse the manifest for metadata
-	m, kind, parseErr := manifest.ParseManifestFile(dpPath)
+	m, kind, parseErr := manifest.ParseManifestFile(dkPath)
 	if parseErr != nil {
 		return fmt.Errorf("failed to parse dk.yaml: %w", parseErr)
 	}

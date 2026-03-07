@@ -39,7 +39,7 @@ func TestAssetCreate(t *testing.T) {
 					t.Fatal(err)
 				}
 				data, _ := yaml.Marshal(&contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "existing"},
 					Spec:     contracts.AssetSpec{Store: "my-s3"},
 				})
@@ -59,7 +59,7 @@ func TestAssetCreate(t *testing.T) {
 					t.Fatal(err)
 				}
 				data, _ := yaml.Marshal(&contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1", Kind: "Asset",
+					APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "Asset",
 					Metadata: contracts.AssetMetadata{Name: "existing"},
 					Spec:     contracts.AssetSpec{Store: "old-store"},
 				})

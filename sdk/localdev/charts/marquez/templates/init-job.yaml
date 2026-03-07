@@ -40,7 +40,7 @@ spec:
               {{- range $ns := list "dk" "dk-dev" "analytics" }}
               curl -sf -X PUT "$MARQUEZ_API/api/v1/namespaces/{{ $ns }}" \
                 -H "Content-Type: application/json" \
-                -d '{"ownerName": "dataplatform", "description": "{{ $ns }} namespace"}' \
+                -d '{"ownerName": "datakit", "description": "{{ $ns }} namespace"}' \
                 && echo " Created namespace: {{ $ns }}" \
                 || echo " Namespace {{ $ns }} may already exist"
               {{- end }}

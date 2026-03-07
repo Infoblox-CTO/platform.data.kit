@@ -45,7 +45,7 @@ user-aggregator/
 Edit `dk.yaml` to configure streaming behavior:
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: user-aggregator
@@ -79,7 +79,7 @@ spec:
 Create the input Asset:
 
 ```yaml title="asset/user-events.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: user-events
@@ -93,7 +93,7 @@ spec:
 Create the output Asset:
 
 ```yaml title="asset/user-aggregations.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: user-aggregations
@@ -108,7 +108,7 @@ spec:
 Create the Stores:
 
 ```yaml title="store/events-kafka.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: events-kafka
@@ -121,7 +121,7 @@ spec:
 ```
 
 ```yaml title="store/analytics-s3.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: analytics-s3

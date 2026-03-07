@@ -9,7 +9,7 @@ import (
 
 func TestPipelineWorkflowValidator_ValidPipeline(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "PipelineWorkflow",
 		Metadata:   contracts.PipelineWorkflowMetadata{Name: "my-pipeline"},
 		Steps: []contracts.Step{
@@ -48,17 +48,17 @@ func TestPipelineWorkflowValidator_MissingRequired(t *testing.T) {
 		},
 		{
 			name:     "missing kind",
-			pw:       contracts.PipelineWorkflow{APIVersion: "data.infoblox.com/v1alpha1", Metadata: contracts.PipelineWorkflowMetadata{Name: "test-pipe"}, Steps: []contracts.Step{{Name: "step-one", Type: contracts.StepTypePublish}}},
+			pw:       contracts.PipelineWorkflow{APIVersion: "datakit.infoblox.dev/v1alpha1", Metadata: contracts.PipelineWorkflowMetadata{Name: "test-pipe"}, Steps: []contracts.Step{{Name: "step-one", Type: contracts.StepTypePublish}}},
 			wantCode: ErrPipelineMissingRequired,
 		},
 		{
 			name:     "missing metadata.name",
-			pw:       contracts.PipelineWorkflow{APIVersion: "data.infoblox.com/v1alpha1", Kind: "PipelineWorkflow", Steps: []contracts.Step{{Name: "step-one", Type: contracts.StepTypePublish}}},
+			pw:       contracts.PipelineWorkflow{APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "PipelineWorkflow", Steps: []contracts.Step{{Name: "step-one", Type: contracts.StepTypePublish}}},
 			wantCode: ErrPipelineMissingRequired,
 		},
 		{
 			name:     "empty steps",
-			pw:       contracts.PipelineWorkflow{APIVersion: "data.infoblox.com/v1alpha1", Kind: "PipelineWorkflow", Metadata: contracts.PipelineWorkflowMetadata{Name: "test-pipe"}},
+			pw:       contracts.PipelineWorkflow{APIVersion: "datakit.infoblox.dev/v1alpha1", Kind: "PipelineWorkflow", Metadata: contracts.PipelineWorkflowMetadata{Name: "test-pipe"}},
 			wantCode: ErrPipelineEmptySteps,
 		},
 	}
@@ -90,7 +90,7 @@ func TestPipelineWorkflowValidator_InvalidAPIVersion(t *testing.T) {
 
 func TestPipelineWorkflowValidator_InvalidKind(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "WrongKind",
 		Metadata:   contracts.PipelineWorkflowMetadata{Name: "test-pipe"},
 		Steps:      []contracts.Step{{Name: "step-one", Type: contracts.StepTypePublish}},
@@ -117,7 +117,7 @@ func TestPipelineWorkflowValidator_InvalidPipelineName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pw := &contracts.PipelineWorkflow{
-				APIVersion: "data.infoblox.com/v1alpha1",
+				APIVersion: "datakit.infoblox.dev/v1alpha1",
 				Kind:       "PipelineWorkflow",
 				Metadata:   contracts.PipelineWorkflowMetadata{Name: tt.pipeName},
 				Steps:      []contracts.Step{{Name: "step-one", Type: contracts.StepTypePublish}},
@@ -133,7 +133,7 @@ func TestPipelineWorkflowValidator_InvalidPipelineName(t *testing.T) {
 
 func TestPipelineWorkflowValidator_InvalidStepName(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "PipelineWorkflow",
 		Metadata:   contracts.PipelineWorkflowMetadata{Name: "test-pipe"},
 		Steps:      []contracts.Step{{Name: "AB", Type: contracts.StepTypePublish}},
@@ -147,7 +147,7 @@ func TestPipelineWorkflowValidator_InvalidStepName(t *testing.T) {
 
 func TestPipelineWorkflowValidator_DuplicateStepName(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "PipelineWorkflow",
 		Metadata:   contracts.PipelineWorkflowMetadata{Name: "test-pipe"},
 		Steps: []contracts.Step{
@@ -164,7 +164,7 @@ func TestPipelineWorkflowValidator_DuplicateStepName(t *testing.T) {
 
 func TestPipelineWorkflowValidator_InvalidStepType(t *testing.T) {
 	pw := &contracts.PipelineWorkflow{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "PipelineWorkflow",
 		Metadata:   contracts.PipelineWorkflowMetadata{Name: "test-pipe"},
 		Steps:      []contracts.Step{{Name: "step-one", Type: contracts.StepType("invalid")}},
@@ -217,7 +217,7 @@ func TestPipelineWorkflowValidator_MissingStepFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pw := &contracts.PipelineWorkflow{
-				APIVersion: "data.infoblox.com/v1alpha1",
+				APIVersion: "datakit.infoblox.dev/v1alpha1",
 				Kind:       "PipelineWorkflow",
 				Metadata:   contracts.PipelineWorkflowMetadata{Name: "test-pipe"},
 				Steps:      []contracts.Step{tt.step},

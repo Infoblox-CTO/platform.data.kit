@@ -67,7 +67,7 @@ func TestPipelineShow(t *testing.T) {
 			args: []string{},
 			setup: func(dir string) {
 				writePipelineShowFile(t, dir)
-				schedContent := `apiVersion: data.infoblox.com/v1alpha1
+				schedContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Schedule
 cron: "0 6 * * *"
 timezone: America/New_York
@@ -167,7 +167,7 @@ func TestPipelineShowFlags(t *testing.T) {
 
 func writePipelineShowFile(t *testing.T, dir string) {
 	t.Helper()
-	content := `apiVersion: data.infoblox.com/v1alpha1
+	content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: demo-pipeline

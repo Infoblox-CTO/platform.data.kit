@@ -3,13 +3,13 @@ title: Architecture
 description: High-level architecture of the Data Platform
 ---
 
-# DP Architecture
+# DataKit Architecture
 
-This document describes the high-level architecture of the Data Platform (DP).
+This document describes the high-level architecture of DataKit.
 
 ## Overview
 
-DP is a Kubernetes-native data pipeline platform that enables teams to contribute reusable, versioned "data packages" with a complete developer workflow.
+DataKit is a Kubernetes-native data pipeline platform that enables teams to contribute reusable, versioned "data packages" with a complete developer workflow.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐

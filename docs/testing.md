@@ -5,7 +5,7 @@ description: Testing strategy and best practices for the Data Platform
 
 # Testing Guide
 
-This document describes the testing strategy and best practices for the Data Platform (DP) codebase.
+This document describes the testing strategy and best practices for the DataKit codebase.
 
 ## Quick Start
 

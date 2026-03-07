@@ -2,7 +2,7 @@ package contracts
 
 // ScheduleManifest represents a pipeline schedule defined in schedule.yaml.
 type ScheduleManifest struct {
-	// APIVersion is the schema version (e.g., "data.infoblox.com/v1alpha1").
+	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 
 	// Kind is always "Schedule".

@@ -50,7 +50,7 @@ func TestPipelineBackfill(t *testing.T) {
 			name: "no sync steps",
 			args: []string{"--from", "2026-01-01", "--to", "2026-01-31"},
 			setup: func(dir string) {
-				content := `apiVersion: data.infoblox.com/v1alpha1
+				content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: no-sync
@@ -143,7 +143,7 @@ func TestPipelineBackfillFlags(t *testing.T) {
 
 func writePipelineFileWithSync(t *testing.T, dir string) {
 	t.Helper()
-	content := `apiVersion: data.infoblox.com/v1alpha1
+	content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: backfill-test

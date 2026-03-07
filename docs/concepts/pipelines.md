@@ -17,7 +17,7 @@ A pipeline workflow is defined in `pipeline.yaml` and describes:
 - **Environment variables**: Configuration injected at runtime
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: security-pipeline
@@ -41,7 +41,7 @@ steps:
     type: publish
     promote: true
     notify:
-      channels: ["#data-platform"]
+      channels: ["#datakit"]
 ```
 
 ## Step Types
@@ -112,7 +112,7 @@ Each step's output is prefixed with `[step-name]` for easy identification in log
 An optional `schedule.yaml` alongside `pipeline.yaml` defines cron-based execution timing:
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Schedule
 cron: "0 6 * * *"
 timezone: America/New_York

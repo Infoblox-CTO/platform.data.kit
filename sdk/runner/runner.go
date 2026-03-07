@@ -1,4 +1,4 @@
-// Package runner provides local execution capabilities for DP pipelines.
+// Package runner provides local execution capabilities for DataKit pipelines.
 package runner
 
 import (

@@ -30,7 +30,7 @@ func TestParseManifest(t *testing.T) {
 	}{
 		{
 			name: "valid connector",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -46,7 +46,7 @@ spec:
 		},
 		{
 			name: "valid store",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
@@ -62,7 +62,7 @@ spec:
 		},
 		{
 			name: "valid asset",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -76,7 +76,7 @@ spec:
 		},
 		{
 			name: "valid asset group",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: AssetGroup
 metadata:
   name: pg-snapshot
@@ -92,7 +92,7 @@ spec:
 		},
 		{
 			name: "valid transform",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: pg-to-s3
@@ -110,7 +110,7 @@ spec:
 		},
 		{
 			name: "unsupported kind returns error",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataPackage
 metadata:
   name: test
@@ -159,7 +159,7 @@ func TestParseManifestFile(t *testing.T) {
 		{
 			name: "valid connector file",
 			setup: func(t *testing.T, dir string) string {
-				content := `apiVersion: data.infoblox.com/v1alpha1
+				content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: file-test
@@ -282,7 +282,7 @@ spec:
 		},
 		{
 			name: "missing kind",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 metadata:
   name: test
 `),
@@ -290,7 +290,7 @@ metadata:
 		},
 		{
 			name: "missing metadata",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 spec:
   type: postgres
@@ -299,7 +299,7 @@ spec:
 		},
 		{
 			name: "missing spec",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: test
@@ -308,7 +308,7 @@ metadata:
 		},
 		{
 			name: "empty metadata name",
-			data: []byte(`apiVersion: data.infoblox.com/v1alpha1
+			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: ""
@@ -414,7 +414,7 @@ func TestManifestInterface(t *testing.T) {
 // --- Tests for new kind parser methods ---
 
 func TestDefaultParser_ParseConnector(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: postgres
@@ -452,7 +452,7 @@ spec:
 }
 
 func TestDefaultParser_ParseConnector_WrongKind(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: test
@@ -470,7 +470,7 @@ spec:
 }
 
 func TestDefaultParser_ParseStore(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse
@@ -509,7 +509,7 @@ spec:
 }
 
 func TestDefaultParser_ParseAsset(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: users
@@ -549,7 +549,7 @@ spec:
 }
 
 func TestDefaultParser_ParseAssetGroup(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: AssetGroup
 metadata:
   name: pg-snapshot
@@ -579,7 +579,7 @@ spec:
 }
 
 func TestDefaultParser_ParseTransform(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: pg-to-s3
@@ -626,7 +626,7 @@ spec:
 // --- FromBytes/ToBytes round-trip tests ---
 
 func TestConnectorFromBytes_RoundTrip(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Connector
 metadata:
   name: s3
@@ -660,7 +660,7 @@ spec:
 }
 
 func TestStoreFromBytes_RoundTrip(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: lake-raw
@@ -691,7 +691,7 @@ spec:
 }
 
 func TestAssetFromBytes_RoundTrip(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: orders
@@ -730,7 +730,7 @@ spec:
 }
 
 func TestAssetGroupFromBytes_RoundTrip(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: AssetGroup
 metadata:
   name: snapshot
@@ -764,7 +764,7 @@ spec:
 }
 
 func TestTransformFromBytes_RoundTrip(t *testing.T) {
-	data := []byte(`apiVersion: data.infoblox.com/v1alpha1
+	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://data.infoblox.com/schemas/v1alpha1/transform.schema.json",
+  "$id": "https://datakit.infoblox.dev/schemas/v1alpha1/transform.schema.json",
   "title": "Transform Manifest",
   "description": "Schema for a Transform — a unit of computation that reads input Assets and produces output Assets",
   "type": "object",
@@ -8,7 +8,7 @@
   "properties": {
     "apiVersion": {
       "type": "string",
-      "const": "data.infoblox.com/v1alpha1",
+      "const": "datakit.infoblox.dev/v1alpha1",
       "description": "Schema version"
     },
     "kind": {

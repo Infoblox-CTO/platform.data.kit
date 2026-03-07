@@ -29,7 +29,7 @@ Batch pipelines process a finite dataset and exit when complete. This is the def
 
 ```yaml
 # dk.yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: daily-etl
@@ -88,7 +88,7 @@ Streaming pipelines run continuously, processing data as it arrives. They never 
 
 ```yaml
 # dk.yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: kafka-processor

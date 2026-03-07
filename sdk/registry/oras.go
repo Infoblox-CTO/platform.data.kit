@@ -60,7 +60,7 @@ func (c *OrasClient) Push(ctx context.Context, ref string, artifact *Artifact) (
 	}
 
 	configDesc := ocispec.Descriptor{
-		MediaType: MediaTypeDPConfig,
+		MediaType: MediaTypeDKConfig,
 		Digest:    digest.FromBytes(configBytes),
 		Size:      int64(len(configBytes)),
 	}
@@ -75,7 +75,7 @@ func (c *OrasClient) Push(ctx context.Context, ref string, artifact *Artifact) (
 			SchemaVersion int `json:"schemaVersion"`
 		}{SchemaVersion: 2},
 		MediaType:    ocispec.MediaTypeImageManifest,
-		ArtifactType: MediaTypeDPPackage,
+		ArtifactType: MediaTypeDKPackage,
 		Config:       configDesc,
 		Layers:       layerDescs,
 		Annotations:  artifact.Manifest.Annotations,

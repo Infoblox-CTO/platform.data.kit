@@ -1,11 +1,11 @@
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: kafka-s3-pipeline
   namespace: analytics
   version: 1.0.0
   labels:
-    team: data-platform
+    team: datakit
     domain: events
 spec:
   runtime: generic-go

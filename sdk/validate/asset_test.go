@@ -10,7 +10,7 @@ import (
 
 func validAsset() *contracts.AssetManifest {
 	return &contracts.AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Asset",
 		Metadata: contracts.AssetMetadata{
 			Name: "aws-security",

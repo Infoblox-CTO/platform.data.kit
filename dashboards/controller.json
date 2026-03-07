@@ -696,7 +696,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "DP Controller",
+  "title": "DataKit Controller",
   "uid": "dp-controller",
   "version": 1,
   "weekStart": ""

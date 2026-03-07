@@ -165,7 +165,7 @@ func setupGraphTestDir(t *testing.T) string {
 	dir := t.TempDir()
 
 	assets := map[string]string{
-		"raw-events": `apiVersion: data.infoblox.com/v1alpha1
+		"raw-events": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: raw-events
@@ -174,7 +174,7 @@ spec:
   store: kafka
   topic: raw.events
 `,
-		"raw-events-parquet": `apiVersion: data.infoblox.com/v1alpha1
+		"raw-events-parquet": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: raw-events-parquet
@@ -184,7 +184,7 @@ spec:
   prefix: data/raw/
   format: parquet
 `,
-		"enriched-events": `apiVersion: data.infoblox.com/v1alpha1
+		"enriched-events": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: enriched-events
@@ -194,7 +194,7 @@ spec:
   prefix: data/enriched/
   format: parquet
 `,
-		"event-summary": `apiVersion: data.infoblox.com/v1alpha1
+		"event-summary": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 metadata:
   name: event-summary
@@ -206,7 +206,7 @@ spec:
 	}
 
 	transforms := map[string]string{
-		"ingest": `apiVersion: data.infoblox.com/v1alpha1
+		"ingest": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: ingest
@@ -219,7 +219,7 @@ spec:
   trigger:
     policy: on-change
 `,
-		"enrich": `apiVersion: data.infoblox.com/v1alpha1
+		"enrich": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich
@@ -233,7 +233,7 @@ spec:
   trigger:
     policy: on-change
 `,
-		"aggregate": `apiVersion: data.infoblox.com/v1alpha1
+		"aggregate": `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: aggregate

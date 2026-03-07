@@ -43,11 +43,11 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		return result
 	}
 
-	dpPath := filepath.Join(v.packageDir, "dk.yaml")
-	if _, err := os.Stat(dpPath); os.IsNotExist(err) {
+	dkPath := filepath.Join(v.packageDir, "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
 		result.AddError(ErrFileNotFound, "dk.yaml", "dk.yaml not found - this is required for a valid package")
 	} else {
-		dpResult := v.validateManifest(ctx, dpPath)
+		dpResult := v.validateManifest(ctx, dkPath)
 		result.Merge(dpResult)
 	}
 

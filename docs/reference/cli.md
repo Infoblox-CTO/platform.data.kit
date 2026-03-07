@@ -1298,7 +1298,7 @@ dk asset show aws-security
 ```
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 name: aws-security
 type: source

@@ -20,7 +20,7 @@ const (
 )
 
 const (
-	scheduleAPIVersion = "data.infoblox.com/v1alpha1"
+	scheduleAPIVersion = "datakit.infoblox.dev/v1alpha1"
 	scheduleKind       = "Schedule"
 )
 

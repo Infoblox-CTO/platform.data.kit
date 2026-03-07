@@ -113,7 +113,7 @@ func TestPipelineRunFlags(t *testing.T) {
 
 func writePipelineFile(t *testing.T, dir string) {
 	t.Helper()
-	content := `apiVersion: data.infoblox.com/v1alpha1
+	content := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: PipelineWorkflow
 metadata:
   name: test-pipeline

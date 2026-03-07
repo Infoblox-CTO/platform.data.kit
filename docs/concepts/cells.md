@@ -28,7 +28,7 @@ The same package can deploy to many cells. The same cell can host many packages.
 A Cell is a cluster-scoped Kubernetes Custom Resource representing an isolated instance of pipeline infrastructure.
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Cell
 metadata:
   name: canary
@@ -50,7 +50,7 @@ Each Cell owns a dedicated Kubernetes namespace (`dk-<cell>`) where its Stores, 
 A Store is a namespaced Kubernetes Custom Resource that provides connection details for a specific infrastructure instance. Stores live in their Cell's namespace.
 
 ```yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: warehouse

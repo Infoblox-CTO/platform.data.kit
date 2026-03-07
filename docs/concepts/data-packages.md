@@ -49,7 +49,7 @@ For CloudQuery runtimes, no source code is needed — the Connector's plugin ima
 The manifest is the heart of every package:
 
 ```yaml title="dk.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
   name: my-kafka-pipeline

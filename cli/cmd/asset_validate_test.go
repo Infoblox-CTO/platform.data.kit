@@ -43,7 +43,7 @@ func TestAssetValidate(t *testing.T) {
 					t.Fatal(err)
 				}
 				a := &contracts.AssetManifest{
-					APIVersion: "data.infoblox.com/v1alpha1",
+					APIVersion: "datakit.infoblox.dev/v1alpha1",
 					Kind:       "Asset",
 					Metadata: contracts.AssetMetadata{
 						Name: "bad-asset",
@@ -135,7 +135,7 @@ func writeValidateAsset(t *testing.T, projectDir, name, store string) {
 	}
 
 	a := &contracts.AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Asset",
 		Metadata: contracts.AssetMetadata{
 			Name: name,

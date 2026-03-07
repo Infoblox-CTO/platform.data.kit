@@ -50,7 +50,7 @@ my-package/
 Every asset is defined by a single `asset.yaml` file:
 
 ```yaml title="asset.yaml"
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Asset
 name: aws-security                    # DNS-safe, 3-63 characters
 type: source                          # source | sink | model-engine
@@ -157,7 +157,7 @@ Assets reference a Store by name via the `spec.store` field in the data package 
 
 ```yaml
 # store.yaml
-apiVersion: data.infoblox.com/v1alpha1
+apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: aws-raw-output

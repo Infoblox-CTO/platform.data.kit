@@ -1,4 +1,4 @@
-// Package manifest provides YAML parsing for DP manifest files.
+// Package manifest provides YAML parsing for DataKit manifest files.
 package manifest
 
 import (

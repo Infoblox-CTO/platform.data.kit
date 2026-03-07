@@ -180,7 +180,7 @@ func writeShowAsset(t *testing.T, projectDir, name, store string) {
 	}
 
 	a := &contracts.AssetManifest{
-		APIVersion: "data.infoblox.com/v1alpha1",
+		APIVersion: "datakit.infoblox.dev/v1alpha1",
 		Kind:       "Asset",
 		Metadata:   contracts.AssetMetadata{Name: name},
 		Spec:       contracts.AssetSpec{Store: store, Table: "public.events"},

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://data.infoblox.com/schemas/v1alpha1/connector.schema.json",
+  "$id": "https://datakit.infoblox.dev/schemas/v1alpha1/connector.schema.json",
   "title": "Connector Manifest",
   "description": "Schema for a Connector — a storage technology type (e.g., Postgres, S3, Kafka). Multiple versions of the same connector can coexist, identified by spec.provider + spec.version.",
   "type": "object",
@@ -8,7 +8,7 @@
   "properties": {
     "apiVersion": {
       "type": "string",
-      "const": "data.infoblox.com/v1alpha1",
+      "const": "datakit.infoblox.dev/v1alpha1",
       "description": "Schema version"
     },
     "kind": {
