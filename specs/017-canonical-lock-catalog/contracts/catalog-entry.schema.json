@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datakit.infoblox.dev/schemas/catalog-entry/v1",
+  "title": "DataKit Catalog Entry",
+  "description": "Schema for catalog metadata stored alongside published DataKit package artifacts. Enables package discovery and filtering.",
+  "type": "object",
+  "required": ["name", "version", "kind", "digest", "createdAt"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Package name (DNS-safe, lowercase)."
+    },
+    "namespace": {
+      "type": "string",
+      "description": "Package namespace (optional)."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Exact package version (valid semver)."
+    },
+    "registry": {
+      "type": "string",
+      "description": "OCI registry URL."
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "OCI manifest digest."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["Connector", "Store", "Asset", "Transform", "AssetGroup"],
+      "description": "Package kind."
+    },
+    "owner": {
+      "type": "string",
+      "description": "Team or individual responsible for the package."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable summary of the package."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Searchable labels for categorization."
+    },
+    "classification": {
+      "type": "string",
+      "description": "Data classification level (e.g., 'public', 'internal', 'confidential')."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp when this version was published."
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Assets consumed by this package (for Transforms).",
+      "items": {
+        "$ref": "#/$defs/AssetRef"
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Assets produced by this package.",
+      "items": {
+        "$ref": "#/$defs/AssetRef"
+      }
+    },
+    "schemaFingerprints": {
+      "type": "object",
+      "description": "Maps asset names to their schema content hashes.",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      }
+    }
+  },
+  "$defs": {
+    "AssetRef": {
+      "type": "object",
+      "description": "Reference to an asset declared in a package manifest.",
+      "required": ["asset"],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "description": "Asset name."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Asset tags."
+        },
+        "version": {
+          "type": "string",
+          "description": "Asset version constraint."
+        },
+        "cell": {
+          "type": "string",
+          "description": "Data cell identifier."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datakit.infoblox.dev/schemas/lockfile/v1",
+  "title": "DataKit Lock File",
+  "description": "Schema for dk.lock — the dependency lockfile for DataKit packages. Pins all dependencies to exact versions and OCI digests for reproducible builds.",
+  "type": "object",
+  "required": ["lockVersion", "manifestHash", "generatedAt", "dependencies"],
+  "additionalProperties": false,
+  "properties": {
+    "lockVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version of the lockfile format. Currently 1."
+    },
+    "manifestHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 hash of the dk.yaml file content at lock time. Used to detect drift between manifest and lockfile."
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp when the lockfile was generated."
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Alphabetically-sorted list of locked dependencies.",
+      "items": {
+        "$ref": "#/$defs/LockedDependency"
+      }
+    }
+  },
+  "$defs": {
+    "LockedDependency": {
+      "type": "object",
+      "description": "A single resolved dependency pinned to an exact version and OCI digest.",
+      "required": ["name", "kind", "version", "registry", "digest", "constraint"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Dependency name (DNS-safe, matches dk.yaml reference)."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["Connector", "Store", "Asset", "Transform", "AssetGroup"],
+          "description": "Package kind of the dependency."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+          "description": "Exact resolved version (valid semver, never a range)."
+        },
+        "registry": {
+          "type": "string",
+          "description": "OCI registry URL where the artifact is stored."
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "OCI manifest digest for content-addressable verification."
+        },
+        "constraint": {
+          "type": "string",
+          "description": "Original version constraint from dk.yaml (e.g., '>=1.0.0', '^2.1.0')."
+        }
+      }
+    }
+  }
+}

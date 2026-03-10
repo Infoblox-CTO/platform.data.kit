@@ -31,10 +31,10 @@ DataKit serves two distinct roles with clear ownership boundaries.
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                            Data Engineer                                    │
 │                                                                             │
-│   assets/                      pipelines/               models/             │
+│   assets/                      transforms/              models/             │
 │   ├── sources/                 └── aws_compliance/      └── dbt/            │
-│   │   └── aws_security/           ├── pipeline.yaml         ├── staging/    │
-│   │       └── asset.yaml          └── pipeline.yaml         └── marts/     │
+│   │   └── aws_security/           └── dk.yaml               ├── staging/   │
+│   │       └── asset.yaml                                     └── marts/    │
 │   └── sinks/                                                                │
 │       └── snowflake_raw/                                                    │
 │           └── asset.yaml                                                    │
@@ -85,26 +85,22 @@ config:
 
 The `config` block is validated against the extension's `schema.json` at `dk validate` time — errors surface before runtime.
 
-### 3. Pipelines — multi-step wiring
+### 3. Pipelines — reactive dependency graph
 
-A pipeline chains assets into a workflow: sync → transform → test → publish. Each step references assets by name.
+A pipeline is the dependency graph derived from Transform and Asset manifests.
+Each Transform declares its inputs and outputs; the graph is built automatically.
 
-```yaml
-# pipelines/aws_compliance/pipeline.yaml
-name: aws_security_compliance
-steps:
-  - name: sync
-    source: aws_security
-    sink: snowflake_raw
-  - name: transform
-    model: dbt_compliance
-    select: "tag:compliance"
-  - name: test
-    model: dbt_compliance
-    command: test
+```bash
+# View the full pipeline graph
+dk pipeline show
+
+# View the chain leading to a specific asset
+dk pipeline show --destination event-summary
 ```
 
-Pipelines can define schedules, backfill ranges, and notification targets. The existing single-container pipeline mode is preserved as a `custom` step type for backward compatibility.
+Transforms are independently deployable. Each declares a trigger (schedule,
+on-change, manual) and references assets by name. There is no separate pipeline
+manifest — the graph emerges from the individual dk.yaml files.
 
 ### 4. Bindings — per-environment infrastructure
 
@@ -161,13 +157,11 @@ dk ext publish
 ```
 dk asset create aws_security --ext cloudquery.source.aws --interactive
 dk asset create snowflake_raw --ext cloudquery.dest.snowflake
-dk pipeline create aws_compliance --template sync-transform-test
 # Edit dbt models and tests
 dk validate
 dk plan --env dev
 dk apply --env dev
-dk pipeline run aws_compliance --env dev
-dk pipeline backfill aws_compliance --from 2026-01-01 --to 2026-02-01
+dk pipeline show
 ```
 
 ---
@@ -200,7 +194,7 @@ The target state is reached incrementally through five features, each independen
 |---|---------|----------|
 | 011 | Extension type system | `dk ext create/validate/publish`, extension.yaml + schema.json |
 | 012 | Asset instances | `dk asset create/validate`, asset.yaml referencing extensions |
-| 013 | Pipeline orchestration | Multi-step pipelines, `dk pipeline backfill`, trigger configuration |
+| 013 | Pipeline graph | Reactive dependency graph, `dk pipeline show`, trigger configuration |
 | 014 | Environments and policies | `dk plan/apply`, declarative policies, version constraints |
 | 015 | dbt model engine | dbt as a first-class extension, sync → transform → test chains |
 

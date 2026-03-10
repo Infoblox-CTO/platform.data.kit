@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/pipeline"
 )
 
 // AggregateValidator validates all manifests in a package directory.
@@ -60,16 +59,6 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 	// Validate assets if assets/ directory exists
 	assetsResult := v.validateAssets(ctx)
 	result.Merge(assetsResult)
-
-	// Validate pipeline workflow if pipeline.yaml exists and is PipelineWorkflow kind.
-	pipelinePath := filepath.Join(v.packageDir, pipeline.PipelineFileName)
-	if _, err := os.Stat(pipelinePath); err == nil {
-		pw, loadErr := pipeline.LoadPipeline(pipelinePath)
-		if loadErr == nil && pw.Kind == "PipelineWorkflow" {
-			pwResult := v.validatePipelineWorkflow(ctx, pipelinePath)
-			result.Merge(pwResult)
-		}
-	}
 
 	return result
 }
@@ -204,39 +193,6 @@ func (v *AggregateValidator) validateAssets(ctx context.Context) *ValidationResu
 		}
 		for _, e := range errs {
 			result.Errors.Add(e)
-		}
-	}
-
-	return result
-}
-
-// validatePipelineWorkflow validates a pipeline.yaml file.
-func (v *AggregateValidator) validatePipelineWorkflow(ctx context.Context, path string) *ValidationResult {
-	result := NewValidationResult()
-
-	pwValidator, err := NewPipelineWorkflowValidatorFromFile(path)
-	if err != nil {
-		result.AddError(ErrParseError, "pipeline.yaml", "failed to parse pipeline.yaml: "+err.Error())
-		return result
-	}
-
-	errs := pwValidator.Validate(ctx)
-	if errs.HasErrors() {
-		result.Valid = false
-		for _, e := range errs {
-			result.Errors.Add(e)
-		}
-	}
-
-	// Cross-validate asset references if assets exist
-	assets, loadErr := asset.LoadAllAssets(v.packageDir)
-	if loadErr == nil && len(assets) > 0 {
-		assetErrs := ValidateAssetReferences(pwValidator.Workflow(), assets)
-		if assetErrs.HasErrors() {
-			result.Valid = false
-			for _, e := range assetErrs {
-				result.Errors.Add(e)
-			}
 		}
 	}
 

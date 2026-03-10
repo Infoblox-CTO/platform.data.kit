@@ -219,7 +219,7 @@ func (b *Bundler) createContentLayer(packageDir string, excludePatterns []string
 		}
 
 		// Skip manifest files (they're in their own layer)
-		if relPath == "dk.yaml" || relPath == "pipeline.yaml" ||
+		if relPath == "dk.yaml" ||
 			filepath.HasPrefix(relPath, "schemas") {
 			if info.IsDir() {
 				return filepath.SkipDir

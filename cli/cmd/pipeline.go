@@ -4,30 +4,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// pipelineCmd is the parent command for all pipeline subcommands.
+// pipelineCmd is the parent command for pipeline subcommands.
 var pipelineCmd = &cobra.Command{
 	Use:   "pipeline",
-	Short: "Manage pipeline workflows",
-	Long: `Manage pipeline workflows — multi-step execution plans for data pipelines.
-
-A pipeline workflow defines the ordered steps (sync, transform, test, publish,
-custom) that compose a data pipeline, along with retry and notification config.
+	Short: "Inspect the pipeline dependency graph",
+	Long: `Inspect the reactive pipeline dependency graph derived from Transform and
+Asset manifests (dk.yaml files).
 
 Subcommands:
-  create    Scaffold a new pipeline.yaml from a template
+  show    Display pipeline dependency graph
 
 Examples:
-  # Create a pipeline from the default template
-  dk pipeline create my-pipeline
+  # Show full dependency graph
+  dk pipeline show
 
-  # Create with a specific template
-  dk pipeline create my-pipeline --template sync-only
+  # Show graph leading to a specific asset
+  dk pipeline show --destination event-summary
 
-  # List available templates
-  dk pipeline create --list-templates
-
-  # Overwrite existing pipeline.yaml
-  dk pipeline create my-pipeline --template custom --force`,
+  # Render as Mermaid diagram
+  dk pipeline show --output mermaid`,
 }
 
 func init() {

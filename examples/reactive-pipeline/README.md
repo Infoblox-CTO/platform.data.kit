@@ -23,24 +23,24 @@ transforms/
 
 ```bash
 # Text tree
-dk pipeline show --all --scan-dir ./examples/reactive-pipeline
+dk pipeline show --scan-dir ./examples/reactive-pipeline
 
 # Mermaid diagram
-dk pipeline show --all --scan-dir ./examples/reactive-pipeline --output mermaid
+dk pipeline show --scan-dir ./examples/reactive-pipeline --output mermaid
 
 # Filter to a specific destination
 dk pipeline show --destination event-summary --scan-dir ./examples/reactive-pipeline
 
 # JSON format
-dk pipeline show --all --scan-dir ./examples/reactive-pipeline --output json
+dk pipeline show --scan-dir ./examples/reactive-pipeline --output json
 
 # Graphviz DOT
-dk pipeline show --all --scan-dir ./examples/reactive-pipeline --output dot
+dk pipeline show --scan-dir ./examples/reactive-pipeline --output dot
 ```
 
 ## Key Concepts
 
-1. **No central pipeline.yaml** — each transform declares its own inputs,
+1. **No central pipeline manifest** — each transform declares its own inputs,
    outputs, and trigger policy.
 2. **Reactive triggers** — `ingest` and `enrich` run when their inputs change;
    `aggregate` runs on a 6-hour schedule.

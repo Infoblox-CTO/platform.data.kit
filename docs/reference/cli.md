@@ -44,10 +44,7 @@ These flags apply to all commands:
 | [`dk asset validate`](#dk-asset-validate)       | Validate asset configuration               |
 | [`dk asset list`](#dk-asset-list)               | List all assets in the project             |
 | [`dk asset show`](#dk-asset-show)               | Show details of an asset                   |
-| [`dk pipeline create`](#dk-pipeline-create)     | Create a pipeline workflow from a template |
-| [`dk pipeline run`](#dk-pipeline-run)           | Execute the pipeline workflow              |
-| [`dk pipeline backfill`](#dk-pipeline-backfill) | Re-execute sync steps for a date range     |
-| [`dk pipeline show`](#dk-pipeline-show)         | Display pipeline definition and schedule   |
+| [`dk pipeline show`](#dk-pipeline-show)         | Display pipeline dependency graph          |
 
 ---
 
@@ -1321,259 +1318,69 @@ dk asset show aws-security --output json
 
 ---
 
-## dk pipeline create
-
-Create a pipeline workflow from a template.
-
-```bash
-dk pipeline create <name> [flags]
-```
-
-### Flags
-
-| Flag                 | Short  | Description                       | Default             |
-| -------------------- | ------ | --------------------------------- | ------------------- |
-| `--template`       | `-t` | Template to use                   | sync-transform-test |
-| `--force`          |        | Overwrite existing pipeline.yaml  | false               |
-| `--list-templates` |        | List available templates and exit | false               |
-
-### Available Templates
-
-| Template                | Description                                    |
-| ----------------------- | ---------------------------------------------- |
-| `sync-transform-test` | Sync → Transform → Test → Publish (default) |
-| `sync-only`           | Single sync step                               |
-| `custom`              | Single custom step with arbitrary image        |
-
-### Examples
-
-```bash
-# Create with default template
-dk pipeline create my-pipeline
-```
-
-```bash
-# Use a specific template
-dk pipeline create my-pipeline --template sync-only
-```
-
-```bash
-# Overwrite existing pipeline.yaml
-dk pipeline create my-pipeline --force
-```
-
-```bash
-# List available templates
-dk pipeline create --list-templates
-```
-
-### Output
-
-Creates `pipeline.yaml` in the current directory with the selected template.
-
----
-
-## dk pipeline run
-
-Execute the pipeline workflow defined in `pipeline.yaml`.
-
-```bash
-dk pipeline run [dir] [flags]
-```
-
-### Flags
-
-| Flag       | Short  | Description                                   | Default |
-| ---------- | ------ | --------------------------------------------- | ------- |
-| `--env`  | `-e` | Environment variables (KEY=VALUE, repeatable) | -       |
-| `--step` |        | Run a single step by name                     | -       |
-
-### Examples
-
-```bash
-# Run all steps in the current directory
-dk pipeline run
-```
-
-```bash
-# Run all steps in a specific directory
-dk pipeline run ./my-pipeline
-```
-
-```bash
-# Run a single step
-dk pipeline run --step sync-data
-```
-
-```bash
-# Pass environment variables
-dk pipeline run --env DEBUG=true --env LOG_LEVEL=info
-```
-
-### Output
-
-Displays step-by-step execution with status icons:
-
-```
-Pipeline: my-pipeline
-Steps: 3
-──────────────────
-[sync-data]      output from step...
-[transform-data] output from step...
-[run-tests]      output from step...
-──────────────────
-Results:
-  ✓ sync-data       [2.3s]
-  ✓ transform-data  [1.1s]
-  ✓ run-tests       [0.5s]
-```
-
----
-
-## dk pipeline backfill
-
-Re-execute sync steps for a historical date range. Only sync-type steps are executed; transform, test, publish, and custom steps are skipped.
-
-```bash
-dk pipeline backfill [dir] [flags]
-```
-
-### Flags
-
-| Flag       | Short  | Description                                  | Default |
-| ---------- | ------ | -------------------------------------------- | ------- |
-| `--from` |        | Start date (YYYY-MM-DD, required)            | -       |
-| `--to`   |        | End date (YYYY-MM-DD, required)              | -       |
-| `--env`  | `-e` | Additional environment variables (KEY=VALUE) | -       |
-
-### Examples
-
-```bash
-# Backfill January 2026
-dk pipeline backfill --from 2026-01-01 --to 2026-01-31
-```
-
-```bash
-# Backfill with extra env vars
-dk pipeline backfill --from 2026-01-01 --to 2026-01-31 --env BATCH_SIZE=1000
-```
-
-### Environment Variables Injected
-
-| Variable             | Description                     |
-| -------------------- | ------------------------------- |
-| `DK_BACKFILL_FROM` | Start date in YYYY-MM-DD format |
-| `DK_BACKFILL_TO`   | End date in YYYY-MM-DD format   |
-
----
-
 ## dk pipeline show
 
-Display the pipeline definition, steps, and schedule — or visualize the
-reactive dependency graph of transforms and assets.
+Display the reactive dependency graph derived from Transform and Asset
+manifests (`dk.yaml` files).
 
 ```bash
 dk pipeline show [dir] [flags]
 ```
 
-### Modes
-
-The command operates in two modes:
-
-- **Graph mode**: activated with `--all` or `--destination`. Scans directories for
-  `dk.yaml` files (Transform and Asset manifests) and renders the dependency graph.
-- **Legacy mode**: activated when neither `--all` nor `--destination` is given. Reads
-  a `pipeline.yaml` workflow definition from the current directory.
-
 ### Flags
 
-| Flag              | Short  | Description                                              | Default |
-| ----------------- | ------ | -------------------------------------------------------- | ------- |
-| `--output`      | `-o` | Output format (see below)                                | auto    |
-| `--all`         |        | Show full dependency graph (graph mode)                  | false   |
-| `--destination` |        | Show dependency chain leading to this asset (graph mode) |         |
-| `--scan-dir`    |        | Directories to scan for dk.yaml files (repeatable)       | `.`   |
-
-**Graph mode output formats:** `text` (default), `mermaid`, `json`, `dot`
-
-**Legacy mode output formats:** `table` (default), `json`, `yaml`
+| Flag              | Short  | Description                                        | Default |
+| ----------------- | ------ | -------------------------------------------------- | ------- |
+| `--output`      | `-o` | Output format (text, mermaid, json, dot)           | text    |
+| `--destination` |        | Show dependency chain leading to this asset         |         |
+| `--scan-dir`    |        | Directories to scan for dk.yaml files (repeatable) | `.`   |
 
 ### Examples
 
 ```bash
-# Show full reactive dependency graph (text tree)
-dk pipeline show --all
+# Show full dependency graph (text tree)
+dk pipeline show
 
 # Show graph leading to a specific destination asset
 dk pipeline show --destination event-summary
 
-# Render the graph as a Mermaid diagram
-dk pipeline show --all --output mermaid
+# Render as Mermaid diagram
+dk pipeline show --output mermaid
 
 # Render as Graphviz DOT
-dk pipeline show --all --output dot
+dk pipeline show --output dot
 
 # JSON adjacency list
-dk pipeline show --all --output json
-
-# Scan specific directories
-dk pipeline show --all --scan-dir ./transforms --scan-dir ./assets
-
-# Legacy: table view (default)
-dk pipeline show
-
-# Legacy: JSON output
 dk pipeline show --output json
 
-# Legacy: YAML output
-dk pipeline show --output yaml
+# Scan specific directories
+dk pipeline show --scan-dir ./transforms --scan-dir ./assets
 ```
 
-### Output Example (Graph — Text)
+### Output Example (Text)
 
 ```
 Pipeline Dependency Graph
 =========================
 
-Assets:
-  ▪ raw-events            (kafka-topic)
-  ▪ raw-events-parquet    (s3-parquet)
-  ▪ enriched-events       (s3-parquet)
-  ▪ event-summary         (warehouse-table)
-
-Transforms:
-  ⚙ ingest      cloudquery   trigger: on-change
-  ⚙ enrich      generic-python trigger: on-change
-  ⚙ aggregate   dbt          trigger: schedule (0 */6 * * *)
-
-Dependencies:
-  raw-events ──▶ ingest ──▶ raw-events-parquet
-  raw-events-parquet ──▶ enrich ──▶ enriched-events
-  enriched-events ──▶ aggregate ──▶ event-summary
+  raw-events
+    [ingest] runtime=cq trigger=on-change
+      raw-events-parquet
+        [enrich] runtime=python trigger=on-change
+          enriched-events
+            [aggregate] runtime=dbt trigger=schedule (0 */6 * * *)
+              event-summary
 ```
 
-### Output Example (Graph — Mermaid)
+### Output Example (Mermaid)
 
 ```mermaid
-graph LR
-  raw-events["raw-events (asset)"]
-  ingest["ingest (cloudquery)\ntrigger: on-change"]
-  raw-events-parquet["raw-events-parquet (asset)"]
-  raw-events --> ingest --> raw-events-parquet
-```
-
-### Output Example (Legacy — Table)
-
-```
-Pipeline: my-pipeline
-Description: Ingest and transform security data
-
-STEP             TYPE        DETAILS
-sync-data        sync        source=aws-security sink=postgres-warehouse
-transform-data   transform   asset=dbt-security-model
-run-tests        test        asset=dbt-security-model cmd=dbt test
-
-Schedule: 0 6 * * * (America/New_York)
+graph TD
+  raw_events[raw-events]
+  ingest[ingest<br/>cq / on-change]
+  raw_events_parquet[raw-events-parquet]
+  raw_events --> ingest
+  ingest --> raw_events_parquet
 ```
 
 ---
