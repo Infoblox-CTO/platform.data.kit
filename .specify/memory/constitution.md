@@ -80,14 +80,14 @@ Once released, artifacts cannot be silently modified.
 
 ### Article IV — Separation of Concerns (Platform vs Domain)
 
-The platform has four distinct layers — extension definitions, asset instances, pipelines, and infrastructure bindings — each with clear ownership boundaries.
+The platform has four distinct layers — connectors/stores, DataSet data contracts, pipelines, and infrastructure bindings — each with clear ownership boundaries.
 
-- Extension *definitions* (schemas, templates, version policy) MUST be independent of any specific domain's configuration.
-- Asset *instances* MUST reference extensions by fully-qualified name and version, never by embedding extension internals.
-- Pipelines MUST reference assets by name, not by embedding asset configuration inline.
+- Connector definitions (technology types) MUST be independent of any specific domain's configuration.
+- DataSets MUST reference Stores by name, never by embedding Store internals.
+- Pipelines MUST reference DataSets by name, not by embedding DataSet configuration inline.
 - Pipelines MUST reference infrastructure through bindings/contracts, not hardcoded identifiers.
 - Multiple infrastructure "flavors" may exist as long as contracts remain satisfied.
-- Environment-specific configuration (bindings, secrets, quotas) MUST NOT leak into extension, asset, or pipeline definitions.
+- Environment-specific configuration (bindings, secrets, quotas) MUST NOT leak into connector, DataSet, or pipeline definitions.
 
 **Rationale**: Tight coupling prevents portability and makes testing across environments impossible. Clean layer boundaries enable platform and domain teams to evolve independently.
 

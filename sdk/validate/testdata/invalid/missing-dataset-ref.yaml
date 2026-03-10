@@ -1,0 +1,12 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: transform-missing-dataset
+spec:
+  runtime: generic-go
+  image: myimage:v1
+  mode: batch
+  inputs:
+    - dataset: source-data
+  outputs:
+    - dataset: missing-dataset-ref

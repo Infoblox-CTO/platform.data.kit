@@ -74,9 +74,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: my-source-source-table
+    - dataset: my-source-source-table
   outputs:
-    - asset: my-source-dest-table
+    - dataset: my-source-dest-table
   timeout: 30m
 ```
 

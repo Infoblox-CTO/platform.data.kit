@@ -1,6 +1,6 @@
 ---
 title: Manifest Schema
-description: Complete reference for all manifest schemas (Transform, Asset, AssetGroup, Connector, Store)
+description: Complete reference for all manifest schemas (Transform, DataSet, DataSetGroup, Connector, Store)
 ---
 
 # Manifest Schema Reference
@@ -13,16 +13,16 @@ The platform uses five manifest kinds, each with a clear ownership boundary:
 |------|-------|---------|
 | **Connector** | Platform team | Technology type catalog (postgres, s3, kafka) |
 | **Store** | Infra / SRE | Named instance of a Connector with connection details |
-| **Asset** | Data engineer | Data contract — table, prefix, or topic in a Store |
-| **AssetGroup** | Data engineer | Bundle of Assets produced by a single materialisation |
-| **Transform** | Data engineer | Unit of computation reading input Assets, producing output Assets |
+| **DataSet** | Data engineer | Data contract — table, prefix, or topic in a Store |
+| **DataSetGroup** | Data engineer | Bundle of DataSets produced by a single materialisation |
+| **Transform** | Data engineer | Unit of computation reading input DataSets, producing output DataSets |
 
 ---
 
 ## Transform Schema
 
 The Transform manifest (`dk.yaml`) defines a unit of computation.
-It is the **only manifest kind that runs** — Connectors, Stores, and Assets are declarative metadata.
+It is the **only manifest kind that runs** — Connectors, Stores, and DataSets are declarative metadata.
 
 ### Full Schema
 
@@ -44,16 +44,16 @@ spec:                               # Required: Transform specification
   runtime: string                   # Required: cloudquery | generic-go | generic-python | dbt
   mode: string                      # Optional: batch | streaming (default: batch)
 
-  inputs:                           # Required: Input Asset references
-    - asset: string                 # Asset name (local or OCI ref)
-      tags:                         # OR match assets by labels
+  inputs:                           # Required: Input DataSet references
+    - dataset: string               # DataSet name (local or OCI ref)
+      tags:                         # OR match DataSets by labels
         key: value
       version: string               # Optional: Semver range constraint
       cell: string                  # Optional: Cell/region constraint
 
-  outputs:                          # Required: Output Asset references
-    - asset: string                 # Asset name (local or OCI ref)
-      tags:                         # OR match assets by labels
+  outputs:                          # Required: Output DataSet references
+    - dataset: string               # DataSet name (local or OCI ref)
+      tags:                         # OR match DataSets by labels
         key: value
       version: string               # Optional: Semver range constraint
       cell: string                  # Optional: Cell/region constraint
@@ -143,20 +143,20 @@ spec:                               # Required: Transform specification
 
 | Property | Value |
 |----------|-------|
-| Type | array of AssetRef objects |
+| Type | array of DataSetRef objects |
 | Required | Yes |
-| Description | Input/output Asset references. Each entry uses either `asset` (named reference) or `tags` (label matching) — not both. |
+| Description | Input/output DataSet references. Each entry uses either `dataset` (named reference) or `tags` (label matching) — not both. |
 
-**AssetRef fields:**
+**DataSetRef fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `asset` | string | Named Asset reference (local name or OCI ref) |
-| `tags` | map(string→string) | Match Assets by labels (alternative to `asset`) |
+| `dataset` | string | Named DataSet reference (local name or OCI ref) |
+| `tags` | map(string→string) | Match DataSets by labels (alternative to `dataset`) |
 | `version` | string | Semver range constraint (e.g., `>=1.0.0`) |
 | `cell` | string | Cell/region constraint |
 
-At runtime, the runner resolves the chain: **Transform → Asset → Store → Connector** to obtain connection details and plugin images.
+At runtime, the runner resolves the chain: **Transform → DataSet → Store → Connector** to obtain connection details and plugin images.
 
 #### spec.trigger
 
@@ -247,9 +247,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: users
+    - dataset: users
   outputs:
-    - asset: users-parquet
+    - dataset: users-parquet
   trigger:
     policy: schedule
     schedule:
@@ -270,9 +270,9 @@ spec:
   runtime: generic-python
   mode: batch
   inputs:
-    - asset: users-parquet
+    - dataset: users-parquet
   outputs:
-    - asset: users-enriched
+    - dataset: users-enriched
   image: my-team/enrich-users:latest
   timeout: 15m
 ```
@@ -290,9 +290,9 @@ spec:
   runtime: generic-go
   mode: streaming
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: processed-events
+    - dataset: processed-events
   image: my-team/event-processor:v1.0.0
   replicas: 3
   resources:
@@ -314,9 +314,9 @@ metadata:
 spec:
   runtime: generic-python
   inputs:
-    - asset: raw-events-parquet
+    - dataset: raw-events-parquet
   outputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   image: my-team/enrich:latest
   trigger:
     policy: on-change
@@ -338,7 +338,7 @@ spec:
         tier: curated
       version: ">=1.0.0"
   outputs:
-    - asset: analytics-summary
+    - dataset: analytics-summary
   image: my-team/dbt-runner:latest
   trigger:
     policy: schedule
@@ -348,9 +348,9 @@ spec:
 
 ---
 
-## Asset Schema
+## DataSet Schema
 
-An Asset is a **named data contract**: a table, S3 prefix, or Kafka topic that lives in a Store.
+A DataSet is a **named data contract**: a table, S3 prefix, or Kafka topic that lives in a Store.
 It declares the schema (with optional column-level lineage via `from`) and data classification.
 
 ### Full Schema
@@ -358,16 +358,16 @@ It declares the schema (with optional column-level lineage via `from`) and data 
 ```yaml
 # asset/<name>.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
-kind: Asset                                     # Required: Resource type
+kind: DataSet                                   # Required: Resource type
 
-metadata:                           # Required: Asset metadata
-  name: string                      # Required: Asset name (1-63 chars, lowercase, hyphenated)
+metadata:                           # Required: DataSet metadata
+  name: string                      # Required: DataSet name (1-63 chars, lowercase, hyphenated)
   namespace: string                 # Optional: Team namespace
   version: string                   # Optional: Semantic version (e.g., "1.0.0")
   labels:                           # Optional: Key-value labels
     key: value
 
-spec:                               # Required: Asset specification
+spec:                               # Required: DataSet specification
   store: string                     # Required: Name of the Store where this data lives
   table: string                     # Optional: Fully-qualified table name (relational stores)
   prefix: string                    # Optional: Object prefix (object stores like S3)
@@ -379,7 +379,7 @@ spec:                               # Required: Asset specification
     - name: string                  # Required: Field name
       type: string                  # Required: Data type (integer, string, timestamp, boolean, float)
       pii: boolean                  # Optional: Contains PII? (default: false)
-      from: string                  # Optional: Lineage source (e.g., "users.id")
+      from: string                  # Optional: Lineage source (e.g., "users.id") — links to another DataSet
 
   dev:                              # Optional: Development-only configuration
     seed:                           # Optional: Sample data for local development
@@ -407,7 +407,7 @@ spec:                               # Required: Asset specification
 | Type | string |
 | Required | Yes |
 | Pattern | `^[a-z][a-z0-9-]{0,62}$` |
-| Description | DNS-safe asset identifier. |
+| Description | DNS-safe DataSet identifier. |
 
 #### spec.store
 
@@ -415,7 +415,7 @@ spec:                               # Required: Asset specification
 |----------|-------|
 | Type | string |
 | Required | Yes |
-| Description | Name of the Store manifest this asset lives in. |
+| Description | Name of the Store manifest this DataSet lives in. |
 
 #### spec.table / spec.prefix / spec.topic
 
@@ -440,10 +440,10 @@ spec:                               # Required: Asset specification
 |----------|-------|
 | Type | string |
 | Required | No |
-| Format | `<asset-name>.<field-name>` |
-| Description | Declares column-level lineage. Links this field to its source in another Asset. |
+| Format | `<dataset-name>.<field-name>` |
+| Description | Declares column-level lineage. Links this field to its source in another DataSet. |
 
-### Asset Validation Errors
+### DataSet Validation Errors
 
 | Code | Message | Resolution |
 |------|---------|------------|
@@ -452,11 +452,11 @@ spec:                               # Required: Asset specification
 
 ### Examples
 
-#### Input Asset (database table)
+#### Input DataSet (database table)
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
   namespace: default
@@ -474,11 +474,11 @@ spec:
       type: timestamp
 ```
 
-#### Output Asset with column-level lineage
+#### Output DataSet with column-level lineage
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users-parquet
   namespace: default
@@ -500,11 +500,11 @@ spec:
       from: users.created_at
 ```
 
-#### Input Asset with seed data and profiles
+#### Input DataSet with seed data and profiles
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
   namespace: default
@@ -555,9 +555,9 @@ on subsequent runs.
 
 ---
 
-## AssetGroup Schema
+## DataSetGroup Schema
 
-An AssetGroup bundles multiple Assets produced by a single materialisation
+A DataSetGroup bundles multiple DataSets produced by a single materialisation
 (e.g., a CloudQuery sync that snapshots several tables at once).
 
 ### Full Schema
@@ -565,17 +565,17 @@ An AssetGroup bundles multiple Assets produced by a single materialisation
 ```yaml
 # asset-group/<name>.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
-kind: AssetGroup                                # Required: Resource type
+kind: DataSetGroup                              # Required: Resource type
 
-metadata:                           # Required: AssetGroup metadata
+metadata:                           # Required: DataSetGroup metadata
   name: string                      # Required: Group name (1-63 chars, lowercase, hyphenated)
   namespace: string                 # Optional: Team namespace
   labels:                           # Optional: Key-value labels
     key: value
 
-spec:                               # Required: AssetGroup specification
-  store: string                     # Required: Common Store for all assets in the group
-  assets:                           # Required: List of Asset names
+spec:                               # Required: DataSetGroup specification
+  store: string                     # Required: Common Store for all DataSets in the group
+  datasets:                         # Required: List of DataSet names
     - string
 ```
 
@@ -583,13 +583,13 @@ spec:                               # Required: AssetGroup specification
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: AssetGroup
+kind: DataSetGroup
 metadata:
   name: pg-snapshot
   namespace: default
 spec:
   store: lake-raw
-  assets:
+  datasets:
     - users-parquet
     - orders-parquet
     - products-parquet
@@ -799,7 +799,7 @@ spec:
 
 | Code | Message | Resolution |
 |------|---------|------------|
-| E025 | `pii=true requires classification` | Add classification level on Asset |
+| E025 | `pii=true requires classification` | Add classification level on DataSet |
 | E026 | `confidential requires retention` | Add retention policy |
 
 ### CloudQuery Errors
@@ -852,11 +852,11 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: users
-    - asset: orders
+    - dataset: users
+    - dataset: orders
   outputs:
-    - asset: users-parquet
-    - asset: orders-parquet
+    - dataset: users-parquet
+    - dataset: orders-parquet
   trigger:
     policy: schedule
     schedule:
@@ -902,7 +902,7 @@ spec:
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
   namespace: analytics
@@ -922,7 +922,7 @@ spec:
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users-parquet
   namespace: analytics
@@ -947,4 +947,5 @@ spec:
 
 - [CLI Reference](cli.md) — `dk lint` and `dk init` commands
 - [Concepts: Manifests](../concepts/manifests.md) — Conceptual overview of all manifest kinds
+- [Concepts: DataSets](../concepts/datasets.md) — DataSet data contracts
 - [Concepts: Data Packages](../concepts/data-packages.md) — Package structure and runtimes

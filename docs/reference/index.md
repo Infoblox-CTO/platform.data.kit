@@ -20,7 +20,7 @@ Complete reference for all `dk` commands with examples.
 
 <div class="card" markdown>
 ### :page_facing_up: Manifest Schema
-Full schema reference for dk.yaml and the manifest kinds (Transform, Asset, Connector, Store).
+Full schema reference for dk.yaml and the manifest kinds (Transform, DataSet, Connector, Store).
 
 [Manifest Schema →](manifest-schema.md)
 </div>

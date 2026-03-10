@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/dataset"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -136,8 +136,8 @@ func showManifest(packageDir string, w io.Writer) (string, error) {
 		}
 	}
 
-	// Resolve asset details if assets are referenced
-	resolveAssetDetails(base, packageDir)
+	// Resolve dataset details if datasets are referenced
+	resolveDataSetDetails(base, packageDir)
 
 	// Format output
 	var output []byte
@@ -160,20 +160,20 @@ func showManifest(packageDir string, w io.Writer) (string, error) {
 	return string(output), nil
 }
 
-// resolveAssetDetails enriches the assets section with resolved info from asset.yaml files.
-func resolveAssetDetails(base map[string]any, packageDir string) {
+// resolveDataSetDetails enriches the datasets section with resolved info from dataset.yaml files.
+func resolveDataSetDetails(base map[string]any, packageDir string) {
 	spec, ok := base["spec"].(map[string]any)
 	if !ok {
 		return
 	}
 
-	assetNames, ok := spec["assets"].([]any)
-	if !ok || len(assetNames) == 0 {
+	datasetNames, ok := spec["datasets"].([]any)
+	if !ok || len(datasetNames) == 0 {
 		return
 	}
 
 	var resolved []map[string]any
-	for _, nameAny := range assetNames {
+	for _, nameAny := range datasetNames {
 		name, ok := nameAny.(string)
 		if !ok {
 			continue
@@ -181,7 +181,7 @@ func resolveAssetDetails(base map[string]any, packageDir string) {
 
 		entry := map[string]any{"name": name}
 
-		a, err := asset.FindAssetByName(packageDir, name)
+		a, err := dataset.FindDataSetByName(packageDir, name)
 		if err == nil && a != nil {
 			entry["store"] = a.Spec.Store
 			if a.Spec.Classification != "" {
@@ -194,5 +194,5 @@ func resolveAssetDetails(base map[string]any, packageDir string) {
 		resolved = append(resolved, entry)
 	}
 
-	spec["assets"] = resolved
+	spec["datasets"] = resolved
 }

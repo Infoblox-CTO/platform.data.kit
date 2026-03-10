@@ -90,7 +90,7 @@ type Layer struct {
 
 // ArtifactConfig contains metadata about the artifact.
 type ArtifactConfig struct {
-	// Manifest is the parsed manifest (Connector, Store, Asset, AssetGroup, or Transform).
+	// Manifest is the parsed manifest (Connector, Store, DataSet, DataSetGroup, or Transform).
 	Manifest interface{} `json:"manifest"`
 
 	// Kind is the manifest kind.

@@ -2,7 +2,7 @@ package contracts
 
 // Store is a named instance of a Connector — a specific database, bucket, or cluster
 // with its connection details and credentials.
-// Secrets live ONLY on the Store — never on Assets or Transforms.
+// Secrets live ONLY on the Store — never on DataSets or Transforms.
 // Created by the team that owns the infrastructure.
 type Store struct {
 	// APIVersion is the schema version (e.g., "datakit.infoblox.dev/v1alpha1").

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/asset"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/dataset"
 )
 
 // AggregateValidator validates all manifests in a package directory.
@@ -56,9 +56,9 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 		result.Merge(schemasResult)
 	}
 
-	// Validate assets if assets/ directory exists
-	assetsResult := v.validateAssets(ctx)
-	result.Merge(assetsResult)
+	// Validate datasets if datasets/ directory exists
+	datasetsResult := v.validateDataSets(ctx)
+	result.Merge(datasetsResult)
 
 	return result
 }
@@ -171,23 +171,23 @@ func bytesContain(data, pattern []byte) bool {
 	return false
 }
 
-// validateAssets validates all asset.yaml files in the assets/ directory.
-func (v *AggregateValidator) validateAssets(ctx context.Context) *ValidationResult {
+// validateDataSets validates all dataset.yaml files in the datasets/ directory.
+func (v *AggregateValidator) validateDataSets(ctx context.Context) *ValidationResult {
 	result := NewValidationResult()
 
-	assets, err := asset.LoadAllAssets(v.packageDir)
+	datasets, err := dataset.LoadAllDataSets(v.packageDir)
 	if err != nil {
-		result.AddWarning("failed to load assets: " + err.Error())
+		result.AddWarning("failed to load datasets: " + err.Error())
 		return result
 	}
 
-	if len(assets) == 0 {
+	if len(datasets) == 0 {
 		return result
 	}
 
-	validator := NewAssetValidator(asset.DefaultResolver())
-	for _, a := range assets {
-		errs := validator.ValidateAsset(ctx, a)
+	validator := NewDataSetValidator()
+	for _, ds := range datasets {
+		errs := validator.ValidateDataSet(ctx, ds)
 		if errs.HasErrors() {
 			result.Valid = false
 		}

@@ -50,10 +50,10 @@ spec:
   timeout: 1h
 
   inputs:
-    - asset: user-events
+    - dataset: user-events
 
   outputs:
-    - asset: processed-events
+    - dataset: processed-events
 
   env:
     - name: LOG_LEVEL
@@ -63,13 +63,13 @@ spec:
     memory: "2Gi"
 ```
 
-## Step 3: Define Assets and Stores
+## Step 3: Define DataSets and Stores
 
-Create the input Asset referencing a Kafka Store:
+Create the input DataSet referencing a Kafka Store:
 
 ```yaml title="asset/user-events.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: user-events
   namespace: tutorials
@@ -79,11 +79,11 @@ spec:
   format: json
 ```
 
-Create the output Asset referencing an S3 Store:
+Create the output DataSet referencing an S3 Store:
 
 ```yaml title="asset/processed-events.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: processed-events
   namespace: tutorials

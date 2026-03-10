@@ -15,23 +15,23 @@ import (
 
 // ---------------------------------------------------------------------------
 // CloudQuery config auto-generation from the manifest graph:
-//   Transform → Asset → Store → Connector
+//   Transform → DataSet → Store → Connector
 // ---------------------------------------------------------------------------
 
 // packageManifests holds all manifests resolved from a package directory.
 type packageManifests struct {
 	Connectors map[string]*contracts.Connector     // keyed by metadata.name
 	Stores     map[string]*contracts.Store         // keyed by metadata.name
-	Assets     map[string]*contracts.AssetManifest // keyed by metadata.name
+	DataSets   map[string]*contracts.DataSetManifest // keyed by metadata.name
 }
 
 // loadPackageManifests scans the standard subdirectories (connector/, store/,
-// asset/) under packageDir and parses every *.yaml / *.yml file found.
+// dataset/) under packageDir and parses every *.yaml / *.yml file found.
 func loadPackageManifests(packageDir string) (*packageManifests, error) {
 	pm := &packageManifests{
 		Connectors: make(map[string]*contracts.Connector),
 		Stores:     make(map[string]*contracts.Store),
-		Assets:     make(map[string]*contracts.AssetManifest),
+		DataSets:   make(map[string]*contracts.DataSetManifest),
 	}
 
 	subdirs := map[string]func([]byte) error{
@@ -51,12 +51,12 @@ func loadPackageManifests(packageDir string) (*packageManifests, error) {
 			pm.Stores[s.Metadata.Name] = s
 			return nil
 		},
-		"asset": func(data []byte) error {
-			a, err := manifest.NewParser().ParseAsset(data)
+		"dataset": func(data []byte) error {
+			a, err := manifest.NewParser().ParseDataSet(data)
 			if err != nil {
 				return err
 			}
-			pm.Assets[a.Metadata.Name] = a
+			pm.DataSets[a.Metadata.Name] = a
 			return nil
 		},
 	}
@@ -107,13 +107,13 @@ type cqConfigSpec struct {
 	Spec         map[string]any `yaml:"spec,omitempty"`
 }
 
-// generateCQConfig resolves the Transform → Asset → Store → Connector graph
+// generateCQConfig resolves the Transform → DataSet → Store → Connector graph
 // and produces CloudQuery config.yaml bytes plus the list of plugins that
 // need to run as sidecar containers.
 //
 // When cellResolver is non-nil, Stores are resolved from the cell's k8s
 // namespace instead of the package's local store/ directory. Connectors and
-// Assets always come from the package.
+// DataSets always come from the package.
 //
 // The generated config uses `registry: docker` with OCI image paths from
 // the Connector's Plugin field. The caller (runCloudQuery) rewrites these
@@ -132,16 +132,16 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 	// resolveStore looks up a Store by name.
 	// When cellResolver is set, fetch from the cell's k8s namespace.
 	// Otherwise use the package-local store/ directory.
-	resolveStore := func(storeName string, assetRef contracts.AssetRef) (*contracts.Store, error) {
-		// If the asset ref has a cell override, resolve from that cell.
-		if assetRef.Cell != "" {
-			cr := NewCellResolver(assetRef.Cell, "", nil)
+	resolveStore := func(storeName string, datasetRef contracts.DataSetRef) (*contracts.Store, error) {
+		// If the dataset ref has a cell override, resolve from that cell.
+		if datasetRef.Cell != "" {
+			cr := NewCellResolver(datasetRef.Cell, "", nil)
 			if cellResolver != nil && cellResolver.KubeContext != "" {
 				cr.KubeContext = cellResolver.KubeContext
 			}
 			s, err := cr.ResolveStore(context.Background(), storeName)
 			if err != nil {
-				return nil, fmt.Errorf("resolving store %q from cell %q: %w", storeName, assetRef.Cell, err)
+				return nil, fmt.Errorf("resolving store %q from cell %q: %w", storeName, datasetRef.Cell, err)
 			}
 			return s, nil
 		}
@@ -161,7 +161,7 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 		return s, nil
 	}
 
-	// Resolve input chain: Asset → Store → Connector.
+	// Resolve input chain: DataSet → Store → Connector.
 	// Group inputs by (Connector, Store) pair → one CQ source doc each.
 	type sourceKey struct {
 		connectorName string
@@ -170,23 +170,23 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 	type sourceInfo struct {
 		connector *contracts.Connector
 		store     *contracts.Store
-		tables    []string // from Asset.Table / Asset.Topic
+		tables    []string // from DataSet.Table / DataSet.Topic
 	}
 	sources := make(map[sourceKey]*sourceInfo)
 	var sourceOrder []sourceKey // preserve deterministic order
 
 	for _, ref := range t.Spec.Inputs {
-		asset, ok := pm.Assets[ref.Asset]
+		dataset, ok := pm.DataSets[ref.DataSet]
 		if !ok {
-			return nil, nil, fmt.Errorf("input asset %q not found in asset/ directory", ref.Asset)
+			return nil, nil, fmt.Errorf("input dataset %q not found in dataset/ directory", ref.DataSet)
 		}
-		store, err := resolveStore(asset.Spec.Store, ref)
+		store, err := resolveStore(dataset.Spec.Store, ref)
 		if err != nil {
-			return nil, nil, fmt.Errorf("input asset %q: %w", ref.Asset, err)
+			return nil, nil, fmt.Errorf("input dataset %q: %w", ref.DataSet, err)
 		}
 		conn, ok := pm.Connectors[store.Spec.Connector]
 		if !ok {
-			return nil, nil, fmt.Errorf("connector %q (referenced by store %q) not found in connector/ directory", store.Spec.Connector, asset.Spec.Store)
+			return nil, nil, fmt.Errorf("connector %q (referenced by store %q) not found in connector/ directory", store.Spec.Connector, dataset.Spec.Store)
 		}
 		if conn.Spec.Plugin == nil || conn.Spec.Plugin.Source == "" {
 			return nil, nil, fmt.Errorf("connector %q has no source plugin image", conn.Metadata.Name)
@@ -200,21 +200,21 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 			sourceOrder = append(sourceOrder, key)
 		}
 
-		// Determine the "table" identifier from the Asset.
-		table := asset.Spec.Table
+		// Determine the "table" identifier from the DataSet.
+		table := dataset.Spec.Table
 		if table == "" {
-			table = asset.Spec.Topic
+			table = dataset.Spec.Topic
 		}
 		if table == "" {
-			table = asset.Spec.Prefix
+			table = dataset.Spec.Prefix
 		}
 		if table == "" {
-			table = asset.Metadata.Name
+			table = dataset.Metadata.Name
 		}
 		si.tables = append(si.tables, table)
 	}
 
-	// Resolve output chain: Asset → Store → Connector.
+	// Resolve output chain: DataSet → Store → Connector.
 	// Group outputs by (Connector, Store) pair → one CQ destination doc each.
 	type destKey struct {
 		connectorName string
@@ -223,23 +223,23 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 	type destInfo struct {
 		connector *contracts.Connector
 		store     *contracts.Store
-		assets    []*contracts.AssetManifest
+		datasets  []*contracts.DataSetManifest
 	}
 	destinations := make(map[destKey]*destInfo)
 	var destOrder []destKey
 
 	for _, ref := range t.Spec.Outputs {
-		asset, ok := pm.Assets[ref.Asset]
+		dataset, ok := pm.DataSets[ref.DataSet]
 		if !ok {
-			return nil, nil, fmt.Errorf("output asset %q not found in asset/ directory", ref.Asset)
+			return nil, nil, fmt.Errorf("output dataset %q not found in dataset/ directory", ref.DataSet)
 		}
-		store, err := resolveStore(asset.Spec.Store, ref)
+		store, err := resolveStore(dataset.Spec.Store, ref)
 		if err != nil {
-			return nil, nil, fmt.Errorf("output asset %q: %w", ref.Asset, err)
+			return nil, nil, fmt.Errorf("output dataset %q: %w", ref.DataSet, err)
 		}
 		conn, ok := pm.Connectors[store.Spec.Connector]
 		if !ok {
-			return nil, nil, fmt.Errorf("connector %q (referenced by store %q) not found in connector/ directory", store.Spec.Connector, asset.Spec.Store)
+			return nil, nil, fmt.Errorf("connector %q (referenced by store %q) not found in connector/ directory", store.Spec.Connector, dataset.Spec.Store)
 		}
 		if conn.Spec.Plugin == nil || conn.Spec.Plugin.Destination == "" {
 			return nil, nil, fmt.Errorf("connector %q has no destination plugin image", conn.Metadata.Name)
@@ -252,7 +252,7 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 			destinations[key] = di
 			destOrder = append(destOrder, key)
 		}
-		di.assets = append(di.assets, asset)
+		di.datasets = append(di.datasets, dataset)
 	}
 
 	// Build destination names list for source docs' `destinations` field.
@@ -297,18 +297,18 @@ func generateCQConfigWithCell(t *contracts.Transform, packageDir string, cellRes
 		di := destinations[key]
 		specMap := buildPluginSpec(di.store)
 
-		// Merge asset-level overrides into the destination spec.
-		// Use the first asset's properties for path/format since CQ
+		// Merge dataset-level overrides into the destination spec.
+		// Use the first dataset's properties for path/format since CQ
 		// destination plugins apply these globally.
-		if len(di.assets) > 0 {
-			a := di.assets[0]
+		if len(di.datasets) > 0 {
+			a := di.datasets[0]
 			if a.Spec.Format != "" {
 				specMap["format"] = a.Spec.Format
 			}
 			if a.Spec.Prefix != "" {
 				// CloudQuery file-based destinations (S3, GCS, file) expect
 				// "path" to be a complete key template. Build it from the
-				// asset prefix so the output lands in the right location.
+				// dataset prefix so the output lands in the right location.
 				prefix := strings.TrimRight(a.Spec.Prefix, "/")
 				format := "{{FORMAT}}"
 				if a.Spec.Format != "" {

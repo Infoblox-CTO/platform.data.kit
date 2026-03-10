@@ -125,9 +125,9 @@ spec:
     - python
     - main.py
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -286,9 +286,9 @@ spec:
   timeout: 30m
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	dkPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
@@ -512,9 +512,9 @@ spec:
   mode: batch
   image: myimage:v1
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatal(err)
@@ -548,9 +548,9 @@ spec:
   image: "test/test-source:latest"
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: example-data
+    - dataset: example-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatal(err)

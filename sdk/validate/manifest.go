@@ -10,17 +10,16 @@ import (
 )
 
 // ManifestValidator validates dk.yaml manifests for all supported kinds
-// (Connector, Store, Asset, AssetGroup, Transform).
+// (Connector, Store, DataSet, DataSetGroup, Transform).
 type ManifestValidator struct {
-	manifest manifest.Manifest
-	kind     contracts.Kind
-	pkgPath  string
-	// raw keeps the concrete type for kind-specific checks.
-	rawConnector  *contracts.Connector
-	rawStore      *contracts.Store
-	rawAsset      *contracts.AssetManifest
-	rawAssetGroup *contracts.AssetGroupManifest
-	rawTransform  *contracts.Transform
+	manifest        manifest.Manifest
+	kind            contracts.Kind
+	pkgPath         string
+	rawConnector    *contracts.Connector
+	rawStore        *contracts.Store
+	rawDataSet      *contracts.DataSetManifest
+	rawDataSetGroup *contracts.DataSetGroupManifest
+	rawTransform    *contracts.Transform
 }
 
 // NewManifestValidatorFromFile creates a validator from a dk.yaml file.
@@ -46,10 +45,10 @@ func NewManifestValidatorFromFile(path string) (*ManifestValidator, error) {
 		v.rawConnector = m.(*contracts.Connector)
 	case contracts.KindStore:
 		v.rawStore = m.(*contracts.Store)
-	case contracts.KindAsset:
-		v.rawAsset = m.(*contracts.AssetManifest)
-	case contracts.KindAssetGroup:
-		v.rawAssetGroup = m.(*contracts.AssetGroupManifest)
+	case contracts.KindDataSet:
+		v.rawDataSet = m.(*contracts.DataSetManifest)
+	case contracts.KindDataSetGroup:
+		v.rawDataSetGroup = m.(*contracts.DataSetGroupManifest)
 	case contracts.KindTransform:
 		v.rawTransform = m.(*contracts.Transform)
 	}
@@ -72,11 +71,11 @@ func (v *ManifestValidator) Connector() *contracts.Connector { return v.rawConne
 // Store returns the parsed Store (nil if kind is not Store).
 func (v *ManifestValidator) Store() *contracts.Store { return v.rawStore }
 
-// Asset returns the parsed Asset (nil if kind is not Asset).
-func (v *ManifestValidator) Asset() *contracts.AssetManifest { return v.rawAsset }
+// DataSet returns the parsed DataSet (nil if kind is not DataSet).
+func (v *ManifestValidator) DataSet() *contracts.DataSetManifest { return v.rawDataSet }
 
-// AssetGroup returns the parsed AssetGroup (nil if kind is not AssetGroup).
-func (v *ManifestValidator) AssetGroup() *contracts.AssetGroupManifest { return v.rawAssetGroup }
+// DataSetGroup returns the parsed DataSetGroup (nil if kind is not DataSetGroup).
+func (v *ManifestValidator) DataSetGroup() *contracts.DataSetGroupManifest { return v.rawDataSetGroup }
 
 // Transform returns the parsed Transform (nil if kind is not Transform).
 func (v *ManifestValidator) Transform() *contracts.Transform { return v.rawTransform }
@@ -97,10 +96,10 @@ func (v *ManifestValidator) Validate(ctx context.Context) contracts.ValidationEr
 		v.validateConnector(&errs)
 	case contracts.KindStore:
 		v.validateStore(&errs)
-	case contracts.KindAsset:
-		v.validateAsset(&errs)
-	case contracts.KindAssetGroup:
-		v.validateAssetGroup(&errs)
+	case contracts.KindDataSet:
+		v.validateDataSet(&errs)
+	case contracts.KindDataSetGroup:
+		v.validateDataSetGroup(&errs)
 	case contracts.KindTransform:
 		v.validateTransform(&errs)
 	}
@@ -114,7 +113,7 @@ func (v *ManifestValidator) validateCommonFields(errs *contracts.ValidationError
 
 	// Kind is already validated by the parser — but check it's valid.
 	if !m.GetKind().IsValid() {
-		errs.AddError(ErrInvalidFormat, "kind", "kind must be one of: Connector, Store, Asset, AssetGroup, Transform")
+		errs.AddError(ErrInvalidFormat, "kind", "kind must be one of: Connector, Store, DataSet, DataSetGroup, Transform")
 	}
 
 	// Metadata — name is required for all kinds.
@@ -127,18 +126,14 @@ func (v *ManifestValidator) validateCommonFields(errs *contracts.ValidationError
 	// Namespace, version, description requirements depend on kind.
 	switch v.kind {
 	case contracts.KindConnector:
-		// Connectors are cluster-scoped — no namespace required.
-		// Version is optional but must be valid SemVer if present.
 		if m.GetVersion() != "" && !isSemVerValid(m.GetVersion()) {
 			errs.AddError(contracts.ErrCodeInvalidSemVer, "spec.version", "spec.version must be valid SemVer")
 		}
-	case contracts.KindStore, contracts.KindAsset, contracts.KindAssetGroup:
-		// Namespace is optional for these kinds — skip enforcement.
+	case contracts.KindStore, contracts.KindDataSet, contracts.KindDataSetGroup:
 		if m.GetNamespace() != "" && !isIdentifierValid(m.GetNamespace()) {
 			errs.AddError(contracts.ErrCodeNameNotDNSSafe, "metadata.namespace", "metadata.namespace must be DNS-safe")
 		}
 	case contracts.KindTransform:
-		// Transforms can have namespace and version.
 		if m.GetNamespace() != "" && !isIdentifierValid(m.GetNamespace()) {
 			errs.AddError(contracts.ErrCodeNameNotDNSSafe, "metadata.namespace", "metadata.namespace must be DNS-safe")
 		}
@@ -157,12 +152,10 @@ func (v *ManifestValidator) validateConnector(errs *contracts.ValidationErrors) 
 		return
 	}
 
-	// E200: Connector type is required.
 	if c.Spec.Type == "" {
 		errs.AddError(contracts.ErrCodeConnectorTypeRequired, "spec.type", "spec.type is required for Connector")
 	}
 
-	// E201: Capabilities must be non-empty.
 	if len(c.Spec.Capabilities) == 0 {
 		errs.AddError(contracts.ErrCodeConnectorCapabilitiesRequired, "spec.capabilities", "spec.capabilities must list at least one capability (source, destination)")
 	} else {
@@ -173,12 +166,10 @@ func (v *ManifestValidator) validateConnector(errs *contracts.ValidationErrors) 
 		}
 	}
 
-	// Provider is optional — if set, validate it's DNS-safe.
 	if c.Spec.Provider != "" && !isIdentifierValid(c.Spec.Provider) {
 		errs.AddError(contracts.ErrCodeNameNotDNSSafe, "spec.provider", "spec.provider must be DNS-safe")
 	}
 
-	// Validate tool definitions.
 	for i, tool := range c.Spec.Tools {
 		if tool.Name == "" {
 			errs.AddError(ErrMissingRequired, fmt.Sprintf("spec.tools[%d].name", i), "tool name is required")
@@ -196,26 +187,21 @@ func (v *ManifestValidator) validateStore(errs *contracts.ValidationErrors) {
 		return
 	}
 
-	// E210: Store must reference a Connector.
 	if s.Spec.Connector == "" {
 		errs.AddError(contracts.ErrCodeStoreConnectorRequired, "spec.connector", "spec.connector is required — must reference a Connector name")
 	}
 
-	// E211: Connection must have at least one entry.
 	if len(s.Spec.Connection) == 0 {
 		errs.AddError(contracts.ErrCodeStoreConnectionRequired, "spec.connection", "spec.connection must have at least one entry")
 	}
 
-	// ConnectorVersion is optional — if set, validate it looks like a semver range.
 	if s.Spec.ConnectorVersion != "" {
-		// Basic sanity: must start with a digit, ^, ~, >=, <=, or =.
 		first := s.Spec.ConnectorVersion[0]
 		if !(first >= '0' && first <= '9') && first != '^' && first != '~' && first != '>' && first != '<' && first != '=' {
 			errs.AddError(ErrInvalidFormat, "spec.connectorVersion", "spec.connectorVersion must be a valid semver range (e.g., ^1.0.0, >=1.2.0)")
 		}
 	}
 
-	// E212: Validate secret interpolation syntax.
 	for key, val := range s.Spec.Secrets {
 		if val == "" {
 			errs.AddError(contracts.ErrCodeStoreSecretsInvalid, "spec.secrets."+key, "secret value must not be empty")
@@ -223,45 +209,40 @@ func (v *ManifestValidator) validateStore(errs *contracts.ValidationErrors) {
 	}
 }
 
-// validateAsset validates Asset-specific fields.
-func (v *ManifestValidator) validateAsset(errs *contracts.ValidationErrors) {
-	a := v.rawAsset
+// validateDataSet validates DataSet-specific fields.
+func (v *ManifestValidator) validateDataSet(errs *contracts.ValidationErrors) {
+	a := v.rawDataSet
 	if a == nil {
 		return
 	}
 
-	// E220: Store reference is required.
 	if a.Spec.Store == "" {
-		errs.AddError(contracts.ErrCodeAssetStoreRequired, "spec.store", "spec.store is required — must reference a Store name")
+		errs.AddError(contracts.ErrCodeDataSetStoreRequired, "spec.store", "spec.store is required — must reference a Store name")
 	}
 
-	// Validate asset version if present (semver).
 	if a.Metadata.Version != "" && !isSemVerValid(a.Metadata.Version) {
 		errs.AddError(contracts.ErrCodeInvalidSemVer, "metadata.version", "metadata.version must be valid SemVer")
 	}
 
-	// E221: At least one of table, prefix, or topic is required.
 	if a.Spec.Table == "" && a.Spec.Prefix == "" && a.Spec.Topic == "" {
-		errs.AddError(contracts.ErrCodeAssetLocationRequired, "spec", "at least one of spec.table, spec.prefix, or spec.topic is required")
+		errs.AddError(contracts.ErrCodeDataSetLocationRequired, "spec", "at least one of spec.table, spec.prefix, or spec.topic is required")
 	}
 
-	// E222: Validate schema fields if present.
 	seen := make(map[string]bool)
 	for i, field := range a.Spec.Schema {
 		path := fmt.Sprintf("spec.schema[%d]", i)
 		if field.Name == "" {
-			errs.AddError(contracts.ErrCodeAssetSchemaInvalid, path+".name", "schema field name is required")
+			errs.AddError(contracts.ErrCodeDataSetSchemaInvalid, path+".name", "schema field name is required")
 		} else if seen[field.Name] {
 			errs.AddError(ErrDuplicateName, path+".name", "duplicate schema field name: "+field.Name)
 		} else {
 			seen[field.Name] = true
 		}
 		if field.Type == "" {
-			errs.AddError(contracts.ErrCodeAssetSchemaInvalid, path+".type", "schema field type is required")
+			errs.AddError(contracts.ErrCodeDataSetSchemaInvalid, path+".type", "schema field type is required")
 		}
 	}
 
-	// Validate classification if present.
 	if a.Spec.Classification != "" {
 		valid := map[string]bool{"public": true, "internal": true, "confidential": true, "restricted": true}
 		if !valid[a.Spec.Classification] {
@@ -270,21 +251,19 @@ func (v *ManifestValidator) validateAsset(errs *contracts.ValidationErrors) {
 	}
 }
 
-// validateAssetGroup validates AssetGroup-specific fields.
-func (v *ManifestValidator) validateAssetGroup(errs *contracts.ValidationErrors) {
-	ag := v.rawAssetGroup
+// validateDataSetGroup validates DataSetGroup-specific fields.
+func (v *ManifestValidator) validateDataSetGroup(errs *contracts.ValidationErrors) {
+	ag := v.rawDataSetGroup
 	if ag == nil {
 		return
 	}
 
-	// E240: Store is required.
 	if ag.Spec.Store == "" {
-		errs.AddError(contracts.ErrCodeAssetGroupStoreRequired, "spec.store", "spec.store is required for AssetGroup")
+		errs.AddError(contracts.ErrCodeDataSetGroupStoreRequired, "spec.store", "spec.store is required for DataSetGroup")
 	}
 
-	// E241: Assets list must be non-empty.
-	if len(ag.Spec.Assets) == 0 {
-		errs.AddError(contracts.ErrCodeAssetGroupAssetsRequired, "spec.assets", "spec.assets must list at least one asset name")
+	if len(ag.Spec.DataSets) == 0 {
+		errs.AddError(contracts.ErrCodeDataSetGroupDataSetsRequired, "spec.datasets", "spec.datasets must list at least one dataset name")
 	}
 }
 
@@ -295,27 +274,22 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 		return
 	}
 
-	// Runtime must be a known value.
 	if !tr.Spec.Runtime.IsValid() {
 		errs.AddError(ErrInvalidFormat, "spec.runtime", "spec.runtime must be a valid runtime (cloudquery, generic-go, generic-python, dbt)")
 	}
 
-	// Mode must be valid if specified.
 	if tr.Spec.Mode != "" && !tr.Spec.Mode.IsValid() {
 		errs.AddError(ErrInvalidFormat, "spec.mode", "spec.mode must be batch or streaming")
 	}
 
-	// E230: Inputs are required.
 	if len(tr.Spec.Inputs) == 0 {
-		errs.AddError(contracts.ErrCodeTransformInputsRequired, "spec.inputs", "at least one input asset is required")
+		errs.AddError(contracts.ErrCodeTransformInputsRequired, "spec.inputs", "at least one input dataset is required")
 	}
 
-	// E231: Outputs are required.
 	if len(tr.Spec.Outputs) == 0 {
-		errs.AddError(contracts.ErrCodeTransformOutputsRequired, "spec.outputs", "at least one output asset is required")
+		errs.AddError(contracts.ErrCodeTransformOutputsRequired, "spec.outputs", "at least one output dataset is required")
 	}
 
-	// E232: spec.image is required for generic-* and dbt runtimes.
 	if tr.Spec.Runtime.IsGeneric() && tr.Spec.Image == "" {
 		errs.AddError(contracts.ErrCodeTransformImageRequired, "spec.image", "spec.image is required for generic-* runtimes")
 	}
@@ -323,7 +297,6 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 		errs.AddError(contracts.ErrCodeTransformImageRequired, "spec.image", "spec.image is required for dbt runtime")
 	}
 
-	// W209: Trigger recommended for batch mode.
 	effectiveMode := tr.Spec.Mode
 	if effectiveMode == "" {
 		effectiveMode = effectiveMode.Default()
@@ -332,7 +305,6 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 		errs.AddWarning(contracts.WarnCodeTriggerBatchMode, "spec.trigger", "trigger is recommended for batch-mode transforms")
 	}
 
-	// Validate trigger spec.
 	if tr.Spec.Trigger != nil {
 		if !tr.Spec.Trigger.Policy.IsValid() {
 			errs.AddError(ErrInvalidFormat, "spec.trigger.policy", "spec.trigger.policy must be schedule, on-change, manual, or composite")
@@ -352,31 +324,30 @@ func (v *ManifestValidator) validateTransform(errs *contracts.ValidationErrors) 
 		}
 	}
 
-	// Validate timeout format.
 	if tr.Spec.Timeout != "" {
 		if !isValidDuration(tr.Spec.Timeout) {
 			errs.AddError(contracts.ErrCodeInvalidTimeout, "spec.timeout", "spec.timeout must be a valid duration (e.g., 1h, 30m)")
 		}
 	}
 
-	// Validate input/output asset refs.
+	// Validate input/output dataset refs.
 	for i, ref := range tr.Spec.Inputs {
-		validateAssetRef(errs, ref, fmt.Sprintf("spec.inputs[%d]", i))
+		validateDataSetRef(errs, ref, fmt.Sprintf("spec.inputs[%d]", i))
 	}
 	for i, ref := range tr.Spec.Outputs {
-		validateAssetRef(errs, ref, fmt.Sprintf("spec.outputs[%d]", i))
+		validateDataSetRef(errs, ref, fmt.Sprintf("spec.outputs[%d]", i))
 	}
 }
 
-// validateAssetRef validates that exactly one of asset or tags is set.
-func validateAssetRef(errs *contracts.ValidationErrors, ref contracts.AssetRef, path string) {
-	hasAsset := ref.Asset != ""
+// validateDataSetRef validates that exactly one of dataset or tags is set.
+func validateDataSetRef(errs *contracts.ValidationErrors, ref contracts.DataSetRef, path string) {
+	hasDataSet := ref.DataSet != ""
 	hasTags := len(ref.Tags) > 0
-	if !hasAsset && !hasTags {
-		errs.AddError(ErrMissingRequired, path, "either asset name or tags is required")
+	if !hasDataSet && !hasTags {
+		errs.AddError(ErrMissingRequired, path, "either dataset name or tags is required")
 	}
-	if hasAsset && hasTags {
-		errs.AddError(ErrInvalidFormat, path, "asset and tags are mutually exclusive — specify one or the other")
+	if hasDataSet && hasTags {
+		errs.AddError(ErrInvalidFormat, path, "dataset and tags are mutually exclusive — specify one or the other")
 	}
 	// Version only makes sense with tags.
 	if ref.Version != "" && !hasTags {
@@ -464,13 +435,13 @@ func NewManifestValidator(m manifest.Manifest, kind contracts.Kind, pkgPath stri
 		if s, ok := m.(*contracts.Store); ok {
 			v.rawStore = s
 		}
-	case contracts.KindAsset:
-		if a, ok := m.(*contracts.AssetManifest); ok {
-			v.rawAsset = a
+	case contracts.KindDataSet:
+		if a, ok := m.(*contracts.DataSetManifest); ok {
+			v.rawDataSet = a
 		}
-	case contracts.KindAssetGroup:
-		if ag, ok := m.(*contracts.AssetGroupManifest); ok {
-			v.rawAssetGroup = ag
+	case contracts.KindDataSetGroup:
+		if ag, ok := m.(*contracts.DataSetGroupManifest); ok {
+			v.rawDataSetGroup = ag
 		}
 	case contracts.KindTransform:
 		if tr, ok := m.(*contracts.Transform); ok {

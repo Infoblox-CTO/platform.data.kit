@@ -62,9 +62,9 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644)
 	if err != nil {
@@ -133,9 +133,9 @@ spec:
   image: myorg/pipeline:latest
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644)
 	if err != nil {

@@ -43,11 +43,11 @@ type Parser interface {
 	// ParseStore parses a manifest with kind: Store.
 	ParseStore(data []byte) (*contracts.Store, error)
 
-	// ParseAsset parses a manifest with kind: Asset.
-	ParseAsset(data []byte) (*contracts.AssetManifest, error)
+	// ParseDataSet parses a manifest with kind: DataSet.
+	ParseDataSet(data []byte) (*contracts.DataSetManifest, error)
 
-	// ParseAssetGroup parses a manifest with kind: AssetGroup.
-	ParseAssetGroup(data []byte) (*contracts.AssetGroupManifest, error)
+	// ParseDataSetGroup parses a manifest with kind: DataSetGroup.
+	ParseDataSetGroup(data []byte) (*contracts.DataSetGroupManifest, error)
 
 	// ParseTransform parses a manifest with kind: Transform.
 	ParseTransform(data []byte) (*contracts.Transform, error)
@@ -71,14 +71,14 @@ func (p *DefaultParser) ParseStore(data []byte) (*contracts.Store, error) {
 	return StoreFromBytes(data)
 }
 
-// ParseAsset parses a manifest with kind: Asset.
-func (p *DefaultParser) ParseAsset(data []byte) (*contracts.AssetManifest, error) {
-	return AssetFromBytes(data)
+// ParseDataSet parses a manifest with kind: DataSet.
+func (p *DefaultParser) ParseDataSet(data []byte) (*contracts.DataSetManifest, error) {
+	return DataSetFromBytes(data)
 }
 
-// ParseAssetGroup parses a manifest with kind: AssetGroup.
-func (p *DefaultParser) ParseAssetGroup(data []byte) (*contracts.AssetGroupManifest, error) {
-	return AssetGroupFromBytes(data)
+// ParseDataSetGroup parses a manifest with kind: DataSetGroup.
+func (p *DefaultParser) ParseDataSetGroup(data []byte) (*contracts.DataSetGroupManifest, error) {
+	return DataSetGroupFromBytes(data)
 }
 
 // ParseTransform parses a manifest with kind: Transform.
@@ -104,22 +104,22 @@ func ParseStoreFile(path string) (*contracts.Store, error) {
 	return NewParser().ParseStore(data)
 }
 
-// ParseAssetFile parses an Asset manifest file from a path.
-func ParseAssetFile(path string) (*contracts.AssetManifest, error) {
+// ParseDataSetFile parses a DataSet manifest file from a path.
+func ParseDataSetFile(path string) (*contracts.DataSetManifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
-	return NewParser().ParseAsset(data)
+	return NewParser().ParseDataSet(data)
 }
 
-// ParseAssetGroupFile parses an AssetGroup manifest file from a path.
-func ParseAssetGroupFile(path string) (*contracts.AssetGroupManifest, error) {
+// ParseDataSetGroupFile parses a DataSetGroup manifest file from a path.
+func ParseDataSetGroupFile(path string) (*contracts.DataSetGroupManifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
-	return NewParser().ParseAssetGroup(data)
+	return NewParser().ParseDataSetGroup(data)
 }
 
 // ParseTransformFile parses a Transform manifest file from a path.
@@ -132,7 +132,7 @@ func ParseTransformFile(path string) (*contracts.Transform, error) {
 }
 
 // Manifest is a generic interface satisfied by all manifest kinds
-// (Connector, Store, Asset, AssetGroup, Transform).
+// (Connector, Store, DataSet, DataSetGroup, Transform).
 // It provides access to common metadata.
 type Manifest interface {
 	// GetKind returns the manifest kind.
@@ -180,14 +180,14 @@ func ParseManifest(data []byte) (Manifest, contracts.Kind, error) {
 			return nil, kind, err
 		}
 		return m, kind, nil
-	case contracts.KindAsset:
-		m, err := parser.ParseAsset(data)
+	case contracts.KindDataSet:
+		m, err := parser.ParseDataSet(data)
 		if err != nil {
 			return nil, kind, err
 		}
 		return m, kind, nil
-	case contracts.KindAssetGroup:
-		m, err := parser.ParseAssetGroup(data)
+	case contracts.KindDataSetGroup:
+		m, err := parser.ParseDataSetGroup(data)
 		if err != nil {
 			return nil, kind, err
 		}
@@ -199,6 +199,6 @@ func ParseManifest(data []byte) (Manifest, contracts.Kind, error) {
 		}
 		return m, kind, nil
 	default:
-		return nil, kind, fmt.Errorf("unsupported manifest kind %q: must be Connector, Store, Asset, AssetGroup, or Transform", kind)
+		return nil, kind, fmt.Errorf("unsupported manifest kind %q: must be Connector, Store, DataSet, DataSetGroup, or Transform", kind)
 	}
 }

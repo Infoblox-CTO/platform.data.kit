@@ -8,9 +8,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: users
-    - asset: orders
+    - dataset: users
+    - dataset: orders
   outputs:
-    - asset: users-parquet
-    - asset: orders-parquet
+    - dataset: users-parquet
+    - dataset: orders-parquet
   timeout: 30m

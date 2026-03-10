@@ -1,0 +1,31 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: enriched-events
+  version: "1.0.0"
+  labels:
+    domain: analytics
+    tier: curated
+spec:
+  store: data-lake
+  prefix: data/enriched-events/
+  format: parquet
+  classification: internal
+  schema:
+    - name: event_id
+      type: string
+    - name: user_id
+      type: string
+    - name: user_name
+      type: string
+      from: users.name
+    - name: user_email
+      type: string
+      pii: true
+      from: users.email
+    - name: event_type
+      type: string
+    - name: payload
+      type: string
+    - name: timestamp
+      type: timestamp

@@ -53,14 +53,14 @@ func TestRenderKindDirectory_TransformCloudQuery(t *testing.T) {
 		t.Error("config.yaml should not be scaffolded; it is auto-generated at runtime")
 	}
 
-	// Verify connector/, store/, and asset/ subdirectories are scaffolded.
+	// Verify connector/, store/, and dataset/ subdirectories are scaffolded.
 	for _, sub := range []string{
 		"connector/postgres.yaml",
 		"connector/s3.yaml",
 		"store/source-db.yaml",
 		"store/dest-bucket.yaml",
-		"asset/source.yaml",
-		"asset/destination.yaml",
+		"dataset/source.yaml",
+		"dataset/destination.yaml",
 	} {
 		p := filepath.Join(outputDir, sub)
 		if _, err := os.Stat(p); os.IsNotExist(err) {

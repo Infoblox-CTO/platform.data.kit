@@ -9,9 +9,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: raw-events-parquet
+    - dataset: raw-events-parquet
   trigger:
     policy: on-change
   timeout: 30m

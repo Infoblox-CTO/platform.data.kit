@@ -75,7 +75,7 @@ The command-line interface for interacting with the platform.
 Core libraries used by the CLI and controller.
 
 #### 2.1 Validate (`sdk/validate/`)
-- Manifest validation (dk.yaml, connector, store, asset manifests)
+- Manifest validation (dk.yaml, connector, store, DataSet manifests)
 - PII classification validation
 - Schema validation
 
@@ -112,20 +112,20 @@ type Transform struct {
     Spec       TransformSpec
 }
 
-// AssetRef is a reference to a named Asset.
-type AssetRef struct {
-    Asset   string            // Asset name (mutually exclusive with Tags)
-    Tags    map[string]string // Match assets by labels
+// DataSetRef is a reference to a named DataSet.
+type DataSetRef struct {
+    DataSet string            // DataSet name (mutually exclusive with Tags)
+    Tags    map[string]string // Match DataSets by labels
     Version string            // Semver range constraint
     Cell    string            // Cell qualifier
 }
 
-// AssetManifest represents a data contract in a Store.
-type AssetManifest struct {
+// DataSetManifest represents a data contract in a Store.
+type DataSetManifest struct {
     APIVersion string
     Kind       string
-    Metadata   AssetMetadata
-    Spec       AssetSpec
+    Metadata   DataSetMetadata
+    Spec       DataSetSpec
 }
 ```
 

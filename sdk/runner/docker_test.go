@@ -31,9 +31,9 @@ spec:
   image: busybox:latest
   mode: batch
   inputs:
-    - asset: source-events
+    - dataset: source-events
   outputs:
-    - asset: output-lake
+    - dataset: output-lake
   env:
     - name: LOG_LEVEL
       value: debug
@@ -109,9 +109,9 @@ spec:
     - name: LOG_LEVEL
       value: debug
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkYAML), 0644); err != nil {

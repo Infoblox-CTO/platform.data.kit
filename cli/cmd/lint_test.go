@@ -89,9 +89,9 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -145,9 +145,9 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -174,9 +174,9 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -244,9 +244,9 @@ spec:
   runtime: generic-go
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	dkPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
@@ -308,9 +308,9 @@ spec:
   image: original:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	dkPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
@@ -421,9 +421,9 @@ spec:
   image: "acme/cq-test-source:latest"
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: example-resource
+    - dataset: example-resource
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)

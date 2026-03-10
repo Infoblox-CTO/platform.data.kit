@@ -11,33 +11,30 @@ DataKit serves two distinct roles with clear ownership boundaries.
 
 | Persona | Owns | Defines |
 |---------|------|---------|
-| **Platform engineer** | Extensions, environments, policies | *What is allowed* |
-| **Data engineer** | Assets, pipelines, models | *What runs and what it produces* |
+| **Platform engineer** | Connectors, environments, policies | *What is allowed* |
+| **Data engineer** | DataSets, pipelines, models | *What runs and what it produces* |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           Platform Engineer                                 │
 │                                                                             │
-│   extensions/                  environments/            policies/           │
-│   ├── cloudquery/              ├── dev.yaml              ├── quality.yaml   │
-│   │   ├── sources/aws/         ├── stage.yaml            └── versions.yaml  │
-│   │   │   ├── extension.yaml   └── prod.yaml                               │
-│   │   │   ├── schema.json                                                   │
-│   │   │   ├── versions.yaml                                                 │
-│   │   │   └── templates/                                                    │
-│   │   └── destinations/                                                     │
-│   └── dbt/                                                                  │
-│       └── model-engines/                                                    │
+│   connector/                   environments/            policies/           │
+│   ├── postgres.yaml            ├── dev.yaml              ├── quality.yaml   │
+│   ├── s3.yaml                  ├── stage.yaml            └── versions.yaml  │
+│   └── kafka.yaml               └── prod.yaml                               │
+│                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                            Data Engineer                                    │
 │                                                                             │
-│   assets/                      transforms/              models/             │
-│   ├── sources/                 └── aws_compliance/      └── dbt/            │
-│   │   └── aws_security/           └── dk.yaml               ├── staging/   │
-│   │       └── asset.yaml                                     └── marts/    │
-│   └── sinks/                                                                │
-│       └── snowflake_raw/                                                    │
-│           └── asset.yaml                                                    │
+│   store/                       asset/                   transforms/         │
+│   ├── warehouse.yaml           ├── users.yaml           └── aws_compliance/ │
+│   └── lake-raw.yaml            ├── users-parquet.yaml       └── dk.yaml    │
+│                                └── orders.yaml                              │
+│                                                                             │
+│   models/                                                                   │
+│   └── dbt/                                                                  │
+│       ├── staging/                                                          │
+│       └── marts/                                                            │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -48,63 +45,72 @@ DataKit serves two distinct roles with clear ownership boundaries.
 The platform separates concerns into four distinct layers. Each layer references the one above it by name — never by embedding its internals.
 
 ```
-Extension ──▶ Asset ──▶ Pipeline ──▶ Binding
-  (type)      (instance)  (wiring)    (infra)
+Connector ──▶ Store ──▶ DataSet ──▶ Transform ──▶ Binding
+  (type)      (instance)  (contract)  (compute)    (infra)
 ```
 
-### 1. Extensions — approved building blocks
+### 1. Connectors — technology types
 
-An extension is a **type definition** published by a platform engineer. It declares what a source, sink, or model engine *is* — its configuration schema, version policy, templates, and documentation.
+A Connector is a **technology type definition** maintained by the platform team. It declares what a storage technology *is* — Postgres, S3, Kafka, etc. — and which CloudQuery plugin images to use.
 
 ```yaml
-# extensions/cloudquery/sources/aws/extension.yaml
-name: cloudquery.source.aws
-kind: source
-engine: cloudquery
-description: "CloudQuery AWS source — IAM, EC2, S3, and 300+ tables"
+# connector/postgres.yaml
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+spec:
+  type: postgres
+  protocol: postgresql
+  capabilities: [source, destination]
 ```
 
-Each extension ships with a `schema.json` that validates consumer configuration, a `versions.yaml` for version policy, and optional templates and examples. Extensions are published to the OCI registry via `dk ext publish`.
+Connectors rarely change. They define the technology catalog available to the platform.
 
-### 2. Assets — configured instances
+### 2. Stores and DataSets — data contracts
 
-An asset is a **configured instance** of an extension, created by a data engineer. It contains no code — just configuration referencing an approved extension by FQN and version.
+A **Store** is a named instance of a Connector with connection details and credentials, managed by infra/SRE. A **DataSet** is a named data contract — a table, S3 prefix, or Kafka topic that lives in a Store — created by data engineers.
 
 ```yaml
-# assets/sources/aws_security/asset.yaml
-name: aws_security
-type: source
-extension: cloudquery.source.aws
-version: v24.0.2
-owner_team: security
-config:
-  accounts: ["prod", "security"]
-  regions: ["us-east-1", "us-west-2"]
-  tables: ["iam_roles", "iam_policies", "ec2_instances"]
+# asset/users.yaml
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: users
+spec:
+  store: warehouse
+  table: public.users
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
 ```
 
-The `config` block is validated against the extension's `schema.json` at `dk validate` time — errors surface before runtime.
+DataSets are declarative metadata: schema, classification, and lineage. Validation runs at `dk lint` time — errors surface before runtime.
 
 ### 3. Pipelines — reactive dependency graph
 
-A pipeline is the dependency graph derived from Transform and Asset manifests.
+A pipeline is the dependency graph derived from Transform and DataSet manifests.
 Each Transform declares its inputs and outputs; the graph is built automatically.
 
 ```bash
 # View the full pipeline graph
 dk pipeline show
 
-# View the chain leading to a specific asset
+# View the chain leading to a specific DataSet
 dk pipeline show --destination event-summary
 ```
 
 Transforms are independently deployable. Each declares a trigger (schedule,
-on-change, manual) and references assets by name. There is no separate pipeline
+on-change, manual) and references DataSets by name. There is no separate pipeline
 manifest — the graph emerges from the individual dk.yaml files.
 
 ### 4. Bindings — per-environment infrastructure
 
-Bindings map abstract asset references to concrete infrastructure, varying by environment. A pipeline's definition never changes between dev and prod — only its bindings do.
+Bindings map abstract DataSet references to concrete infrastructure, varying by environment. A pipeline's definition never changes between dev and prod — only its bindings do.
 
 ```yaml
 # environments/prod.yaml (excerpt)
@@ -123,7 +129,7 @@ bindings:
 
 ### Managed environments
 
-Platform engineers define environments with allowed extensions, version constraints, approval workflows, and resource quotas.
+Platform engineers define environments with allowed connectors, version constraints, approval workflows, and resource quotas.
 
 | Environment | Version policy | Approval | Purpose |
 |-------------|---------------|----------|---------|
@@ -146,21 +152,19 @@ Declarative YAML policies enforce guardrails at `dk validate` time:
 ### Platform engineer
 
 ```
-dk ext create cloudquery.source.aws --kind source --engine cloudquery
-# Edit schema.json, templates/, versions.yaml, examples
-dk ext validate cloudquery.source.aws
-dk ext publish
+# Define connectors and stores
+# Edit connector/ and store/ manifests
+dk lint
 ```
 
 ### Data engineer
 
 ```
-dk asset create aws_security --ext cloudquery.source.aws --interactive
-dk asset create snowflake_raw --ext cloudquery.dest.snowflake
-# Edit dbt models and tests
-dk validate
-dk plan --env dev
-dk apply --env dev
+dk dataset create users --store warehouse --table public.users
+dk dataset create users-parquet --store lake-raw --prefix data/users/
+# Edit DataSet schemas and dbt models
+dk lint
+dk run
 dk pipeline show
 ```
 
@@ -170,12 +174,12 @@ dk pipeline show
 
 | Area | Platform Eng | Data Eng |
 |------|:------------:|:--------:|
-| Define extension types (sources, sinks, model engines) | **R/A** | C |
-| Extension schemas, templates, version policy | **R/A** | I |
+| Define connectors and technology types | **R/A** | C |
+| Store connection details and credentials | **R/A** | I |
 | Managed environments (security, compliance, monitoring) | **R/A** | I |
 | Dev environment blueprints and quotas | **R/A** | C |
 | Domain dev environment declaration (capabilities needed) | C | **R/A** |
-| Creating configured asset instances | C | **R/A** |
+| Creating DataSets (data contracts) | C | **R/A** |
 | Creating pipelines (sync → transform → test → publish) | C | **R/A** |
 | dbt models, tests, docs | I | **R/A** |
 | CI policy checks and enforcement | **R/A** | I |
@@ -192,10 +196,10 @@ The target state is reached incrementally through five features, each independen
 
 | # | Feature | Delivers |
 |---|---------|----------|
-| 011 | Extension type system | `dk ext create/validate/publish`, extension.yaml + schema.json |
-| 012 | Asset instances | `dk asset create/validate`, asset.yaml referencing extensions |
+| 011 | Connector and Store system | Connector and Store manifests, technology type catalog |
+| 012 | DataSet data contracts | `dk dataset create/validate`, DataSet manifests with schema and classification |
 | 013 | Pipeline graph | Reactive dependency graph, `dk pipeline show`, trigger configuration |
 | 014 | Environments and policies | `dk plan/apply`, declarative policies, version constraints |
-| 015 | dbt model engine | dbt as a first-class extension, sync → transform → test chains |
+| 015 | dbt model engine | dbt as a first-class runtime, sync → transform → test chains |
 
-The existing `dk init` / `dk build` / `dk run` workflow continues to work throughout — it is progressively refactored under the hood as each feature lands. The current CloudQuery source plugin becomes the first built-in extension.
+The existing `dk init` / `dk build` / `dk run` workflow continues to work throughout — it is progressively refactored under the hood as each feature lands.

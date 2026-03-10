@@ -8,6 +8,6 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: raw-customer-data
+    - dataset: raw-customer-data
   outputs:
-    - asset: customer-data
+    - dataset: customer-data

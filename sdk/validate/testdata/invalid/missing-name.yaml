@@ -9,6 +9,6 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: raw-data
+    - dataset: raw-data
   outputs:
-    - asset: out-data
+    - dataset: out-data

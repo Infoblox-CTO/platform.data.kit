@@ -84,9 +84,9 @@ spec:
   mode: batch
   image: "myimage:v1"
   inputs:
-    - asset: kafka-events
+    - dataset: kafka-events
   outputs:
-    - asset: processed-events
+    - dataset: processed-events
 ```
 
 ## 🛠️ CLI Commands

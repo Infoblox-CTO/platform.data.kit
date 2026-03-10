@@ -27,16 +27,16 @@ Self-contained units of data processing with metadata and code.
 
 <div class="card" markdown>
 ### :page_facing_up: Manifests
-Configuration files that define your package: Transform, Asset, Connector, and Store manifests.
+Configuration files that define your package: Transform, DataSet, Connector, and Store manifests.
 
 [Understand Manifests →](manifests.md)
 </div>
 
 <div class="card" markdown>
-### :jigsaw: Assets
+### :jigsaw: DataSets
 Data contracts — tables, S3 prefixes, topics — with schema and column-level lineage.
 
-[Learn about Assets →](assets.md)
+[Learn about DataSets →](datasets.md)
 </div>
 
 <div class="card" markdown>
@@ -83,7 +83,7 @@ We recommend reading the concepts in this order:
 1. **[Overview](overview.md)** - Start with the big picture
 2. **[Data Packages](data-packages.md)** - Understand the core unit of work
 3. **[Manifests](manifests.md)** - Learn how to configure packages
-4. **[Assets](assets.md)** - Configure extension instances
+4. **[DataSets](datasets.md)** - Data contracts with schema and classification
 5. **[Pipeline Workflows](pipelines.md)** - Define multi-step execution
 6. **[Lineage](lineage.md)** - Track data flow
 7. **[Governance](governance.md)** - Classify and protect data
@@ -98,6 +98,6 @@ The Data Platform is built on these principles:
 |-----------|-------------|
 | **Developer Experience First** | Simple happy path: bootstrap → run → validate → publish → promote |
 | **Immutability** | Released artifacts cannot be modified; versions are permanent |
-| **Separation of Concerns** | Connectors, Stores, Assets, and Transforms have distinct ownership |
+| **Separation of Concerns** | Connectors, Stores, DataSets, and Transforms have distinct ownership |
 | **Security by Default** | PII classification is required, not optional |
 | **Observability** | Every operation emits metrics and lineage events |

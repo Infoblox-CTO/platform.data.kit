@@ -26,9 +26,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: users
+    - dataset: users
   outputs:
-    - asset: users-parquet
+    - dataset: users-parquet
 `
 	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkYAML), 0644)
 
@@ -44,17 +44,17 @@ spec:
 `
 	os.WriteFile(filepath.Join(tmpDir, "connector", "postgres.yaml"), []byte(connYAML), 0644)
 
-	// Write asset/
-	os.MkdirAll(filepath.Join(tmpDir, "asset"), 0755)
-	assetYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+	// Write dataset/
+	os.MkdirAll(filepath.Join(tmpDir, "dataset"), 0755)
+	datasetYAML := `apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
 metadata:
   name: users
 spec:
   store: source-db
   table: public.users
 `
-	os.WriteFile(filepath.Join(tmpDir, "asset", "users.yaml"), []byte(assetYAML), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "dataset", "users.yaml"), []byte(datasetYAML), 0644)
 
 	// Write store/ (should be excluded from chart)
 	os.MkdirAll(filepath.Join(tmpDir, "store"), 0755)
@@ -104,7 +104,7 @@ spec:
 		"pg-to-s3/templates/packagedeployment.yaml",
 		"pg-to-s3/manifests/dk.yaml",
 		"pg-to-s3/manifests/connector/postgres.yaml",
-		"pg-to-s3/manifests/asset/users.yaml",
+		"pg-to-s3/manifests/dataset/users.yaml",
 	}
 	for _, exp := range expected {
 		if !contains(files, exp) {
@@ -131,9 +131,9 @@ metadata:
 spec:
   runtime: cloudquery
   inputs:
-    - asset: data
+    - dataset: data
   outputs:
-    - asset: result
+    - dataset: result
 `
 	os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkYAML), 0644)
 

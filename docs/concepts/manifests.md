@@ -14,8 +14,8 @@ The platform defines five manifest kinds:
 | Kind | Purpose | Who creates |
 |------|---------|-------------|
 | **Transform** | Computation — reads inputs, produces outputs | Data engineer |
-| **Asset** | Data contract — schema, classification, lineage | Data engineer |
-| **AssetGroup** | Bundle of Assets produced by one Transform | Data engineer |
+| **DataSet** | Data contract — schema, classification, lineage | Data engineer |
+| **DataSetGroup** | Bundle of DataSets produced by one Transform | Data engineer |
 | **Connector** | Technology type — Postgres, S3, Kafka, etc. | Platform team |
 | **Store** | Named instance of a Connector with credentials | Infra / SRE |
 
@@ -37,10 +37,10 @@ spec:
   timeout: 30m
 
   inputs:
-    - asset: source-data
+    - dataset: source-data
 
   outputs:
-    - asset: output-data
+    - dataset: output-data
 ```
 
 ### Required Fields
@@ -48,7 +48,7 @@ spec:
 | Field | Type | Description |
 |-------|------|-------------|
 | `apiVersion` | string | Always `datakit.infoblox.dev/v1alpha1` |
-| `kind` | string | `Transform`, `Asset`, `AssetGroup`, `Connector`, or `Store` |
+| `kind` | string | `Transform`, `DataSet`, `DataSetGroup`, `Connector`, or `Store` |
 | `metadata.name` | string | Package name (lowercase, hyphenated) |
 | `spec.runtime` | string | One of: `cloudquery`, `generic-go`, `generic-python`, `dbt` |
 
@@ -75,41 +75,41 @@ metadata:
 
 ### spec.inputs
 
-Inputs declare which Assets a Transform reads:
+Inputs declare which DataSets a Transform reads:
 
 ```yaml
 spec:
   inputs:
-    - asset: raw-events            # Reference asset by name
-    - asset: user-metadata         # Multiple inputs supported
+    - dataset: raw-events          # Reference DataSet by name
+    - dataset: user-metadata       # Multiple inputs supported
     - tags:                        # Or match by labels
         domain: analytics
         tier: raw
       version: ">=1.0.0"           # Optional semver constraint
 ```
 
-Each input (and output) uses either `asset` (exact name) or `tags` (label selector) — not both.
+Each input (and output) uses either `dataset` (exact name) or `tags` (label selector) — not both.
 
 ### spec.outputs
 
-Outputs declare which Assets a Transform produces:
+Outputs declare which DataSets a Transform produces:
 
 ```yaml
 spec:
   outputs:
-    - asset: enriched-events       # Asset name to write to
+    - dataset: enriched-events     # DataSet name to write to
 ```
 
 !!! note
-    Data classification (`pii`, `sensitivity`) is declared on the **Asset** manifest, not on the Transform's AssetRef.
+    Data classification (`pii`, `sensitivity`) is declared on the **DataSet** manifest, not on the Transform's DataSetRef.
 
-## Asset Manifest
+## DataSet Manifest
 
-An Asset declares a data contract — a table, S3 prefix, or topic that lives in a Store:
+A DataSet declares a data contract — a table, S3 prefix, or topic that lives in a Store:
 
 ```yaml title="asset/users.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
   namespace: default
@@ -127,11 +127,11 @@ spec:
       type: timestamp
 ```
 
-Output Assets can use `from` for column-level lineage:
+Output DataSets can use `from` for column-level lineage:
 
 ```yaml title="asset/users-parquet.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users-parquet
   namespace: default
@@ -201,7 +201,7 @@ spec:
 ```
 
 !!! note "Secrets on Stores only"
-    Credentials live **only** on Store manifests — never on Assets or Transforms.
+    Credentials live **only** on Store manifests — never on DataSets or Transforms.
 
 ## Validation
 
@@ -224,7 +224,7 @@ The linter checks:
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `invalid name` | Uppercase or special chars | Use lowercase and hyphens only |
-| `unsupported kind` | Kind not one of the five valid kinds | Use Transform, Asset, AssetGroup, Connector, or Store |
+| `unsupported kind` | Kind not one of the five valid kinds | Use Transform, DataSet, DataSetGroup, Connector, or Store |
 | `schema not found` | Schema file doesn't exist | Create file or remove reference |
 | `pii without sensitivity` | PII true but no sensitivity level | Add sensitivity classification |
 

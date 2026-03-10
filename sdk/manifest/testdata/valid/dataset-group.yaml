@@ -1,0 +1,11 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSetGroup
+metadata:
+  name: pg-snapshot
+  namespace: data-team
+spec:
+  store: warehouse
+  datasets:
+    - users
+    - orders
+    - products

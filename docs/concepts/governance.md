@@ -35,13 +35,13 @@ DataKit provides built-in governance features to ensure data quality, security, 
 
 ## Data Classification
 
-Data classification is declared on the **Asset** manifest (not on the Transform's output references).
-Each Asset declares its sensitivity level and PII status in its `spec`:
+Data classification is declared on the **DataSet** manifest (not on the Transform's output references).
+Each DataSet declares its sensitivity level and PII status in its `spec`:
 
 ```yaml
 # asset/customer-records.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: customer-records
   version: 1.0.0
@@ -64,13 +64,13 @@ spec:
       type: timestamp
 ```
 
-A Transform then references this Asset by name:
+A Transform then references this DataSet by name:
 
 ```yaml
 # dk.yaml (Transform)
 spec:
   outputs:
-    - asset: customer-records
+    - dataset: customer-records
 ```
 
 ### Sensitivity Levels

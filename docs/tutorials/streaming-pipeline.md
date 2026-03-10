@@ -33,7 +33,7 @@ user-aggregator/
 ├── dk.yaml                 # Transform manifest
 ├── connector/              # Connector definitions
 ├── store/                  # Store definitions
-├── asset/                  # Asset definitions
+├── asset/                  # DataSet definitions
 ├── src/
 │   └── main.go            # Pipeline code
 └── schemas/
@@ -57,10 +57,10 @@ spec:
   image: myorg/user-aggregator:v1.0.0
 
   inputs:
-    - asset: user-events
+    - dataset: user-events
 
   outputs:
-    - asset: user-aggregations
+    - dataset: user-aggregations
 
   # Horizontal scaling
   replicas: 3
@@ -74,13 +74,13 @@ spec:
     heartbeatInterval: 30s
 ```
 
-## Step 3: Define Assets and Stores
+## Step 3: Define DataSets and Stores
 
-Create the input Asset:
+Create the input DataSet:
 
 ```yaml title="asset/user-events.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: user-events
   namespace: analytics
@@ -90,11 +90,11 @@ spec:
   format: avro
 ```
 
-Create the output Asset:
+Create the output DataSet:
 
 ```yaml title="asset/user-aggregations.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: user-aggregations
   namespace: analytics

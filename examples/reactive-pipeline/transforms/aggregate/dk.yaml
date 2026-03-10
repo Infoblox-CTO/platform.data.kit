@@ -9,9 +9,9 @@ spec:
   runtime: dbt
   mode: batch
   inputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   outputs:
-    - asset: event-summary
+    - dataset: event-summary
   image: my-team/dbt-analytics:latest
   trigger:
     policy: schedule

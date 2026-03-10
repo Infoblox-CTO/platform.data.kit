@@ -9,9 +9,9 @@ spec:
   runtime: generic-python
   mode: batch
   inputs:
-    - asset: raw-events-parquet
+    - dataset: raw-events-parquet
   outputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   image: my-team/enrich-events:latest
   trigger:
     policy: on-change

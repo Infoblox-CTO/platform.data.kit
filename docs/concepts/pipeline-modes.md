@@ -40,9 +40,9 @@ spec:
   image: myorg/daily-etl:v0.1.0
 
   inputs:
-    - asset: raw-data
+    - dataset: raw-data
   outputs:
-    - asset: processed-data
+    - dataset: processed-data
 
   # How long before timeout
   timeout: 30m
@@ -99,9 +99,9 @@ spec:
   image: myorg/kafka-processor:v1.0.0
 
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: processed-events
+    - dataset: processed-events
 
   # Number of replicas
   replicas: 3

@@ -9,8 +9,8 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: raw-data
+    - dataset: raw-data
   outputs:
-    - asset: customer-data
+    - dataset: customer-data
   schedule:
     cron: "0 * * * *"

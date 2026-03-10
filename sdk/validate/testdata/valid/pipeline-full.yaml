@@ -14,9 +14,9 @@ spec:
   mode: batch
   image: myimage:v1
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: processed-events
+    - dataset: processed-events
   schedule:
     cron: "0 */6 * * *"
   timeout: 1h

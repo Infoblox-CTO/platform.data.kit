@@ -1,5 +1,5 @@
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 name: my-source
 type: source
 extension: cloudquery.source.aws

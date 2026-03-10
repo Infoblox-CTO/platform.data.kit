@@ -13,7 +13,7 @@ import (
 var (
 	seedClean   bool
 	seedForce   bool
-	seedAsset   string
+	seedDataSet string
 	seedProfile string
 )
 
@@ -21,14 +21,14 @@ var (
 var devSeedCmd = &cobra.Command{
 	Use:   "seed [package-dir]",
 	Short: "Load seed data into local dev stores",
-	Long: `Create tables and insert sample data defined in asset dev.seed sections.
+	Long: `Create tables and insert sample data defined in dataset dev.seed sections.
 
-This command reads each input asset in the package and, for assets that
+This command reads each input dataset in the package and, for datasets that
 declare a dev.seed section, generates CREATE TABLE and INSERT statements
 and runs them against the backing database in the local k3d cluster.
 
 The dev.seed section supports two data sources:
-  - inline: rows defined directly in the asset YAML
+  - inline: rows defined directly in the dataset YAML
   - file:   path to a CSV or JSON file with seed rows
 
 Seed runs are idempotent — a checksum of the seed data is stored in a
@@ -36,11 +36,11 @@ _dk_seed_meta table and compared on subsequent runs. If the data hasn't
 changed, the seed is skipped entirely.
 
 Named profiles let you maintain multiple data sets for different test
-scenarios (e.g. "large", "edge-cases", "empty") in the same asset YAML
+scenarios (e.g. "large", "edge-cases", "empty") in the same dataset YAML
 under dev.seed.profiles.<name>.
 
 Examples:
-  # Seed all input assets (skips if data unchanged)
+  # Seed all input datasets (skips if data unchanged)
   dk dev seed
 
   # Use a named seed profile
@@ -49,8 +49,8 @@ Examples:
   # Force re-seed even if data unchanged
   dk dev seed --force
 
-  # Seed a specific asset
-  dk dev seed --asset foo-source-table
+  # Seed a specific dataset
+  dk dev seed --dataset foo-source-table
 
   # Drop and recreate tables before seeding
   dk dev seed --clean
@@ -66,7 +66,7 @@ func init() {
 
 	devSeedCmd.Flags().BoolVar(&seedClean, "clean", false, "Drop and recreate tables before seeding")
 	devSeedCmd.Flags().BoolVar(&seedForce, "force", false, "Re-seed even when data is unchanged")
-	devSeedCmd.Flags().StringVar(&seedAsset, "asset", "", "Seed only a specific asset by name")
+	devSeedCmd.Flags().StringVar(&seedDataSet, "dataset", "", "Seed only a specific dataset by name")
 	devSeedCmd.Flags().StringVar(&seedProfile, "profile", "", "Use a named seed profile instead of the default")
 }
 
@@ -94,7 +94,7 @@ func runDevSeed(cmd *cobra.Command, args []string) error {
 		Clean:       seedClean,
 		Force:       seedForce,
 		Profile:     seedProfile,
-		AssetFilter: seedAsset,
+		DataSetFilter: seedDataSet,
 		Output:      os.Stdout,
 	}
 
@@ -103,8 +103,8 @@ func runDevSeed(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("seed failed: %w", err)
 	}
 
-	if result.AssetsSeeded == 0 && result.AssetsSkipped == 0 {
-		fmt.Println("No assets with dev.seed found. Add a dev.seed section to your asset YAML:")
+	if result.DataSetsSeeded == 0 && result.DataSetsSkipped == 0 {
+		fmt.Println("No datasets with dev.seed found. Add a dev.seed section to your dataset YAML:")
 		fmt.Println()
 		fmt.Println("  spec:")
 		fmt.Println("    dev:")
@@ -114,11 +114,11 @@ func runDevSeed(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if result.AssetsSkipped > 0 {
-		fmt.Printf("\n✓ Seeded %d asset(s), %d row(s) inserted, %d unchanged (skipped)\n",
-			result.AssetsSeeded, result.RowsInserted, result.AssetsSkipped)
+	if result.DataSetsSkipped > 0 {
+		fmt.Printf("\n✓ Seeded %d dataset(s), %d row(s) inserted, %d unchanged (skipped)\n",
+			result.DataSetsSeeded, result.RowsInserted, result.DataSetsSkipped)
 	} else {
-		fmt.Printf("\n✓ Seeded %d asset(s), %d row(s) inserted\n", result.AssetsSeeded, result.RowsInserted)
+		fmt.Printf("\n✓ Seeded %d dataset(s), %d row(s) inserted\n", result.DataSetsSeeded, result.RowsInserted)
 	}
 	return nil
 }

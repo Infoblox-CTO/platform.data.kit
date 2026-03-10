@@ -2,7 +2,7 @@
 
 ## Problem
 
-Once data lands in an asset (a Postgres table, an S3 prefix, a Kafka topic), there's no way to interact with it through `dk`. Users manually piece together connection strings, look up secrets, and figure out the right CLI flags for `psql`, `aws s3`, etc. This should be a first-class workflow.
+Once data lands in a DataSet (a Postgres table, an S3 prefix, a Kafka topic), there's no way to interact with it through `dk`. Users manually piece together connection strings, look up secrets, and figure out the right CLI flags for `psql`, `aws s3`, etc. This should be a first-class workflow.
 
 Additionally, connectors today are static YAML files duplicated across every package with no versioning, no central source of truth, and no distribution mechanism — even though OCI infrastructure already exists for Transforms.
 
@@ -217,20 +217,20 @@ spec:
 
   tools:
     - name: ls
-      description: "List objects in the asset prefix"
+      description: "List objects in the DataSet prefix"
       type: exec
       requires: [aws]
       command: |
-        aws s3 ls s3://{{ .Bucket }}/{{ .Asset.Prefix }} \
+        aws s3 ls s3://{{ .Bucket }}/{{ .DataSet.Prefix }} \
           --endpoint-url {{ .Endpoint }} \
           --region {{ .Region }}
 
     - name: sync
-      description: "Sync asset prefix to local directory"
+      description: "Sync DataSet prefix to local directory"
       type: exec
       requires: [aws]
       command: |
-        aws s3 sync s3://{{ .Bucket }}/{{ .Asset.Prefix }} ./{{ .Asset.Name }} \
+        aws s3 sync s3://{{ .Bucket }}/{{ .DataSet.Prefix }} ./{{ .DataSet.Name }} \
           --endpoint-url {{ .Endpoint }} \
           --region {{ .Region }}
 
@@ -239,13 +239,13 @@ spec:
       type: exec
       requires: [s3fs]
       command: |
-        mkdir -p /tmp/dp-mounts/{{ .Asset.Name }}
-        s3fs {{ .Bucket }}:/{{ .Asset.Prefix }} /tmp/dp-mounts/{{ .Asset.Name }} \
+        mkdir -p /tmp/dp-mounts/{{ .DataSet.Name }}
+        s3fs {{ .Bucket }}:/{{ .DataSet.Prefix }} /tmp/dp-mounts/{{ .DataSet.Name }} \
           -o url={{ .Endpoint }} \
           -o use_path_request_style
       postMessage: |
-        Mounted at /tmp/dp-mounts/{{ .Asset.Name }}
-        Unmount with: fusermount -u /tmp/dp-mounts/{{ .Asset.Name }}
+        Mounted at /tmp/dp-mounts/{{ .DataSet.Name }}
+        Unmount with: fusermount -u /tmp/dp-mounts/{{ .DataSet.Name }}
 
     - name: env
       description: "Print AWS environment variables for this store"
@@ -292,7 +292,7 @@ spec:
 ### Tool execution
 
 ```
-dk asset connect <asset-name> [--tool <tool>] [--cell <cell>] [--dry-run]
+dk dataset connect <dataset-name> [--tool <tool>] [--cell <cell>] [--dry-run]
 dk store connect <store-name> [--tool <tool>] [--cell <cell>] [--dry-run]
 dk store tools   <store-name> [--cell <cell>]
 ```
@@ -312,7 +312,7 @@ dk store tools   <store-name> [--cell <cell>]
 
 A `config` tool with `format: env` is designed for shell eval:
 ```bash
-eval $(dk asset connect my-bucket --tool env)
+eval $(dk dataset connect my-bucket --tool env)
 aws s3 ls s3://cdpp-raw/foo/
 ```
 
@@ -329,11 +329,11 @@ dk connector tools postgres                    # list tools for a connector
 ## Resolution Flow
 
 ```
-dk asset connect foo-source-table --tool psql
+dk dataset connect foo-source-table --tool psql
         │
         ▼
 ┌─ Load local manifests ────────────────────────┐
-│  asset/source.yaml  → AssetManifest           │
+│  asset/source.yaml  → DataSetManifest          │
 │  store/source-db.yaml → Store                 │
 │  connector/postgres.yaml → Connector          │
 └────────────────────────────────────────────────┘
@@ -350,7 +350,7 @@ dk asset connect foo-source-table --tool psql
 │  1. Map Store.connection via connectionSchema │
 │  2. Resolve Store.secrets (env/k8s/prompt)    │
 │  3. Compute DSN if protocol=postgresql        │
-│  4. Attach Asset spec (.Table, .Prefix, etc.) │
+│  4. Attach DataSet spec (.Table, .Prefix, etc.) │
 └───────────────────────────────────────────────┘
         │
         ▼
@@ -405,7 +405,7 @@ All changes are additive:
 2. ✅ Add `ConnectorVersion` to `StoreSpec`
 3. Update JSON schemas, validation, tests, example YAMLs
 4. Implement `dk connector list/show/tools` CLI commands
-5. Implement `dk asset connect` / `dk store connect` CLI commands
+5. Implement `dk dataset connect` / `dk store connect` CLI commands
 6. Implement OCI publish/install for connectors (reuse `sdk/registry`)
 7. Refactor `dk dev up` to be connector-driven (incremental, keep hardcoded charts as fallback)
 
@@ -418,5 +418,5 @@ Steps 1-5 work without OCI distribution. Steps 6-7 are layered on top.
 | Should local `connector/` files be gitignored? | No — keep committed for self-containment. Mark as "managed" via annotation so `dk connector install` can update. |
 | Connector lock file? | `connector.lock` recording exact resolved versions (like `go.sum`). Good for reproducibility, add later. |
 | Should `devInfra` (Helm chart) live in the YAML or OCI layer? | Separate OCI layer. Connector YAML stays portable; Helm chart is a packaging concern. |
-| How does this interact with `dk init`? | `dk init --connector postgres@^1.0.0` pulls connector, scaffolds store template, wires up asset. |
+| How does this interact with `dk init`? | `dk init --connector postgres@^1.0.0` pulls connector, scaffolds store template, wires up DataSet. |
 | Should stores also be OCI-distributed? | Not yet. Stores are instance-specific. The cell/k8s CRD path handles shared stores. |
