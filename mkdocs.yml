@@ -114,7 +114,7 @@ nav:
     - Data Packages: concepts/data-packages.md
     - DataSets: concepts/datasets.md
     - Manifests: concepts/manifests.md
-    - Pipeline Workflows: concepts/pipelines.md
+    - Pipelines: concepts/pipelines.md
     - Lineage: concepts/lineage.md
     - Governance: concepts/governance.md
     - Environments: concepts/environments.md
