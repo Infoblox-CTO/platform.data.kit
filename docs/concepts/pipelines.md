@@ -37,7 +37,7 @@ dk pipeline show --output dot
 dk pipeline show --output json
 
 # Scan specific directories
-dk pipeline show --scan-dir ./transforms --scan-dir ./assets
+dk pipeline show --scan-dir ./transforms --scan-dir ./datasets
 ```
 
 ## Output Formats

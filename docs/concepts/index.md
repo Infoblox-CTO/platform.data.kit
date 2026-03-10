@@ -40,10 +40,10 @@ Data contracts — tables, S3 prefixes, topics — with schema and column-level 
 </div>
 
 <div class="card" markdown>
-### :gear: Pipeline Workflows
-Multi-step pipeline execution with sync, transform, test, publish, and custom steps.
+### :gear: Pipelines
+Reactive dependency graphs derived from Transform and DataSet manifests.
 
-[Pipeline Workflows →](pipelines.md)
+[Pipelines →](pipelines.md)
 </div>
 
 <div class="card" markdown>
@@ -84,7 +84,7 @@ We recommend reading the concepts in this order:
 2. **[Data Packages](data-packages.md)** - Understand the core unit of work
 3. **[Manifests](manifests.md)** - Learn how to configure packages
 4. **[DataSets](datasets.md)** - Data contracts with schema and classification
-5. **[Pipeline Workflows](pipelines.md)** - Define multi-step execution
+5. **[Pipelines](pipelines.md)** - Understand the reactive dependency graph
 6. **[Lineage](lineage.md)** - Track data flow
 7. **[Governance](governance.md)** - Classify and protect data
 8. **[Environments](environments.md)** - Deploy across stages

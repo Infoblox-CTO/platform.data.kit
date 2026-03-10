@@ -204,7 +204,7 @@ func (t *TCPSocketAction) Validate() error {
 }
 
 // --------------------------------------------------------------------------
-// Pipeline lineage (used by pipeline workflow and runner).
+// Pipeline lineage (used by the runner).
 // --------------------------------------------------------------------------
 
 // PipelineLineage configures lineage tracking for a pipeline.
