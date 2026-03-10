@@ -33,7 +33,7 @@ user-aggregator/
 ├── dk.yaml                 # Transform manifest
 ├── connector/              # Connector definitions
 ├── store/                  # Store definitions
-├── asset/                  # DataSet definitions
+├── dataset/                # DataSet definitions
 ├── src/
 │   └── main.go            # Pipeline code
 └── schemas/
@@ -78,7 +78,7 @@ spec:
 
 Create the input DataSet:
 
-```yaml title="asset/user-events.yaml"
+```yaml title="dataset/user-events.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:
@@ -92,7 +92,7 @@ spec:
 
 Create the output DataSet:
 
-```yaml title="asset/user-aggregations.yaml"
+```yaml title="dataset/user-aggregations.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:

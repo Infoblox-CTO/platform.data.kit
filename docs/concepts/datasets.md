@@ -20,7 +20,7 @@ A **DataSet** is a named data contract that describes a table, S3 prefix, or Kaf
 
 ## DataSet Structure
 
-DataSets live in the `asset/` directory (or any directory you choose) alongside
+DataSets live in the `dataset/` directory (or any directory you choose) alongside
 other manifests:
 
 ```
@@ -31,12 +31,12 @@ my-pipeline/
 ├── store/
 │   ├── warehouse.yaml
 │   └── lake-raw.yaml
-├── asset/
+├── dataset/
 │   ├── users.yaml
 │   ├── users-parquet.yaml
 │   ├── orders.yaml
 │   └── orders-parquet.yaml
-├── asset-group/
+├── dataset-group/
 │   └── pg-snapshot.yaml
 └── dk.yaml                  # Transform manifest
 ```
@@ -45,7 +45,7 @@ my-pipeline/
 
 Every DataSet is defined by a YAML file with `kind: DataSet`:
 
-```yaml title="asset/users.yaml"
+```yaml title="dataset/users.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:
@@ -86,7 +86,7 @@ DataSets declare their columns in the `spec.schema` array. Each column can
 optionally carry a `from` field that links it to a column in another DataSet,
 establishing **column-level lineage**:
 
-```yaml title="asset/users-parquet.yaml"
+```yaml title="dataset/users-parquet.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:
@@ -129,7 +129,7 @@ DataSets can declare sample data in a `dev.seed` section. This data is loaded
 into the backing database during local development so that your pipeline has
 real rows to process without manual SQL or external fixtures.
 
-```yaml title="asset/source.yaml"
+```yaml title="dataset/source.yaml"
 spec:
   store: warehouse
   table: example_table
@@ -162,7 +162,7 @@ spec:
 You can define **named profiles** for different test scenarios under
 `dev.seed.profiles`. Each profile has its own `inline` rows or seed `file`:
 
-```yaml title="asset/source.yaml"
+```yaml title="dataset/source.yaml"
 dev:
   seed:
     inline:

@@ -107,7 +107,7 @@ spec:
 
 A DataSet declares a data contract — a table, S3 prefix, or topic that lives in a Store:
 
-```yaml title="asset/users.yaml"
+```yaml title="dataset/users.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:
@@ -129,7 +129,7 @@ spec:
 
 Output DataSets can use `from` for column-level lineage:
 
-```yaml title="asset/users-parquet.yaml"
+```yaml title="dataset/users-parquet.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:

@@ -67,7 +67,7 @@ spec:
 
 Create the input DataSet referencing a Kafka Store:
 
-```yaml title="asset/user-events.yaml"
+```yaml title="dataset/user-events.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:
@@ -81,7 +81,7 @@ spec:
 
 Create the output DataSet referencing an S3 Store:
 
-```yaml title="asset/processed-events.yaml"
+```yaml title="dataset/processed-events.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:

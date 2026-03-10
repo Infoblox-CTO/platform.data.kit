@@ -333,7 +333,7 @@ dk dataset connect foo-source-table --tool psql
         │
         ▼
 ┌─ Load local manifests ────────────────────────┐
-│  asset/source.yaml  → DataSetManifest          │
+│  dataset/source.yaml  → DataSetManifest        │
 │  store/source-db.yaml → Store                 │
 │  connector/postgres.yaml → Connector          │
 └────────────────────────────────────────────────┘
