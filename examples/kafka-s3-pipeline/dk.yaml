@@ -15,9 +15,9 @@ spec:
     - name: LOG_LEVEL
       value: info
   inputs:
-    - asset: kafka-events
+    - dataset: kafka-events
   outputs:
-    - asset: processed-events
+    - dataset: processed-events
   trigger:
     policy: schedule
     schedule:

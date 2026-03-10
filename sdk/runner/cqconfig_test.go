@@ -10,7 +10,7 @@ import (
 )
 
 func TestGenerateCQConfig(t *testing.T) {
-	// Set up a package directory with connector/, store/, asset/ manifests.
+	// Set up a package directory with connector/, store/, dataset/ manifests.
 	pkgDir := t.TempDir()
 
 	// --- connectors ---
@@ -71,32 +71,32 @@ spec:
     region: us-east-1
 `)
 
-	// --- assets ---
-	assetDir := filepath.Join(pkgDir, "asset")
-	if err := os.MkdirAll(assetDir, 0755); err != nil {
+	// --- datasets ---
+	datasetDir := filepath.Join(pkgDir, "dataset")
+	if err := os.MkdirAll(datasetDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
+	writeFile(t, filepath.Join(datasetDir, "users.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
 spec:
   store: warehouse
   table: public.users
 `)
-	writeFile(t, filepath.Join(assetDir, "orders.yaml"), `
+	writeFile(t, filepath.Join(datasetDir, "orders.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: orders
 spec:
   store: warehouse
   table: public.orders
 `)
-	writeFile(t, filepath.Join(assetDir, "users-parquet.yaml"), `
+	writeFile(t, filepath.Join(datasetDir, "users-parquet.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users-parquet
 spec:
@@ -117,12 +117,12 @@ spec:
 		Spec: contracts.TransformSpec{
 			Runtime: contracts.RuntimeCloudQuery,
 			Mode:    "batch",
-			Inputs: []contracts.AssetRef{
-				{Asset: "users"},
-				{Asset: "orders"},
+			Inputs: []contracts.DataSetRef{
+				{DataSet: "users"},
+				{DataSet: "orders"},
 			},
-			Outputs: []contracts.AssetRef{
-				{Asset: "users-parquet"},
+			Outputs: []contracts.DataSetRef{
+				{DataSet: "users-parquet"},
 			},
 		},
 	}
@@ -159,7 +159,7 @@ spec:
 		t.Error("config should contain store connection bucket")
 	}
 
-	// Verify destination gets asset-level overrides.
+	// Verify destination gets dataset-level overrides.
 	if !strings.Contains(configStr, "users/{{TABLE}}/{{UUID}}.{{FORMAT}}") {
 		t.Errorf("config destination spec should contain CQ S3 path template built from prefix, got:\n%s", configStr)
 	}
@@ -252,20 +252,20 @@ spec:
     no_rotate: true
 `)
 
-	assetDir := filepath.Join(pkgDir, "asset")
-	os.MkdirAll(assetDir, 0755)
-	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
+	datasetDir := filepath.Join(pkgDir, "dataset")
+	os.MkdirAll(datasetDir, 0755)
+	writeFile(t, filepath.Join(datasetDir, "users.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
 spec:
   store: warehouse
   table: public.users
 `)
-	writeFile(t, filepath.Join(assetDir, "users-parquet.yaml"), `
+	writeFile(t, filepath.Join(datasetDir, "users-parquet.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users-parquet
 spec:
@@ -285,11 +285,11 @@ spec:
 		Spec: contracts.TransformSpec{
 			Runtime: contracts.RuntimeCloudQuery,
 			Mode:    "batch",
-			Inputs: []contracts.AssetRef{
-				{Asset: "users"},
+			Inputs: []contracts.DataSetRef{
+				{DataSet: "users"},
 			},
-			Outputs: []contracts.AssetRef{
-				{Asset: "users-parquet"},
+			Outputs: []contracts.DataSetRef{
+				{DataSet: "users-parquet"},
 			},
 		},
 	}
@@ -311,38 +311,38 @@ spec:
 	}
 }
 
-func TestGenerateCQConfig_MissingAsset(t *testing.T) {
+func TestGenerateCQConfig_MissingDataSet(t *testing.T) {
 	pkgDir := t.TempDir()
-	// No asset/ directory → should fail gracefully.
+	// No dataset/ directory → should fail gracefully.
 	os.MkdirAll(filepath.Join(pkgDir, "connector"), 0755)
 	os.MkdirAll(filepath.Join(pkgDir, "store"), 0755)
 
 	transform := &contracts.Transform{
 		Spec: contracts.TransformSpec{
 			Runtime: contracts.RuntimeCloudQuery,
-			Inputs: []contracts.AssetRef{
-				{Asset: "nonexistent"},
+			Inputs: []contracts.DataSetRef{
+				{DataSet: "nonexistent"},
 			},
 		},
 	}
 
 	_, _, err := generateCQConfig(transform, pkgDir)
 	if err == nil {
-		t.Fatal("expected error for missing asset, got nil")
+		t.Fatal("expected error for missing dataset, got nil")
 	}
 	if !strings.Contains(err.Error(), "nonexistent") {
-		t.Errorf("error should mention asset name: %v", err)
+		t.Errorf("error should mention dataset name: %v", err)
 	}
 }
 
 func TestGenerateCQConfig_MissingStore(t *testing.T) {
 	pkgDir := t.TempDir()
 
-	assetDir := filepath.Join(pkgDir, "asset")
-	os.MkdirAll(assetDir, 0755)
-	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
+	datasetDir := filepath.Join(pkgDir, "dataset")
+	os.MkdirAll(datasetDir, 0755)
+	writeFile(t, filepath.Join(datasetDir, "users.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
 spec:
@@ -353,8 +353,8 @@ spec:
 	transform := &contracts.Transform{
 		Spec: contracts.TransformSpec{
 			Runtime: contracts.RuntimeCloudQuery,
-			Inputs: []contracts.AssetRef{
-				{Asset: "users"},
+			Inputs: []contracts.DataSetRef{
+				{DataSet: "users"},
 			},
 		},
 	}
@@ -371,11 +371,11 @@ spec:
 func TestGenerateCQConfig_MissingConnector(t *testing.T) {
 	pkgDir := t.TempDir()
 
-	assetDir := filepath.Join(pkgDir, "asset")
-	os.MkdirAll(assetDir, 0755)
-	writeFile(t, filepath.Join(assetDir, "users.yaml"), `
+	datasetDir := filepath.Join(pkgDir, "dataset")
+	os.MkdirAll(datasetDir, 0755)
+	writeFile(t, filepath.Join(datasetDir, "users.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
 spec:
@@ -399,8 +399,8 @@ spec:
 	transform := &contracts.Transform{
 		Spec: contracts.TransformSpec{
 			Runtime: contracts.RuntimeCloudQuery,
-			Inputs: []contracts.AssetRef{
-				{Asset: "users"},
+			Inputs: []contracts.DataSetRef{
+				{DataSet: "users"},
 			},
 		},
 	}
@@ -445,13 +445,13 @@ spec:
     host: localhost
 `)
 
-	assetDir := filepath.Join(pkgDir, "asset")
-	os.MkdirAll(assetDir, 0755)
-	writeFile(t, filepath.Join(assetDir, "myasset.yaml"), `
+	datasetDir := filepath.Join(pkgDir, "dataset")
+	os.MkdirAll(datasetDir, 0755)
+	writeFile(t, filepath.Join(datasetDir, "mydataset.yaml"), `
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
-  name: myasset
+  name: mydataset
 spec:
   store: mystore
   table: public.users
@@ -476,11 +476,11 @@ spec:
 		t.Error("expected store 'mystore'")
 	}
 
-	if len(pm.Assets) != 1 {
-		t.Errorf("expected 1 asset, got %d", len(pm.Assets))
+	if len(pm.DataSets) != 1 {
+		t.Errorf("expected 1 dataset, got %d", len(pm.DataSets))
 	}
-	if _, ok := pm.Assets["myasset"]; !ok {
-		t.Error("expected asset 'myasset'")
+	if _, ok := pm.DataSets["mydataset"]; !ok {
+		t.Error("expected dataset 'mydataset'")
 	}
 }
 
@@ -492,7 +492,7 @@ func TestLoadPackageManifests_EmptyDir(t *testing.T) {
 		t.Fatalf("loadPackageManifests() on empty dir error: %v", err)
 	}
 
-	if len(pm.Connectors) != 0 || len(pm.Stores) != 0 || len(pm.Assets) != 0 {
+	if len(pm.Connectors) != 0 || len(pm.Stores) != 0 || len(pm.DataSets) != 0 {
 		t.Error("expected empty manifests for empty package directory")
 	}
 }

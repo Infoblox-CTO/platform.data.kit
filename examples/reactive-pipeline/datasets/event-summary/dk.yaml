@@ -1,0 +1,21 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: event-summary
+  version: "1.0.0"
+  labels:
+    domain: analytics
+    tier: aggregated
+spec:
+  store: warehouse
+  table: analytics.event_summary
+  classification: internal
+  schema:
+    - name: date
+      type: string
+    - name: event_type
+      type: string
+    - name: total_events
+      type: integer
+    - name: unique_users
+      type: integer

@@ -9,7 +9,7 @@ var pipelineCmd = &cobra.Command{
 	Use:   "pipeline",
 	Short: "Inspect the pipeline dependency graph",
 	Long: `Inspect the reactive pipeline dependency graph derived from Transform and
-Asset manifests (dk.yaml files).
+DataSet manifests (dk.yaml files).
 
 Subcommands:
   show    Display pipeline dependency graph
@@ -18,7 +18,7 @@ Examples:
   # Show full dependency graph
   dk pipeline show
 
-  # Show graph leading to a specific asset
+  # Show graph leading to a specific dataset
   dk pipeline show --destination event-summary
 
   # Render as Mermaid diagram

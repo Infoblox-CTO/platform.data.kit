@@ -31,8 +31,8 @@ pg-to-s3/
 │   ├── postgres.yaml              # Source connector
 │   └── s3.yaml                    # Destination connector
 ├── asset/
-│   ├── pg-to-s3-source-table.yaml # Source asset (store: source-db)
-│   └── pg-to-s3-dest-table.yaml   # Dest asset (store: dest-bucket)
+│   ├── pg-to-s3-source-table.yaml # Source DataSet (store: source-db)
+│   └── pg-to-s3-dest-table.yaml   # Dest DataSet (store: dest-bucket)
 └── store/                         # Local dev stores (fallback)
     ├── source-db.yaml             # localhost PostgreSQL
     └── dest-bucket.yaml           # LocalStack S3
@@ -161,7 +161,7 @@ The chart contains:
 
 - `dk.yaml` (Transform manifest)
 - `connector/*.yaml` (Connector definitions)
-- `asset/*.yaml` (Asset contracts)
+- `asset/*.yaml` (DataSet contracts)
 - `templates/packagedeployment.yaml` (Helm template)
 
 The `store/` directory is **not** included — stores are cell-specific.

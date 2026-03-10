@@ -100,7 +100,7 @@ When running a package, manifests are resolved by these rules:
 | Manifest kind | Source | Rationale |
 |---|---|---|
 | **Transform** | Package | The computation is the thing being versioned |
-| **Asset** | Package | Data contracts are part of the package interface |
+| **DataSet** | Package | Data contracts are part of the package interface |
 | **Connector** | Package | Plugin images are versioned with the code |
 | **Store** | Cell (if `--cell` set), else package `store/` | Infrastructure varies per cell |
 
@@ -212,15 +212,15 @@ ArgoCD pulls the chart from the OCI registry, renders it with `cell: canary`, an
 
 ### Cross-cell transforms
 
-When a Transform reads from one cell and writes to another, use the `cell` field on asset references:
+When a Transform reads from one cell and writes to another, use the `cell` field on DataSet references:
 
 ```yaml title="dk.yaml"
 spec:
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
       cell: cell-us-east          # read from us-east cell
   outputs:
-    - asset: processed-events     # write to deployment cell (default)
+    - dataset: processed-events   # write to deployment cell (default)
 ```
 
 !!! tip "See Also"

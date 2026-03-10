@@ -15,13 +15,13 @@ import (
 
 // GraphNode represents a node in the pipeline dependency graph.
 type GraphNode struct {
-	// ID is the unique identifier (transform or asset name).
+	// ID is the unique identifier (transform or dataset name).
 	ID string `json:"id"`
-	// Type is "transform" or "asset".
+	// Type is "transform" or "dataset".
 	Type string `json:"type"`
-	// Runtime is the transform runtime (empty for assets).
+	// Runtime is the transform runtime (empty for datasets).
 	Runtime string `json:"runtime,omitempty"`
-	// TriggerPolicy is the trigger policy (empty for assets).
+	// TriggerPolicy is the trigger policy (empty for datasets).
 	TriggerPolicy string `json:"triggerPolicy,omitempty"`
 	// TriggerDetail is human-readable trigger info (e.g., cron expression).
 	TriggerDetail string `json:"triggerDetail,omitempty"`
@@ -35,7 +35,7 @@ type GraphEdge struct {
 	To   string `json:"to"`
 }
 
-// PipelineGraph is a DAG of transforms and assets.
+// PipelineGraph is a DAG of transforms and datasets.
 type PipelineGraph struct {
 	Nodes []GraphNode `json:"nodes"`
 	Edges []GraphEdge `json:"edges"`
@@ -45,16 +45,16 @@ type PipelineGraph struct {
 type GraphOptions struct {
 	// ScanDirs is the list of directories to scan for dk.yaml files.
 	ScanDirs []string
-	// Destination filters the graph to show only the chain leading to this asset.
+	// Destination filters the graph to show only the chain leading to this dataset.
 	Destination string
 	// ShowAll shows the full graph.
 	ShowAll bool
 }
 
-// BuildGraph scans directories for Transform and Asset manifests, then builds
+// BuildGraph scans directories for Transform and DataSet manifests, then builds
 // a dependency graph.
 func BuildGraph(opts GraphOptions) (*PipelineGraph, error) {
-	transforms, assets, err := scanManifests(opts.ScanDirs)
+	transforms, datasets, err := scanManifests(opts.ScanDirs)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +62,9 @@ func BuildGraph(opts GraphOptions) (*PipelineGraph, error) {
 	g := &PipelineGraph{}
 	nodeSet := make(map[string]bool)
 
-	// Add asset nodes.
-	for name := range assets {
-		g.Nodes = append(g.Nodes, GraphNode{ID: name, Type: "asset"})
+	// Add dataset nodes.
+	for name := range datasets {
+		g.Nodes = append(g.Nodes, GraphNode{ID: name, Type: "dataset"})
 		nodeSet[name] = true
 	}
 
@@ -88,31 +88,31 @@ func BuildGraph(opts GraphOptions) (*PipelineGraph, error) {
 		g.Nodes = append(g.Nodes, tNode)
 		nodeSet[t.manifest.Metadata.Name] = true
 
-		// Edges: input assets → transform.
+		// Edges: input datasets → transform.
 		for _, in := range t.manifest.Spec.Inputs {
-			assetName := in.Asset
-			if assetName == "" {
+			datasetName := in.DataSet
+			if datasetName == "" {
 				continue
 			}
-			// Ensure input asset node exists (even if no manifest found).
-			if !nodeSet[assetName] {
-				g.Nodes = append(g.Nodes, GraphNode{ID: assetName, Type: "asset"})
-				nodeSet[assetName] = true
+			// Ensure input dataset node exists (even if no manifest found).
+			if !nodeSet[datasetName] {
+				g.Nodes = append(g.Nodes, GraphNode{ID: datasetName, Type: "dataset"})
+				nodeSet[datasetName] = true
 			}
-			g.Edges = append(g.Edges, GraphEdge{From: assetName, To: t.manifest.Metadata.Name})
+			g.Edges = append(g.Edges, GraphEdge{From: datasetName, To: t.manifest.Metadata.Name})
 		}
 
-		// Edges: transform → output assets.
+		// Edges: transform → output datasets.
 		for _, out := range t.manifest.Spec.Outputs {
-			assetName := out.Asset
-			if assetName == "" {
+			datasetName := out.DataSet
+			if datasetName == "" {
 				continue
 			}
-			if !nodeSet[assetName] {
-				g.Nodes = append(g.Nodes, GraphNode{ID: assetName, Type: "asset"})
-				nodeSet[assetName] = true
+			if !nodeSet[datasetName] {
+				g.Nodes = append(g.Nodes, GraphNode{ID: datasetName, Type: "dataset"})
+				nodeSet[datasetName] = true
 			}
-			g.Edges = append(g.Edges, GraphEdge{From: t.manifest.Metadata.Name, To: assetName})
+			g.Edges = append(g.Edges, GraphEdge{From: t.manifest.Metadata.Name, To: datasetName})
 		}
 	}
 
@@ -133,7 +133,7 @@ func BuildGraph(opts GraphOptions) (*PipelineGraph, error) {
 }
 
 // filterToDestination returns a subgraph containing only nodes on paths
-// leading to the destination asset.
+// leading to the destination dataset.
 func filterToDestination(g *PipelineGraph, dest string) *PipelineGraph {
 	// Build reverse adjacency list.
 	reverseAdj := make(map[string][]string)
@@ -167,7 +167,7 @@ func filterToDestination(g *PipelineGraph, dest string) *PipelineGraph {
 		if n, ok := nodeMap[id]; ok {
 			fg.Nodes = append(fg.Nodes, n)
 		} else {
-			fg.Nodes = append(fg.Nodes, GraphNode{ID: id, Type: "asset"})
+			fg.Nodes = append(fg.Nodes, GraphNode{ID: id, Type: "dataset"})
 		}
 	}
 	for _, e := range g.Edges {
@@ -186,7 +186,7 @@ func filterToDestination(g *PipelineGraph, dest string) *PipelineGraph {
 // RenderText renders the graph as a text tree to the writer.
 func RenderText(w io.Writer, g *PipelineGraph, destination string) {
 	if len(g.Nodes) == 0 {
-		fmt.Fprintln(w, "No transforms or assets found.")
+		fmt.Fprintln(w, "No transforms or datasets found.")
 		return
 	}
 
@@ -202,7 +202,7 @@ func RenderText(w io.Writer, g *PipelineGraph, destination string) {
 	fmt.Fprintln(w, strings.Repeat("═", 30))
 	fmt.Fprintln(w)
 
-	// Find root assets (no incoming edges).
+	// Find root datasets (no incoming edges).
 	hasIncoming := make(map[string]bool)
 	for _, e := range g.Edges {
 		hasIncoming[e.To] = true
@@ -210,7 +210,7 @@ func RenderText(w io.Writer, g *PipelineGraph, destination string) {
 
 	roots := []string{}
 	for _, n := range g.Nodes {
-		if n.Type == "asset" && !hasIncoming[n.ID] {
+		if n.Type == "dataset" && !hasIncoming[n.ID] {
 			roots = append(roots, n.ID)
 		}
 	}
@@ -453,9 +453,9 @@ type scannedTransform struct {
 	path     string
 }
 
-func scanManifests(dirs []string) ([]scannedTransform, map[string]*contracts.AssetManifest, error) {
+func scanManifests(dirs []string) ([]scannedTransform, map[string]*contracts.DataSetManifest, error) {
 	var transforms []scannedTransform
-	assets := make(map[string]*contracts.AssetManifest)
+	datasets := make(map[string]*contracts.DataSetManifest)
 
 	for _, dir := range dirs {
 		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -488,10 +488,10 @@ func scanManifests(dirs []string) ([]scannedTransform, map[string]*contracts.Ass
 				if err := yaml.Unmarshal(data, &t); err == nil {
 					transforms = append(transforms, scannedTransform{manifest: &t, path: path})
 				}
-			case "Asset":
-				var a contracts.AssetManifest
+			case "DataSet":
+				var a contracts.DataSetManifest
 				if err := yaml.Unmarshal(data, &a); err == nil {
-					assets[a.Metadata.Name] = &a
+					datasets[a.Metadata.Name] = &a
 				}
 			}
 
@@ -502,5 +502,5 @@ func scanManifests(dirs []string) ([]scannedTransform, map[string]*contracts.Ass
 		}
 	}
 
-	return transforms, assets, nil
+	return transforms, datasets, nil
 }

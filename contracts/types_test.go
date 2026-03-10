@@ -14,8 +14,8 @@ func TestKind_Constants(t *testing.T) {
 		// New kinds
 		{name: "connector", kind: KindConnector, wantKind: "Connector"},
 		{name: "store", kind: KindStore, wantKind: "Store"},
-		{name: "asset", kind: KindAsset, wantKind: "Asset"},
-		{name: "asset-group", kind: KindAssetGroup, wantKind: "AssetGroup"},
+		{name: "dataset", kind: KindDataSet, wantKind: "DataSet"},
+		{name: "dataset-group", kind: KindDataSetGroup, wantKind: "DataSetGroup"},
 		{name: "transform", kind: KindTransform, wantKind: "Transform"},
 	}
 
@@ -37,8 +37,8 @@ func TestKind_IsValid(t *testing.T) {
 		// New kinds
 		{name: "connector is valid", kind: KindConnector, valid: true},
 		{name: "store is valid", kind: KindStore, valid: true},
-		{name: "asset is valid", kind: KindAsset, valid: true},
-		{name: "asset-group is valid", kind: KindAssetGroup, valid: true},
+		{name: "dataset is valid", kind: KindDataSet, valid: true},
+		{name: "dataset-group is valid", kind: KindDataSetGroup, valid: true},
 		{name: "transform is valid", kind: KindTransform, valid: true},
 		// Invalid kinds
 		{name: "empty is invalid", kind: "", valid: false},
@@ -56,7 +56,7 @@ func TestKind_IsValid(t *testing.T) {
 
 func TestAllKinds(t *testing.T) {
 	kinds := AllKinds()
-	expected := []Kind{KindConnector, KindStore, KindAsset, KindAssetGroup, KindTransform}
+	expected := []Kind{KindConnector, KindStore, KindDataSet, KindDataSetGroup, KindTransform}
 	if len(kinds) != len(expected) {
 		t.Fatalf("AllKinds() returned %d kinds, want %d", len(kinds), len(expected))
 	}

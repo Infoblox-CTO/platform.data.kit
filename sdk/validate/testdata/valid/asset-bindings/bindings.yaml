@@ -1,6 +1,6 @@
 - name: raw-output
   type: s3-prefix
-  asset: my-source
+  dataset: my-source
   s3:
     bucket: my-data-bucket
     prefix: raw/security/

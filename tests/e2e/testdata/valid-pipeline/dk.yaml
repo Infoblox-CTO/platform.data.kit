@@ -10,6 +10,6 @@ spec:
   description: A valid pipeline package for E2E testing
   image: "python:3.11"
   inputs:
-    - asset: source-events
+    - dataset: source-events
   outputs:
-    - asset: processed-data
+    - dataset: processed-data

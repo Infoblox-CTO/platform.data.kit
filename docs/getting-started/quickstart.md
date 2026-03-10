@@ -50,10 +50,10 @@ spec:
   image: "${REGISTRY}/my-first-pipeline:${VERSION}"
 
   inputs:
-    - asset: my-first-pipeline-input
+    - dataset: my-first-pipeline-input
 
   outputs:
-    - asset: my-first-pipeline-output
+    - dataset: my-first-pipeline-output
 
   resources:
     cpu: "1"

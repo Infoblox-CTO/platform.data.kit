@@ -10,8 +10,8 @@ These spec items are fully working and tested:
 
 | Area | Spec Item | Implementation |
 |---|---|---|
-| **Contracts** | Transform, Connector, Store, Asset, AssetGroup types | `contracts/*.go` — all 5 manifest kinds with YAML/JSON round-trip |
-| **AssetRef.Cell** | Optional `cell` field on AssetRef for cross-cell routing | `contracts/transform.go` — `Cell string \`yaml:"cell,omitempty"\`` |
+| **Contracts** | Transform, Connector, Store, DataSet, DataSetGroup types | `contracts/*.go` — all 5 manifest kinds with YAML/JSON round-trip |
+| **DataSetRef.Cell** | Optional `cell` field on DataSetRef for cross-cell routing | `contracts/transform.go` — `Cell string \`yaml:"cell,omitempty"\`` |
 | **Cross-cell test** | Cell-qualified outputs in full Transform YAML | `contracts/transform_test.go` — `TestTransform_CrossCellOutputs` |
 | **Cell CRD type** | Cluster-scoped Cell with Namespace, Labels, Status | `platform/controller/api/v1alpha1/cell_types.go` |
 | **Store CRD type** | Namespaced Store with Connector, Connection, Secrets | `platform/controller/api/v1alpha1/store_types.go` |
@@ -289,6 +289,6 @@ The core developer workflow is complete:
 - `dk build` → validates and produces Helm chart
 - `dk publish` → pushes Helm chart to OCI registry
 - `dk cell list/show/stores` → discovers cells and stores via kubectl
-- Cross-cell routing via `AssetRef.Cell` is supported in the resolution chain
+- Cross-cell routing via `DataSetRef.Cell` is supported in the resolution chain
 
 The gaps are in **lifecycle automation** (cell provisioning, promotion, rollback) and **controller logic** (reconciliation, status). The data model, resolution chain, and CLI commands for the core workflow are solid.

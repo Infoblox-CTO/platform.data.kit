@@ -83,7 +83,7 @@ type PackageConfig struct {
 	Description string
 	Owner       string
 	Mode        string // batch, streaming
-	Kind        string // Transform, Connector, Store, Asset, AssetGroup
+	Kind        string // Transform, Connector, Store, DataSet, DataSetGroup
 	Runtime     string // cloudquery, generic-go, generic-python, dbt (new taxonomy)
 	GRPCPort    int    // gRPC server port (cloudquery, default 7777)
 	Concurrency int    // max concurrent resolvers (cloudquery, default 10000)

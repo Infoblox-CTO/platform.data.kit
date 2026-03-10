@@ -8,8 +8,8 @@ import (
 )
 
 func TestGenerateSeedSQL_Basic(t *testing.T) {
-	asset := &contracts.AssetManifest{
-		Spec: contracts.AssetSpec{
+	ds := &contracts.DataSetManifest{
+		Spec: contracts.DataSetSpec{
 			Table: "example_table",
 			Schema: []contracts.SchemaField{
 				{Name: "id", Type: "integer"},
@@ -23,7 +23,7 @@ func TestGenerateSeedSQL_Basic(t *testing.T) {
 		{"id": 2, "name": "bob", "created_at": "2026-01-15T00:00:00Z"},
 	}
 
-	sql := generateSeedSQL(asset, rows, false)
+	sql := generateSeedSQL(ds, rows, false)
 
 	if !containsAll(sql,
 		"CREATE TABLE IF NOT EXISTS example_table",
@@ -45,8 +45,8 @@ func TestGenerateSeedSQL_Basic(t *testing.T) {
 }
 
 func TestGenerateSeedSQL_Clean(t *testing.T) {
-	asset := &contracts.AssetManifest{
-		Spec: contracts.AssetSpec{
+	ds := &contracts.DataSetManifest{
+		Spec: contracts.DataSetSpec{
 			Table: "users",
 			Schema: []contracts.SchemaField{
 				{Name: "id", Type: "integer"},
@@ -57,7 +57,7 @@ func TestGenerateSeedSQL_Clean(t *testing.T) {
 		{"id": 42},
 	}
 
-	sql := generateSeedSQL(asset, rows, true)
+	sql := generateSeedSQL(ds, rows, true)
 
 	if !contains(sql, "DROP TABLE IF EXISTS users CASCADE") {
 		t.Errorf("expected DROP TABLE when clean=true, got:\n%s", sql)
@@ -72,8 +72,8 @@ func TestGenerateSeedSQL_Clean(t *testing.T) {
 }
 
 func TestGenerateSeedSQL_NoRows(t *testing.T) {
-	asset := &contracts.AssetManifest{
-		Spec: contracts.AssetSpec{
+	ds := &contracts.DataSetManifest{
+		Spec: contracts.DataSetSpec{
 			Table: "empty_table",
 			Schema: []contracts.SchemaField{
 				{Name: "id", Type: "integer"},
@@ -81,7 +81,7 @@ func TestGenerateSeedSQL_NoRows(t *testing.T) {
 		},
 	}
 
-	sql := generateSeedSQL(asset, nil, false)
+	sql := generateSeedSQL(ds, nil, false)
 
 	if !contains(sql, "CREATE TABLE IF NOT EXISTS empty_table") {
 		t.Errorf("expected CREATE TABLE, got:\n%s", sql)
@@ -92,8 +92,8 @@ func TestGenerateSeedSQL_NoRows(t *testing.T) {
 }
 
 func TestGenerateSeedSQL_SQLInjectionEscaping(t *testing.T) {
-	asset := &contracts.AssetManifest{
-		Spec: contracts.AssetSpec{
+	ds := &contracts.DataSetManifest{
+		Spec: contracts.DataSetSpec{
 			Table: "test_table",
 			Schema: []contracts.SchemaField{
 				{Name: "name", Type: "string"},
@@ -104,7 +104,7 @@ func TestGenerateSeedSQL_SQLInjectionEscaping(t *testing.T) {
 		{"name": "O'Reilly"},
 	}
 
-	sql := generateSeedSQL(asset, rows, false)
+	sql := generateSeedSQL(ds, rows, false)
 
 	if !contains(sql, "O''Reilly") {
 		t.Errorf("single quotes should be escaped, got:\n%s", sql)
@@ -176,9 +176,9 @@ func TestParsePostgresConnStr(t *testing.T) {
 }
 
 func TestResolveSeedRows_Inline(t *testing.T) {
-	asset := &contracts.AssetManifest{
-		Spec: contracts.AssetSpec{
-			Dev: &contracts.AssetDevSpec{
+	ds := &contracts.DataSetManifest{
+		Spec: contracts.DataSetSpec{
+			Dev: &contracts.DataSetDevSpec{
 				Seed: &contracts.SeedSpec{
 					Inline: []map[string]any{
 						{"id": 1, "name": "test"},
@@ -188,7 +188,7 @@ func TestResolveSeedRows_Inline(t *testing.T) {
 		},
 	}
 
-	rows, err := resolveSeedRows(asset, ".", "")
+	rows, err := resolveSeedRows(ds, ".", "")
 	if err != nil {
 		t.Fatalf("resolveSeedRows error: %v", err)
 	}
@@ -201,10 +201,10 @@ func TestResolveSeedRows_Inline(t *testing.T) {
 }
 
 func TestResolveSeedRows_NilDev(t *testing.T) {
-	asset := &contracts.AssetManifest{}
+	ds := &contracts.DataSetManifest{}
 
 	// Should not panic on nil Dev
-	if asset.Spec.Dev == nil || asset.Spec.Dev.Seed == nil {
+	if ds.Spec.Dev == nil || ds.Spec.Dev.Seed == nil {
 		return // expected
 	}
 }
@@ -360,9 +360,9 @@ func TestComputeSeedChecksum_EmptyRows(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestResolveSeedRows_Profile(t *testing.T) {
-	asset := &contracts.AssetManifest{
-		Spec: contracts.AssetSpec{
-			Dev: &contracts.AssetDevSpec{
+	ds := &contracts.DataSetManifest{
+		Spec: contracts.DataSetSpec{
+			Dev: &contracts.DataSetDevSpec{
 				Seed: &contracts.SeedSpec{
 					Inline: []map[string]any{
 						{"id": 1, "name": "default-alice"},
@@ -382,7 +382,7 @@ func TestResolveSeedRows_Profile(t *testing.T) {
 	}
 
 	// Default profile.
-	rows, err := resolveSeedRows(asset, ".", "")
+	rows, err := resolveSeedRows(ds, ".", "")
 	if err != nil {
 		t.Fatalf("default profile error: %v", err)
 	}
@@ -391,7 +391,7 @@ func TestResolveSeedRows_Profile(t *testing.T) {
 	}
 
 	// Named profile.
-	rows, err = resolveSeedRows(asset, ".", "large")
+	rows, err = resolveSeedRows(ds, ".", "large")
 	if err != nil {
 		t.Fatalf("large profile error: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestResolveSeedRows_Profile(t *testing.T) {
 	}
 
 	// Empty profile.
-	rows, err = resolveSeedRows(asset, ".", "empty")
+	rows, err = resolveSeedRows(ds, ".", "empty")
 	if err != nil {
 		t.Fatalf("empty profile error: %v", err)
 	}
@@ -409,7 +409,7 @@ func TestResolveSeedRows_Profile(t *testing.T) {
 	}
 
 	// Unknown profile.
-	_, err = resolveSeedRows(asset, ".", "nonexistent")
+	_, err = resolveSeedRows(ds, ".", "nonexistent")
 	if err == nil {
 		t.Fatal("expected error for unknown profile")
 	}

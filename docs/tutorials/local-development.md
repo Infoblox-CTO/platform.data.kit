@@ -417,7 +417,7 @@ dk dev up
 
 ### 3. Use Seed Data for Testing
 
-Declare sample data directly in your asset YAML instead of manually
+Declare sample data directly in your DataSet YAML instead of manually
 creating tables or loading fixtures:
 
 ```yaml title="asset/source.yaml"

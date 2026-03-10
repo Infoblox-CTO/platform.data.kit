@@ -134,10 +134,10 @@ dk dev down --volumes
 | `dk.yaml` | Transform manifest (runtime, inputs, outputs, schedule) | Yes |
 | `connector/` | Connector definitions (technology types) | No |
 | `store/` | Store definitions (instances with connection details) | No |
-| `asset/` | Asset definitions (data contracts with schema) | No |
-| `asset-group/` | AssetGroup definitions (bundled assets) | No |
+| `asset/` | DataSet definitions (data contracts with schema) | No |
+| `asset-group/` | DataSetGroup definitions (bundled DataSets) | No |
 
-The `dk.yaml` file is a Transform manifest that references Assets by name. Assets reference Stores, and Stores reference Connectors.
+The `dk.yaml` file is a Transform manifest that references DataSets by name. DataSets reference Stores, and Stores reference Connectors.
 
 ### What runtimes are available?
 
@@ -293,11 +293,11 @@ Common causes:
 
 ### How do I mark data as containing PII?
 
-Use the `classification` and `pii` fields on Asset schemas:
+Use the `classification` and `pii` fields on DataSet schemas:
 
 ```yaml title="asset/customer-data.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: customer-data
 spec:

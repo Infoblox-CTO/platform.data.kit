@@ -48,7 +48,7 @@ type HelmChartResult struct {
 }
 
 // GenerateHelmChart creates a Helm chart tarball from a package directory.
-// The chart bundles the Transform, Connectors, and Assets — but NOT the
+// The chart bundles the Transform, Connectors, and DataSets — but NOT the
 // store/ directory (stores are cell-specific, not part of the package).
 //
 // Chart structure:
@@ -61,7 +61,7 @@ type HelmChartResult struct {
 //	└── manifests/
 //	    ├── dk.yaml
 //	    ├── connector/*.yaml
-//	    └── asset/*.yaml
+//	    └── dataset/*.yaml
 func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
 	absDir, err := filepath.Abs(opts.PackageDir)
 	if err != nil {
@@ -162,8 +162,8 @@ func GenerateHelmChart(opts HelmChartOptions) (*HelmChartResult, error) {
 		return nil, err
 	}
 
-	// Copy asset/*.yaml → manifests/asset/*.yaml
-	if err := copyManifestDir(tw, absDir, "asset", name, now); err != nil {
+	// Copy dataset/*.yaml → manifests/dataset/*.yaml
+	if err := copyManifestDir(tw, absDir, "dataset", name, now); err != nil {
 		return nil, err
 	}
 

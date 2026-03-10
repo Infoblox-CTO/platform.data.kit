@@ -12,10 +12,10 @@ spec:
   image: "${REGISTRY}/quickstart-demo:${VERSION}"
 
   inputs:
-    - asset: quickstart-demo-input
+    - dataset: quickstart-demo-input
 
   outputs:
-    - asset: quickstart-demo-output
+    - dataset: quickstart-demo-output
 
   resources:
     cpu: "1"

@@ -64,7 +64,7 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 	var mode contracts.Mode
 	var timeout string
 	var runtime contracts.Runtime
-	var inputs, outputs []contracts.AssetRef
+	var inputs, outputs []contracts.DataSetRef
 
 	// Only Transform manifests carry runtime/image fields.
 	if kind != contracts.KindTransform {
@@ -126,13 +126,13 @@ func (r *DockerRunner) Run(ctx context.Context, opts RunOptions) (*RunResult, er
 
 		// Add input datasets
 		for _, input := range inputs {
-			dataset := lineage.NewDataset(jobNamespace, input.Asset)
+			dataset := lineage.NewDataset(jobNamespace, input.DataSet)
 			event.AddInput(dataset)
 		}
 
 		// Add output datasets
 		for _, output := range outputs {
-			dataset := lineage.NewDataset(jobNamespace, output.Asset)
+			dataset := lineage.NewDataset(jobNamespace, output.DataSet)
 			event.AddOutput(dataset)
 		}
 
@@ -289,7 +289,7 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 	}
 
 	// Auto-generate CloudQuery config.yaml from the manifest graph:
-	// Transform → Asset → Store → Connector.
+	// Transform → DataSet → Store → Connector.
 	// When a cell is specified, stores are resolved from k8s instead of store/.
 	var cellResolver *CellResolver
 	if opts.Cell != "" {
@@ -304,7 +304,7 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 		return nil, fmt.Errorf("failed to generate CloudQuery config: %w", err)
 	}
 
-	// Auto-seed: create tables & load sample data for any input asset that
+	// Auto-seed: create tables & load sample data for any input dataset that
 	// declares dev.seed. This ensures the backing database has the expected
 	// schema even after a pod restart (persistence is disabled in dev mode).
 	seedOpts := SeedOptions{
@@ -315,9 +315,9 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 		if opts.Output != nil {
 			fmt.Fprintf(opts.Output, "Warning: dev seed failed: %v\n", err)
 		}
-	} else if seedResult.AssetsSeeded > 0 && opts.Output != nil {
-		fmt.Fprintf(opts.Output, "Seeded %d asset(s), %d row(s)\n",
-			seedResult.AssetsSeeded, seedResult.RowsInserted)
+	} else if seedResult.DataSetsSeeded > 0 && opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Seeded %d dataset(s), %d row(s)\n",
+			seedResult.DataSetsSeeded, seedResult.RowsInserted)
 	}
 
 	// Determine k3d cluster settings.

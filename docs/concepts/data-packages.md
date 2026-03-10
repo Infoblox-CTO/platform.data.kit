@@ -26,8 +26,8 @@ The data platform uses four core concepts to separate concerns:
 |---------|--------------------|----------------|
 | **Connector** | A technology type (Postgres, S3, Kafka) | Platform team |
 | **Store** | A named instance of a Connector with connection details | Infra / SRE |
-| **Asset** | A data contract (table, S3 prefix, topic) in a Store | Data engineer |
-| **Transform** | A unit of computation that reads/writes Assets | Data engineer |
+| **DataSet** | A data contract (table, S3 prefix, topic) in a Store | Data engineer |
+| **Transform** | A unit of computation that reads/writes DataSets | Data engineer |
 
 ## Package Structure
 
@@ -65,10 +65,10 @@ spec:
   timeout: 30m
 
   inputs:
-    - asset: raw-events         # references an Asset by name
+    - dataset: raw-events       # references a DataSet by name
 
   outputs:
-    - asset: processed-events   # references an Asset by name
+    - dataset: processed-events # references a DataSet by name
 ```
 
 !!! tip "See Also"
@@ -236,26 +236,26 @@ dk publish
 
 ### Declaring Inputs
 
-Inputs declare which Assets a Transform reads:
+Inputs declare which DataSets a Transform reads:
 
 ```yaml
 inputs:
-  - asset: users              # references an Asset by name
+  - dataset: users            # references a DataSet by name
 ```
 
 ### Declaring Outputs
 
-Outputs declare which Assets a Transform produces:
+Outputs declare which DataSets a Transform produces:
 
 ```yaml
 outputs:
-  - asset: users-parquet      # references an Asset by name
+  - dataset: users-parquet    # references a DataSet by name
     classification:
       pii: false
       sensitivity: internal
 ```
 
-At execution time, the runner resolves each Asset → Store → Connector to obtain connection details and credentials.
+At execution time, the runner resolves each DataSet → Store → Connector to obtain connection details and credentials.
 
 ### Supported Runtimes
 

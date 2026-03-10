@@ -49,9 +49,9 @@ spec:
   image: my-source:latest
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	dkPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {
@@ -89,9 +89,9 @@ spec:
   image: python:3.11
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	dkPath := filepath.Join(tmpDir, "dk.yaml")
 	if err := os.WriteFile(dkPath, []byte(dkContent), 0644); err != nil {

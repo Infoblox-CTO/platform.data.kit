@@ -1,6 +1,6 @@
 package contracts
 
-// Transform is a unit of computation that reads input Assets and produces output Assets.
+// Transform is a unit of computation that reads input DataSets and produces output DataSets.
 // It carries the runtime, mode, trigger, and timeout — everything about execution.
 // Created by the data engineer.
 type Transform struct {
@@ -35,7 +35,7 @@ type TransformMetadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
-// TransformSpec defines the computation that reads/writes Assets.
+// TransformSpec defines the computation that reads/writes DataSets.
 type TransformSpec struct {
 	// Runtime is the execution engine: cloudquery, generic-go, generic-python, dbt.
 	Runtime Runtime `json:"runtime" yaml:"runtime"`
@@ -43,11 +43,11 @@ type TransformSpec struct {
 	// Mode is the execution mode: batch or streaming.
 	Mode Mode `json:"mode,omitempty" yaml:"mode,omitempty"`
 
-	// Inputs lists the input Asset references (data sources for this transform).
-	Inputs []AssetRef `json:"inputs" yaml:"inputs"`
+	// Inputs lists the input DataSet references (data sources for this transform).
+	Inputs []DataSetRef `json:"inputs" yaml:"inputs"`
 
-	// Outputs lists the output Asset references (data produced by this transform).
-	Outputs []AssetRef `json:"outputs" yaml:"outputs"`
+	// Outputs lists the output DataSet references (data produced by this transform).
+	Outputs []DataSetRef `json:"outputs" yaml:"outputs"`
 
 	// Image is the container image for generic-go/generic-python/dbt runtimes.
 	Image string `json:"image,omitempty" yaml:"image,omitempty"`
@@ -74,23 +74,23 @@ type TransformSpec struct {
 	Lineage *LineageSpec `json:"lineage,omitempty" yaml:"lineage,omitempty"`
 }
 
-// AssetRef is a reference to a named Asset.
-// Exactly one of Asset (exact name) or Tags (label selector) must be set.
-// The Asset name is resolved at runtime to find the Store and Connector.
-type AssetRef struct {
-	// Asset is the name of the Asset manifest (local name or OCI ref).
+// DataSetRef is a reference to a named DataSet.
+// Exactly one of DataSet (exact name) or Tags (label selector) must be set.
+// The DataSet name is resolved at runtime to find the Store and Connector.
+type DataSetRef struct {
+	// DataSet is the name of the DataSet manifest (local name or OCI ref).
 	// Mutually exclusive with Tags.
-	Asset string `json:"asset,omitempty" yaml:"asset,omitempty"`
+	DataSet string `json:"dataset,omitempty" yaml:"dataset,omitempty"`
 
-	// Tags matches assets by their metadata labels.
-	// Mutually exclusive with Asset.
+	// Tags matches datasets by their metadata labels.
+	// Mutually exclusive with DataSet.
 	Tags map[string]string `json:"tags,omitempty" yaml:"tags,omitempty"`
 
 	// Version is a semver range constraint (e.g., ">=1.0.0 <2.0.0", "^1.2.0").
-	// Used with Tags to resolve the best-matching asset version.
+	// Used with Tags to resolve the best-matching dataset version.
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 
-	// Cell optionally qualifies which cell's Stores to resolve for this Asset.
+	// Cell optionally qualifies which cell's Stores to resolve for this DataSet.
 	// When empty, the deployment cell (or package store/ fallback) is used.
 	// When set, the Store is resolved from the named cell's namespace.
 	// This enables cross-cell transforms (fan-out, fan-in, routing).
@@ -104,7 +104,7 @@ const (
 	// TriggerPolicySchedule runs the transform on a cron schedule.
 	TriggerPolicySchedule TriggerPolicy = "schedule"
 
-	// TriggerPolicyOnChange runs the transform when any input asset's data is updated.
+	// TriggerPolicyOnChange runs the transform when any input dataset's data is updated.
 	TriggerPolicyOnChange TriggerPolicy = "on-change"
 
 	// TriggerPolicyManual runs the transform only on explicit invocation.

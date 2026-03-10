@@ -11,7 +11,7 @@ Go 1.25 multi-module monorepo (`cli/`, `sdk/`, `contracts/`, `platform/controlle
 
 ## Key Conventions
 
-- Pipeline = reactive dependency graph derived from Transform/Asset manifests (`dk.yaml`). There is no `pipeline.yaml` manifest.
+- Pipeline = reactive dependency graph derived from Transform/DataSet manifests (`dk.yaml`). There is no `pipeline.yaml` manifest.
 - The only CLI pipeline command is `dk pipeline show` (graph visualization).
-- Manifest kinds: `Transform`, `Source`, `Destination`, `Asset`. No `PipelineWorkflow` or `DataPackage` kinds.
+- Manifest kinds: `Transform`, `Source`, `Destination`, `DataSet`, `DataSetGroup`, `Connector`, `Store`. No `PipelineWorkflow` or `DataPackage` kinds.
 - The project is pre-release (alpha). Prefer clean deletion over deprecation or backward-compat shims.

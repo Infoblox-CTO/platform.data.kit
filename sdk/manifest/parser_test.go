@@ -61,9 +61,9 @@ spec:
 			wantName: "warehouse",
 		},
 		{
-			name: "valid asset",
+			name: "valid dataset",
 			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
 spec:
@@ -71,23 +71,23 @@ spec:
   table: public.users
 `),
 			wantErr:  false,
-			wantKind: contracts.KindAsset,
+			wantKind: contracts.KindDataSet,
 			wantName: "users",
 		},
 		{
-			name: "valid asset group",
+			name: "valid dataset group",
 			data: []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
-kind: AssetGroup
+kind: DataSetGroup
 metadata:
   name: pg-snapshot
 spec:
   store: warehouse
-  assets:
+  datasets:
     - users
     - orders
 `),
 			wantErr:  false,
-			wantKind: contracts.KindAssetGroup,
+			wantKind: contracts.KindDataSetGroup,
 			wantName: "pg-snapshot",
 		},
 		{
@@ -100,9 +100,9 @@ metadata:
 spec:
   runtime: cloudquery
   inputs:
-    - asset: users
+    - dataset: users
   outputs:
-    - asset: users-parquet
+    - dataset: users-parquet
 `),
 			wantErr:  false,
 			wantKind: contracts.KindTransform,
@@ -367,26 +367,26 @@ func TestManifestInterface(t *testing.T) {
 		}
 	})
 
-	t.Run("Asset", func(t *testing.T) {
-		var m Manifest = &contracts.AssetManifest{
-			Kind:     string(contracts.KindAsset),
-			Metadata: contracts.AssetMetadata{Name: "users", Namespace: "data-team"},
+	t.Run("DataSet", func(t *testing.T) {
+		var m Manifest = &contracts.DataSetManifest{
+			Kind:     string(contracts.KindDataSet),
+			Metadata: contracts.DataSetMetadata{Name: "users", Namespace: "data-team"},
 		}
-		if m.GetKind() != contracts.KindAsset {
-			t.Errorf("GetKind() = %v, want Asset", m.GetKind())
+		if m.GetKind() != contracts.KindDataSet {
+			t.Errorf("GetKind() = %v, want DataSet", m.GetKind())
 		}
 		if m.GetName() != "users" {
 			t.Errorf("GetName() = %v, want users", m.GetName())
 		}
 	})
 
-	t.Run("AssetGroup", func(t *testing.T) {
-		var m Manifest = &contracts.AssetGroupManifest{
-			Kind:     string(contracts.KindAssetGroup),
-			Metadata: contracts.AssetGroupMetadata{Name: "pg-snap"},
+	t.Run("DataSetGroup", func(t *testing.T) {
+		var m Manifest = &contracts.DataSetGroupManifest{
+			Kind:     string(contracts.KindDataSetGroup),
+			Metadata: contracts.DataSetGroupMetadata{Name: "pg-snap"},
 		}
-		if m.GetKind() != contracts.KindAssetGroup {
-			t.Errorf("GetKind() = %v, want AssetGroup", m.GetKind())
+		if m.GetKind() != contracts.KindDataSetGroup {
+			t.Errorf("GetKind() = %v, want DataSetGroup", m.GetKind())
 		}
 		if m.GetName() != "pg-snap" {
 			t.Errorf("GetName() = %v, want pg-snap", m.GetName())
@@ -508,9 +508,9 @@ spec:
 	}
 }
 
-func TestDefaultParser_ParseAsset(t *testing.T) {
+func TestDefaultParser_ParseDataSet(t *testing.T) {
 	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: users
   namespace: data-team
@@ -527,9 +527,9 @@ spec:
 `)
 
 	p := NewParser()
-	a, err := p.ParseAsset(data)
+	a, err := p.ParseDataSet(data)
 	if err != nil {
-		t.Fatalf("ParseAsset() error = %v", err)
+		t.Fatalf("ParseDataSet() error = %v", err)
 	}
 	if a.Metadata.Name != "users" {
 		t.Errorf("name = %v, want users", a.Metadata.Name)
@@ -548,24 +548,24 @@ spec:
 	}
 }
 
-func TestDefaultParser_ParseAssetGroup(t *testing.T) {
+func TestDefaultParser_ParseDataSetGroup(t *testing.T) {
 	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
-kind: AssetGroup
+kind: DataSetGroup
 metadata:
   name: pg-snapshot
   namespace: data-team
 spec:
   store: warehouse
-  assets:
+  datasets:
     - users
     - orders
     - products
 `)
 
 	p := NewParser()
-	ag, err := p.ParseAssetGroup(data)
+	ag, err := p.ParseDataSetGroup(data)
 	if err != nil {
-		t.Fatalf("ParseAssetGroup() error = %v", err)
+		t.Fatalf("ParseDataSetGroup() error = %v", err)
 	}
 	if ag.Metadata.Name != "pg-snapshot" {
 		t.Errorf("name = %v, want pg-snapshot", ag.Metadata.Name)
@@ -573,8 +573,8 @@ spec:
 	if ag.Spec.Store != "warehouse" {
 		t.Errorf("store = %v, want warehouse", ag.Spec.Store)
 	}
-	if len(ag.Spec.Assets) != 3 {
-		t.Errorf("assets count = %v, want 3", len(ag.Spec.Assets))
+	if len(ag.Spec.DataSets) != 3 {
+		t.Errorf("datasets count = %v, want 3", len(ag.Spec.DataSets))
 	}
 }
 
@@ -589,9 +589,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: users
+    - dataset: users
   outputs:
-    - asset: users-parquet
+    - dataset: users-parquet
   timeout: 30m
 `)
 
@@ -690,9 +690,9 @@ spec:
 	}
 }
 
-func TestAssetFromBytes_RoundTrip(t *testing.T) {
+func TestDataSetFromBytes_RoundTrip(t *testing.T) {
 	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: orders
 spec:
@@ -707,17 +707,17 @@ spec:
       type: float
 `)
 
-	a, err := AssetFromBytes(data)
+	a, err := DataSetFromBytes(data)
 	if err != nil {
-		t.Fatalf("AssetFromBytes() error = %v", err)
+		t.Fatalf("DataSetFromBytes() error = %v", err)
 	}
 
-	out, err := AssetToBytes(a)
+	out, err := DataSetToBytes(a)
 	if err != nil {
-		t.Fatalf("AssetToBytes() error = %v", err)
+		t.Fatalf("DataSetToBytes() error = %v", err)
 	}
 
-	a2, err := AssetFromBytes(out)
+	a2, err := DataSetFromBytes(out)
 	if err != nil {
 		t.Fatalf("re-parse error = %v", err)
 	}
@@ -729,37 +729,37 @@ spec:
 	}
 }
 
-func TestAssetGroupFromBytes_RoundTrip(t *testing.T) {
+func TestDataSetGroupFromBytes_RoundTrip(t *testing.T) {
 	data := []byte(`apiVersion: datakit.infoblox.dev/v1alpha1
-kind: AssetGroup
+kind: DataSetGroup
 metadata:
   name: snapshot
 spec:
   store: warehouse
-  assets:
+  datasets:
     - users
     - orders
 `)
 
-	ag, err := AssetGroupFromBytes(data)
+	ag, err := DataSetGroupFromBytes(data)
 	if err != nil {
-		t.Fatalf("AssetGroupFromBytes() error = %v", err)
+		t.Fatalf("DataSetGroupFromBytes() error = %v", err)
 	}
 
-	out, err := AssetGroupToBytes(ag)
+	out, err := DataSetGroupToBytes(ag)
 	if err != nil {
-		t.Fatalf("AssetGroupToBytes() error = %v", err)
+		t.Fatalf("DataSetGroupToBytes() error = %v", err)
 	}
 
-	ag2, err := AssetGroupFromBytes(out)
+	ag2, err := DataSetGroupFromBytes(out)
 	if err != nil {
 		t.Fatalf("re-parse error = %v", err)
 	}
 	if ag2.Metadata.Name != "snapshot" {
 		t.Errorf("round-trip name = %v, want snapshot", ag2.Metadata.Name)
 	}
-	if len(ag2.Spec.Assets) != 2 {
-		t.Errorf("round-trip assets = %v, want 2", len(ag2.Spec.Assets))
+	if len(ag2.Spec.DataSets) != 2 {
+		t.Errorf("round-trip datasets = %v, want 2", len(ag2.Spec.DataSets))
 	}
 }
 
@@ -778,9 +778,9 @@ spec:
     - -m
     - enrich
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   env:
     - name: LOG_LEVEL
       value: debug
@@ -834,20 +834,20 @@ func TestParseStoreFile(t *testing.T) {
 	}
 }
 
-func TestParseAssetFile(t *testing.T) {
-	a, err := ParseAssetFile("testdata/valid/asset.yaml")
+func TestParseDataSetFile(t *testing.T) {
+	a, err := ParseDataSetFile("testdata/valid/dataset.yaml")
 	if err != nil {
-		t.Fatalf("ParseAssetFile() error = %v", err)
+		t.Fatalf("ParseDataSetFile() error = %v", err)
 	}
 	if a.Metadata.Name != "users" {
 		t.Errorf("name = %v, want users", a.Metadata.Name)
 	}
 }
 
-func TestParseAssetGroupFile(t *testing.T) {
-	ag, err := ParseAssetGroupFile("testdata/valid/asset-group.yaml")
+func TestParseDataSetGroupFile(t *testing.T) {
+	ag, err := ParseDataSetGroupFile("testdata/valid/dataset-group.yaml")
 	if err != nil {
-		t.Fatalf("ParseAssetGroupFile() error = %v", err)
+		t.Fatalf("ParseDataSetGroupFile() error = %v", err)
 	}
 	if ag.Metadata.Name != "pg-snapshot" {
 		t.Errorf("name = %v, want pg-snapshot", ag.Metadata.Name)
@@ -891,29 +891,29 @@ func TestParser_ParseFromTestdata_NewKinds(t *testing.T) {
 		}
 	})
 
-	t.Run("valid asset", func(t *testing.T) {
-		m, kind, err := ParseManifestFile("testdata/valid/asset.yaml")
+	t.Run("valid dataset", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/dataset.yaml")
 		if err != nil {
 			t.Fatalf("ParseManifestFile() error = %v", err)
 		}
 		if m.GetName() != "users" {
 			t.Errorf("name = %v, want users", m.GetName())
 		}
-		if kind != contracts.KindAsset {
-			t.Errorf("kind = %v, want Asset", kind)
+		if kind != contracts.KindDataSet {
+			t.Errorf("kind = %v, want DataSet", kind)
 		}
 	})
 
-	t.Run("valid asset group", func(t *testing.T) {
-		m, kind, err := ParseManifestFile("testdata/valid/asset-group.yaml")
+	t.Run("valid dataset group", func(t *testing.T) {
+		m, kind, err := ParseManifestFile("testdata/valid/dataset-group.yaml")
 		if err != nil {
 			t.Fatalf("ParseManifestFile() error = %v", err)
 		}
 		if m.GetName() != "pg-snapshot" {
 			t.Errorf("name = %v, want pg-snapshot", m.GetName())
 		}
-		if kind != contracts.KindAssetGroup {
-			t.Errorf("kind = %v, want AssetGroup", kind)
+		if kind != contracts.KindDataSetGroup {
+			t.Errorf("kind = %v, want DataSetGroup", kind)
 		}
 	})
 

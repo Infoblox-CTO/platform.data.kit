@@ -20,9 +20,9 @@ spec:
   runtime: cloudquery
   mode: batch
   inputs:
-    - asset: users
+    - dataset: users
   outputs:
-    - asset: users-parquet
+    - dataset: users-parquet
   trigger:
     policy: schedule
     schedule:
@@ -56,14 +56,14 @@ spec:
 	if len(tr.Spec.Inputs) != 1 {
 		t.Fatalf("Spec.Inputs len = %d, want 1", len(tr.Spec.Inputs))
 	}
-	if tr.Spec.Inputs[0].Asset != "users" {
-		t.Errorf("Spec.Inputs[0].Asset = %q", tr.Spec.Inputs[0].Asset)
+	if tr.Spec.Inputs[0].DataSet != "users" {
+		t.Errorf("Spec.Inputs[0].DataSet = %q", tr.Spec.Inputs[0].DataSet)
 	}
 	if len(tr.Spec.Outputs) != 1 {
 		t.Fatalf("Spec.Outputs len = %d, want 1", len(tr.Spec.Outputs))
 	}
-	if tr.Spec.Outputs[0].Asset != "users-parquet" {
-		t.Errorf("Spec.Outputs[0].Asset = %q", tr.Spec.Outputs[0].Asset)
+	if tr.Spec.Outputs[0].DataSet != "users-parquet" {
+		t.Errorf("Spec.Outputs[0].DataSet = %q", tr.Spec.Outputs[0].DataSet)
 	}
 	if tr.Spec.Trigger == nil {
 		t.Fatal("Spec.Trigger is nil")
@@ -93,7 +93,7 @@ spec:
 	if tr2.Metadata.Name != tr.Metadata.Name {
 		t.Errorf("round-trip Name mismatch")
 	}
-	if tr2.Spec.Inputs[0].Asset != tr.Spec.Inputs[0].Asset {
+	if tr2.Spec.Inputs[0].DataSet != tr.Spec.Inputs[0].DataSet {
 		t.Errorf("round-trip Inputs mismatch")
 	}
 }
@@ -108,9 +108,9 @@ spec:
   runtime: generic-python
   mode: batch
   inputs:
-    - asset: users-parquet
+    - dataset: users-parquet
   outputs:
-    - asset: users-enriched
+    - dataset: users-enriched
   image: my-team/enrich-users:latest
   command:
     - python
@@ -180,12 +180,12 @@ metadata:
 spec:
   runtime: generic-go
   inputs:
-    - asset: users
-    - asset: orders
-    - asset: products
+    - dataset: users
+    - dataset: orders
+    - dataset: products
   outputs:
-    - asset: user-order-summary
-    - asset: product-stats
+    - dataset: user-order-summary
+    - dataset: product-stats
   image: my-team/join-data:latest
 `
 
@@ -202,8 +202,6 @@ spec:
 }
 
 func TestTransform_CrossCellOutputs(t *testing.T) {
-	// Integration test: cell-qualified AssetRef inside a full Transform YAML,
-	// matching the cross-cell routing pattern from partitioning.md.
 	input := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
@@ -213,13 +211,13 @@ spec:
   runtime: generic-go
   mode: streaming
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: tenant-a-events
+    - dataset: tenant-a-events
       cell: cell-us-east
-    - asset: tenant-b-events
+    - dataset: tenant-b-events
       cell: cell-us-east
-    - asset: tenant-c-events
+    - dataset: tenant-c-events
       cell: cell-eu-west
 `
 
@@ -252,8 +250,8 @@ spec:
 	}
 
 	wantOutputs := []struct {
-		asset string
-		cell  string
+		dataset string
+		cell    string
 	}{
 		{"tenant-a-events", "cell-us-east"},
 		{"tenant-b-events", "cell-us-east"},
@@ -261,8 +259,8 @@ spec:
 	}
 	for i, want := range wantOutputs {
 		got := tr.Spec.Outputs[i]
-		if got.Asset != want.asset {
-			t.Errorf("Output[%d].Asset = %q, want %q", i, got.Asset, want.asset)
+		if got.DataSet != want.dataset {
+			t.Errorf("Output[%d].DataSet = %q, want %q", i, got.DataSet, want.dataset)
 		}
 		if got.Cell != want.cell {
 			t.Errorf("Output[%d].Cell = %q, want %q", i, got.Cell, want.cell)
@@ -288,39 +286,38 @@ spec:
 	}
 }
 
-func TestAssetRef_YAML(t *testing.T) {
-	input := `asset: users-parquet`
-	var ref AssetRef
+func TestDataSetRef_YAML(t *testing.T) {
+	input := `dataset: users-parquet`
+	var ref DataSetRef
 	if err := yaml.Unmarshal([]byte(input), &ref); err != nil {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
-	if ref.Asset != "users-parquet" {
-		t.Errorf("Asset = %q, want %q", ref.Asset, "users-parquet")
+	if ref.DataSet != "users-parquet" {
+		t.Errorf("DataSet = %q, want %q", ref.DataSet, "users-parquet")
 	}
 	if ref.Cell != "" {
 		t.Errorf("Cell = %q, want empty", ref.Cell)
 	}
 }
 
-func TestAssetRef_YAML_WithCell(t *testing.T) {
+func TestDataSetRef_YAML_WithCell(t *testing.T) {
 	input := `
-asset: tenant-a-events
+dataset: tenant-a-events
 cell: cell-us-east`
-	var ref AssetRef
+	var ref DataSetRef
 	if err := yaml.Unmarshal([]byte(input), &ref); err != nil {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
-	if ref.Asset != "tenant-a-events" {
-		t.Errorf("Asset = %q, want %q", ref.Asset, "tenant-a-events")
+	if ref.DataSet != "tenant-a-events" {
+		t.Errorf("DataSet = %q, want %q", ref.DataSet, "tenant-a-events")
 	}
 	if ref.Cell != "cell-us-east" {
 		t.Errorf("Cell = %q, want %q", ref.Cell, "cell-us-east")
 	}
 }
 
-func TestAssetRef_YAML_CellOmitted(t *testing.T) {
-	// When cell is not set, it should be omitted from YAML output.
-	ref := AssetRef{Asset: "users"}
+func TestDataSetRef_YAML_CellOmitted(t *testing.T) {
+	ref := DataSetRef{DataSet: "users"}
 	data, err := yaml.Marshal(&ref)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -330,18 +327,18 @@ func TestAssetRef_YAML_CellOmitted(t *testing.T) {
 	}
 }
 
-func TestAssetRef_YAML_WithTags(t *testing.T) {
+func TestDataSetRef_YAML_WithTags(t *testing.T) {
 	input := `
 tags:
   domain: identity
   tier: raw
 version: ">=1.0.0 <2.0.0"`
-	var ref AssetRef
+	var ref DataSetRef
 	if err := yaml.Unmarshal([]byte(input), &ref); err != nil {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
-	if ref.Asset != "" {
-		t.Errorf("Asset = %q, want empty (tag-based ref)", ref.Asset)
+	if ref.DataSet != "" {
+		t.Errorf("DataSet = %q, want empty (tag-based ref)", ref.DataSet)
 	}
 	if len(ref.Tags) != 2 {
 		t.Fatalf("Tags len = %d, want 2", len(ref.Tags))
@@ -357,8 +354,8 @@ version: ">=1.0.0 <2.0.0"`
 	}
 }
 
-func TestAssetRef_YAML_TagsOmitted(t *testing.T) {
-	ref := AssetRef{Asset: "users"}
+func TestDataSetRef_YAML_TagsOmitted(t *testing.T) {
+	ref := DataSetRef{DataSet: "users"}
 	data, err := yaml.Marshal(&ref)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -381,9 +378,9 @@ spec:
   runtime: generic-python
   mode: batch
   inputs:
-    - asset: raw-events-parquet
+    - dataset: raw-events-parquet
   outputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   image: my-team/enrich:latest
   trigger:
     policy: on-change
@@ -400,7 +397,6 @@ spec:
 	if tr.Spec.Trigger.Policy != TriggerPolicyOnChange {
 		t.Errorf("Trigger.Policy = %q, want %q", tr.Spec.Trigger.Policy, TriggerPolicyOnChange)
 	}
-	// Schedule should be nil for on-change.
 	if tr.Spec.Trigger.Schedule != nil {
 		t.Errorf("Trigger.Schedule should be nil for on-change")
 	}
@@ -416,9 +412,9 @@ spec:
   runtime: dbt
   mode: batch
   inputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   outputs:
-    - asset: event-summary
+    - dataset: event-summary
   image: my-team/dbt:latest
   trigger:
     policy: schedule
@@ -457,9 +453,9 @@ metadata:
 spec:
   runtime: generic-go
   inputs:
-    - asset: source
+    - dataset: source
   outputs:
-    - asset: dest
+    - dataset: dest
   image: my-team/hybrid:latest
   trigger:
     policy: composite
@@ -521,7 +517,7 @@ spec:
         tier: raw
       version: ">=1.0.0"
   outputs:
-    - asset: processed-data
+    - dataset: processed-data
   image: my-team/processor:latest
 `
 
@@ -534,8 +530,8 @@ spec:
 		t.Fatalf("Inputs len = %d, want 1", len(tr.Spec.Inputs))
 	}
 	in := tr.Spec.Inputs[0]
-	if in.Asset != "" {
-		t.Errorf("Input Asset = %q, want empty", in.Asset)
+	if in.DataSet != "" {
+		t.Errorf("Input DataSet = %q, want empty", in.DataSet)
 	}
 	if len(in.Tags) != 2 {
 		t.Fatalf("Input Tags len = %d, want 2", len(in.Tags))
@@ -545,7 +541,7 @@ spec:
 	}
 
 	// Output is still name-based.
-	if tr.Spec.Outputs[0].Asset != "processed-data" {
-		t.Errorf("Output Asset = %q", tr.Spec.Outputs[0].Asset)
+	if tr.Spec.Outputs[0].DataSet != "processed-data" {
+		t.Errorf("Output DataSet = %q", tr.Spec.Outputs[0].DataSet)
 	}
 }

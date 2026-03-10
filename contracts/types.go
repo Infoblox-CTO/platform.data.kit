@@ -12,25 +12,25 @@ const (
 	// KindStore is a named infrastructure instance with secrets (infra owner).
 	KindStore Kind = "Store"
 
-	// KindAsset is a named data contract with schema and lineage (data engineer).
-	KindAsset Kind = "Asset"
+	// KindDataSet is a named data contract with schema and lineage (data engineer).
+	KindDataSet Kind = "DataSet"
 
-	// KindAssetGroup bundles multiple assets from a single materialisation.
-	KindAssetGroup Kind = "AssetGroup"
+	// KindDataSetGroup bundles multiple datasets from a single materialisation.
+	KindDataSetGroup Kind = "DataSetGroup"
 
-	// KindTransform is a unit of computation that reads/writes assets (data engineer).
+	// KindTransform is a unit of computation that reads/writes datasets (data engineer).
 	KindTransform Kind = "Transform"
 )
 
 // AllKinds returns all current (non-deprecated) kind values.
 func AllKinds() []Kind {
-	return []Kind{KindConnector, KindStore, KindAsset, KindAssetGroup, KindTransform}
+	return []Kind{KindConnector, KindStore, KindDataSet, KindDataSetGroup, KindTransform}
 }
 
 // IsValid checks if the kind is a recognized value.
 func (k Kind) IsValid() bool {
 	switch k {
-	case KindConnector, KindStore, KindAsset, KindAssetGroup, KindTransform:
+	case KindConnector, KindStore, KindDataSet, KindDataSetGroup, KindTransform:
 		return true
 	}
 	return false

@@ -19,7 +19,7 @@ func TestBuildGraph_ThreeChainedTransforms(t *testing.T) {
 		t.Fatalf("BuildGraph failed: %v", err)
 	}
 
-	// Expect 4 assets + 3 transforms = 7 nodes.
+	// Expect 4 datasets + 3 transforms = 7 nodes.
 	if len(g.Nodes) != 7 {
 		t.Errorf("expected 7 nodes, got %d", len(g.Nodes))
 		for _, n := range g.Nodes {
@@ -27,11 +27,11 @@ func TestBuildGraph_ThreeChainedTransforms(t *testing.T) {
 		}
 	}
 
-	// Expect 6 edges (3 input→transform + 3 transform→output).
+	// Expect 6 edges (3 input->transform + 3 transform->output).
 	if len(g.Edges) != 6 {
 		t.Errorf("expected 6 edges, got %d", len(g.Edges))
 		for _, e := range g.Edges {
-			t.Logf("  edge: %s → %s", e.From, e.To)
+			t.Logf("  edge: %s -> %s", e.From, e.To)
 		}
 	}
 
@@ -59,7 +59,7 @@ func TestBuildGraph_FilterDestination(t *testing.T) {
 		t.Fatalf("BuildGraph failed: %v", err)
 	}
 
-	// Should only include: raw-events → ingest → raw-events-parquet → enrich → enriched-events
+	// Should only include: raw-events -> ingest -> raw-events-parquet -> enrich -> enriched-events
 	nodeIDs := make(map[string]bool)
 	for _, n := range g.Nodes {
 		nodeIDs[n.ID] = true
@@ -164,9 +164,9 @@ func setupGraphTestDir(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 
-	assets := map[string]string{
+	datasets := map[string]string{
 		"raw-events": `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: raw-events
   version: "1.0.0"
@@ -175,7 +175,7 @@ spec:
   topic: raw.events
 `,
 		"raw-events-parquet": `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: raw-events-parquet
   version: "1.0.0"
@@ -185,7 +185,7 @@ spec:
   format: parquet
 `,
 		"enriched-events": `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: enriched-events
   version: "1.0.0"
@@ -195,7 +195,7 @@ spec:
   format: parquet
 `,
 		"event-summary": `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
+kind: DataSet
 metadata:
   name: event-summary
   version: "1.0.0"
@@ -213,9 +213,9 @@ metadata:
 spec:
   runtime: cloudquery
   inputs:
-    - asset: raw-events
+    - dataset: raw-events
   outputs:
-    - asset: raw-events-parquet
+    - dataset: raw-events-parquet
   trigger:
     policy: on-change
 `,
@@ -226,9 +226,9 @@ metadata:
 spec:
   runtime: generic-python
   inputs:
-    - asset: raw-events-parquet
+    - dataset: raw-events-parquet
   outputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   image: enrich:latest
   trigger:
     policy: on-change
@@ -240,9 +240,9 @@ metadata:
 spec:
   runtime: dbt
   inputs:
-    - asset: enriched-events
+    - dataset: enriched-events
   outputs:
-    - asset: event-summary
+    - dataset: event-summary
   image: dbt:latest
   trigger:
     policy: schedule
@@ -251,12 +251,12 @@ spec:
 `,
 	}
 
-	for name, content := range assets {
-		assetDir := filepath.Join(dir, "assets", name)
-		if err := os.MkdirAll(assetDir, 0755); err != nil {
+	for name, content := range datasets {
+		datasetDir := filepath.Join(dir, "datasets", name)
+		if err := os.MkdirAll(datasetDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(assetDir, "dk.yaml"), []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(datasetDir, "dk.yaml"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}

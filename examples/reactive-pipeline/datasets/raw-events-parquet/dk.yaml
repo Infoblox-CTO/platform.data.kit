@@ -1,0 +1,24 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: raw-events-parquet
+  version: "1.0.0"
+  labels:
+    domain: analytics
+    tier: staging
+spec:
+  store: data-lake
+  prefix: data/raw-events/
+  format: parquet
+  classification: internal
+  schema:
+    - name: event_id
+      type: string
+    - name: user_id
+      type: string
+    - name: event_type
+      type: string
+    - name: payload
+      type: string
+    - name: timestamp
+      type: timestamp

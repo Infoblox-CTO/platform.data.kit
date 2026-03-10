@@ -40,10 +40,10 @@ These flags apply to all commands:
 | [`dk logs`](#dk-logs)                           | Stream logs                                |
 | [`dk rollback`](#dk-rollback)                   | Rollback to previous version               |
 | [`dk lineage`](#dk-lineage)                     | View data lineage*(not yet implemented)* |
-| [`dk asset create`](#dk-asset-create)           | Create a new asset from an extension       |
-| [`dk asset validate`](#dk-asset-validate)       | Validate asset configuration               |
-| [`dk asset list`](#dk-asset-list)               | List all assets in the project             |
-| [`dk asset show`](#dk-asset-show)               | Show details of an asset                   |
+| [`dk dataset create`](#dk-dataset-create)       | Create a new DataSet                       |
+| [`dk dataset validate`](#dk-dataset-validate)   | Validate DataSet configuration             |
+| [`dk dataset list`](#dk-dataset-list)           | List all DataSets in the project           |
+| [`dk dataset show`](#dk-dataset-show)           | Show details of a DataSet                  |
 | [`dk pipeline show`](#dk-pipeline-show)         | Display pipeline dependency graph          |
 
 ---
@@ -176,13 +176,13 @@ Load seed data into local dev stores.
 dk dev seed [package-dir] [flags]
 ```
 
-Reads each input asset in the package and, for assets that declare a
+Reads each input DataSet in the package and, for DataSets that declare a
 `dev.seed` section, creates the table (if missing) and inserts sample data
 into the backing database in the local k3d cluster.
 
 Seed runs are **idempotent**: a SHA-256 checksum of the resolved rows is
 stored in a `_dk_seed_meta` table. If the data hasn't changed since the
-last seed, the asset is skipped entirely.
+last seed, the DataSet is skipped entirely.
 
 When the data *does* change (or when `--force` / `--clean` is used), the
 table is `TRUNCATE`d before inserting so the contents always match the
@@ -195,12 +195,12 @@ seed spec exactly — no stale rows, no duplicate-key errors.
 | `--profile` | Use a named seed profile instead of the default |         |
 | `--force`   | Re-seed even when data is unchanged             | false   |
 | `--clean`   | Drop and recreate tables before seeding         | false   |
-| `--asset`   | Seed only a specific asset by name              | (all)   |
+| `--dataset` | Seed only a specific DataSet by name            | (all)   |
 
 #### Examples
 
 ```bash
-# Seed all input assets (skips if data unchanged)
+# Seed all input DataSets (skips if data unchanged)
 dk dev seed
 ```
 
@@ -220,8 +220,8 @@ dk dev seed --clean
 ```
 
 ```bash
-# Seed only a specific asset
-dk dev seed --asset users-source-table
+# Seed only a specific DataSet
+dk dev seed --dataset users-source-table
 ```
 
 ```bash
@@ -234,7 +234,7 @@ dk dev seed ./my-pipeline
 ```
 Seeding users-source-table (example_table, profile=default): 3 row(s)...
 
-✓ Seeded 1 asset(s), 3 row(s) inserted
+✓ Seeded 1 DataSet(s), 3 row(s) inserted
 ```
 
 On subsequent runs with unchanged data:
@@ -242,7 +242,7 @@ On subsequent runs with unchanged data:
 ```
 Skipping users-source-table (profile=default): data unchanged
 
-✓ Seeded 0 asset(s), 0 row(s) inserted, 1 unchanged (skipped)
+✓ Seeded 0 DataSet(s), 0 row(s) inserted, 1 unchanged (skipped)
 ```
 
 !!! tip "Auto-seeding during `dk run`"
@@ -1145,84 +1145,88 @@ Downstream:
 
 ---
 
-## dk asset create
+## dk dataset create
 
-Create a new asset from an extension.
+Create a new DataSet.
 
 ```bash
-dk asset create <name> --ext <vendor.kind.name> [flags]
+dk dataset create <name> [flags]
 ```
 
 ### Flags
 
 | Flag              | Short  | Description                           | Default      |
 | ----------------- | ------ | ------------------------------------- | ------------ |
-| `--ext`         |        | Extension FQN (required)              | -            |
-| `--version`     |        | Extension version                     | latest known |
-| `--force`       |        | Overwrite existing asset              | false        |
-| `--interactive` | `-i` | Prompt for each required config field | false        |
+| `--store`       |        | Store name (required)                 | -            |
+| `--table`       |        | Table name (relational stores)        | -            |
+| `--prefix`      |        | Object prefix (S3 stores)             | -            |
+| `--topic`       |        | Topic name (Kafka stores)             | -            |
+| `--force`       |        | Overwrite existing DataSet            | false        |
+| `--interactive` | `-i` | Prompt for each field                 | false        |
 
 ### Examples
 
 ```bash
-# Create a source asset
-dk asset create aws-security --ext cloudquery.source.aws
+# Create a DataSet for a database table
+dk dataset create users --store warehouse --table public.users
 
-# Create with a specific version
-dk asset create aws-security --ext cloudquery.source.aws --version v24.0.2
+# Create a DataSet for an S3 prefix
+dk dataset create users-parquet --store lake-raw --prefix data/users/
 
-# Overwrite an existing asset
-dk asset create aws-security --ext cloudquery.source.aws --force
+# Create a DataSet for a Kafka topic
+dk dataset create raw-events --store event-bus --topic raw-events
+
+# Overwrite an existing DataSet
+dk dataset create users --store warehouse --table public.users --force
 
 # Interactive mode
-dk asset create aws-security --ext cloudquery.source.aws --interactive
+dk dataset create users --interactive
 ```
 
 ### Output
 
 ```
-✓ Created asset "aws-security" at assets/sources/aws-security/asset.yaml
+✓ Created DataSet "users" at asset/users.yaml
 
 Next steps:
-  1. Edit assets/sources/aws-security/asset.yaml to configure your asset
-  2. Set ownerTeam to your team name
-  3. Run 'dk asset validate' to validate the config
-  4. Add 'aws-security' to the assets section in dk.yaml
+  1. Edit asset/users.yaml to add schema and classification
+  2. Run 'dk dataset validate' to validate the DataSet
+  3. Reference 'users' in your Transform's spec.inputs or spec.outputs
 ```
 
 ---
 
-## dk asset validate
+## dk dataset validate
 
-Validate asset configuration against the extension's JSON Schema.
+Validate DataSet configuration.
 
 ```bash
-dk asset validate [path] [flags]
+dk dataset validate [path] [flags]
 ```
 
 ### Flags
 
 | Flag          | Description                                     | Default |
 | ------------- | ----------------------------------------------- | ------- |
-| `--offline` | Skip schema validation (structural checks only) | false   |
+| `--offline` | Skip cross-reference validation (structural checks only) | false   |
 
 ### Arguments
 
 | Argument | Description                                                                                              |
 | -------- | -------------------------------------------------------------------------------------------------------- |
-| `path` | Optional path to a specific asset directory or file. If omitted, validates all assets under `assets/`. |
+| `path` | Optional path to a specific DataSet file or directory. If omitted, validates all DataSets under `asset/`. |
 
 ### Examples
 
 ```bash
-# Validate a single asset
-dk asset validate assets/sources/aws-security/
+# Validate a single DataSet
+dk dataset validate asset/users.yaml
 
-# Validate all assets
-dk asset validate
+# Validate all DataSets
+dk dataset validate
 
 # Structural checks only (offline)
-dk asset validate --offline
+dk dataset validate --offline
 ```
 
 ### Error Codes
@@ -1230,20 +1234,18 @@ dk asset validate --offline
 | Code | Description                              |
 | ---- | ---------------------------------------- |
 | E070 | Required field missing                   |
-| E071 | Invalid extension FQN format             |
 | E072 | Invalid version format                   |
-| E073 | Asset type does not match extension kind |
-| E074 | Config block fails schema validation     |
-| E075 | Extension schema not found               |
+| E074 | Schema definition invalid                |
+| E076 | Store reference not found                |
 
 ---
 
-## dk asset list
+## dk dataset list
 
-List all assets in the project.
+List all DataSets in the project.
 
 ```bash
-dk asset list [flags]
+dk dataset list [flags]
 ```
 
 ### Flags
@@ -1256,29 +1258,29 @@ dk asset list [flags]
 
 ```bash
 # Table output
-dk asset list
+dk dataset list
 ```
 
 ```
-NAME             TYPE     EXTENSION              VERSION   OWNER
-aws-security     source   cloudquery.source.aws   v24.0.2   security-data
-gcp-infra        source   cloudquery.source.gcp   v10.0.0   infra-team
-raw-output       sink     cloudquery.sink.s3       v1.2.0    data-team
+NAME              STORE        TABLE/PREFIX/TOPIC     CLASSIFICATION   VERSION
+users             warehouse    public.users           confidential     1.0.0
+users-parquet     lake-raw     data/users/            confidential     1.0.0
+raw-events        event-bus    raw-events             internal         0.1.0
 ```
 
 ```bash
 # JSON output
-dk asset list --output json
+dk dataset list --output json
 ```
 
 ---
 
-## dk asset show
+## dk dataset show
 
-Show details of a specific asset.
+Show details of a specific DataSet.
 
 ```bash
-dk asset show <name> [flags]
+dk dataset show <name> [flags]
 ```
 
 ### Flags
@@ -1291,36 +1293,39 @@ dk asset show <name> [flags]
 
 ```bash
 # YAML output (default)
-dk asset show aws-security
+dk dataset show users
 ```
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Asset
-name: aws-security
-type: source
-extension: cloudquery.source.aws
-version: v24.0.2
-ownerTeam: security-data
-config:
-  accounts:
-    - "123456789012"
-  regions:
-    - us-east-1
-  tables:
-    - aws_s3_buckets
+kind: DataSet
+metadata:
+  name: users
+  namespace: default
+spec:
+  store: warehouse
+  table: public.users
+  classification: confidential
+  schema:
+    - name: id
+      type: integer
+    - name: email
+      type: string
+      pii: true
+    - name: created_at
+      type: timestamp
 ```
 
 ```bash
 # JSON output
-dk asset show aws-security --output json
+dk dataset show users --output json
 ```
 
 ---
 
 ## dk pipeline show
 
-Display the reactive dependency graph derived from Transform and Asset
+Display the reactive dependency graph derived from Transform and DataSet
 manifests (`dk.yaml` files).
 
 ```bash
@@ -1332,7 +1337,7 @@ dk pipeline show [dir] [flags]
 | Flag              | Short  | Description                                        | Default |
 | ----------------- | ------ | -------------------------------------------------- | ------- |
 | `--output`      | `-o` | Output format (text, mermaid, json, dot)           | text    |
-| `--destination` |        | Show dependency chain leading to this asset         |         |
+| `--destination` |        | Show dependency chain leading to this DataSet       |         |
 | `--scan-dir`    |        | Directories to scan for dk.yaml files (repeatable) | `.`   |
 
 ### Examples
@@ -1341,7 +1346,7 @@ dk pipeline show [dir] [flags]
 # Show full dependency graph (text tree)
 dk pipeline show
 
-# Show graph leading to a specific destination asset
+# Show graph leading to a specific destination DataSet
 dk pipeline show --destination event-summary
 
 # Render as Mermaid diagram

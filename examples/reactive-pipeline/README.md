@@ -7,7 +7,7 @@ policy.
 ## Structure
 
 ```
-assets/
+datasets/
   raw-events/dk.yaml          Kafka topic (source events)
   raw-events-parquet/dk.yaml   S3 parquet (staging)
   enriched-events/dk.yaml      S3 parquet (curated, with lineage)
@@ -46,5 +46,5 @@ dk pipeline show --scan-dir ./examples/reactive-pipeline --output dot
    `aggregate` runs on a 6-hour schedule.
 3. **Pipeline is a query** — `dk pipeline show` scans manifests and renders
    the dependency graph. It is not a deployed artifact.
-4. **Assets carry version** — each asset has a semver version in metadata,
+4. **DataSets carry version** — each dataset has a semver version in metadata,
    enabling tag-based resolution for loose coupling.

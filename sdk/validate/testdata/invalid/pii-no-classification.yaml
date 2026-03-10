@@ -7,5 +7,5 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   # outputs is missing - this should fail validation (E231)

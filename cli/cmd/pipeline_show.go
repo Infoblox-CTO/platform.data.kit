@@ -18,7 +18,7 @@ var (
 var pipelineShowCmd = &cobra.Command{
 	Use:   "show [dir]",
 	Short: "Display pipeline dependency graph",
-	Long: `Display the reactive dependency graph derived from Transform and Asset
+	Long: `Display the reactive dependency graph derived from Transform and DataSet
 manifests (dk.yaml files).
 
 Output formats:
@@ -31,14 +31,14 @@ Examples:
   # Show full dependency graph
   dk pipeline show
 
-  # Show graph leading to a specific asset
+  # Show graph leading to a specific dataset
   dk pipeline show --destination event-summary
 
   # Render as Mermaid
   dk pipeline show --output mermaid
 
   # Scan specific directories
-  dk pipeline show --scan-dir ./transforms --scan-dir ./assets`,
+  dk pipeline show --scan-dir ./transforms --scan-dir ./datasets`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPipelineShow,
 }
@@ -49,7 +49,7 @@ func init() {
 	pipelineShowCmd.Flags().StringVarP(&pipelineShowOutput, "output", "o", "text",
 		"Output format (text, mermaid, json, dot)")
 	pipelineShowCmd.Flags().StringVar(&pipelineShowDestination, "destination", "",
-		"Show dependency chain leading to this asset")
+		"Show dependency chain leading to this dataset")
 	pipelineShowCmd.Flags().StringArrayVar(&pipelineShowScanDirs, "scan-dir", nil,
 		"Directories to scan for dk.yaml files (repeatable)")
 }

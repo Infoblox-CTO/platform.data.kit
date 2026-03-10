@@ -20,7 +20,7 @@ import (
 // ---------------------------------------------------------------------------
 // Dev-seed: create tables and load sample data before a CQ sync.
 //
-// The seed logic reads Asset.Dev.Seed (inline rows or a file), generates
+// The seed logic reads DataSet.Dev.Seed (inline rows or a file), generates
 // CREATE TABLE IF NOT EXISTS + INSERT statements, and executes them against
 // the backing PostgreSQL instance via kubectl exec.
 //
@@ -37,7 +37,7 @@ import (
 
 // SeedOptions controls the seeding behaviour.
 type SeedOptions struct {
-	// PackageDir is the root of the DataKit package (contains asset/, store/, etc.).
+	// PackageDir is the root of the DataKit package (contains dataset/, store/, etc.).
 	PackageDir string
 	// Clean drops and recreates tables before inserting seed data.
 	Clean bool
@@ -45,8 +45,8 @@ type SeedOptions struct {
 	Force bool
 	// Profile selects a named seed profile. Empty means the default profile.
 	Profile string
-	// AssetFilter limits seeding to a single asset name. Empty means all.
-	AssetFilter string
+	// DataSetFilter limits seeding to a single dataset name. Empty means all.
+	DataSetFilter string
 	// Output receives progress messages. May be nil.
 	Output io.Writer
 	// KubeContext is the kubectl context to use (defaults to k3d-dk-local).
@@ -57,17 +57,17 @@ type SeedOptions struct {
 
 // SeedResult reports what was seeded.
 type SeedResult struct {
-	AssetsSeeded  int
-	RowsInserted  int
-	AssetsSkipped int // assets whose data was unchanged (checksum match)
+	DataSetsSeeded  int
+	RowsInserted    int
+	DataSetsSkipped int // datasets whose data was unchanged (checksum match)
 }
 
-// SeedPackage reads all input assets in a package and seeds any that have a
-// dev.seed section.  Only postgres-backed assets are supported today.
+// SeedPackage reads all input datasets in a package and seeds any that have a
+// dev.seed section.  Only postgres-backed datasets are supported today.
 //
 // Seeding is idempotent by default: a SHA-256 checksum of the resolved rows
 // is compared against the _dp_seed_meta table; if it matches the previous
-// run the asset is skipped.  Use Force or Clean to override.
+// run the dataset is skipped.  Use Force or Clean to override.
 func SeedPackage(ctx context.Context, opts SeedOptions) (*SeedResult, error) {
 	if opts.KubeContext == "" {
 		clusterName := defaultClusterName
@@ -87,25 +87,25 @@ func SeedPackage(ctx context.Context, opts SeedOptions) (*SeedResult, error) {
 
 	result := &SeedResult{}
 
-	for name, asset := range pm.Assets {
-		if opts.AssetFilter != "" && name != opts.AssetFilter {
+	for name, dataset := range pm.DataSets {
+		if opts.DataSetFilter != "" && name != opts.DataSetFilter {
 			continue
 		}
-		if asset.Spec.Dev == nil || asset.Spec.Dev.Seed == nil {
+		if dataset.Spec.Dev == nil || dataset.Spec.Dev.Seed == nil {
 			continue
 		}
-		if asset.Spec.Table == "" {
-			// Only relational (table-based) assets can be seeded today.
+		if dataset.Spec.Table == "" {
+			// Only relational (table-based) datasets can be seeded today.
 			continue
 		}
 
-		store, ok := pm.Stores[asset.Spec.Store]
+		store, ok := pm.Stores[dataset.Spec.Store]
 		if !ok {
-			return nil, fmt.Errorf("asset %q references store %q which was not found", name, asset.Spec.Store)
+			return nil, fmt.Errorf("dataset %q references store %q which was not found", name, dataset.Spec.Store)
 		}
 		conn, ok := pm.Connectors[store.Spec.Connector]
 		if !ok {
-			return nil, fmt.Errorf("store %q references connector %q which was not found", asset.Spec.Store, store.Spec.Connector)
+			return nil, fmt.Errorf("store %q references connector %q which was not found", dataset.Spec.Store, store.Spec.Connector)
 		}
 
 		// Only postgres connectors are supported for seeding today.
@@ -117,9 +117,9 @@ func SeedPackage(ctx context.Context, opts SeedOptions) (*SeedResult, error) {
 			continue
 		}
 
-		rows, err := resolveSeedRows(asset, opts.PackageDir, opts.Profile)
+		rows, err := resolveSeedRows(dataset, opts.PackageDir, opts.Profile)
 		if err != nil {
-			return nil, fmt.Errorf("asset %q: resolving seed data: %w", name, err)
+			return nil, fmt.Errorf("dataset %q: resolving seed data: %w", name, err)
 		}
 		if len(rows) == 0 && !opts.Clean {
 			continue
@@ -130,7 +130,7 @@ func SeedPackage(ctx context.Context, opts SeedOptions) (*SeedResult, error) {
 		if profile == "" {
 			profile = "default"
 		}
-		checksum := computeSeedChecksum(asset.Spec.Table, profile, rows)
+		checksum := computeSeedChecksum(dataset.Spec.Table, profile, rows)
 
 		// Unless forced or cleaning, check whether the data has changed.
 		if !opts.Force && !opts.Clean {
@@ -138,32 +138,32 @@ func SeedPackage(ctx context.Context, opts SeedOptions) (*SeedResult, error) {
 			ensureMetaSQL := seedMetaDDL()
 			_ = execPostgresSQL(ctx, opts, store, ensureMetaSQL) // best-effort
 
-			existing, err := querySeedChecksum(ctx, opts, store, asset.Spec.Table, profile)
+			existing, err := querySeedChecksum(ctx, opts, store, dataset.Spec.Table, profile)
 			if err == nil && existing == checksum {
 				if opts.Output != nil {
 					fmt.Fprintf(opts.Output, "Skipping %s (profile=%s): data unchanged\n", name, profile)
 				}
-				result.AssetsSkipped++
+				result.DataSetsSkipped++
 				continue
 			}
 		}
 
-		sql := generateSeedSQL(asset, rows, opts.Clean)
+		sql := generateSeedSQL(dataset, rows, opts.Clean)
 
 		if opts.Output != nil {
 			fmt.Fprintf(opts.Output, "Seeding %s (%s, profile=%s): %d row(s)...\n",
-				name, asset.Spec.Table, profile, len(rows))
+				name, dataset.Spec.Table, profile, len(rows))
 		}
 
 		if err := execPostgresSQL(ctx, opts, store, sql); err != nil {
-			return nil, fmt.Errorf("asset %q: executing seed SQL: %w", name, err)
+			return nil, fmt.Errorf("dataset %q: executing seed SQL: %w", name, err)
 		}
 
-		// Update the checksum so subsequent runs skip this asset.
-		upsertSQL := upsertSeedChecksum(asset.Spec.Table, profile, checksum)
+		// Update the checksum so subsequent runs skip this dataset.
+		upsertSQL := upsertSeedChecksum(dataset.Spec.Table, profile, checksum)
 		_ = execPostgresSQL(ctx, opts, store, upsertSQL) // best-effort
 
-		result.AssetsSeeded++
+		result.DataSetsSeeded++
 		result.RowsInserted += len(rows)
 	}
 
@@ -171,11 +171,11 @@ func SeedPackage(ctx context.Context, opts SeedOptions) (*SeedResult, error) {
 }
 
 // resolveSeedRows returns the rows to insert, reading from inline data or a
-// file as configured in the asset's dev.seed section.  If profile is non-empty
+// file as configured in the dataset's dev.seed section.  If profile is non-empty
 // and matches a named profile, that profile's data is used instead of the
 // default inline/file.
-func resolveSeedRows(asset *contracts.AssetManifest, packageDir string, profile string) ([]map[string]any, error) {
-	seed := asset.Spec.Dev.Seed
+func resolveSeedRows(dataset *contracts.DataSetManifest, packageDir string, profile string) ([]map[string]any, error) {
+	seed := dataset.Spec.Dev.Seed
 
 	// If a profile is requested, look it up.
 	if profile != "" && seed.Profiles != nil {
@@ -262,7 +262,7 @@ func parseCSV(data []byte) ([]map[string]any, error) {
 	return rows, nil
 }
 
-// schemaTypeToSQL maps Asset schema types to PostgreSQL column types.
+// schemaTypeToSQL maps DataSet schema types to PostgreSQL column types.
 func schemaTypeToSQL(t string) string {
 	switch strings.ToLower(t) {
 	case "integer", "int":
@@ -288,21 +288,21 @@ func schemaTypeToSQL(t string) string {
 // When clean=true, the table is DROPped first.  Otherwise the table is
 // TRUNCATEd before inserting so that re-runs are idempotent and the table
 // contents always match the seed spec exactly (no stale rows, no duplicates).
-func generateSeedSQL(asset *contracts.AssetManifest, rows []map[string]any, clean bool) string {
-	table := asset.Spec.Table
+func generateSeedSQL(dataset *contracts.DataSetManifest, rows []map[string]any, clean bool) string {
+	table := dataset.Spec.Table
 	var sb strings.Builder
 
 	if clean {
 		fmt.Fprintf(&sb, "DROP TABLE IF EXISTS %s CASCADE;\n", table)
 	}
 
-	// CREATE TABLE IF NOT EXISTS from the asset schema.
-	if len(asset.Spec.Schema) > 0 {
+	// CREATE TABLE IF NOT EXISTS from the dataset schema.
+	if len(dataset.Spec.Schema) > 0 {
 		fmt.Fprintf(&sb, "CREATE TABLE IF NOT EXISTS %s (\n", table)
-		for i, col := range asset.Spec.Schema {
+		for i, col := range dataset.Spec.Schema {
 			sqlType := schemaTypeToSQL(col.Type)
 			fmt.Fprintf(&sb, "  %s %s", col.Name, sqlType)
-			if i < len(asset.Spec.Schema)-1 {
+			if i < len(dataset.Spec.Schema)-1 {
 				sb.WriteString(",")
 			}
 			sb.WriteString("\n")

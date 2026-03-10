@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datakit.infoblox.dev/schemas/v1alpha1/dataset.schema.json",
+  "title": "DataSet Manifest",
+  "description": "Schema for a DataSet — a named data contract (table, prefix, or topic) in a Store",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "datakit.infoblox.dev/v1alpha1",
+      "description": "Schema version"
+    },
+    "kind": {
+      "type": "string",
+      "const": "DataSet",
+      "description": "Resource kind"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "description": "DataSet name (DNS-safe, lowercase)"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Team namespace"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+          "description": "Semantic version of the data contract (e.g., 1.2.0)"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Key-value labels for filtering"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Arbitrary annotations"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "required": ["store"],
+      "anyOf": [
+        { "required": ["table"] },
+        { "required": ["prefix"] },
+        { "required": ["topic"] }
+      ],
+      "properties": {
+        "store": {
+          "type": "string",
+          "description": "Name of the Store where this data lives"
+        },
+        "table": {
+          "type": "string",
+          "description": "Fully-qualified table name (for relational stores)"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Object prefix (for object stores like S3)"
+        },
+        "topic": {
+          "type": "string",
+          "description": "Topic name (for streaming stores like Kafka)"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["parquet", "json", "csv", "avro"],
+          "description": "Data format"
+        },
+        "classification": {
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"],
+          "description": "Data classification level"
+        },
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Field/column name"
+              },
+              "type": {
+                "type": "string",
+                "description": "Data type (integer, string, timestamp, boolean, float)"
+              },
+              "pii": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether this field contains personally identifiable information"
+              },
+              "from": {
+                "type": "string",
+                "description": "Lineage source for this field (e.g., users.id)"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Fields/columns in this dataset"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

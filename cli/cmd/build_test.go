@@ -106,9 +106,9 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -166,9 +166,9 @@ spec:
   image: myimage:v1
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: output-data
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -206,9 +206,9 @@ spec:
   image: my-cq-source:latest
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: cloud-resources
+    - dataset: cloud-resources
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
@@ -242,9 +242,9 @@ spec:
   image: cq-source:latest
   mode: batch
   inputs:
-    - asset: source-data
+    - dataset: source-data
   outputs:
-    - asset: cloud-resources
+    - dataset: cloud-resources
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)

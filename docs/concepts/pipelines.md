@@ -5,17 +5,17 @@ description: Reactive pipeline dependency graph
 
 # Pipelines
 
-A pipeline is the dependency graph derived from Transform and Asset manifests
+A pipeline is the dependency graph derived from Transform and DataSet manifests
 (`dk.yaml` files). Each Transform declares its inputs and outputs; the graph
 is built automatically by scanning those declarations.
 
 ## Overview
 
 There is no separate pipeline manifest. The graph emerges from the individual
-Transform and Asset manifests already present in your project:
+Transform and DataSet manifests already present in your project:
 
-- **Transforms** declare `spec.inputs` and `spec.outputs` (asset references).
-- **Assets** are the nodes that connect transforms together.
+- **Transforms** declare `spec.inputs` and `spec.outputs` (DataSet references).
+- **DataSets** are the nodes that connect transforms together.
 - **Triggers** on each Transform control when it runs (schedule, on-change, manual).
 
 ## Viewing the Graph
@@ -24,7 +24,7 @@ Transform and Asset manifests already present in your project:
 # Show full dependency graph
 dk pipeline show
 
-# Show graph leading to a specific destination asset
+# Show graph leading to a specific destination DataSet
 dk pipeline show --destination event-summary
 
 # Render as Mermaid diagram
