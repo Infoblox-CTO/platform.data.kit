@@ -1,11 +1,11 @@
 ---
 title: Contributing
-description: Guidelines for contributing to the Data Platform documentation
+description: Guidelines for contributing to DataKit documentation
 ---
 
 # Contributing to Documentation
 
-Thank you for your interest in improving the Data Platform documentation! This guide explains how to contribute.
+Thank you for your interest in improving DataKit documentation! This guide explains how to contribute.
 
 ## Quick Start
 

@@ -5,7 +5,7 @@ description: Understanding deployment environments and the promotion workflow
 
 # Environments
 
-The Data Platform uses a structured environment model for promoting data packages from development to production using GitOps principles.
+DataKit uses a structured environment model for promoting data packages from development to production using GitOps principles.
 
 ## Environment Model
 

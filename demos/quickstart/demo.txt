@@ -5,7 +5,7 @@
 REQUIRE: docker
 REQUIRE: k3d
 
-SAY: Welcome to the Data Platform quickstart demo
+SAY: Welcome to the DataKit quickstart demo
 
 SAY: First, let's create a temporary working directory
 CMD: export DEMO_ORIGIN="$PWD" DEMO_DIR=$(mktemp -d) && echo "Working in $DEMO_DIR"

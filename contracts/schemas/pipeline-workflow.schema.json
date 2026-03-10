@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cdpp.io/schemas/v1alpha1/pipeline-workflow.schema.json",
   "title": "PipelineWorkflow",
-  "description": "Multi-step pipeline workflow definition for the Data Platform.",
+  "description": "Multi-step pipeline workflow definition for DataKit.",
   "type": "object",
   "required": ["apiVersion", "kind", "metadata", "steps"],
   "additionalProperties": false,
