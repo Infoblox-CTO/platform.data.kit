@@ -1,11 +1,11 @@
 ---
 title: Data Packages
-description: Understanding the fundamental unit of the Data Platform
+description: Understanding the fundamental unit of DataKit
 ---
 
 # Data Packages
 
-A **data package** is the fundamental unit of work in the Data Platform. It's a self-contained, versioned bundle that includes everything needed to run a data pipeline.
+A **data package** is the fundamental unit of work in DataKit. It's a self-contained, versioned bundle that includes everything needed to run a data pipeline.
 
 ## What is a Data Package?
 

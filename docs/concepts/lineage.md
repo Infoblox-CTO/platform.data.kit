@@ -1,11 +1,11 @@
 ---
 title: Data Lineage
-description: Understanding how the Data Platform tracks data lineage using OpenLineage
+description: Understanding how DataKit tracks data lineage using OpenLineage
 ---
 
 # Data Lineage
 
-Data lineage tracks the origin, movement, and transformation of data through your pipelines. The Data Platform uses [OpenLineage](https://openlineage.io/) to capture and visualize lineage automatically.
+Data lineage tracks the origin, movement, and transformation of data through your pipelines. DataKit uses [OpenLineage](https://openlineage.io/) to capture and visualize lineage automatically.
 
 ## What is Lineage?
 

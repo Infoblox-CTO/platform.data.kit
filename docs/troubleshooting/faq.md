@@ -1,15 +1,15 @@
 ---
 title: FAQ
-description: Frequently asked questions about the Data Platform
+description: Frequently asked questions about DataKit
 ---
 
 # Frequently Asked Questions
 
-Answers to common questions about the Data Platform.
+Answers to common questions about DataKit.
 
 ## General Questions
 
-### What is the Data Platform?
+### What is DataKit?
 
 DataKit is a system for building, publishing, and operating data pipelines with built-in governance, lineage tracking, and GitOps-based deployment. It provides:
 

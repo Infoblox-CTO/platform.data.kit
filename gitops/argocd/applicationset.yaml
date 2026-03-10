@@ -79,7 +79,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  description: Cloud Data Platform Project
+  description: DataKit Project
   sourceRepos:
     - https://github.com/Infoblox-CTO/platform.data.kit.git
     - ghcr.io/infoblox-cto/*

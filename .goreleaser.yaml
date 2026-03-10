@@ -104,7 +104,7 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
     homepage: https://github.com/Infoblox-CTO/platform.data.kit
-    description: Data Platform CLI - Kubernetes-native data pipeline platform
+    description: DataKit CLI — build, test, and deploy data pipelines
     license: Apache-2.0
     install: |
       bin.install "dk"
@@ -119,5 +119,5 @@ scoops:
       name: scoop-bucket
       token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
     homepage: https://github.com/Infoblox-CTO/platform.data.kit
-    description: Data Platform CLI - Kubernetes-native data pipeline platform
+    description: DataKit CLI — build, test, and deploy data pipelines
     license: Apache-2.0

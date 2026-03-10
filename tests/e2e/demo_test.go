@@ -28,7 +28,7 @@ func TestDemo_Quickstart(t *testing.T) {
 
 	// Verify narration text appears in output
 	expectedPhrases := []string{
-		"Welcome to the Data Platform quickstart demo",
+		"Welcome to the DataKit quickstart demo",
 		"create a new data package",
 		"validate the package configuration",
 		"inspect the package metadata",

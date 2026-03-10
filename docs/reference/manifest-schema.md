@@ -5,7 +5,7 @@ description: Complete reference for all manifest schemas (Transform, DataSet, Da
 
 # Manifest Schema Reference
 
-This document provides the complete schema reference for all manifest kinds in the Data Platform Kit.
+This document provides the complete schema reference for all manifest kinds in DataKit.
 
 The platform uses five manifest kinds, each with a clear ownership boundary:
 

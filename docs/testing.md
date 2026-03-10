@@ -1,6 +1,6 @@
 ---
 title: Testing
-description: Testing strategy and best practices for the Data Platform
+description: Testing strategy and best practices for DataKit
 ---
 
 # Testing Guide

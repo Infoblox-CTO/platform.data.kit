@@ -5,7 +5,7 @@ description: Understanding the Package × Cell deployment model
 
 # Cells & Stores
 
-The Data Platform uses a **Package × Cell** model to separate what runs from where it runs. This page explains how Cells and Stores provide infrastructure context for data packages.
+DataKit uses a **Package × Cell** model to separate what runs from where it runs. This page explains how Cells and Stores provide infrastructure context for data packages.
 
 ## Core Principle
 

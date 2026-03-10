@@ -1,11 +1,11 @@
 ---
 title: Troubleshooting
-description: Common issues and solutions for the Data Platform
+description: Common issues and solutions for DataKit
 ---
 
 # Troubleshooting
 
-Having problems? This section helps you diagnose and resolve common issues with the Data Platform.
+Having problems? This section helps you diagnose and resolve common issues with DataKit.
 
 ## Quick Help
 

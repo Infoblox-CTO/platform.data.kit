@@ -1,11 +1,11 @@
 ---
 title: Concepts
-description: Core concepts and architecture of the Data Platform
+description: Core concepts and architecture of DataKit
 ---
 
 # Concepts
 
-Understand the core concepts that power the Data Platform. This section explains the fundamental building blocks you'll use when building data pipelines.
+Understand the core concepts that power DataKit. This section explains the fundamental building blocks you'll use when building data pipelines.
 
 ## Core Concepts
 
@@ -92,7 +92,7 @@ We recommend reading the concepts in this order:
 
 ## Key Principles
 
-The Data Platform is built on these principles:
+DataKit is built on these principles:
 
 | Principle | Description |
 |-----------|-------------|

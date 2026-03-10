@@ -222,4 +222,4 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ by the Data Platform Team
+Built with ❤️ by the DataKit Team

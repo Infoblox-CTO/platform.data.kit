@@ -6,7 +6,7 @@ REQUIRE: k3d
 REQUIRE: docker
 REQUIRE: DK_E2E_DEV
 
-SAY: Welcome to the Data Platform dev lifecycle demo
+SAY: Welcome to the DataKit dev lifecycle demo
 
 SAY: This demo shows the local development stack lifecycle
 SAY: We'll deploy Helm charts to k3d, check status, and tear down

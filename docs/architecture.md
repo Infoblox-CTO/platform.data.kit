@@ -1,6 +1,6 @@
 ---
 title: Architecture
-description: High-level architecture of the Data Platform
+description: High-level architecture of DataKit
 ---
 
 # DataKit Architecture
@@ -13,7 +13,7 @@ DataKit is a Kubernetes-native data pipeline platform that enables teams to cont
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              Data Platform Architecture                          │
+│                              DataKit Architecture                          │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  ┌──────────────────┐                                                            │

@@ -25,7 +25,7 @@ This tutorial walks through the complete promotion workflow, from building a pac
 
 ## Environment Overview
 
-The Data Platform uses three standard environments:
+DataKit uses three standard environments:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

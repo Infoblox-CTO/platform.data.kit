@@ -1,6 +1,6 @@
 # Contributing to DataKit
 
-Thank you for your interest in contributing to the Data Platform! This document provides guidelines for contributing.
+Thank you for your interest in contributing to DataKit! This document provides guidelines for contributing.
 
 ## 🏗️ Development Setup
 

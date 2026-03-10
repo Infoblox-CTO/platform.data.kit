@@ -1,6 +1,6 @@
 ---
 title: Common Issues
-description: Solutions to common issues with the Data Platform
+description: Solutions to common issues with DataKit
 ---
 
 # Common Issues
