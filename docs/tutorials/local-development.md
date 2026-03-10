@@ -420,7 +420,7 @@ dk dev up
 Declare sample data directly in your DataSet YAML instead of manually
 creating tables or loading fixtures:
 
-```yaml title="asset/source.yaml"
+```yaml title="dataset/source.yaml"
 spec:
   dev:
     seed:

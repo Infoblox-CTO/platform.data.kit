@@ -39,7 +39,7 @@ Data classification is declared on the **DataSet** manifest (not on the Transfor
 Each DataSet declares its sensitivity level and PII status in its `spec`:
 
 ```yaml
-# asset/customer-records.yaml
+# dataset/customer-records.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:

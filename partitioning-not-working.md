@@ -24,8 +24,8 @@ These spec items are fully working and tested:
 | **dk publish** | Build + helm push to OCI registry | `cli/cmd/publish.go` |
 | **Helm chart generation** | Chart.yaml + values.yaml + templates/packagedeployment.yaml + manifests/ (no store/) | `sdk/registry/helmchart.go` |
 | **PackageDeployment template** | namespace: dp-\{\{.Values.cell\}\}, correct spec fields | `sdk/registry/helmchart.go` — `generatePackageDeploymentTemplate()` |
-| **dk init scaffolding** | connector/, asset/, store/ directories with templates | `cli/internal/templates/transform/cloudquery/` |
-| **Package directory structure** | dk.yaml + connector/ + asset/ + store/ + src/ convention | Matches spec exactly |
+| **dk init scaffolding** | connector/, dataset/, store/ directories with templates | `cli/internal/templates/transform/cloudquery/` |
+| **Package directory structure** | dk.yaml + connector/ + dataset/ + store/ + src/ convention | Matches spec exactly |
 | **GitOps CRDs** | Cell + Store + PackageDeployment CRDs in gitops base | `gitops/base/crds/{cell,store,packagedeployment}.yaml` |
 
 ---
@@ -283,7 +283,7 @@ This is the backend for item 1 (`dk dev up --cell`). All the same reasons apply 
 ### What Works Today Without These Gaps
 
 The core developer workflow is complete:
-- `dk init` → scaffolds a package with connector/, asset/, store/
+- `dk init` → scaffolds a package with connector/, dataset/, store/
 - `dk run` → runs locally using package store/ fallback
 - `dk run --cell canary` → resolves stores from cell's k8s namespace (if Cell/Store CRs are applied manually)
 - `dk build` → validates and produces Helm chart

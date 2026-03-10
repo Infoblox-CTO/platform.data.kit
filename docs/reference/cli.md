@@ -1186,10 +1186,10 @@ dk dataset create users --interactive
 ### Output
 
 ```
-✓ Created DataSet "users" at asset/users.yaml
+✓ Created DataSet "users" at dataset/users.yaml
 
 Next steps:
-  1. Edit asset/users.yaml to add schema and classification
+  1. Edit dataset/users.yaml to add schema and classification
   2. Run 'dk dataset validate' to validate the DataSet
   3. Reference 'users' in your Transform's spec.inputs or spec.outputs
 ```
@@ -1214,13 +1214,13 @@ dk dataset validate [path] [flags]
 
 | Argument | Description                                                                                              |
 | -------- | -------------------------------------------------------------------------------------------------------- |
-| `path` | Optional path to a specific DataSet file or directory. If omitted, validates all DataSets under `asset/`. |
+| `path` | Optional path to a specific DataSet file or directory. If omitted, validates all DataSets under `dataset/`. |
 
 ### Examples
 
 ```bash
 # Validate a single DataSet
-dk dataset validate asset/users.yaml
+dk dataset validate dataset/users.yaml
 
 # Validate all DataSets
 dk dataset validate

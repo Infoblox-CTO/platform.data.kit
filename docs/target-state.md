@@ -26,7 +26,7 @@ DataKit serves two distinct roles with clear ownership boundaries.
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                            Data Engineer                                    │
 │                                                                             │
-│   store/                       asset/                   transforms/         │
+│   store/                       dataset/                 transforms/         │
 │   ├── warehouse.yaml           ├── users.yaml           └── aws_compliance/ │
 │   └── lake-raw.yaml            ├── users-parquet.yaml       └── dk.yaml    │
 │                                └── orders.yaml                              │
@@ -72,7 +72,7 @@ Connectors rarely change. They define the technology catalog available to the pl
 A **Store** is a named instance of a Connector with connection details and credentials, managed by infra/SRE. A **DataSet** is a named data contract — a table, S3 prefix, or Kafka topic that lives in a Store — created by data engineers.
 
 ```yaml
-# asset/users.yaml
+# dataset/users.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:

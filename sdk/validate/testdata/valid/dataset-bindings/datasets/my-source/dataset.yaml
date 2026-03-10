@@ -1,0 +1,8 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: my-source
+spec:
+  store: raw-output
+  table: aws_s3_buckets
+  classification: internal

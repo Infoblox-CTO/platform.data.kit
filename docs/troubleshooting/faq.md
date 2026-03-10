@@ -134,8 +134,8 @@ dk dev down --volumes
 | `dk.yaml` | Transform manifest (runtime, inputs, outputs, schedule) | Yes |
 | `connector/` | Connector definitions (technology types) | No |
 | `store/` | Store definitions (instances with connection details) | No |
-| `asset/` | DataSet definitions (data contracts with schema) | No |
-| `asset-group/` | DataSetGroup definitions (bundled DataSets) | No |
+| `dataset/` | DataSet definitions (data contracts with schema) | No |
+| `dataset-group/` | DataSetGroup definitions (bundled DataSets) | No |
 
 The `dk.yaml` file is a Transform manifest that references DataSets by name. DataSets reference Stores, and Stores reference Connectors.
 
@@ -295,7 +295,7 @@ Common causes:
 
 Use the `classification` and `pii` fields on DataSet schemas:
 
-```yaml title="asset/customer-data.yaml"
+```yaml title="dataset/customer-data.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: DataSet
 metadata:

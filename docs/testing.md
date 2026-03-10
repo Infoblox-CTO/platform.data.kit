@@ -260,7 +260,7 @@ or managing fixture files separately.
 
 ### Defining profiles
 
-```yaml title="asset/source.yaml"
+```yaml title="dataset/source.yaml"
 spec:
   dev:
     seed:

@@ -11,8 +11,8 @@ The platform uses five manifest kinds, each with a clear ownership boundary:
 
 | Kind | Owner | Purpose |
 |------|-------|---------|
-| **Connector** | Platform team | Technology type catalog (postgres, s3, kafka) |
-| **Store** | Infra / SRE | Named instance of a Connector with connection details |
+| **Connector** | Platform team | Versioned technology type with tools and connection schema |
+| **Store** | Infra / SRE | Named instance of a Connector with connection details and secrets |
 | **DataSet** | Data engineer | Data contract — table, prefix, or topic in a Store |
 | **DataSetGroup** | Data engineer | Bundle of DataSets produced by a single materialisation |
 | **Transform** | Data engineer | Unit of computation reading input DataSets, producing output DataSets |
@@ -356,7 +356,7 @@ It declares the schema (with optional column-level lineage via `from`) and data 
 ### Full Schema
 
 ```yaml
-# asset/<name>.yaml
+# dataset/<name>.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: DataSet                                   # Required: Resource type
 
@@ -563,7 +563,7 @@ A DataSetGroup bundles multiple DataSets produced by a single materialisation
 ### Full Schema
 
 ```yaml
-# asset-group/<name>.yaml
+# dataset-group/<name>.yaml
 apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: DataSetGroup                              # Required: Resource type
 
@@ -600,7 +600,9 @@ spec:
 ## Connector Schema
 
 A Connector describes a storage technology type (e.g., Postgres, S3, Kafka).
-Maintained by the **platform team** and rarely changes.
+Maintained by the **platform team**. Multiple versions of the same connector
+(identified by `spec.provider`) can coexist — each as a separate CR with a
+unique `metadata.name` (e.g., `postgres-1-2-0`, `postgres-1-3-0`).
 
 ### Full Schema
 
@@ -610,11 +612,15 @@ apiVersion: datakit.infoblox.dev/v1alpha1          # Required: API version
 kind: Connector                                 # Required: Resource type
 
 metadata:                           # Required: Connector metadata
-  name: string                      # Required: Connector name (e.g., "postgres", "s3", "kafka")
-  labels:                           # Optional: Key-value labels
+  name: string                      # Required: CR instance name (e.g., "postgres-1-2-0")
+  labels:                           # Optional: Key-value labels (convention: datakit.infoblox.dev/provider)
+    key: value
+  annotations:                      # Optional: Arbitrary annotations
     key: value
 
 spec:                               # Required: Connector specification
+  provider: string                  # Optional: Logical identity stores reference (defaults to type)
+  version: string                   # Optional: Semantic version of this release (e.g., "1.2.0")
   type: string                      # Required: Technology identifier (postgres, s3, kafka, snowflake)
   protocol: string                  # Optional: Wire protocol (postgresql, s3, kafka)
   capabilities:                     # Required: Supported roles
@@ -623,9 +629,49 @@ spec:                               # Required: Connector specification
   plugin:                           # Optional: CloudQuery plugin images
     source: string                  # CQ source plugin image
     destination: string             # CQ destination plugin image
+
+  tools:                            # Optional: Technology-specific actions
+    - name: string                  # Required: Tool identifier (e.g., "psql", "dsn")
+      description: string           # Optional: Human-readable summary
+      type: string                  # Required: "exec" (run command) or "config" (generate output)
+      requires: [string]            # Optional: Binaries that must be on $PATH
+      command: string               # Optional: Go template for shell command (type=exec)
+      format: string                # Optional: Output format — "text", "file", or "env" (type=config)
+      path: string                  # Optional: File path to write to (format=file)
+      mode: string                  # Optional: "append" or "overwrite" (format=file)
+      template: string              # Optional: Go template for output content (type=config)
+      postMessage: string           # Optional: Go template displayed after execution
+      default: boolean              # Optional: Default tool when none is specified
+
+  connectionSchema:                 # Optional: Structured connection field declarations
+    <logical-name>:
+      field: string                 # Required: Key in Store.spec.connection
+      description: string           # Optional: Human-readable explanation
+      default: string               # Optional: Fallback value when absent
+      secret: boolean               # Optional: May also be fulfilled from Store.spec.secrets
+      optional: boolean             # Optional: Field is not required
 ```
 
 ### Field Reference
+
+#### spec.provider
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Default | Falls back to `spec.type` if omitted |
+| Examples | `postgres`, `s3`, `kafka` |
+| Description | Logical connector identity that Stores reference via `spec.connector`. Multiple CRs can share the same provider — one per version. |
+
+#### spec.version
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Format | Semantic version (e.g., `1.2.0`) |
+| Description | Version of this connector release. Used with `connectorVersion` on Stores for version-constrained resolution. |
 
 #### spec.type
 
@@ -654,7 +700,48 @@ spec:                               # Required: Connector specification
 | Fields | `source` (string), `destination` (string) |
 | Description | CloudQuery plugin images for the `cloudquery` runtime. |
 
+#### spec.tools
+
+| Property | Value |
+|----------|-------|
+| Type | array of ConnectorTool objects |
+| Required | No |
+| Description | Technology-specific actions this connector exposes (e.g., launch psql, generate DSN, mount S3 bucket). |
+
+**ConnectorTool fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Tool identifier (e.g., `psql`, `dsn`, `mount`) |
+| `description` | string | No | Human-readable summary |
+| `type` | string | Yes | `exec` (run a command) or `config` (generate output) |
+| `requires` | array of strings | No | Binary names that must be on `$PATH` |
+| `command` | string | No | Go template for shell command (`type=exec`) |
+| `format` | string | No | Output format: `text`, `file`, or `env` (`type=config`) |
+| `template` | string | No | Go template for output content (`type=config`) |
+| `default` | boolean | No | Mark as default tool when none is specified |
+
+#### spec.connectionSchema
+
+| Property | Value |
+|----------|-------|
+| Type | map of ConnectionSchemaField objects |
+| Required | No |
+| Description | Declares the structured connection fields this connector expects. Maps logical field names to `Store.spec.connection` keys. |
+
+**ConnectionSchemaField fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `field` | string | Yes | Key name in `Store.spec.connection` |
+| `description` | string | No | Human-readable explanation |
+| `default` | string | No | Fallback value when absent from the store |
+| `secret` | boolean | No | May also be fulfilled from `Store.spec.secrets` |
+| `optional` | boolean | No | Field is not required |
+
 ### Examples
+
+#### Basic Connector (single version)
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
@@ -669,6 +756,60 @@ spec:
     source: ghcr.io/infobloxopen/cq-source-postgres:0.1.0
     destination: ghcr.io/cloudquery/cq-destination-postgres:latest
 ```
+
+#### Versioned Connector with tools and connectionSchema
+
+```yaml
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Connector
+metadata:
+  name: postgres-1-3-0
+  labels:
+    datakit.infoblox.dev/provider: postgres
+spec:
+  provider: postgres
+  version: 1.3.0
+  type: postgres
+  protocol: postgresql
+  capabilities: [source, destination]
+  plugin:
+    source: ghcr.io/infobloxopen/cq-source-postgres:v1.3.0
+    destination: ghcr.io/infobloxopen/cq-destination-postgresql:v8.14.1
+  tools:
+    - name: psql
+      description: Launch interactive psql session
+      type: exec
+      requires: [psql]
+      command: "psql {{.DSN}}"
+      default: true
+    - name: dsn
+      description: Print connection string
+      type: config
+      format: text
+      template: "postgresql://{{.Connection.host}}:{{.Connection.port}}/{{.Connection.database}}"
+  connectionSchema:
+    host:
+      field: host
+      description: Database hostname
+      default: localhost
+    port:
+      field: port
+      description: Database port
+      default: "5432"
+    database:
+      field: database
+      description: Database name
+    username:
+      field: username
+      description: Database user
+      secret: true
+    password:
+      field: password
+      description: Database password
+      secret: true
+```
+
+#### Destination-only Connector
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
@@ -690,6 +831,10 @@ spec:
 A Store is a **named instance** of a Connector: a specific database, bucket, or cluster
 with its connection details and credentials. Secrets live **only** on the Store.
 
+The `spec.connector` field references a Connector by its **provider** identity
+(i.e., `spec.provider` on the Connector, NOT `metadata.name`). This allows
+multiple connector versions to coexist while stores reference the logical type.
+
 ### Full Schema
 
 ```yaml
@@ -702,9 +847,12 @@ metadata:                           # Required: Store metadata
   namespace: string                 # Optional: Team namespace
   labels:                           # Optional: Key-value labels
     key: value
+  annotations:                      # Optional: Arbitrary annotations
+    key: value
 
 spec:                               # Required: Store specification
-  connector: string                 # Required: Name of the Connector this store is an instance of
+  connector: string                 # Required: Provider name of the Connector (references spec.provider)
+  connectorVersion: string          # Optional: Semver range constraining compatible versions
   connection:                       # Required: Technology-specific connection parameters
     key: value                      # e.g., host, port, bucket, region, endpoint
   secrets:                          # Optional: Credential references using ${VAR} interpolation
@@ -719,7 +867,17 @@ spec:                               # Required: Store specification
 |----------|-------|
 | Type | string |
 | Required | Yes |
-| Description | References a Connector by name (e.g., `postgres`, `s3`). |
+| Description | Provider name of the Connector this store is an instance of. References `spec.provider` on the Connector (e.g., `postgres`, `s3`), **not** the CR `metadata.name`. |
+
+#### spec.connectorVersion
+
+| Property | Value |
+|----------|-------|
+| Type | string |
+| Required | No |
+| Format | Semver range (e.g., `^1.0.0`, `>=1.2.0 <2.0.0`) |
+| Default | Highest available version of the named provider |
+| Description | Constrains which connector versions this store is compatible with. When omitted, the platform selects the highest available version. |
 
 #### spec.connection
 
@@ -727,7 +885,7 @@ spec:                               # Required: Store specification
 |----------|-------|
 | Type | map (string → any) |
 | Required | Yes |
-| Description | Technology-specific connection parameters. Structure depends on the Connector type. |
+| Description | Technology-specific connection parameters. Keys should match the Connector's `connectionSchema` field definitions. |
 
 #### spec.secrets
 
@@ -781,6 +939,26 @@ spec:
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
 ```
 
+#### Store with version-constrained Connector
+
+```yaml
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Store
+metadata:
+  name: analytics-db
+  namespace: analytics
+spec:
+  connector: postgres
+  connectorVersion: ">=1.2.0 <2.0.0"
+  connection:
+    host: analytics-primary.internal
+    port: 5432
+    database: analytics
+  secrets:
+    username: ${ANALYTICS_PG_USER}
+    password: ${ANALYTICS_PG_PASSWORD}
+```
+
 ---
 
 ## Validation Rules Summary
@@ -827,12 +1005,12 @@ my-pipeline/
 ├── store/
 │   ├── warehouse.yaml
 │   └── lake-raw.yaml
-├── asset/
+├── dataset/
 │   ├── users.yaml
 │   ├── users-parquet.yaml
 │   ├── orders.yaml
 │   └── orders-parquet.yaml
-├── asset-group/
+├── dataset-group/
 │   └── pg-snapshot.yaml
 └── dk.yaml                  # Transform manifest
 ```
@@ -898,7 +1076,7 @@ spec:
     password: ${PG_PASSWORD}
 ```
 
-### asset/users.yaml (input)
+### dataset/users.yaml (input)
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1
@@ -918,7 +1096,7 @@ spec:
       pii: true
 ```
 
-### asset/users-parquet.yaml (output with lineage)
+### dataset/users-parquet.yaml (output with lineage)
 
 ```yaml
 apiVersion: datakit.infoblox.dev/v1alpha1

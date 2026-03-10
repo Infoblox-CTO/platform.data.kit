@@ -183,7 +183,7 @@ When you `dk build` and `dk publish`, the package becomes an immutable Helm char
 |----------|----------|
 | `dk.yaml` (Transform) | `store/` directory |
 | `connector/*.yaml` | `src/` (baked into image) |
-| `asset/*.yaml` | `tests/` |
+| `dataset/*.yaml` | `tests/` |
 | `templates/packagedeployment.yaml` | |
 
 The `store/` directory is intentionally excluded — stores are cell-specific and resolved at deploy time.
