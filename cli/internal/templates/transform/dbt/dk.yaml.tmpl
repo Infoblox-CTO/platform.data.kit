@@ -20,10 +20,10 @@ spec:
     select: "tag:daily"
 
   inputs:
-    - asset: {{ .Name }}-input
+    - dataset: {{ .Name }}-input
 
   outputs:
-    - asset: {{ .Name }}-output
+    - dataset: {{ .Name }}-output
 
   schedule:
     cron: "30 6 * * *"

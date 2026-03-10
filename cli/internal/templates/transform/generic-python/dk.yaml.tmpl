@@ -14,10 +14,10 @@ spec:
   image: "${REGISTRY}/{{ .Name }}:${VERSION}"
 
   inputs:
-    - asset: {{ .Name }}-input
+    - dataset: {{ .Name }}-input
 
   outputs:
-    - asset: {{ .Name }}-output
+    - dataset: {{ .Name }}-output
 
   resources:
     cpu: "1"

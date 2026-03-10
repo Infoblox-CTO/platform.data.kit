@@ -161,8 +161,10 @@ spec:
 	if err := json.Unmarshal([]byte(jsonShowData), &jsonShow); err != nil {
 		t.Fatalf("failed to parse JSON show output: %v\nOutput: %s", err, jsonShowData)
 	}
-	if jsonShow["name"] != "aws-security" {
-		t.Errorf("expected name 'aws-security' in JSON show, got: %v", jsonShow["name"])
+	// The show command outputs the full manifest; name is under metadata.
+	metadata, _ := jsonShow["metadata"].(map[string]any)
+	if metadata == nil || metadata["name"] != "aws-security" {
+		t.Errorf("expected metadata.name 'aws-security' in JSON show, got: %v", jsonShow)
 	}
 }
 

@@ -11,9 +11,9 @@ spec:
   mode: {{ .Mode }}
 
   inputs:
-    - asset: {{ .Name }}-source-table
+    - dataset: {{ .Name }}-source-table
 
   outputs:
-    - asset: {{ .Name }}-dest-table
+    - dataset: {{ .Name }}-dest-table
 
   timeout: 30m
