@@ -136,7 +136,7 @@ func printResults(cmd *cobra.Command, checks []CheckResult) {
 				fmt.Fprintf(cmd.OutOrStdout(), "      %s\n", line)
 			}
 		}
-		if c.Status == CheckFail && c.Fix != "" {
+		if c.Status != CheckOK && c.Fix != "" {
 			fmt.Fprintf(cmd.OutOrStdout(), "    Fix: %s\n", c.Fix)
 		}
 	}
@@ -257,7 +257,7 @@ func checkK3d(ctx context.Context) CheckResult {
 
 // checkKubectl validates that kubectl is installed.
 func checkKubectl(ctx context.Context) CheckResult {
-	return checkToolVersion(ctx, "kubectl", []string{"kubectl", "version", "--client", "--short"},
+	return checkToolVersion(ctx, "kubectl", []string{"kubectl", "version", "--client"},
 		"Install kubectl: https://kubernetes.io/docs/tasks/tools/")
 }
 
