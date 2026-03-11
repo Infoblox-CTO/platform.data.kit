@@ -52,6 +52,20 @@ type DisplayEndpoint struct {
 
 	// URL is the localhost URL (e.g., "localhost:19092").
 	URL string
+
+	// Subdomain is the proxy subdomain for the dashboard reverse proxy
+	// (e.g., "marquez", "s3"). Empty means the service is not HTTP-proxyable
+	// (e.g., TCP-only services like Kafka or PostgreSQL).
+	Subdomain string
+
+	// Description is a short description shown on the dashboard
+	// (e.g., "Data lineage tracking UI").
+	Description string
+
+	// DefaultPath is the path appended to the proxy URL when generating
+	// clickable links (e.g., "/subjects" for Schema Registry).
+	// Empty means link to "/".
+	DefaultPath string
 }
 
 // ChartOverride holds user-configurable overrides for a chart.

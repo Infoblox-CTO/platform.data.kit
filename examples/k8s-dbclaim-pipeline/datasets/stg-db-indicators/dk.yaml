@@ -1,0 +1,25 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: stg-db-indicators
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: staging
+spec:
+  store: pg-warehouse
+  table: staging.db_indicators
+  classification: internal
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: release_name
+      type: string
+    - name: indicator_type
+      type: string
+    - name: indicator_key
+      type: string
+    - name: loaded_at
+      type: timestamp

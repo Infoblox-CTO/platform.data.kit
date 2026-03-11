@@ -1,0 +1,26 @@
+# Redpanda Console values for dk local development
+replicaCount: 1
+
+image:
+  repository: redpandadata/console
+  pullPolicy: IfNotPresent
+  tag: "v2.7.2"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+kafka:
+  brokers: "dk-redpanda:9092"
+
+schemaRegistry:
+  enabled: true
+  urls: "http://dk-redpanda:8081"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

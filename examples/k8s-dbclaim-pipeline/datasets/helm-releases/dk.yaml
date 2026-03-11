@@ -1,0 +1,32 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: helm-releases
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: raw
+spec:
+  store: s3-raw
+  prefix: data/helm-releases/
+  format: parquet
+  classification: internal
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: release_name
+      type: string
+    - name: chart_name
+      type: string
+    - name: chart_version
+      type: string
+    - name: app_version
+      type: string
+    - name: status
+      type: string
+    - name: values_json
+      type: string
+    - name: collected_at
+      type: timestamp

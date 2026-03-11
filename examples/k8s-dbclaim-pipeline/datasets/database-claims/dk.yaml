@@ -1,0 +1,30 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: database-claims
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: raw
+spec:
+  store: s3-raw
+  prefix: data/database-claims/
+  format: parquet
+  classification: internal
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: name
+      type: string
+    - name: database_name
+      type: string
+    - name: instance_label
+      type: string
+    - name: db_type
+      type: string
+    - name: status
+      type: string
+    - name: collected_at
+      type: timestamp

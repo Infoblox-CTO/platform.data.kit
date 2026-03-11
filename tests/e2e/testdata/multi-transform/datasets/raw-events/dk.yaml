@@ -1,0 +1,9 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: raw-events
+spec:
+  store: s3-raw
+  table: raw.events
+  format: parquet
+  classification: internal

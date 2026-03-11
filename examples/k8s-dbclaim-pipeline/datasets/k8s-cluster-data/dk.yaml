@@ -1,0 +1,11 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: k8s-cluster-data
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: source
+spec:
+  store: k8s-clusters
+  classification: internal

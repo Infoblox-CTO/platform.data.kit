@@ -1,0 +1,6 @@
+apiVersion: v2
+name: redpanda-console
+description: Redpanda Console for dk local development (Kafka topics, schemas & consumer groups)
+type: application
+version: 0.1.0
+appVersion: "v2.7.2"

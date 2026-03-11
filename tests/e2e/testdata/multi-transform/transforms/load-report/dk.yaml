@@ -1,0 +1,25 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: load-report
+  namespace: default
+  version: 0.1.0
+spec:
+  runtime: generic-go
+  mode: batch
+  description: "Publish final report to external storage"
+  owner: platform-team
+  image: "${REGISTRY}/load-report:${VERSION}"
+
+  inputs:
+    - dataset: final-report
+
+  outputs:
+    - dataset: published-report
+
+  trigger:
+    policy: on-change
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"

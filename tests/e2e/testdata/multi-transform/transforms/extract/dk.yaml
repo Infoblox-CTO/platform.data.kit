@@ -1,0 +1,27 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: extract
+  namespace: default
+  version: 0.1.0
+spec:
+  runtime: generic-go
+  mode: batch
+  description: "Extract raw events from source"
+  owner: platform-team
+  image: "${REGISTRY}/extract:${VERSION}"
+
+  inputs:
+    - dataset: raw-events
+
+  outputs:
+    - dataset: processed-events
+
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */6 * * *"
+
+  resources:
+    cpu: "1"
+    memory: "2Gi"

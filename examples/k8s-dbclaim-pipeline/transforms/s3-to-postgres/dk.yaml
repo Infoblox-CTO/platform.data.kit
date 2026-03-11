@@ -1,0 +1,28 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: s3-to-postgres
+  version: "0.1.0"
+  labels:
+    domain: k8s-inventory
+    stage: load
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - dataset: helm-releases
+    - dataset: k8s-deployments
+    - dataset: k8s-configmaps
+    - dataset: k8s-secrets
+    - dataset: database-claims
+  outputs:
+    - dataset: db-usage-indicators
+    - dataset: stg-helm-releases
+    - dataset: stg-database-claims
+    - dataset: stg-db-indicators
+  trigger:
+    policy: on-change
+  timeout: 30m
+  resources:
+    cpu: "1"
+    memory: 2Gi

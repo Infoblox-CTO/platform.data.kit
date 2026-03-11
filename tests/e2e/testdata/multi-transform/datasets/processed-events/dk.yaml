@@ -1,0 +1,9 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: processed-events
+spec:
+  store: pg-warehouse
+  table: staging.processed_events
+  format: table
+  classification: internal

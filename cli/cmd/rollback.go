@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/promotion"
+	"github.com/infobloxopen/apx/pkg/githubauth"
 	"github.com/spf13/cobra"
 )
 
@@ -57,10 +58,18 @@ func runRollback(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid environment: %s (must be dev, int, or prod)", rollbackEnvironment)
 	}
 
-	// Get GitHub token
+	// Get GitHub token: env var first, then device-flow via githubauth
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" && !rollbackDryRun {
-		return fmt.Errorf("GITHUB_TOKEN environment variable is required")
+		org, orgErr := githubauth.DetectOrg()
+		if orgErr != nil {
+			return fmt.Errorf("GITHUB_TOKEN not set and cannot detect org from git remote: %w", orgErr)
+		}
+		t, tokenErr := githubauth.EnsureToken(org)
+		if tokenErr != nil {
+			return fmt.Errorf("GitHub authentication failed: %w", tokenErr)
+		}
+		token = t
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)

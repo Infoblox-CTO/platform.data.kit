@@ -1,0 +1,9 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: published-report
+spec:
+  store: s3-raw
+  table: published.final_report
+  format: parquet
+  classification: internal

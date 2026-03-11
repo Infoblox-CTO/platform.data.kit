@@ -1,0 +1,22 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: dbt-reporting
+  version: "0.1.0"
+  labels:
+    domain: k8s-inventory
+    stage: transform
+spec:
+  runtime: dbt
+  mode: batch
+  inputs:
+    - dataset: stg-helm-releases
+    - dataset: stg-database-claims
+    - dataset: stg-db-indicators
+    - dataset: db-usage-indicators
+  outputs:
+    - dataset: dbclaim-report
+  image: ghcr.io/infoblox-cto/dk-dbt-reporting:latest
+  trigger:
+    policy: on-change
+  timeout: 1h

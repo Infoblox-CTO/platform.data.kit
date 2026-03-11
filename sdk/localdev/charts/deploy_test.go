@@ -85,11 +85,11 @@ func TestApplyOverrides_WithValues(t *testing.T) {
 }
 
 func TestDefaultCharts_Registry(t *testing.T) {
-	if len(DefaultCharts) != 4 {
-		t.Fatalf("DefaultCharts should have 4 entries, got %d", len(DefaultCharts))
+	if len(DefaultCharts) != 5 {
+		t.Fatalf("DefaultCharts should have 5 entries, got %d", len(DefaultCharts))
 	}
 
-	expectedNames := []string{"redpanda", "localstack", "postgres", "marquez"}
+	expectedNames := []string{"redpanda", "redpanda-console", "localstack", "postgres", "marquez"}
 	for i, expected := range expectedNames {
 		if DefaultCharts[i].Name != expected {
 			t.Errorf("DefaultCharts[%d].Name = %q, want %q", i, DefaultCharts[i].Name, expected)
@@ -152,7 +152,8 @@ func TestAllLocalPorts(t *testing.T) {
 		19092: true, 18081: true, // redpanda
 		4566: true,                         // localstack
 		5432: true,                         // postgres
-		5000: true, 5001: true, 3000: true, // marquez
+		18080: true,                         // redpanda-console
+		5000: true, 5001: true, 3000: true,  // marquez
 	}
 
 	if len(ports) != len(expectedPorts) {

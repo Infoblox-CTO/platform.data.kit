@@ -1,0 +1,28 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: k8s-secrets
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: raw
+spec:
+  store: s3-raw
+  prefix: data/k8s-secrets/
+  format: parquet
+  classification: confidential
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: name
+      type: string
+    - name: type
+      type: string
+    - name: data_keys_json
+      type: string
+    - name: has_db_credentials
+      type: boolean
+    - name: collected_at
+      type: timestamp

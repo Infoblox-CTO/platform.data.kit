@@ -1,0 +1,9 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: final-report
+spec:
+  store: pg-warehouse
+  table: reporting.final_report
+  format: table
+  classification: internal

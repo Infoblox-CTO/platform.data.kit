@@ -1,29 +1,31 @@
 module github.com/Infoblox-CTO/platform.data.kit/cli
 
-go 1.25
+go 1.26.1
 
 replace (
 	github.com/Infoblox-CTO/platform.data.kit/contracts => ../contracts
 	github.com/Infoblox-CTO/platform.data.kit/sdk => ../sdk
+	github.com/infobloxopen/apx => /Users/dgarcia/go/src/github.com/infobloxopen/apx
 )
 
 require (
 	github.com/Infoblox-CTO/platform.data.kit/contracts v0.0.0
 	github.com/Infoblox-CTO/platform.data.kit/sdk v0.0.0-00010101000000-000000000000
-	github.com/spf13/cobra v1.8.1
+	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/infobloxopen/apx v0.0.0
+	github.com/spf13/cobra v1.10.2
+	golang.org/x/term v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	github.com/adhocore/gronx v1.19.6 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
 	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7 // indirect
 	github.com/charmbracelet/bubbletea v1.3.6 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
-	github.com/charmbracelet/huh v0.8.0 // indirect
-	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.9.3 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
@@ -43,13 +45,11 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	oras.land/oras-go/v2 v2.5.0 // indirect
 )

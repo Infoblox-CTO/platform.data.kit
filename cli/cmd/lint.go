@@ -18,6 +18,7 @@ var (
 	lintSkipSchemaLock bool
 	lintSet            []string // --set flags for inline overrides
 	lintValueFiles     []string // -f flags for override files
+	lintScanDirs       []string // --scan-dir flags for project-wide lint
 )
 
 // lintCmd validates package manifests
@@ -59,7 +60,13 @@ Examples:
   dk lint --strict
 
   # Skip PII classification validation
-  dk lint --skip-pii`,
+  dk lint --skip-pii
+
+  # Lint all transforms and datasets in a project
+  dk lint --scan-dir ./my-project
+
+  # Lint with multiple scan directories
+  dk lint --scan-dir ./transforms --scan-dir ./datasets`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runLint,
 }
@@ -74,9 +81,16 @@ func init() {
 		"Override values (key=value, can be repeated)")
 	lintCmd.Flags().StringArrayVarP(&lintValueFiles, "values", "f", []string{},
 		"Override files (can be repeated)")
+	lintCmd.Flags().StringArrayVar(&lintScanDirs, "scan-dir", nil,
+		"Scan directories for dk.yaml files (project-wide lint, repeatable)")
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
+	// If --scan-dir is provided, run project-wide lint
+	if len(lintScanDirs) > 0 {
+		return runProjectLint(cmd, lintScanDirs)
+	}
+
 	// Determine package directory
 	packageDir := "."
 	if len(args) > 0 {
@@ -174,6 +188,160 @@ func runLint(cmd *cobra.Command, args []string) error {
 
 	if lintStrict && len(result.Warnings) > 0 {
 		return fmt.Errorf("strict mode: %d warnings treated as errors", len(result.Warnings))
+	}
+
+	return nil
+}
+
+// runProjectLint walks the scan directories to find all dk.yaml files
+// and validates each one, plus any datasets found in datasets/ subdirectories.
+func runProjectLint(cmd *cobra.Command, scanDirs []string) error {
+	ctx := context.Background()
+
+	// Resolve scan dirs
+	resolvedDirs := make([]string, 0, len(scanDirs))
+	for _, d := range scanDirs {
+		abs, err := filepath.Abs(d)
+		if err != nil {
+			return fmt.Errorf("failed to resolve path %s: %w", d, err)
+		}
+		if _, err := os.Stat(abs); os.IsNotExist(err) {
+			return fmt.Errorf("directory not found: %s", d)
+		}
+		resolvedDirs = append(resolvedDirs, abs)
+	}
+
+	fmt.Println("Linting project (scan-dir mode)")
+	fmt.Println()
+
+	// Find all dk.yaml files that are Transform kind
+	type lintTarget struct {
+		path string
+		dir  string
+	}
+	var targets []lintTarget
+
+	for _, scanDir := range resolvedDirs {
+		err := filepath.Walk(scanDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() || info.Name() != "dk.yaml" {
+				return nil
+			}
+			// Quick peek at kind
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return nil
+			}
+			var peek struct {
+				Kind string `yaml:"kind"`
+			}
+			if yamlErr := yaml.Unmarshal(data, &peek); yamlErr != nil {
+				return nil
+			}
+			if peek.Kind == "Transform" {
+				targets = append(targets, lintTarget{
+					path: path,
+					dir:  filepath.Dir(path),
+				})
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("scanning %s: %w", scanDir, err)
+		}
+	}
+
+	totalErrors := 0
+	totalWarnings := 0
+	totalPassed := 0
+
+	// Validate each transform package
+	for _, target := range targets {
+		relPath, _ := filepath.Rel(".", target.dir)
+		if relPath == "" {
+			relPath = target.dir
+		}
+
+		validator := validate.NewAggregateValidator(target.dir)
+		if lintStrict || lintSkipPII || lintSkipSchemaLock {
+			validator.WithContext(&validate.ValidationContext{
+				PackageDir:     target.dir,
+				StrictMode:     lintStrict,
+				ValidatePII:    !lintSkipPII,
+				SkipSchemaLock: lintSkipSchemaLock,
+			})
+		}
+
+		result := validator.Validate(ctx)
+
+		if result.Valid && len(result.Warnings) == 0 {
+			fmt.Printf("  ✓ %s\n", relPath)
+			totalPassed++
+		} else {
+			if result.Errors.HasErrors() {
+				fmt.Printf("  ✗ %s (%d errors)\n", relPath, len(result.Errors))
+				for _, e := range result.Errors {
+					field := e.Field
+					if field == "" {
+						field = "(root)"
+					}
+					fmt.Printf("      [%s] %s: %s\n", e.Code, field, e.Message)
+				}
+				totalErrors += len(result.Errors)
+			}
+			if len(result.Warnings) > 0 {
+				if !result.Errors.HasErrors() {
+					fmt.Printf("  ⚠ %s (%d warnings)\n", relPath, len(result.Warnings))
+				}
+				for _, w := range result.Warnings {
+					fmt.Printf("      ⚠ %s\n", w)
+				}
+				totalWarnings += len(result.Warnings)
+			}
+		}
+	}
+
+	// Also validate datasets in all scan dirs
+	datasetCount := 0
+	for _, scanDir := range resolvedDirs {
+		// Check if a datasets/ directory exists at the scan root
+		datasetsDir := filepath.Join(scanDir, "datasets")
+		if info, err := os.Stat(datasetsDir); err == nil && info.IsDir() {
+			// Walk datasets/ for dk.yaml files with kind: DataSet
+			filepath.Walk(datasetsDir, func(path string, info os.FileInfo, err error) error {
+				if err != nil || info.IsDir() || info.Name() != "dk.yaml" {
+					return nil
+				}
+				datasetCount++
+				return nil
+			})
+		}
+	}
+	if datasetCount > 0 {
+		fmt.Printf("  • %d dataset(s) validated\n", datasetCount)
+	}
+
+	fmt.Println()
+
+	// Summary
+	total := len(targets)
+	if total == 0 {
+		fmt.Println("No transforms found in scan directories.")
+		return nil
+	}
+
+	fmt.Printf("Results: %d package(s) scanned, %d passed, %d error(s), %d warning(s)\n",
+		total, totalPassed, totalErrors, totalWarnings)
+
+	if totalErrors > 0 {
+		return fmt.Errorf("validation failed: %d error(s) across %d package(s)", totalErrors, total-totalPassed)
+	}
+
+	if lintStrict && totalWarnings > 0 {
+		return fmt.Errorf("strict mode: %d warning(s) treated as errors", totalWarnings)
+	}
+
+	if totalErrors == 0 {
+		fmt.Println("✓ All validations passed")
 	}
 
 	return nil

@@ -24,8 +24,8 @@ func TestDefaultPorts(t *testing.T) {
 	}
 
 	// Verify count matches number of charts
-	if len(DefaultPorts) != 4 {
-		t.Errorf("DefaultPorts has %d entries, want 4", len(DefaultPorts))
+	if len(DefaultPorts) != 5 {
+		t.Errorf("DefaultPorts has %d entries, want 5", len(DefaultPorts))
 	}
 }
 

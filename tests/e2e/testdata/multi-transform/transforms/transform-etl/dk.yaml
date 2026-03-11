@@ -1,0 +1,25 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: transform-etl
+  namespace: default
+  version: 0.1.0
+spec:
+  runtime: generic-go
+  mode: batch
+  description: "Transform processed events into report shape"
+  owner: platform-team
+  image: "${REGISTRY}/transform-etl:${VERSION}"
+
+  inputs:
+    - dataset: processed-events
+
+  outputs:
+    - dataset: final-report
+
+  trigger:
+    policy: on-change
+
+  resources:
+    cpu: "2"
+    memory: "4Gi"

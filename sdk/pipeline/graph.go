@@ -452,6 +452,114 @@ func RenderJSON(w io.Writer, g *PipelineGraph) error {
 	return enc.Encode(g)
 }
 
+// TopologicalSort returns transform node IDs in dependency order.
+// Transforms that appear earlier can be run before those that appear later.
+// Only transform nodes are included in the result.
+func (g *PipelineGraph) TopologicalSort() []string {
+	// Build adjacency list for transforms only.
+	// A transform T1 depends on T2 if T1 reads a dataset that T2 produces.
+	// Edge from T2 → dataset and dataset → T1 means T1 depends on T2.
+
+	// Map dataset → producing transform
+	producedBy := make(map[string]string) // dataset → transform
+	for _, e := range g.Edges {
+		// Check if the source is a transform
+		for _, n := range g.Nodes {
+			if n.ID == e.From && n.Type == "transform" {
+				producedBy[e.To] = e.From
+				break
+			}
+		}
+	}
+
+	// Build transform dependency graph
+	transformSet := make(map[string]bool)
+	for _, n := range g.Nodes {
+		if n.Type == "transform" {
+			transformSet[n.ID] = true
+		}
+	}
+
+	// deps[T1] = set of transforms T1 depends on
+	deps := make(map[string]map[string]bool)
+	for t := range transformSet {
+		deps[t] = make(map[string]bool)
+	}
+
+	for _, e := range g.Edges {
+		// If edge is dataset → transform, check if dataset is produced by another transform
+		if transformSet[e.To] {
+			producer, ok := producedBy[e.From]
+			if ok && producer != e.To {
+				deps[e.To][producer] = true
+			}
+		}
+	}
+
+	// Kahn's algorithm for topological sort
+	var result []string
+	inDegree := make(map[string]int)
+	for t := range transformSet {
+		inDegree[t] = len(deps[t])
+	}
+
+	var queue []string
+	for t, d := range inDegree {
+		if d == 0 {
+			queue = append(queue, t)
+		}
+	}
+	sort.Strings(queue) // Stable output
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		result = append(result, curr)
+
+		// Reduce in-degree for dependents
+		for t, d := range deps {
+			if d[curr] {
+				inDegree[t]--
+				if inDegree[t] == 0 {
+					queue = append(queue, t)
+					sort.Strings(queue) // Keep stable
+				}
+			}
+		}
+	}
+
+	return result
+}
+
+// TransformDirs returns transform directories in topological (execution) order.
+// Each entry is a TransformInfo with the transform name, directory path, and runtime.
+func (g *PipelineGraph) TransformDirs() []TransformInfo {
+	order := g.TopologicalSort()
+	nodeMap := make(map[string]GraphNode)
+	for _, n := range g.Nodes {
+		nodeMap[n.ID] = n
+	}
+
+	var result []TransformInfo
+	for _, id := range order {
+		n := nodeMap[id]
+		dir := filepath.Dir(n.FilePath)
+		result = append(result, TransformInfo{
+			Name:    id,
+			Dir:     dir,
+			Runtime: n.Runtime,
+		})
+	}
+	return result
+}
+
+// TransformInfo describes a transform for execution ordering.
+type TransformInfo struct {
+	Name    string
+	Dir     string
+	Runtime string
+}
+
 // --- internal helpers ---
 
 type scannedTransform struct {

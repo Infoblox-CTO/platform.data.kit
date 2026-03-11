@@ -1,0 +1,26 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: k8s-configmaps
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: raw
+spec:
+  store: s3-raw
+  prefix: data/k8s-configmaps/
+  format: parquet
+  classification: internal
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: name
+      type: string
+    - name: data_keys_json
+      type: string
+    - name: has_db_config
+      type: boolean
+    - name: collected_at
+      type: timestamp

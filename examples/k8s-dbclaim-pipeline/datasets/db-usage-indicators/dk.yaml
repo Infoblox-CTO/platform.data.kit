@@ -1,0 +1,27 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: db-usage-indicators
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: intermediate
+spec:
+  store: pg-warehouse
+  table: raw.db_usage_indicators
+  classification: internal
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: resource_name
+      type: string
+    - name: resource_kind
+      type: string
+    - name: indicator_type
+      type: string
+    - name: indicator_key
+      type: string
+    - name: loaded_at
+      type: timestamp

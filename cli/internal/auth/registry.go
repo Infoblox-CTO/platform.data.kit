@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/infobloxopen/apx/pkg/githubauth"
 )
 
 // DockerConfig represents the Docker config.json structure.
@@ -102,6 +104,15 @@ func (r *RegistryAuth) getCredentialsFromEnv(registry string) *Credentials {
 			return &Credentials{
 				Username: "oauth2",
 				Token:    token,
+			}
+		}
+		// Fallback: try cached githubauth token (does NOT trigger device flow)
+		if org, err := githubauth.DetectOrg(); err == nil {
+			if tok, err := githubauth.LoadToken(org); err == nil && tok != nil {
+				return &Credentials{
+					Username: "oauth2",
+					Token:    tok.AccessToken,
+				}
 			}
 		}
 	case strings.Contains(registry, "docker.io") || strings.Contains(registry, "hub.docker.com"):

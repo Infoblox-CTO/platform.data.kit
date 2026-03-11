@@ -1,0 +1,33 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: dbclaim-report
+  version: "1.0.0"
+  labels:
+    domain: k8s-inventory
+    tier: reporting
+spec:
+  store: pg-warehouse
+  table: reporting.dbclaim_report
+  classification: internal
+  schema:
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: release_name
+      type: string
+    - name: chart_name
+      type: string
+    - name: has_dbclaim
+      type: boolean
+    - name: has_db_indicators
+      type: boolean
+    - name: indicator_types
+      type: string
+    - name: db_type
+      type: string
+    - name: assessment
+      type: string
+    - name: updated_at
+      type: timestamp

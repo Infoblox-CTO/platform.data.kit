@@ -1,0 +1,27 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: k8s-collector
+  version: "0.1.0"
+  labels:
+    domain: k8s-inventory
+    stage: extract
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - dataset: k8s-cluster-data
+  outputs:
+    - dataset: helm-releases
+    - dataset: k8s-deployments
+    - dataset: k8s-configmaps
+    - dataset: k8s-secrets
+    - dataset: database-claims
+  trigger:
+    policy: schedule
+    schedule:
+      cron: "0 */4 * * *"
+  timeout: 30m
+  resources:
+    cpu: "1"
+    memory: 2Gi
