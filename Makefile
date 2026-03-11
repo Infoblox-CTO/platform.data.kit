@@ -5,6 +5,10 @@
 #   make install DESTDIR=/usr/local/bin
 DESTDIR ?= $(HOME)/go/bin
 
+# Version is derived from the latest git tag; used by install and release targets.
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS := -ldflags "-X github.com/Infoblox-CTO/platform.data.kit/cli/cmd.Version=$(VERSION)"
+
 .PHONY: all build test lint clean help
 .PHONY: build-contracts build-sdk build-cli build-controller
 .PHONY: test-contracts test-sdk test-cli test-controller
@@ -29,8 +33,8 @@ build-sdk:
 	@cd sdk && go build ./...
 
 build-cli: ## Build CLI binary
-	@echo "Building cli..."
-	@cd cli && go build -o ../bin/dk .
+	@echo "Building cli $(VERSION)..."
+	@cd cli && go build $(LDFLAGS) -o ../bin/dk .
 
 build-controller: ## Build controller binary
 	@echo "Building controller..."
@@ -127,10 +131,10 @@ tidy: ## Tidy all go.mod files
 	@cd platform/controller && go mod tidy
 
 install: ## Install dk to DESTDIR (default: ~/go/bin)
-	@echo "Installing dk to $(DESTDIR)..."
+	@echo "Installing dk $(VERSION) to $(DESTDIR)..."
 	@mkdir -p $(DESTDIR)
-	@cd cli && go build -o $(DESTDIR)/dk .
-	@echo "✓ Installed dk to $(DESTDIR)/dk"
+	@cd cli && go build $(LDFLAGS) -o $(DESTDIR)/dk .
+	@echo "✓ Installed dk $(VERSION) to $(DESTDIR)/dk"
 
 run-local: ## Start local dev stack
 	@echo "Starting local development stack..."
@@ -166,9 +170,6 @@ manifests: ## Generate CRD manifests
 
 ##@ Release
 
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-LDFLAGS := -ldflags "-X main.version=$(VERSION)"
-
 release-cli: ## Build release CLI binaries
 	@echo "Building release CLI $(VERSION)..."
 	@cd cli && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o ../bin/dk-linux-amd64 .
@@ -184,14 +185,15 @@ release-controller: ## Build controller Docker image
 
 ##@ Cleanup
 
-clean: ## Remove build artifacts
+clean: ## Remove build artifacts and Go build cache
 	@echo "Cleaning build artifacts..."
 	@rm -rf bin/
 	@rm -rf coverage/
 	@rm -rf dist/
 	@find . -name "*.test" -delete
 	@find . -name "*.out" -delete
-	@echo "✓ Clean complete"
+	@go clean -cache
+	@echo "✓ Clean complete (including Go build cache)"
 
 ##@ Help
 
