@@ -1,0 +1,7 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Store
+metadata:
+  name: k8s-local
+spec:
+  connector: kubernetes
+  connection: {}

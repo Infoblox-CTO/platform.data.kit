@@ -5,7 +5,6 @@ go 1.26.1
 replace (
 	github.com/Infoblox-CTO/platform.data.kit/contracts => ../contracts
 	github.com/Infoblox-CTO/platform.data.kit/sdk => ../sdk
-	github.com/infobloxopen/apx => /Users/dgarcia/go/src/github.com/infobloxopen/apx
 )
 
 require (
@@ -13,7 +12,7 @@ require (
 	github.com/Infoblox-CTO/platform.data.kit/sdk v0.0.0-00010101000000-000000000000
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/infobloxopen/apx v0.0.0
+	github.com/infobloxopen/apx v0.0.0-20260311130628-73193b5f74c7
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/term v0.40.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -1,0 +1,20 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: s3-to-postgres
+  version: "0.1.0"
+  labels:
+    domain: k8s-report
+    stage: load
+spec:
+  runtime: cloudquery
+  mode: batch
+  inputs:
+    - dataset: k8s-namespaces-parquet
+    - dataset: k8s-deployments-parquet
+    - dataset: k8s-services-parquet
+  outputs:
+    - dataset: pg-namespaces
+    - dataset: pg-deployments
+    - dataset: pg-services
+  timeout: 10m

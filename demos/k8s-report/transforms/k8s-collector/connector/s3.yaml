@@ -1,0 +1,11 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Connector
+metadata:
+  name: s3
+spec:
+  type: s3
+  protocol: s3
+  capabilities: [source, destination]
+  plugin:
+    source: ghcr.io/cloudquery/cq-source-s3:v3.2.0
+    destination: ghcr.io/cloudquery/cq-destination-s3:v5.1.0

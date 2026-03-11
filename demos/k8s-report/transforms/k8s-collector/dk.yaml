@@ -1,0 +1,21 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: k8s-collector
+  version: "0.1.0"
+  labels:
+    domain: k8s-report
+    stage: extract
+spec:
+  runtime: cloudquery
+  mode: batch
+  serviceAccountName: dk-k8s-reader
+  inputs:
+    - dataset: k8s-namespaces
+    - dataset: k8s-deployments
+    - dataset: k8s-services
+  outputs:
+    - dataset: k8s-namespaces-parquet
+    - dataset: k8s-deployments-parquet
+    - dataset: k8s-services-parquet
+  timeout: 10m

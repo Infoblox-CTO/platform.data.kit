@@ -29,7 +29,4 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 )
 
-replace (
-	github.com/Infoblox-CTO/platform.data.kit/contracts => ../contracts
-	github.com/infobloxopen/apx => /Users/dgarcia/go/src/github.com/infobloxopen/apx
-)
+replace github.com/Infoblox-CTO/platform.data.kit/contracts => ../contracts

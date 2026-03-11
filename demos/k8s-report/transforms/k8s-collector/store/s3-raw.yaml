@@ -1,0 +1,11 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Store
+metadata:
+  name: s3-raw
+spec:
+  connector: s3
+  connection:
+    bucket: dk-k8s-report
+    region: us-east-1
+    endpoint: http://dk-localstack-localstack.dk-local.svc.cluster.local:4566
+    no_rotate: true

@@ -1,0 +1,10 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: k8s-namespaces
+  labels:
+    domain: k8s-report
+    tier: source
+spec:
+  store: k8s-local
+  table: k8s_core_namespaces

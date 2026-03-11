@@ -72,6 +72,11 @@ type TransformSpec struct {
 
 	// Lineage configures lineage event emission.
 	Lineage *LineageSpec `json:"lineage,omitempty" yaml:"lineage,omitempty"`
+
+	// ServiceAccountName is the Kubernetes ServiceAccount to use for the
+	// Job pod when running as a CloudQuery transform in a k8s cluster.
+	// If empty, the namespace's default ServiceAccount is used.
+	ServiceAccountName string `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
 }
 
 // DataSetRef is a reference to a named DataSet.

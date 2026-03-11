@@ -1,0 +1,10 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Connector
+metadata:
+  name: kubernetes
+spec:
+  type: kubernetes
+  protocol: kubernetes
+  capabilities: [source]
+  plugin:
+    source: ghcr.io/cloudquery/cq-source-kubernetes:v5.4.0

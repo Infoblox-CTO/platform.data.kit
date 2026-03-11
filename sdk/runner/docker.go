@@ -470,7 +470,7 @@ func (r *DockerRunner) runCloudQuery(ctx context.Context, opts RunOptions, m man
 
 	// Step 5: Build and apply k8s Job with plugin sidecars.
 	envYAML := buildJobEnvYAML(envMap)
-	jobYAML := buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, envYAML, plugins)
+	jobYAML := buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, envYAML, plugins, t.Spec.ServiceAccountName)
 
 	applyCmd := exec.CommandContext(ctx, "kubectl", "--context", kubeContext,
 		"apply", "-f", "-")
@@ -654,7 +654,7 @@ func buildJobEnvYAML(envs map[string]string) string {
 // Each plugin runs as a native sidecar (initContainer with restartPolicy: Always)
 // serving gRPC on its assigned port. The CQ main container connects to the
 // plugins over localhost — no Docker daemon required.
-func buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, envYAML string, plugins []cqPlugin) string {
+func buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, envYAML string, plugins []cqPlugin, serviceAccountName string) string {
 	// Build sidecar initContainers for each plugin.
 	var sidecars strings.Builder
 	if len(plugins) > 0 {
@@ -671,6 +671,12 @@ func buildCloudQueryJobYAML(jobName, namespace, runID, cqImage, configMapName, e
 %s          args: ["serve", "--address", "0.0.0.0:%d", "--log-level", "info"]
 %s`, p.Name, p.Image, cmdLine, p.Port, envYAML))
 		}
+	}
+
+	// Optional serviceAccountName line for the pod spec.
+	saLine := ""
+	if serviceAccountName != "" {
+		saLine = fmt.Sprintf("      serviceAccountName: %s\n", serviceAccountName)
 	}
 
 	return fmt.Sprintf(`apiVersion: batch/v1
@@ -690,7 +696,7 @@ spec:
         datakit.infoblox.dev/runtime: cloudquery
     spec:
       restartPolicy: Never
-%s      containers:
+%s%s      containers:
         - name: cloudquery
           image: %s
           imagePullPolicy: IfNotPresent
@@ -703,7 +709,7 @@ spec:
         - name: config
           configMap:
             name: %s
-`, jobName, namespace, runID, sidecars.String(), cqImage, envYAML, configMapName)
+`, jobName, namespace, runID, saLine, sidecars.String(), cqImage, envYAML, configMapName)
 }
 
 // waitForJobPod polls until a pod matching the run-id label is Running/Succeeded/Failed.

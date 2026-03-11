@@ -1,0 +1,11 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: k8s-deployments-parquet
+  labels:
+    domain: k8s-report
+    tier: raw
+spec:
+  store: s3-raw
+  prefix: data/k8s-report/
+  format: parquet

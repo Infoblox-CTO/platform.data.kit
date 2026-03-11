@@ -1,0 +1,10 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: pg-services
+  labels:
+    domain: k8s-report
+    tier: reporting
+spec:
+  store: pg-warehouse
+  table: reporting.k8s_services
