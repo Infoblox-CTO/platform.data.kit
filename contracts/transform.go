@@ -95,6 +95,10 @@ type DataSetRef struct {
 	// When set, the Store is resolved from the named cell's namespace.
 	// This enables cross-cell transforms (fan-out, fan-in, routing).
 	Cell string `json:"cell,omitempty" yaml:"cell,omitempty"`
+
+	// Schema is an APX module ID the transform expects this ref to conform to.
+	// Used for consumer-side schema validation without owning the DataSet.
+	Schema string `json:"schema,omitempty" yaml:"schema,omitempty"`
 }
 
 // TriggerPolicy identifies when a transform should execute.

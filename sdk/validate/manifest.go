@@ -228,6 +228,20 @@ func (v *ManifestValidator) validateDataSet(errs *contracts.ValidationErrors) {
 		errs.AddError(contracts.ErrCodeDataSetLocationRequired, "spec", "at least one of spec.table, spec.prefix, or spec.topic is required")
 	}
 
+	// SchemaRef and inline Schema are mutually exclusive.
+	if a.Spec.SchemaRef != "" && len(a.Spec.Schema) > 0 {
+		errs.AddError(contracts.ErrCodeSchemaRefMutualExclusive, "spec.schemaRef",
+			"spec.schemaRef and spec.schema are mutually exclusive — use one or the other")
+	}
+
+	// Validate schemaRef format if present.
+	if a.Spec.SchemaRef != "" {
+		if !isSchemaRefValid(a.Spec.SchemaRef) {
+			errs.AddError(contracts.ErrCodeSchemaRefInvalidFormat, "spec.schemaRef",
+				"spec.schemaRef must be in the format \"module\" or \"module@constraint\" (e.g., \"users@^1.0.0\")")
+		}
+	}
+
 	seen := make(map[string]bool)
 	for i, field := range a.Spec.Schema {
 		path := fmt.Sprintf("spec.schema[%d]", i)
@@ -353,6 +367,11 @@ func validateDataSetRef(errs *contracts.ValidationErrors, ref contracts.DataSetR
 	if ref.Version != "" && !hasTags {
 		errs.AddWarning("W210", path+".version", "version constraint is only used with tag-based resolution")
 	}
+	// Schema ref on DataSetRef — validate APX module ID format if present.
+	if ref.Schema != "" && !isSchemaRefValid(ref.Schema) {
+		errs.AddError(contracts.ErrCodeSchemaRefInvalidFormat, path+".schema",
+			"schema must be a valid APX module reference (e.g., \"users\" or \"users@^1.0.0\")")
+	}
 }
 
 // isValidDuration checks if a string is a valid Go duration.
@@ -388,6 +407,47 @@ func isIdentifierValid(s string) bool {
 			continue
 		}
 		if c == '-' && i > 0 && i < len(s)-1 {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// isSchemaRefValid checks if a string is a valid APX schema reference.
+// Valid formats: "module-name" or "module-name@constraint" (e.g., "users@^1.0.0").
+func isSchemaRefValid(s string) bool {
+	if s == "" {
+		return false
+	}
+	// Split on @ — module part must be a valid identifier.
+	atIdx := -1
+	for i, c := range s {
+		if c == '@' {
+			atIdx = i
+			break
+		}
+	}
+	module := s
+	if atIdx >= 0 {
+		module = s[:atIdx]
+		constraint := s[atIdx+1:]
+		if constraint == "" {
+			return false // trailing @ with no constraint
+		}
+	}
+	// Module must be non-empty and DNS-safe-like (lowercase, alphanumeric, hyphens).
+	if len(module) == 0 {
+		return false
+	}
+	for i, c := range module {
+		if c >= 'a' && c <= 'z' {
+			continue
+		}
+		if c >= '0' && c <= '9' {
+			continue
+		}
+		if c == '-' && i > 0 && i < len(module)-1 {
 			continue
 		}
 		return false

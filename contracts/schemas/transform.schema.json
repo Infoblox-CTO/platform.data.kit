@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://datakit.infoblox.dev/schemas/v1alpha1/transform.schema.json",
   "title": "Transform Manifest",
-  "description": "Schema for a Transform — a unit of computation that reads input Assets and produces output Assets",
+  "description": "Schema for a Transform — a unit of computation that reads input DataSets and produces output DataSets",
   "type": "object",
   "required": ["apiVersion", "kind", "metadata", "spec"],
   "properties": {
@@ -67,18 +67,18 @@
           "items": {
             "type": "object",
             "anyOf": [
-              { "required": ["asset"] },
+              { "required": ["dataset"] },
               { "required": ["tags"] }
             ],
             "properties": {
-              "asset": {
+              "dataset": {
                 "type": "string",
-                "description": "Name of the input Asset"
+                "description": "Name of the input DataSet"
               },
               "tags": {
                 "type": "object",
                 "additionalProperties": { "type": "string" },
-                "description": "Match assets by metadata labels"
+                "description": "Match datasets by metadata labels"
               },
               "version": {
                 "type": "string",
@@ -87,30 +87,34 @@
               "cell": {
                 "type": "string",
                 "description": "Cell qualifier for cross-cell resolution"
+              },
+              "schema": {
+                "type": "string",
+                "description": "APX module ID for consumer-side schema validation"
               }
             },
             "additionalProperties": false
           },
           "minItems": 1,
-          "description": "Input Asset references (data sources)"
+          "description": "Input DataSet references (data sources)"
         },
         "outputs": {
           "type": "array",
           "items": {
             "type": "object",
             "anyOf": [
-              { "required": ["asset"] },
+              { "required": ["dataset"] },
               { "required": ["tags"] }
             ],
             "properties": {
-              "asset": {
+              "dataset": {
                 "type": "string",
-                "description": "Name of the output Asset"
+                "description": "Name of the output DataSet"
               },
               "tags": {
                 "type": "object",
                 "additionalProperties": { "type": "string" },
-                "description": "Match assets by metadata labels"
+                "description": "Match datasets by metadata labels"
               },
               "version": {
                 "type": "string",
@@ -119,12 +123,16 @@
               "cell": {
                 "type": "string",
                 "description": "Cell qualifier for cross-cell resolution"
+              },
+              "schema": {
+                "type": "string",
+                "description": "APX module ID for consumer-side schema validation"
               }
             },
             "additionalProperties": false
           },
           "minItems": 1,
-          "description": "Output Asset references (data produced)"
+          "description": "Output DataSet references (data produced)"
         },
         "image": {
           "type": "string",

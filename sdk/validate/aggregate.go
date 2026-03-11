@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/dataset"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/schema"
 )
 
 // AggregateValidator validates all manifests in a package directory.
@@ -59,6 +61,12 @@ func (v *AggregateValidator) Validate(ctx context.Context) *ValidationResult {
 	// Validate datasets if datasets/ directory exists
 	datasetsResult := v.validateDataSets(ctx)
 	result.Merge(datasetsResult)
+
+	// Validate schema lock if dk.lock exists and not skipped
+	if !v.vctx.SkipSchemaLock {
+		lockResult := v.validateSchemaLock(ctx)
+		result.Merge(lockResult)
+	}
 
 	return result
 }
@@ -193,6 +201,60 @@ func (v *AggregateValidator) validateDataSets(ctx context.Context) *ValidationRe
 		}
 		for _, e := range errs {
 			result.Errors.Add(e)
+		}
+	}
+
+	return result
+}
+
+// validateSchemaLock checks that every schemaRef in datasets has a corresponding
+// entry in dk.lock.
+func (v *AggregateValidator) validateSchemaLock(_ context.Context) *ValidationResult {
+	result := NewValidationResult()
+
+	// Load lock file — if it doesn't exist, nothing to validate.
+	lock, err := schema.ReadLockFile(v.packageDir)
+	if err != nil {
+		result.AddWarning("failed to read dk.lock: " + err.Error())
+		return result
+	}
+	if lock == nil {
+		// No lock file — check if any datasets use schemaRef.
+		datasets, err := dataset.LoadAllDataSets(v.packageDir)
+		if err != nil {
+			return result
+		}
+		hasSchemaRef := false
+		for _, ds := range datasets {
+			if ds.Spec.SchemaRef != "" {
+				hasSchemaRef = true
+				break
+			}
+		}
+		if hasSchemaRef {
+			result.AddWarning("datasets use schemaRef but dk.lock not found — run 'dk lock' to generate")
+		}
+		return result
+	}
+
+	// Verify each dataset schemaRef has a lock entry.
+	datasets, err := dataset.LoadAllDataSets(v.packageDir)
+	if err != nil {
+		return result
+	}
+
+	for _, ds := range datasets {
+		if ds.Spec.SchemaRef == "" {
+			continue
+		}
+		module, _ := schema.ParseSchemaRef(ds.Spec.SchemaRef)
+		if schema.FindLockedSchema(lock, module) == nil {
+			result.Errors.AddError(
+				contracts.ErrCodeSchemaLockMissing,
+				"datasets/"+ds.Metadata.Name+"/dataset.yaml",
+				"schema lock entry missing for schemaRef \""+ds.Spec.SchemaRef+"\" — run 'dk lock'",
+			)
+			result.Valid = false
 		}
 	}
 

@@ -27,6 +27,8 @@ type GraphNode struct {
 	TriggerDetail string `json:"triggerDetail,omitempty"`
 	// FilePath is the source file path.
 	FilePath string `json:"filePath,omitempty"`
+	// SchemaRef is the APX schema reference (for datasets with schemaRef).
+	SchemaRef string `json:"schemaRef,omitempty"`
 }
 
 // GraphEdge represents a directed edge in the pipeline graph.
@@ -63,8 +65,12 @@ func BuildGraph(opts GraphOptions) (*PipelineGraph, error) {
 	nodeSet := make(map[string]bool)
 
 	// Add dataset nodes.
-	for name := range datasets {
-		g.Nodes = append(g.Nodes, GraphNode{ID: name, Type: "dataset"})
+	for name, ds := range datasets {
+		node := GraphNode{ID: name, Type: "dataset"}
+		if ds.Spec.SchemaRef != "" {
+			node.SchemaRef = ds.Spec.SchemaRef
+		}
+		g.Nodes = append(g.Nodes, node)
 		nodeSet[name] = true
 	}
 

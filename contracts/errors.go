@@ -176,6 +176,13 @@ const (
 	// DataSetGroup validation errors (E240-E249)
 	ErrCodeDataSetGroupStoreRequired    = "E240" // spec.store is required
 	ErrCodeDataSetGroupDataSetsRequired = "E241" // spec.datasets must be non-empty
+
+	// Schema lock validation errors (E310-E319)
+	ErrCodeSchemaRefMutualExclusive = "E310" // schemaRef and inline schema are mutually exclusive
+	ErrCodeSchemaRefInvalidFormat   = "E311" // schemaRef format invalid (expected "module@constraint")
+	ErrCodeSchemaLockMissing        = "E312" // schema lock entry missing for schemaRef
+	ErrCodeSchemaLockChecksumFail   = "E313" // schema lock checksum mismatch
+	ErrCodeSchemaBreakingChange     = "E314" // breaking schema change detected
 )
 
 // Error message templates.
@@ -207,6 +214,13 @@ var errorMessages = map[string]string{
 	ErrCodeTransformImageRequired:         "spec.image is required for generic-go, generic-python, and dbt runtimes",
 	ErrCodeDataSetGroupStoreRequired:      "spec.store is required for DataSetGroup",
 	ErrCodeDataSetGroupDataSetsRequired:   "spec.datasets must contain at least one dataset name",
+
+	// --- Schema lock error messages ---
+	ErrCodeSchemaRefMutualExclusive: "spec.schemaRef and spec.schema are mutually exclusive — use one or the other",
+	ErrCodeSchemaRefInvalidFormat:   "spec.schemaRef must be in the format \"module@constraint\" (e.g., \"users@^1.0.0\")",
+	ErrCodeSchemaLockMissing:        "dk.lock is missing an entry for this schemaRef — run 'dk lock' to resolve",
+	ErrCodeSchemaLockChecksumFail:   "dk.lock checksum does not match resolved schema — run 'dk lock --upgrade'",
+	ErrCodeSchemaBreakingChange:     "breaking schema change detected between locked and current version",
 }
 
 // NewValidationError creates a new validation error with the standard message.

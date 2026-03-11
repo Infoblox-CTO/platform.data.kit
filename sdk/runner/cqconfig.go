@@ -10,6 +10,7 @@ import (
 
 	"github.com/Infoblox-CTO/platform.data.kit/contracts"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
+	"github.com/Infoblox-CTO/platform.data.kit/sdk/schema"
 	"gopkg.in/yaml.v3"
 )
 
@@ -84,6 +85,18 @@ func loadPackageManifests(packageDir string) (*packageManifests, error) {
 			}
 			if err := parseFn(data); err != nil {
 				return nil, fmt.Errorf("parsing %s/%s: %w", dir, entry.Name(), err)
+			}
+		}
+	}
+
+	// Lock file fallback: if dk.lock exists, add synthetic DataSet entries
+	// for any locked schemas that are not already loaded from the local
+	// datasets/ directory. This allows transforms to reference schema-locked
+	// datasets without requiring a local dataset.yaml.
+	if lock, err := schema.ReadLockFile(packageDir); err == nil && lock != nil {
+		for _, locked := range lock.Schemas {
+			if _, exists := pm.DataSets[locked.Module]; !exists {
+				pm.DataSets[locked.Module] = schema.SyntheticDataSet(locked)
 			}
 		}
 	}

@@ -59,7 +59,13 @@ type DataSetSpec struct {
 	Classification string `json:"classification,omitempty" yaml:"classification,omitempty"`
 
 	// Schema defines the fields/columns in this dataset.
+	// Mutually exclusive with SchemaRef.
 	Schema []SchemaField `json:"schema,omitempty" yaml:"schema,omitempty"`
+
+	// SchemaRef is an APX module reference (e.g., "users@^1.0.0").
+	// When set, the schema is resolved from the APX catalog rather than
+	// defined inline. Mutually exclusive with Schema.
+	SchemaRef string `json:"schemaRef,omitempty" yaml:"schemaRef,omitempty"`
 
 	// Dev contains development-only configuration such as seed data.
 	// This section is ignored in production deployments.

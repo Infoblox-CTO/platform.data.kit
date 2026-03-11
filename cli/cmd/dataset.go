@@ -8,21 +8,26 @@ import (
 var datasetCmd = &cobra.Command{
 	Use:   "dataset",
 	Short: "Manage data package datasets",
-	Long: `Manage data package datasets — configured instances of approved extensions.
+	Long: `Manage data package datasets — data contracts that declare where data lives,
+what it looks like (schema), and how it is classified.
 
-DataSets are config-only YAML files that reference an extension by fully-qualified
-name (FQN) and version, with a config block validated against the extension's
-JSON Schema.
+A DataSet manifest (datasets/<name>/dataset.yaml) specifies the store, table/
+prefix/topic, format, classification, and optionally an inline schema or an APX
+schema reference (schemaRef).
 
 Subcommands:
-  create    Scaffold a new dataset from an extension
-  validate  Validate dataset config against extension schema
+  create    Scaffold a new dataset with inline schema
+  add       Reference an external dataset via APX schema
+  validate  Validate dataset manifests
   list      List all datasets in the project
   show      Display details of a specific dataset
 
 Examples:
-  # Create a new source dataset
-  dk dataset create aws-security --ext cloudquery.source.aws
+  # Create a new dataset with inline schema
+  dk dataset create aws-security --store my-s3
+
+  # Reference an external schema (APX)
+  dk dataset add users@^1.0.0 --store my-pg
 
   # Validate all datasets
   dk dataset validate

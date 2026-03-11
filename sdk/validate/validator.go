@@ -74,6 +74,7 @@ type ValidationContext struct {
 	PackageDir           string
 	StrictMode           bool
 	SkipSchemaValidation bool
+	SkipSchemaLock       bool
 	ValidatePII          bool
 }
 

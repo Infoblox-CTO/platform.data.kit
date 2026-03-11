@@ -108,7 +108,12 @@
             },
             "additionalProperties": false
           },
-          "description": "Fields/columns in this dataset"
+          "description": "Fields/columns in this dataset (mutually exclusive with schemaRef)"
+        },
+        "schemaRef": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(@.+)?$",
+          "description": "APX module reference (e.g., users@^1.0.0). Mutually exclusive with schema."
         }
       },
       "additionalProperties": false

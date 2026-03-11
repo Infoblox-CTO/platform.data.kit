@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	lintStrict     bool
-	lintSkipPII    bool
-	lintSet        []string // --set flags for inline overrides
-	lintValueFiles []string // -f flags for override files
+	lintStrict         bool
+	lintSkipPII        bool
+	lintSkipSchemaLock bool
+	lintSet            []string // --set flags for inline overrides
+	lintValueFiles     []string // -f flags for override files
 )
 
 // lintCmd validates package manifests
@@ -68,6 +69,7 @@ func init() {
 
 	lintCmd.Flags().BoolVar(&lintStrict, "strict", false, "Treat warnings as errors")
 	lintCmd.Flags().BoolVar(&lintSkipPII, "skip-pii", false, "Skip PII classification validation")
+	lintCmd.Flags().BoolVar(&lintSkipSchemaLock, "skip-schema-lock", false, "Skip schema lock (dk.lock) validation")
 	lintCmd.Flags().StringArrayVar(&lintSet, "set", []string{},
 		"Override values (key=value, can be repeated)")
 	lintCmd.Flags().StringArrayVarP(&lintValueFiles, "values", "f", []string{},
@@ -109,16 +111,12 @@ func runLint(cmd *cobra.Command, args []string) error {
 	validator := validate.NewAggregateValidator(absDir)
 
 	// Configure validation context
-	if lintStrict {
+	if lintStrict || lintSkipPII || lintSkipSchemaLock {
 		validator.WithContext(&validate.ValidationContext{
-			PackageDir:  absDir,
-			StrictMode:  true,
-			ValidatePII: !lintSkipPII,
-		})
-	} else if lintSkipPII {
-		validator.WithContext(&validate.ValidationContext{
-			PackageDir:  absDir,
-			ValidatePII: false,
+			PackageDir:     absDir,
+			StrictMode:     lintStrict,
+			ValidatePII:    !lintSkipPII,
+			SkipSchemaLock: lintSkipSchemaLock,
 		})
 	}
 
