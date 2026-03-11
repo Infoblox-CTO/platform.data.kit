@@ -9,6 +9,10 @@ Go 1.25 multi-module monorepo (`cli/`, `sdk/`, `contracts/`, `platform/controlle
 
 - **`specs/`** — Managed exclusively by GitHub Spec Kit agents. **Never read, modify, create, or delete files in this directory** unless you are an agent specifically designated to work with specs.
 
+## Commit Messages
+
+**NEVER add any Claude/Anthropic attribution to commit messages.** No `Co-Authored-By: Claude`, no `Generated with Claude Code`, nothing referencing Claude or Anthropic. Commit messages should only describe the change.
+
 ## Key Conventions
 
 - Pipeline = reactive dependency graph derived from Transform/DataSet manifests (`dk.yaml`). There is no `pipeline.yaml` manifest.
