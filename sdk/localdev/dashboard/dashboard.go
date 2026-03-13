@@ -43,6 +43,10 @@ type ServiceProxy struct {
 	DefaultPath string
 }
 
+// DefaultDomain is the fallback domain when no cluster domain is configured.
+// localtest.me is a public DNS wildcard that resolves to 127.0.0.1.
+const DefaultDomain = "localtest.me"
+
 // Option configures a Server.
 type Option func(*Server)
 
@@ -55,16 +59,34 @@ func WithTLS(certFile, keyFile string) Option {
 	}
 }
 
+// WithDomain sets the base domain for virtual-host routing.
+// Services are available at <subdomain>.<domain>:<port>.
+// Defaults to "localtest.me" if not set.
+func WithDomain(domain string) Option {
+	return func(s *Server) {
+		s.domain = domain
+	}
+}
+
 // Server is the dashboard HTTP server with virtual-host reverse proxying.
 type Server struct {
 	listener net.Listener
 	server   *http.Server
 	services []ServiceProxy
 	proxies  map[string]*httputil.ReverseProxy
+	domain   string // base domain for vhost routing (default: localtest.me)
 	tls      bool
 	certFile string
 	keyFile  string
 	mu       sync.RWMutex
+}
+
+// Domain returns the configured base domain, defaulting to localtest.me.
+func (s *Server) Domain() string {
+	if s.domain != "" {
+		return s.domain
+	}
+	return DefaultDomain
 }
 
 // New creates a new dashboard server bound to a random port.
@@ -125,9 +147,9 @@ func (s *Server) Port() int {
 	return s.listener.Addr().(*net.TCPAddr).Port
 }
 
-// URL returns the dashboard URL (e.g., "https://localtest.me:54321").
+// URL returns the dashboard URL (e.g., "https://console.mydev.test:54321").
 func (s *Server) URL() string {
-	return fmt.Sprintf("%s://localtest.me:%d", s.scheme(), s.Port())
+	return fmt.Sprintf("%s://console.%s:%d", s.scheme(), s.Domain(), s.Port())
 }
 
 // TLS returns true if the server is configured to serve over HTTPS.
@@ -167,7 +189,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // handleRequest routes requests based on the Host header.
 // Subdomain requests are reverse-proxied; bare host serves the dashboard.
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
-	subdomain := extractSubdomain(r.Host)
+	subdomain := extractSubdomain(r.Host, s.Domain())
 
 	if subdomain != "" {
 		s.mu.RLock()
@@ -244,7 +266,7 @@ func checkHealth(targetURL string) bool {
 // extractSubdomain extracts the subdomain from a Host header value.
 // For "marquez.localtest.me:54321" it returns "marquez".
 // For "localtest.me:54321" or "localhost:54321" it returns "".
-func extractSubdomain(host string) string {
+func extractSubdomain(host, domain string) string {
 	// Strip port
 	hostname := host
 	if idx := strings.LastIndex(host, ":"); idx != -1 {
@@ -252,10 +274,10 @@ func extractSubdomain(host string) string {
 	}
 
 	hostname = strings.ToLower(hostname)
+	suffix := "." + strings.ToLower(domain)
 
-	// Check for *.localtest.me
-	if strings.HasSuffix(hostname, ".localtest.me") {
-		sub := strings.TrimSuffix(hostname, ".localtest.me")
+	if strings.HasSuffix(hostname, suffix) {
+		sub := strings.TrimSuffix(hostname, suffix)
 		if sub != "" && !strings.Contains(sub, ".") {
 			return sub
 		}

@@ -12,6 +12,11 @@ const (
 	keyFileName  = "localtest.me+1-key.pem"
 )
 
+// CertFileNames returns cert/key filenames for a given domain.
+func CertFileNames(domain string) (string, string) {
+	return domain + "+1.pem", domain + "+1-key.pem"
+}
+
 // CertsDir returns the directory for storing TLS certificates (~/.config/dk/certs/),
 // creating it if it doesn't exist.
 func CertsDir() (string, error) {
@@ -67,19 +72,29 @@ func MkcertAvailable() bool {
 //
 // If certs already exist, returns their paths without regenerating.
 func EnsureCerts() (cert string, key string, err error) {
+	return EnsureCertsForDomain(DefaultDomain)
+}
+
+// EnsureCertsForDomain generates TLS certificates for the given domain and its
+// wildcard (e.g. "mydev.test" and "*.mydev.test").
+func EnsureCertsForDomain(domain string) (cert string, key string, err error) {
+	dir, err := CertsDir()
+	if err != nil {
+		return "", "", err
+	}
+
+	certName, keyName := CertFileNames(domain)
+	certPath := filepath.Join(dir, certName)
+	keyPath := filepath.Join(dir, keyName)
+
 	// If certs already exist, reuse them
-	if HasCerts() {
-		return CertPaths()
+	if fileExists(certPath) && fileExists(keyPath) {
+		return certPath, keyPath, nil
 	}
 
 	// Check if mkcert is available
 	if !MkcertAvailable() {
 		return "", "", nil
-	}
-
-	certPath, keyPath, err := CertPaths()
-	if err != nil {
-		return "", "", fmt.Errorf("failed to determine cert paths: %w", err)
 	}
 
 	// Install the local CA into the system trust store (idempotent)
@@ -90,12 +105,12 @@ func EnsureCerts() (cert string, key string, err error) {
 		return "", "", fmt.Errorf("mkcert -install failed: %w", err)
 	}
 
-	// Generate cert for localtest.me and *.localtest.me
+	// Generate cert for domain and *.domain
 	genCmd := exec.Command("mkcert",
 		"-cert-file", certPath,
 		"-key-file", keyPath,
-		"localtest.me",
-		"*.localtest.me",
+		domain,
+		"*."+domain,
 	)
 	genCmd.Stdout = os.Stdout
 	genCmd.Stderr = os.Stderr
@@ -104,4 +119,9 @@ func EnsureCerts() (cert string, key string, err error) {
 	}
 
 	return certPath, keyPath, nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

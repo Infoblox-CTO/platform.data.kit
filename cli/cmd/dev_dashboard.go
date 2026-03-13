@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
@@ -14,7 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var devDashboardNoTLS bool
+var (
+	devDashboardNoTLS bool
+	devDashboardDomain string
+)
 
 var devDashboardCmd = &cobra.Command{
 	Use:   "dashboard",
@@ -29,8 +33,11 @@ so every service gets a meaningful URL on a single port:
   redpanda.localtest.me:<port>     → Schema Registry
   s3.localtest.me:<port>           → LocalStack S3
 
-The landing page at localtest.me:<port> shows cards for all services
+The landing page at console.<domain>:<port> shows cards for all services
 with health indicators and clickable links.
+
+The domain defaults to the k3d cluster name + ".test" (auto-detected from
+kubectl context), or "localtest.me" if not in a k3d cluster.
 
 Press Ctrl+C to stop the dashboard server.`,
 	RunE: runDevDashboard,
@@ -39,6 +46,7 @@ Press Ctrl+C to stop the dashboard server.`,
 func init() {
 	devCmd.AddCommand(devDashboardCmd)
 	devDashboardCmd.Flags().BoolVar(&devDashboardNoTLS, "no-tls", false, "Disable TLS and serve over plain HTTP")
+	devDashboardCmd.Flags().StringVar(&devDashboardDomain, "domain", "", "Base domain for service URLs (default: auto-detect from k3d context)")
 }
 
 func runDevDashboard(cmd *cobra.Command, args []string) error {
@@ -49,10 +57,24 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no services configured")
 	}
 
-	// Set up TLS if not disabled
+	// Resolve domain: flag > auto-detect from k3d context > default
+	domain := devDashboardDomain
+	if domain == "" {
+		domain = detectClusterDomain()
+	}
+
 	var opts []dashboard.Option
+	if domain != "" {
+		opts = append(opts, dashboard.WithDomain(domain))
+	}
+
+	// Set up TLS if not disabled
 	if !devDashboardNoTLS {
-		certFile, keyFile, tlsErr := dashboard.EnsureCerts()
+		tlsDomain := domain
+		if tlsDomain == "" {
+			tlsDomain = dashboard.DefaultDomain
+		}
+		certFile, keyFile, tlsErr := dashboard.EnsureCertsForDomain(tlsDomain)
 		if tlsErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: TLS setup failed: %v\n", tlsErr)
 		}
@@ -86,7 +108,7 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 
 	for _, svc := range services {
 		if svc.Subdomain != "" {
-			fmt.Printf("  %-18s %s://%s.localtest.me:%d%s\n", svc.Label+":", scheme, svc.Subdomain, srv.Port(), svc.DefaultPath)
+			fmt.Printf("  %-18s %s://%s.%s:%d%s\n", svc.Label+":", scheme, svc.Subdomain, srv.Domain(), srv.Port(), svc.DefaultPath)
 		} else {
 			fmt.Printf("  %-18s %s (TCP)\n", svc.Label+":", svc.TargetURL)
 		}
@@ -139,6 +161,22 @@ func buildServiceProxies() []dashboard.ServiceProxy {
 	}
 
 	return services
+}
+
+// detectClusterDomain checks the current kubectl context for a k3d cluster
+// and returns "<clustername>.test" if found. Returns "" otherwise.
+func detectClusterDomain() string {
+	out, err := exec.Command("kubectl", "config", "current-context").Output()
+	if err != nil {
+		return ""
+	}
+	ctx := strings.TrimSpace(string(out))
+	// k3d contexts are named "k3d-<clustername>"
+	if strings.HasPrefix(ctx, "k3d-") {
+		clusterName := strings.TrimPrefix(ctx, "k3d-")
+		return clusterName + ".test"
+	}
+	return ""
 }
 
 // openBrowser opens the given URL in the default browser.
