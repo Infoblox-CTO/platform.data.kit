@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: dk-dashboard
+    app.kubernetes.io/name: dk-dashboard
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    devedge.io/expose: "true"
+spec:
+  rules:
+    - host: console.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port:
+                  number: 80

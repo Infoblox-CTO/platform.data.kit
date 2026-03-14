@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/charts"
-	"github.com/Infoblox-CTO/platform.data.kit/sdk/localdev/dashboard"
 	"github.com/spf13/cobra"
 )
 
@@ -399,49 +396,32 @@ func getHealthIcon(health string) string {
 	}
 }
 
-// startDashboardAfterUp spawns `dk dev dashboard` as a detached background
-// process. The subprocess handles TLS, serves the proxy, and opens the browser.
-// This function returns immediately so `dk dev up` can exit.
+// startDashboardAfterUp prints service endpoints and opens the browser
+// to the Ingress-based dashboard at console.<cluster>.test.
 func startDashboardAfterUp() error {
-	// Check mkcert before spawning — warn prominently if missing
-	if !dashboard.MkcertAvailable() {
-		fmt.Fprintf(os.Stderr, "\n⚠  mkcert is not installed — dashboard will serve over HTTP.\n")
-		fmt.Fprintf(os.Stderr, "   Browsers may show security warnings. Install mkcert for HTTPS:\n")
-		fmt.Fprintf(os.Stderr, "     brew install mkcert && mkcert -install\n\n")
+	domain := detectClusterDomain()
+	if domain == "" {
+		domain = "dk-local.test"
 	}
 
-	// Print raw endpoints so the user has them even if the dashboard fails
 	fmt.Println("\nEndpoints:")
 	for _, def := range charts.DefaultCharts {
 		for _, ep := range def.DisplayEndpoints {
-			fmt.Printf("  %-18s %s\n", ep.Label+":", ep.URL)
+			if ep.Subdomain != "" {
+				fmt.Printf("  %-18s https://%s.%s%s\n", ep.Label+":", ep.Subdomain, domain, ep.DefaultPath)
+			} else if ep.URL != "" {
+				fmt.Printf("  %-18s %s\n", ep.Label+":", ep.URL)
+			}
 		}
 	}
 
-	// Find our own executable to spawn `dk dev dashboard`
-	exe, err := os.Executable()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not start dashboard: %v\n", err)
-		return nil
+	dashURL := fmt.Sprintf("https://console.%s", domain)
+	fmt.Printf("\nDashboard: %s\n", dashURL)
+
+	if err := openBrowser(dashURL); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Open %s manually\n", dashURL)
 	}
 
-	cmd := exec.Command(exe, "dev", "dashboard")
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setsid: true, // Detach from parent process group
-	}
-	// Dashboard output goes to /dev/null — it opens the browser itself
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-
-	if err := cmd.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not start dashboard: %v\n", err)
-		return nil
-	}
-
-	// Release the child so it survives after dk dev up exits
-	cmd.Process.Release()
-
-	fmt.Printf("\nDashboard started (PID %d). Opening browser...\n", cmd.Process.Pid)
-	fmt.Println("Run 'dk dev dashboard' to restart it if needed.")
 	return nil
 }

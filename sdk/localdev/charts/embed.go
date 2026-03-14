@@ -7,11 +7,11 @@ import (
 
 // FS contains the embedded Helm charts for local development services.
 //
-//go:embed all:redpanda all:redpanda-console all:localstack all:postgres all:marquez
+//go:embed all:redpanda all:redpanda-console all:localstack all:postgres all:marquez all:dk-dashboard
 var FS embed.FS
 
 // ChartNames is the list of available charts.
-var ChartNames = []string{"redpanda", "redpanda-console", "localstack", "postgres", "marquez"}
+var ChartNames = []string{"redpanda", "redpanda-console", "localstack", "postgres", "marquez", "dk-dashboard"}
 
 // DefaultCharts is the canonical registry of all dev dependency chart definitions.
 // All deployment, port-forwarding, health-checking, and status code operates on this slice.
@@ -85,6 +85,17 @@ var DefaultCharts = []ChartDefinition{
 			{Label: "Marquez API", URL: "http://localhost:5000", Subdomain: "marquez-api", Description: "OpenLineage API endpoint"},
 			{Label: "Marquez Admin", URL: "http://localhost:5001", Subdomain: "marquez-admin", Description: "Marquez administration"},
 			{Label: "Marquez Web", URL: "http://localhost:3000", Subdomain: "marquez", Description: "Data lineage tracking UI"},
+		},
+	},
+	{
+		Name:         "dk-dashboard",
+		ReleaseName:  "dk-dashboard",
+		Namespace:    "dk-local",
+		PortForwards: nil, // No port forwards — accessed via Ingress
+		HealthLabels: map[string]string{"app": "dk-dashboard"},
+		HealthTimeout: 30 * time.Second,
+		DisplayEndpoints: []DisplayEndpoint{
+			{Label: "Dashboard", Subdomain: "console", Description: "Dev services landing page"},
 		},
 	},
 }

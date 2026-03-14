@@ -1,0 +1,42 @@
+# dk-dashboard values
+# domain is required — set to "<cluster>.test" (e.g. "dk-local.test")
+domain: ""
+
+image:
+  repository: nginx
+  tag: "1.27-alpine"
+  pullPolicy: IfNotPresent
+
+# services defines the Ingress entries for each dev service.
+# Each entry creates an Ingress routing <subdomain>.<domain> to the backend.
+services:
+  - subdomain: redpanda
+    label: Schema Registry
+    description: Schema Registry API
+    serviceName: dk-redpanda
+    servicePort: 8081
+    defaultPath: /subjects
+  - subdomain: s3
+    label: S3 API
+    description: AWS S3-compatible object storage
+    serviceName: dk-localstack
+    servicePort: 4566
+    defaultPath: ""
+  - subdomain: marquez-api
+    label: Marquez API
+    description: OpenLineage API endpoint
+    serviceName: dk-marquez
+    servicePort: 5000
+    defaultPath: ""
+  - subdomain: marquez-admin
+    label: Marquez Admin
+    description: Marquez administration
+    serviceName: dk-marquez
+    servicePort: 5001
+    defaultPath: ""
+  - subdomain: marquez
+    label: Marquez Web
+    description: Data lineage tracking UI
+    serviceName: dk-marquez-web
+    servicePort: 3000
+    defaultPath: ""

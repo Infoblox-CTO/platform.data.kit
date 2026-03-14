@@ -53,17 +53,47 @@ func init() {
 }
 
 func runDevDashboard(cmd *cobra.Command, args []string) error {
-	// Build service list from chart definitions
-	services := buildServiceProxies()
-
-	if len(services) == 0 {
-		return fmt.Errorf("no services configured")
-	}
-
 	// Resolve domain: flag > auto-detect from k3d context > default
 	domain := devDashboardDomain
 	if domain == "" {
 		domain = detectClusterDomain()
+	}
+
+	// If a k3d cluster is running with dk-dashboard deployed, just open browser
+	if domain != "" && clusterHasDashboard(domain) {
+		dashURL := fmt.Sprintf("https://console.%s", domain)
+		fmt.Printf("Dashboard available at: %s\n", dashURL)
+		if err := openBrowser(dashURL); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Open %s manually\n", dashURL)
+		}
+		return nil
+	}
+
+	// Fall back to in-process dashboard mode
+	return runInProcessDashboard(domain)
+}
+
+// clusterHasDashboard checks if the dk-dashboard Ingress exists in the cluster.
+func clusterHasDashboard(domain string) bool {
+	ctx := strings.TrimSuffix(domain, ".test")
+	kubeCtx := "k3d-" + ctx
+
+	out, err := exec.Command("kubectl", "--context", kubeCtx,
+		"get", "ingress", "dk-dashboard",
+		"-n", "dk-local", "-o", "name",
+	).Output()
+	if err != nil {
+		return false
+	}
+	return len(strings.TrimSpace(string(out))) > 0
+}
+
+// runInProcessDashboard falls back to the original in-process reverse-proxy dashboard.
+func runInProcessDashboard(domain string) error {
+	services := buildServiceProxies()
+	if len(services) == 0 {
+		return fmt.Errorf("no services configured")
 	}
 
 	var opts []dashboard.Option
@@ -71,7 +101,6 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 		opts = append(opts, dashboard.WithDomain(domain))
 	}
 
-	// Set up TLS if not disabled
 	if !devDashboardNoTLS {
 		tlsDomain := domain
 		if tlsDomain == "" {
@@ -88,13 +117,11 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create dashboard server (binds to random port)
 	srv, err := dashboard.New(services, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to start dashboard: %w", err)
 	}
 
-	// Start server in background
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- srv.Start()
@@ -117,8 +144,6 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Register all hostnames with devedge for DNS resolution.
-	// This is best-effort — if devedge isn't running, we continue without it.
 	upstream := fmt.Sprintf("http://127.0.0.1:%d", srv.Port())
 	registered := registerWithDevedge(srv.Domain(), services, upstream)
 	if registered > 0 {
@@ -128,13 +153,11 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("Press Ctrl+C to stop")
 
-	// Open browser
 	if err := openBrowser(srv.URL()); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Open %s manually\n", srv.URL())
 	}
 
-	// Wait for Ctrl+C or server error
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 

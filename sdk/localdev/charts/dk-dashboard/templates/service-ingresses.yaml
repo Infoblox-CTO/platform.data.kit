@@ -1,0 +1,25 @@
+{{- range .Values.services }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-{{ .subdomain }}
+  labels:
+    app: dk-dashboard
+    app.kubernetes.io/name: dk-dashboard
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+  annotations:
+    devedge.io/expose: "true"
+spec:
+  rules:
+    - host: {{ .subdomain }}.{{ $.Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .serviceName }}
+                port:
+                  number: {{ .servicePort }}
+{{- end }}

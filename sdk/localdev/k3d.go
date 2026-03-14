@@ -357,6 +357,11 @@ func (m *K3dManager) deleteCluster(ctx context.Context, output io.Writer) error 
 	return cmd.Run()
 }
 
+// ClusterName returns the k3d cluster name.
+func (m *K3dManager) ClusterName() string {
+	return m.clusterName
+}
+
 // deployCharts installs the embedded Helm charts in parallel using the uniform
 // chart deployment mechanism. Config overrides are loaded from the hierarchical
 // config system and passed through to helm install.
@@ -366,6 +371,17 @@ func (m *K3dManager) deployCharts(ctx context.Context, output io.Writer) error {
 	if cfg, err := LoadHierarchicalConfig(); err == nil && cfg != nil {
 		overrides = cfg.Dev.Charts
 	}
+
+	// Inject domain for dk-dashboard chart: <clustername>.test
+	if overrides == nil {
+		overrides = make(map[string]charts.ChartOverride)
+	}
+	dashOverride := overrides["dk-dashboard"]
+	if dashOverride.Values == nil {
+		dashOverride.Values = make(map[string]interface{})
+	}
+	dashOverride.Values["domain"] = m.clusterName + ".test"
+	overrides["dk-dashboard"] = dashOverride
 
 	result, err := charts.DeployCharts(ctx, charts.DefaultCharts, overrides, m.kubeContext)
 	if err != nil {

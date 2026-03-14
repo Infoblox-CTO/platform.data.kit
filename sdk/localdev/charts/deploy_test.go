@@ -85,11 +85,11 @@ func TestApplyOverrides_WithValues(t *testing.T) {
 }
 
 func TestDefaultCharts_Registry(t *testing.T) {
-	if len(DefaultCharts) != 5 {
-		t.Fatalf("DefaultCharts should have 5 entries, got %d", len(DefaultCharts))
+	if len(DefaultCharts) != 6 {
+		t.Fatalf("DefaultCharts should have 6 entries, got %d", len(DefaultCharts))
 	}
 
-	expectedNames := []string{"redpanda", "redpanda-console", "localstack", "postgres", "marquez"}
+	expectedNames := []string{"redpanda", "redpanda-console", "localstack", "postgres", "marquez", "dk-dashboard"}
 	for i, expected := range expectedNames {
 		if DefaultCharts[i].Name != expected {
 			t.Errorf("DefaultCharts[%d].Name = %q, want %q", i, DefaultCharts[i].Name, expected)
@@ -130,7 +130,8 @@ func TestDefaultCharts_AllHaveRequired(t *testing.T) {
 		if def.Namespace == "" {
 			t.Errorf("chart %q has empty Namespace", def.Name)
 		}
-		if len(def.PortForwards) == 0 {
+		// dk-dashboard is accessed via Ingress, not port-forwarding
+		if len(def.PortForwards) == 0 && def.Name != "dk-dashboard" {
 			t.Errorf("chart %q has no PortForwards", def.Name)
 		}
 		if len(def.HealthLabels) == 0 {
