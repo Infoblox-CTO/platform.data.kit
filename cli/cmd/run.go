@@ -20,19 +20,19 @@ import (
 )
 
 var (
-	runEnv         []string
-	runNetwork     string
-	runTimeout     time.Duration
-	runDryRun      bool
-	runDetach      bool
-	runAttach      bool     // Explicitly attach to logs (for streaming)
-	runSet         []string // --set flags for inline overrides
-	runValueFiles  []string // -f flags for override files
-	runCell        string   // --cell flag: resolve stores from this cell
-	runKubeContext string   // --context flag: kubectl context for multi-cluster
-	runScanDirs       []string // --scan-dir flags for multi-transform run
-	runLineage        bool     // --lineage flag: enable lineage tracking
-	runLineageEndpoint string  // --lineage-endpoint flag: override lineage endpoint
+	runEnv             []string
+	runNetwork         string
+	runTimeout         time.Duration
+	runDryRun          bool
+	runDetach          bool
+	runAttach          bool     // Explicitly attach to logs (for streaming)
+	runSet             []string // --set flags for inline overrides
+	runValueFiles      []string // -f flags for override files
+	runCell            string   // --cell flag: resolve stores from this cell
+	runKubeContext     string   // --context flag: kubectl context for multi-cluster
+	runScanDirs        []string // --scan-dir flags for multi-transform run
+	runLineage         bool     // --lineage flag: enable lineage tracking
+	runLineageEndpoint string   // --lineage-endpoint flag: override lineage endpoint
 )
 
 // runCmd executes a pipeline locally

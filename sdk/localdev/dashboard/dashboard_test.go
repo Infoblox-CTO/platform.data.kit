@@ -31,7 +31,7 @@ func TestExtractSubdomain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.host, func(t *testing.T) {
-			got := extractSubdomain(tt.host)
+			got := extractSubdomain(tt.host, "localtest.me")
 			if got != tt.want {
 				t.Errorf("extractSubdomain(%q) = %q, want %q", tt.host, got, tt.want)
 			}

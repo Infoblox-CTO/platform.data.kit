@@ -90,12 +90,12 @@ func runDevSeed(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	opts := runner.SeedOptions{
-		PackageDir:  absDir,
-		Clean:       seedClean,
-		Force:       seedForce,
-		Profile:     seedProfile,
+		PackageDir:    absDir,
+		Clean:         seedClean,
+		Force:         seedForce,
+		Profile:       seedProfile,
 		DataSetFilter: seedDataSet,
-		Output:      os.Stdout,
+		Output:        os.Stdout,
 	}
 
 	result, err := runner.SeedPackage(ctx, opts)

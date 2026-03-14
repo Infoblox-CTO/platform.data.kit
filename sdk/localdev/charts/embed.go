@@ -88,11 +88,11 @@ var DefaultCharts = []ChartDefinition{
 		},
 	},
 	{
-		Name:         "dk-dashboard",
-		ReleaseName:  "dk-dashboard",
-		Namespace:    "dk-local",
-		PortForwards: nil, // No port forwards — accessed via Ingress
-		HealthLabels: map[string]string{"app": "dk-dashboard"},
+		Name:          "dk-dashboard",
+		ReleaseName:   "dk-dashboard",
+		Namespace:     "dk-local",
+		PortForwards:  nil, // No port forwards — accessed via Ingress
+		HealthLabels:  map[string]string{"app": "dk-dashboard"},
 		HealthTimeout: 30 * time.Second,
 		DisplayEndpoints: []DisplayEndpoint{
 			{Label: "Dashboard", Subdomain: "console", Description: "Dev services landing page"},

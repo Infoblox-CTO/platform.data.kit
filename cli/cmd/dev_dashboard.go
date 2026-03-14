@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	devDashboardNoTLS bool
+	devDashboardNoTLS  bool
 	devDashboardDomain string
 )
 
