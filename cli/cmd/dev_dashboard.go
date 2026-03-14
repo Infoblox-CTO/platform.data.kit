@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -114,6 +117,14 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Register all hostnames with devedge for DNS resolution.
+	// This is best-effort — if devedge isn't running, we continue without it.
+	upstream := fmt.Sprintf("http://127.0.0.1:%d", srv.Port())
+	registered := registerWithDevedge(srv.Domain(), services, upstream)
+	if registered > 0 {
+		fmt.Printf("\nRegistered %d hostname(s) with devedge\n", registered)
+	}
+
 	fmt.Println()
 	fmt.Println("Press Ctrl+C to stop")
 
@@ -130,6 +141,7 @@ func runDevDashboard(cmd *cobra.Command, args []string) error {
 	select {
 	case <-sigCh:
 		fmt.Println("\nShutting down dashboard...")
+		deregisterFromDevedge("dk-dashboard")
 	case err := <-errCh:
 		if err != nil {
 			return fmt.Errorf("dashboard server error: %w", err)
@@ -161,6 +173,53 @@ func buildServiceProxies() []dashboard.ServiceProxy {
 	}
 
 	return services
+}
+
+const devedgeAPI = "http://127.0.0.1:15353"
+
+// registerWithDevedge registers the console and service hostnames with the
+// devedge daemon for DNS resolution. Returns the number of routes registered.
+// Best-effort — silently returns 0 if devedge isn't running.
+func registerWithDevedge(domain string, services []dashboard.ServiceProxy, upstream string) int {
+	count := 0
+
+	// Register console.<domain>
+	hosts := []string{"console." + domain}
+	for _, svc := range services {
+		if svc.Subdomain != "" {
+			hosts = append(hosts, svc.Subdomain+"."+domain)
+		}
+	}
+
+	for _, host := range hosts {
+		body, _ := json.Marshal(map[string]string{
+			"host":     host,
+			"upstream": upstream,
+			"project":  "dk-dashboard",
+			"owner":    "dk",
+		})
+		req, _ := http.NewRequest("PUT", devedgeAPI+"/v1/routes", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return count // devedge not running
+		}
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusCreated {
+			count++
+		}
+	}
+	return count
+}
+
+// deregisterFromDevedge removes all routes for the dk-dashboard project.
+func deregisterFromDevedge(project string) {
+	req, _ := http.NewRequest("DELETE", devedgeAPI+"/v1/projects/"+project, nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	resp.Body.Close()
 }
 
 // detectClusterDomain checks the current kubectl context for a k3d cluster
