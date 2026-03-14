@@ -193,7 +193,7 @@ spec:
   connection:
     host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
-    database: dataplatform
+    database: datakit
     schema: public
   secrets:
     username: ${PG_USER}

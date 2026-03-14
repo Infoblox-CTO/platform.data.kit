@@ -140,7 +140,7 @@ spec:
   connection:
     host: dk-postgres-postgresql.dk-local.svc.cluster.local
     port: 5432
-    database: dataplatform
+    database: datakit
   secrets:
     username: ${PG_USER}
     password: ${PG_PASSWORD}
