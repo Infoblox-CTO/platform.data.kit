@@ -151,10 +151,10 @@ func TestAllLocalPorts(t *testing.T) {
 
 	expectedPorts := map[int]bool{
 		19092: true, 18081: true, // redpanda
-		4566: true,                         // localstack
-		5432: true,                         // postgres
+		4566:  true,                         // localstack
+		5432:  true,                         // postgres
 		18080: true,                         // redpanda-console
-		5000: true, 5001: true, 3000: true,  // marquez
+		5000:  true, 5001: true, 3000: true, // marquez
 	}
 
 	if len(ports) != len(expectedPorts) {

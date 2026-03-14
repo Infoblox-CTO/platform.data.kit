@@ -21,8 +21,8 @@ import (
 
 // packageManifests holds all manifests resolved from a package directory.
 type packageManifests struct {
-	Connectors map[string]*contracts.Connector     // keyed by metadata.name
-	Stores     map[string]*contracts.Store         // keyed by metadata.name
+	Connectors map[string]*contracts.Connector       // keyed by metadata.name
+	Stores     map[string]*contracts.Store           // keyed by metadata.name
 	DataSets   map[string]*contracts.DataSetManifest // keyed by metadata.name
 }
 
