@@ -11,48 +11,7 @@ This document describes the high-level architecture of DataKit.
 
 DataKit is a Kubernetes-native data pipeline platform that enables teams to contribute reusable, versioned "data packages" with a complete developer workflow.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              DataKit Architecture                          │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                  │
-│  ┌──────────────────┐                                                            │
-│  │    Developer     │                                                            │
-│  └────────┬─────────┘                                                            │
-│           │                                                                      │
-│           ▼                                                                      │
-│  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                              DK CLI                                       │   │
-│  │  ┌──────┐ ┌─────┐ ┌─────┐ ┌──────┐ ┌───────┐ ┌─────────┐ ┌─────────┐    │   │
-│  │  │ init │ │ dev │ │ run │ │ lint │ │ build │ │ publish │ │ promote │    │   │
-│  │  └──────┘ └─────┘ └─────┘ └──────┘ └───────┘ └─────────┘ └─────────┘    │   │
-│  └──────────────────────────────────────────────────────────────────────────┘   │
-│           │                    │                       │                         │
-│           │                    │                       │                         │
-│           ▼                    ▼                       ▼                         │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐              │
-│  │       SDK        │  │   OCI Registry   │  │     GitOps       │              │
-│  │  • Validate      │  │  • Store Pkgs    │  │  • Kustomize     │              │
-│  │  • Lineage       │  │  • Immutability  │  │  • ArgoCD        │              │
-│  │  • Registry      │  │  • Versioning    │  │  • Environments  │              │
-│  │  • Runner        │  │                  │  │                  │              │
-│  │  • Catalog       │  │                  │  │                  │              │
-│  └──────────────────┘  └──────────────────┘  └──────────────────┘              │
-│                                                         │                        │
-│                                                         ▼                        │
-│                              ┌──────────────────────────────────────────┐       │
-│                              │         Kubernetes Cluster               │       │
-│                              │  ┌────────────────────────────────────┐  │       │
-│                              │  │     Platform Controller            │  │       │
-│                              │  │  • PackageDeployment CRD           │  │       │
-│                              │  │  • Pull OCI Artifacts              │  │       │
-│                              │  │  • Create Jobs                     │  │       │
-│                              │  │  • Emit Metrics                    │  │       │
-│                              │  └────────────────────────────────────┘  │       │
-│                              └──────────────────────────────────────────┘       │
-│                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────┘
-```
+![DataKit Architecture](assets/diagrams/architecture.svg)
 
 ## Components
 
@@ -94,7 +53,12 @@ Core libraries used by the CLI and controller.
 - Lineage emission integration
 - Run tracking
 
-#### 2.5 Catalog (`sdk/catalog/`)
+#### 2.5 Promotion (`sdk/promotion/`)
+- Cell-based promotion via GitHub API
+- Values file generation and merge (preserves overrides)
+- PR creation with env/cell targeting
+
+#### 2.6 Catalog (`sdk/catalog/`)
 - Data catalog record types
 - Marquez integration
 - Metadata management
@@ -145,23 +109,42 @@ Kubernetes controller for managing data packages.
 
 ### 5. GitOps (`gitops/`)
 
-Environment definitions using Kustomize.
+Cell-based deployment layout with a shared Helm chart.
 
 ```
 gitops/
-├── base/
-│   ├── kustomization.yaml
-│   └── crds/
-├── environments/
+├── charts/
+│   └── dk-app/              # Shared Helm chart for all packages
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/
+│           └── packagedeployment.yaml
+├── envs/
 │   ├── dev/
-│   │   └── kustomization.yaml
+│   │   └── cells/
+│   │       └── c0/
+│   │           ├── stores/   # Cell-specific Store CRDs
+│   │           └── apps/     # Per-package values.yaml (managed by dk promote)
 │   ├── int/
-│   │   └── kustomization.yaml
+│   │   └── cells/c0/{stores,apps}
 │   └── prod/
-│       └── kustomization.yaml
+│       └── cells/
+│           ├── c0/{stores,apps}
+│           └── canary/{stores,apps}
+├── crds/                     # CRD definitions
 └── argocd/
-    └── applicationset.yaml
+    └── applicationset.yaml   # Git generator on envs/*/cells/*/apps/*
 ```
+
+ArgoCD discovers apps via a git generator on `gitops/envs/*/cells/*/apps/*`, renders the shared `dk-app` chart with each app's `values.yaml`, and applies `PackageDeployment` CRs to the target namespace.
+
+## Module Dependency Graph
+
+![Module Dependencies](assets/diagrams/module-deps.svg)
+
+## Package × Cell Model
+
+![Package × Cell Model](assets/diagrams/package-cell-model.svg)
 
 ## Data Flow
 
@@ -193,12 +176,14 @@ Adding a new dev dependency requires only:
 - Registering a `ChartDefinition` in the `DefaultCharts` slice in `embed.go`
 - No changes to deployment, health-checking, port-forwarding, or CLI code
 
-### Publish & Promote
+### Promotion Flow
+
+![Promotion Flow](assets/diagrams/promotion-flow.svg)
 
 ```
-Developer → dk build → Validates & bundles artifact
+Developer → dk build → Validates & bundles OCI artifact
          → dk publish → Pushes to OCI registry (digest-based)
-         → dk promote → Creates PR to gitops repo
+         → dk promote --to dev → Creates PR to update values.yaml
          → PR merged → ArgoCD syncs
          → Controller → Pulls artifact, creates Job
 ```
@@ -208,7 +193,7 @@ Developer → dk build → Validates & bundles artifact
 ```
 Runner emits OpenLineage events:
   START → Job begins execution
-  COMPLETE → Job finished successfully  
+  COMPLETE → Job finished successfully
   FAIL → Job failed with error
 
 Events sent to:
@@ -220,7 +205,7 @@ Events sent to:
 
 ### 1. OCI for Package Storage
 
-**Rationale:** 
+**Rationale:**
 - Immutable by design (content-addressable)
 - Existing tooling (Docker registries, Harbor)
 - Standard format with ecosystem support
@@ -233,14 +218,22 @@ Events sent to:
 - Rollback = git revert
 - No direct cluster access needed
 
-### 3. OpenLineage for Lineage
+### 3. Shared Helm Chart
+
+**Rationale:**
+- One `dk-app` chart for all packages eliminates per-package chart generation
+- `appVersion` in per-app `values.yaml` drives the package version
+- ArgoCD git generator auto-discovers new apps from directory structure
+- User overrides (resources, replicas, schedule) are preserved across promotions
+
+### 4. OpenLineage for Lineage
 
 **Rationale:**
 - Industry standard
 - Marquez integration
 - Vendor neutral
 
-### 4. Go Monorepo
+### 5. Go Monorepo
 
 **Rationale:**
 - Independent versioning per module
@@ -248,25 +241,13 @@ Events sent to:
 - Single CI pipeline
 - Clear dependency direction
 
-## Dependency Graph
-
-```
-                   contracts
-                      │
-           ┌─────────┴─────────┐
-           ▼                   ▼
-          sdk          platform/controller
-           │
-           ▼
-          cli
-```
-
 ## Scaling Considerations
 
 | Aspect | MVP | Scale Target |
 |--------|-----|--------------|
 | Packages | 10-50 | 500+ |
 | Environments | 3 | 10+ |
+| Cells per env | 1-3 | 10+ |
 | Concurrent runs | 10 | 100+ |
 | OCI artifact size | <500MB | <1GB |
 

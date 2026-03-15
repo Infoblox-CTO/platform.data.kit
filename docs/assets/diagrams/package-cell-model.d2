@@ -1,0 +1,143 @@
+grid-rows: 1
+
+data-model: {
+  label: Data Model
+  style.fill: "#fafafa"
+  style.stroke: "#bdbdbd"
+  style.border-radius: 10
+  style.font-color: "#424242"
+  style.font-size: 22
+  style.bold: true
+
+  direction: down
+
+  package: {
+    label: Package (immutable OCI artifact)
+    style.fill: "#dcedc8"
+    style.stroke: "#558b2f"
+    style.border-radius: 8
+    style.font-color: "#1b5e20"
+
+    dk: dk.yaml (Transform) {shape: document; style.fill: "#f1f8e9"; style.font-color: "#33691e"}
+    conn: connector/*.yaml {shape: document; style.fill: "#f1f8e9"; style.font-color: "#33691e"}
+    ds: dataset/*.yaml {shape: document; style.fill: "#f1f8e9"; style.font-color: "#33691e"}
+  }
+
+  cell-def: {
+    label: Cell Definition
+    style.fill: "#ffe0b2"
+    style.stroke: "#e65100"
+    style.border-radius: 8
+    style.font-color: "#bf360c"
+
+    stores: {
+      label: Stores (connection details)
+      style.fill: "#fff3e0"
+      style.font-color: "#e65100"
+
+      warehouse: {
+        label: warehouse (postgres)
+        shape: cylinder
+        style.fill: "#fff8e1"
+        style.font-color: "#4e342e"
+      }
+      lake: {
+        label: lake-raw (s3)
+        shape: cylinder
+        style.fill: "#fff8e1"
+        style.font-color: "#4e342e"
+      }
+    }
+  }
+
+  result: {
+    label: PackageDeployment
+    style.fill: "#e3f2fd"
+    style.stroke: "#1565c0"
+    style.border-radius: 8
+    style.font-color: "#0d47a1"
+
+    what: "what: my-pipeline v1.0.0" {style.font-color: "#0d47a1"}
+    where: "where: warehouse, lake-raw" {style.font-color: "#0d47a1"}
+  }
+
+  package -> result: defines what {style.font-color: "#616161"}
+  cell-def -> result: defines where {style.font-color: "#616161"}
+}
+
+infra: {
+  label: Infrastructure
+  style.fill: "#fafafa"
+  style.stroke: "#bdbdbd"
+  style.border-radius: 10
+  style.font-color: "#424242"
+  style.font-size: 22
+  style.bold: true
+
+  direction: down
+
+  dev-cluster: {
+    label: dev cluster
+    style.fill: "#f1f8e9"
+    style.stroke: "#43a047"
+    style.border-radius: 10
+    style.font-color: "#1b5e20"
+    style.font-size: 18
+    style.bold: true
+
+    c0: {
+      label: cell c0
+      style.fill: "#e8f5e9"
+      style.stroke: "#66bb6a"
+      style.font-color: "#1b5e20"
+      style.border-radius: 6
+
+      w: "warehouse\npg://dev-db:5432" {shape: cylinder; style.fill: "#c8e6c9"; style.font-color: "#2e7d32"}
+      l: "lake-raw\ns3://dev-raw" {shape: cylinder; style.fill: "#c8e6c9"; style.font-color: "#2e7d32"}
+      j: my-pipeline {shape: hexagon; style.fill: "#a5d6a7"; style.font-color: "#1b5e20"}
+
+      w -> j: reads {style.font-color: "#2e7d32"}
+      j -> l: writes {style.font-color: "#2e7d32"}
+    }
+  }
+
+  prod-cluster: {
+    label: prod cluster
+    style.fill: "#fce4ec"
+    style.stroke: "#e53935"
+    style.border-radius: 10
+    style.font-color: "#b71c1c"
+    style.font-size: 18
+    style.bold: true
+
+    c0: {
+      label: cell c0
+      style.fill: "#ffebee"
+      style.stroke: "#ef5350"
+      style.font-color: "#b71c1c"
+      style.border-radius: 6
+
+      w: "warehouse\npg://prod-db:5432" {shape: cylinder; style.fill: "#ffcdd2"; style.font-color: "#c62828"}
+      l: "lake-raw\ns3://prod-raw" {shape: cylinder; style.fill: "#ffcdd2"; style.font-color: "#c62828"}
+      j: my-pipeline {shape: hexagon; style.fill: "#ef9a9a"; style.font-color: "#b71c1c"}
+
+      w -> j: reads {style.font-color: "#c62828"}
+      j -> l: writes {style.font-color: "#c62828"}
+    }
+
+    canary: {
+      label: cell canary
+      style.fill: "#fff8e1"
+      style.stroke: "#ffa726"
+      style.font-color: "#e65100"
+      style.border-radius: 6
+
+      w: "warehouse\npg://canary-db:5432" {shape: cylinder; style.fill: "#ffecb3"; style.font-color: "#ef6c00"}
+      l: "lake-raw\ns3://canary-raw" {shape: cylinder; style.fill: "#ffecb3"; style.font-color: "#ef6c00"}
+      j: my-pipeline {shape: hexagon; style.fill: "#ffe082"; style.font-color: "#e65100"}
+
+      w -> j: reads {style.font-color: "#ef6c00"}
+      j -> l: writes {style.font-color: "#ef6c00"}
+    }
+  }
+}

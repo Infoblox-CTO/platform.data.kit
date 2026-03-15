@@ -1,0 +1,85 @@
+direction: down
+
+developer: {
+  shape: person
+  label: Developer
+  style.fill: "#e3f2fd"
+}
+
+oci: {
+  label: OCI Registry
+  shape: cylinder
+  style.fill: "#e1bee7"
+  style.stroke: "#8e24aa"
+}
+
+main: {
+  grid-columns: 4
+  grid-gap: 20
+  style.fill: transparent
+  style.stroke: transparent
+
+  cli: {
+    label: CLI
+    style.fill: "#e8f5e9"
+    style.stroke: "#43a047"
+    style.border-radius: 8
+
+    build: "1. dk build" {style.fill: "#c8e6c9"; style.font-color: "#1b5e20"}
+    publish: "2. dk publish" {style.fill: "#c8e6c9"; style.font-color: "#1b5e20"}
+    promote: "3. dk promote\n--to {env} --cell {cell}" {style.fill: "#c8e6c9"; style.font-color: "#1b5e20"}
+
+    build -> publish
+    publish -> promote
+  }
+
+  github: {
+    label: "4. GitHub"
+    style.fill: "#fff9c4"
+    style.stroke: "#f9a825"
+    style.border-radius: 8
+
+    branch: "Create branch\npromote/{pkg}/{env}/{cell}/{ver}"
+    values: "Commit values.yaml\nappVersion: v1.0.0" {shape: document}
+    pr: Open Pull Request
+  }
+
+  argocd: {
+    label: "5. ArgoCD (on merge)"
+    style.fill: "#e8eaf6"
+    style.stroke: "#3949ab"
+    style.border-radius: 8
+
+    detect: "Git generator discovers\ngitops/envs/*/cells/*/apps/*"
+    render: Renders dk-app chart
+    apply: "Applies PackageDeployment\nto dk-{env}-{cell}"
+  }
+
+  cluster: {
+    label: "6. K8s Controller"
+    style.fill: "#e0f2f1"
+    style.stroke: "#00897b"
+    style.border-radius: 8
+
+    pd: PackageDeployment {shape: document}
+    reconcile: Reconcile loop
+    job: Creates Job / Deployment
+  }
+}
+
+developer -> main.cli
+
+main.cli.publish -> oci: push artifact
+main.cli.promote -> main.github.branch
+
+main.github.branch -> main.github.values
+main.github.values -> main.github.pr
+
+main.github.pr -> main.argocd.detect: "merge triggers sync" {style.stroke-dash: 3}
+main.argocd.detect -> main.argocd.render
+main.argocd.render -> main.argocd.apply
+
+main.argocd.apply -> main.cluster.pd
+main.cluster.pd -> main.cluster.reconcile
+main.cluster.reconcile -> main.cluster.job
+main.cluster.job -> oci: pull artifact {style.stroke-dash: 3}

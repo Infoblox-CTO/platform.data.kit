@@ -1,0 +1,151 @@
+direction: down
+
+developer: {
+  shape: person
+  label: Developer
+  style.fill: "#e3f2fd"
+}
+
+cli: {
+  label: DK CLI
+  style.fill: "#e8f5e9"
+  style.stroke: "#43a047"
+  style.border-radius: 8
+
+  init: dk init {shape: rectangle; style.fill: "#c8e6c9"}
+  dev: dk dev {shape: rectangle; style.fill: "#c8e6c9"}
+  run: dk run {shape: rectangle; style.fill: "#c8e6c9"}
+  lint: dk lint {shape: rectangle; style.fill: "#c8e6c9"}
+  build: dk build {shape: rectangle; style.fill: "#c8e6c9"}
+  publish: dk publish {shape: rectangle; style.fill: "#c8e6c9"}
+  promote: dk promote {shape: rectangle; style.fill: "#c8e6c9"}
+}
+
+sdk: {
+  label: SDK
+  style.fill: "#fff3e0"
+  style.stroke: "#ef6c00"
+  style.border-radius: 8
+
+  validate: Validate
+  manifest: Manifest
+  registry: Registry (ORAS)
+  runner: Runner (Docker)
+  promotion: Promotion (GitHub API)
+  lineage: Lineage (OpenLineage)
+  catalog: Catalog
+  localdev: LocalDev (Helm/k3d)
+}
+
+contracts: {
+  label: Contracts
+  style.fill: "#fce4ec"
+  style.stroke: "#e53935"
+  style.border-radius: 8
+
+  transform: Transform
+  dataset: DataSet
+  connector: Connector
+  store: Store
+}
+
+oci: {
+  label: OCI Registry
+  shape: cylinder
+  style.fill: "#e1bee7"
+  style.stroke: "#8e24aa"
+}
+
+gitops: {
+  label: GitOps Repository
+  style.fill: "#e0f7fa"
+  style.stroke: "#00838f"
+  style.border-radius: 8
+
+  charts: gitops/charts/dk-app {shape: document}
+
+  envs: {
+    label: gitops/envs/
+    style.fill: "#b2ebf2"
+
+    dev: {
+      label: dev
+      cells: cells/c0/apps/ {shape: page}
+    }
+    int: {
+      label: int
+      cells: cells/c0/apps/ {shape: page}
+    }
+    prod: {
+      label: prod
+      cells: "cells/{c0,canary}/apps/" {shape: page}
+    }
+  }
+
+  argocd: ArgoCD ApplicationSet {shape: document}
+}
+
+k8s: {
+  label: Kubernetes Cluster
+  style.fill: "#e8eaf6"
+  style.stroke: "#3949ab"
+  style.border-radius: 8
+
+  argocd: {
+    label: ArgoCD
+    style.fill: "#c5cae9"
+    style.border-radius: 4
+
+    appset: ApplicationSet (git generator)
+    sync: Sync Engine
+  }
+
+  controller: {
+    label: Platform Controller
+    style.fill: "#c5cae9"
+    style.border-radius: 4
+
+    reconcile: Reconciler
+    crd: PackageDeployment CRD {shape: document}
+  }
+
+  ns: {
+    label: "dk-{env}-{cell}"
+    style.fill: "#c5cae9"
+    style.border-radius: 4
+
+    jobs: Jobs / Deployments
+    stores: Store CRs
+  }
+}
+
+marquez: {
+  label: Marquez
+  shape: cylinder
+  style.fill: "#f3e5f5"
+  style.stroke: "#7b1fa2"
+}
+
+# Connections
+
+developer -> cli: dk workflow
+
+cli -> sdk: uses
+sdk -> contracts: imports
+
+cli.build -> oci: push artifact
+cli.publish -> oci: push artifact
+cli.promote -> gitops.envs: PR updates values.yaml
+
+sdk.lineage -> marquez: OpenLineage events
+sdk.runner -> marquez: run events
+
+gitops.argocd -> k8s.argocd.appset: defines
+k8s.argocd.appset -> gitops.envs: discovers cells/*/apps/*
+k8s.argocd.sync -> gitops.charts: renders dk-app chart
+
+k8s.argocd.sync -> k8s.controller.crd: applies PackageDeployment
+k8s.controller.reconcile -> oci: pull artifact
+k8s.controller.reconcile -> k8s.ns.jobs: creates
+
+k8s.ns.jobs -> marquez: lineage events

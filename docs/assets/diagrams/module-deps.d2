@@ -1,0 +1,61 @@
+direction: down
+
+contracts: {
+  label: contracts
+  style.fill: "#fce4ec"
+  style.stroke: "#e53935"
+  style.border-radius: 8
+
+  types: "Transform, DataSet, Store, Connector, DataSetGroup"
+}
+
+sdk: {
+  label: sdk
+  style.fill: "#fff3e0"
+  style.stroke: "#ef6c00"
+  style.border-radius: 8
+  grid-columns: 3
+
+  validate: validate
+  manifest: manifest
+  pipeline: pipeline
+  registry: registry
+  runner: runner
+  promotion: promotion
+  lineage: lineage
+  catalog: catalog
+  localdev: localdev
+}
+
+cli: {
+  label: cli
+  style.fill: "#e8f5e9"
+  style.stroke: "#43a047"
+  style.border-radius: 8
+
+  binary: dk binary (Cobra)
+}
+
+controller: {
+  label: platform/controller
+  style.fill: "#e8eaf6"
+  style.stroke: "#3949ab"
+  style.border-radius: 8
+
+  desc: K8s controller + PackageDeployment CRD
+}
+
+e2e: {
+  label: tests/e2e
+  style.fill: "#f3e5f5"
+  style.stroke: "#7b1fa2"
+  style.border-radius: 8
+  style.stroke-dash: 3
+
+  desc: E2E + integration tests
+}
+
+contracts -> sdk: imports
+contracts -> controller: imports
+sdk -> cli: imports
+e2e -> cli: "tests (binary)" {style.stroke-dash: 3}
