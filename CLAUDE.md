@@ -62,6 +62,13 @@ dk build --dry-run                       # validate build without producing arti
 dk publish <package-dir>                 # push OCI artifact to registry
 dk promote <name> <version> --to <env>              # promote to env (default cell c0)
 dk promote <name> <version> --to <env> --cell <c>  # promote to specific cell in env
+
+# dbt (transparent wrapper — resolves stores, generates profiles.yml automatically)
+dk dbt run                              # build dbt models
+dk dbt test                             # run dbt tests
+dk dbt debug                            # verify connection
+dk dbt run --select my_model            # pass-through args to dbt
+dk dbt run --cell canary                # resolve stores from a cell
 ```
 
 ### Manifest Kinds

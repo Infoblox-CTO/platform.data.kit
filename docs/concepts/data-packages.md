@@ -139,11 +139,22 @@ dk init my-sync --runtime cloudquery
 
 ### dbt
 
-A [dbt](https://www.getdbt.com/) transformation project.
+A [dbt](https://www.getdbt.com/) transformation project. Connection info is resolved automatically from Store manifests — you never write `profiles.yml` by hand.
 
 ```bash
 dk init my-transforms --runtime dbt
 ```
+
+Development workflow:
+
+```bash
+dk dbt run                    # resolves stores, generates profiles.yml, runs dbt
+dk dbt test                   # run dbt schema tests
+dk dbt debug                  # verify connection
+dk dbt run --select my_model  # pass-through args to dbt
+```
+
+Requires `dbt` and `datakit-sdk` (`pip install dbt-postgres datakit-sdk`).
 
 ## Package Lifecycle
 

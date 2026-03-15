@@ -93,7 +93,28 @@ type DataSetManifest struct {
 }
 ```
 
-### 4. Platform Controller (`platform/controller/`)
+### 4. Python SDK (`sdks/python/`)
+
+Python package (`datakit-sdk`) for reading Store connection info in Python-based transforms.
+
+- **`datakit.stores`**: Read `DK_STORE_DSN_{NAME}` / `DK_STORE_TYPE_{NAME}` env vars — `stores.get("warehouse")` returns `Store(name, dsn, type)`
+- **`datakit.profiles`**: Generate dbt `profiles.yml` from store DSN
+- **`dk-profiles` CLI**: Docker entrypoint for dbt containers — `dk-profiles generate` writes `profiles.yml`
+
+Used by `dk dbt` and production Docker containers. The same Python code runs locally and in K8s.
+
+#### Store Env Var Convention
+
+All runtimes receive store connection info via two env vars per store:
+
+```
+DK_STORE_DSN_{NAME}=postgresql://user:pass@host:5432/db
+DK_STORE_TYPE_{NAME}=postgres
+```
+
+`dk run` and `dk dbt` build these from the Transform → DataSet → Store manifest graph. In production, the K8s controller injects them from Store CRs.
+
+### 5. Platform Controller (`platform/controller/`)
 
 Kubernetes controller for managing data packages.
 
@@ -107,7 +128,7 @@ Kubernetes controller for managing data packages.
 4. Create/update Kubernetes Jobs
 5. Monitor execution and emit metrics
 
-### 5. GitOps (`gitops/`)
+### 6. GitOps (`gitops/`)
 
 Cell-based deployment layout with a shared Helm chart.
 

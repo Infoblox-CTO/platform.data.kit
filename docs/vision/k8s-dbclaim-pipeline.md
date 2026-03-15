@@ -525,7 +525,7 @@ Kubernetes namespace (`dk-<cellName>`).
 | **Project scaffolding** | **Gap** | No `dk project init` for multi-transform projects |
 | **Store/Connector scaffolding** | **Gap** | No `dk store create` or `dk connector create` |
 | **Project-wide lint** | **Gap** | `dk lint` validates one directory at a time |
-| **dbt runtime** | **Gap** | `dk run` only supports CloudQuery |
+| **dbt runtime** | **Implemented** | `dk dbt run/test/debug` with auto store resolution via Python SDK |
 | **Multi-transform run** | **Gap** | `dk run` executes one transform at a time |
 | **Real dk status** | **Gap** | Returns hardcoded data |
 | **On-change triggers** | **Gap** | Types defined, no event system |

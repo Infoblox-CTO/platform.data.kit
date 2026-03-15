@@ -829,7 +829,7 @@ dk publish ./my-pipeline --dry-run
 
 ## dk promote
 
-Promote package to an environment.
+Promote a package to an environment and cell via GitOps PR.
 
 ```bash
 dk promote <package-name> <version> [flags]
@@ -837,42 +837,41 @@ dk promote <package-name> <version> [flags]
 
 ### Flags
 
-| Flag             | Description                  | Default            |
-| ---------------- | ---------------------------- | ------------------ |
-| `--to`         | Target environment           | **required** |
-| `--dry-run`    | Print what would change      | false              |
-| `--auto-merge` | Automatically merge PR       | false              |
-| `--rollback`   | Mark as rollback (expedited) | false              |
+| Flag             | Description                                  | Default            |
+| ---------------- | -------------------------------------------- | ------------------ |
+| `--to`           | Target environment (dev, int, prod)          | **required**       |
+| `--cell`         | Target cell within the environment           | `c0`               |
+| `--digest`       | Content digest for verification              |                    |
+| `--registry`     | OCI registry URL                             | ghcr.io/infoblox-cto |
+| `--dry-run`      | Print what would change                      | false              |
+| `--auto-merge`   | Automatically merge PR                       | false              |
 
 ### Examples
 
 ```bash
-# Promote to dev
+# Promote to dev (default cell c0)
 dk promote my-pipeline v1.0.0 --to dev
 ```
 
 ```bash
-# Promote to production with dry run
-dk promote my-pipeline v1.0.0 --to prod --dry-run
+# Promote to a specific cell
+dk promote my-pipeline v1.0.0 --to prod --cell canary
 ```
 
 ```bash
-# Emergency rollback
-dk promote my-pipeline v0.9.0 --to prod --rollback
+# Dry run
+dk promote my-pipeline v1.0.0 --to prod --dry-run
 ```
 
 ### Output
 
 ```
-Promotion Request: my-pipeline v1.0.0 → dev
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Promoting my-pipeline to dev/c0...
+  Version: v1.0.0
 
-Pre-flight Checks:
-  ✓ Package exists in registry
-  ✓ Version not already in dev
-  ✓ Passed lint validation
-
-Created PR: https://github.com/org/deploys/pull/123
+✓ Promotion PR created successfully!
+  PR #123: https://github.com/org/datakit/pull/123
+  Branch: promote/my-pipeline/dev/c0/v1.0.0/...
 ```
 
 ---
@@ -1076,23 +1075,78 @@ dk rollback <package-name> [flags]
 
 ### Flags
 
-| Flag          | Description             | Default            |
-| ------------- | ----------------------- | ------------------ |
-| `--to`      | Target version          | previous           |
-| `--env`     | Environment             | **required** |
-| `--dry-run` | Print what would change | false              |
+| Flag            | Description                                  | Default        |
+| --------------- | -------------------------------------------- | -------------- |
+| `--to`          | Target environment (dev, int, prod)          | **required**   |
+| `--cell`        | Target cell within the environment           | `c0`           |
+| `--to-version`  | Specific version to rollback to              | **required**   |
+| `--dry-run`     | Print what would change                      | false          |
 
 ### Examples
 
 ```bash
-# Rollback to previous version
-dk rollback my-pipeline --env prod
+# Rollback to a specific version (default cell c0)
+dk rollback my-pipeline --to prod --to-version v1.0.0
 ```
 
 ```bash
-# Rollback to specific version
-dk rollback my-pipeline --to v1.0.0 --env prod
+# Rollback a specific cell
+dk rollback my-pipeline --to prod --cell canary --to-version v1.0.0
 ```
+
+---
+
+## dk dbt
+
+Run any dbt command with automatic store resolution and profiles.yml generation.
+
+`dk dbt` resolves the Store graph from your dk.yaml manifests, injects `DK_STORE_DSN_*` / `DK_STORE_TYPE_*` environment variables, generates `profiles.yml` via the Python SDK (`dk-profiles`), and then executes dbt with those settings. All extra arguments are passed through to dbt.
+
+```bash
+dk dbt <dbt-command> [dbt-args...] [flags]
+```
+
+### Flags
+
+| Flag      | Description                            | Default |
+| --------- | -------------------------------------- | ------- |
+| `--dir`   | Package directory containing dk.yaml   | `.`     |
+| `--cell`  | Cell name for store resolution         | (none)  |
+
+### Examples
+
+```bash
+# Build models
+dk dbt run
+
+# Run dbt tests
+dk dbt test
+
+# Verify connection
+dk dbt debug
+
+# Run a specific model
+dk dbt run --select my_model
+
+# Resolve stores from a cell
+dk dbt run --cell canary
+
+# Specify package directory
+dk dbt run --dir ./my-dbt-package
+```
+
+### Prerequisites
+
+- `dbt` CLI installed (`pip install dbt-postgres`)
+- `dk-profiles` CLI installed (`pip install datakit-sdk`)
+
+### How it works
+
+1. Parses `dk.yaml` and verifies `runtime: dbt`
+2. Resolves Transform → DataSet → Store manifest graph
+3. Builds `DK_STORE_DSN_{NAME}` and `DK_STORE_TYPE_{NAME}` env vars from Store connection details
+4. Calls `dk-profiles generate` (Python SDK) to write `profiles.yml`
+5. Sets `DBT_PROFILES_DIR` and executes `dbt` with all provided arguments
 
 ---
 
