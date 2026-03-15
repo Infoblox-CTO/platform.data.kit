@@ -117,48 +117,43 @@ Image: my-pipeline:v1.0.0
 Digest: sha256:abc123...
 ```
 
-## Step 4: Promote to Dev
+## Step 4: Promote to a Cell
 
-Deploy to the development environment:
+Deploy to the dev environment (uses the default cell `c0`):
 
 ```bash
 dk promote my-pipeline v1.0.0 --to dev
 ```
 
+Or promote to a specific cell within the environment:
+
+```bash
+dk promote my-pipeline v1.0.0 --to dev --cell canary
+```
+
 Output:
 
 ```
-▶ Promoting: my-pipeline v1.0.0 → dev
-
-Pre-flight checks:
-  ✓ Package exists in registry
-  ✓ Version not already deployed to dev
-  ✓ Manifest validation passed
+▶ Promoting: my-pipeline v1.0.0 → dev/c0
 
 Creating PR:
-  Repository: github.com/myorg/gitops
-  Branch: promote/my-pipeline-v1.0.0-dev
-  Path: environments/dev/my-pipeline.yaml
+  Repository: github.com/myorg/datakit
+  Branch: promote/my-pipeline/dev/c0/v1.0.0/...
+  File: envs/dev/cells/c0/apps/my-pipeline/values.yaml
 
 ✓ Created PR #123
-  URL: https://github.com/myorg/gitops/pull/123
-  Status: Auto-merge enabled
+  URL: https://github.com/myorg/datakit/pull/123
 ```
 
 ### Understanding the PR
 
-The PR creates/updates a deployment manifest:
+The PR creates/updates a values.yaml in the environment + cell layout:
 
-```yaml title="environments/dev/my-pipeline.yaml"
-apiVersion: datakit.infoblox.dev/v1alpha1
-kind: DeployedPackage
-metadata:
-  name: my-pipeline
-  namespace: dev
-spec:
-  version: v1.0.0
-  artifact: ghcr.io/myorg/my-pipeline:v1.0.0
+```yaml title="envs/dev/cells/c0/apps/my-pipeline/values.yaml"
+appVersion: v1.0.0
 ```
+
+ArgoCD uses a git generator to discover `envs/*/cells/*/apps/*` directories and renders the shared `dk-app` chart with each app's `values.yaml`.
 
 ### Auto-Merge
 
@@ -201,7 +196,7 @@ dk logs my-pipeline --env dev --follow
 
 ## Step 6: Promote to Int
 
-After testing in dev, promote to integration:
+After testing in dev, promote to the integration cell:
 
 ```bash
 dk promote my-pipeline v1.0.0 --to int
@@ -245,7 +240,7 @@ Request review from your team lead:
 
 ## Step 7: Promote to Production
 
-After int testing, promote to production:
+After int testing, promote to the production cell:
 
 ```bash
 dk promote my-pipeline v1.0.0 --to prod
@@ -321,7 +316,7 @@ If something goes wrong, rollback to the previous version:
 ### Quick Rollback
 
 ```bash
-dk rollback my-pipeline --env prod
+dk rollback my-pipeline --to prod --to-version v0.9.0
 ```
 
 This promotes the previous version:
@@ -340,22 +335,14 @@ Creating expedited PR:
 ### Rollback to Specific Version
 
 ```bash
-dk rollback my-pipeline --to v0.8.0 --env prod
+dk rollback my-pipeline --to prod --to-version v0.8.0
 ```
 
-### Using Promote with Rollback Flag
-
-For the same result:
+### Rollback a Specific Cell
 
 ```bash
-dk promote my-pipeline v0.9.0 --to prod --rollback
+dk rollback my-pipeline --to prod --cell canary --to-version v0.9.0
 ```
-
-The `--rollback` flag:
-
-- Skips some pre-flight checks
-- Uses expedited approval (1 instead of 2)
-- Marks the deployment as a rollback for audit
 
 ## Dry Run Mode
 

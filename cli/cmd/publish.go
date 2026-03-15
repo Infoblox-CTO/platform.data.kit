@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/manifest"
 	"github.com/Infoblox-CTO/platform.data.kit/sdk/registry"
@@ -87,9 +85,8 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	}
 
 	parser := manifest.NewParser()
-	m, kind, err := manifest.ParseManifest(dpData)
+	m, _, err := manifest.ParseManifest(dpData)
 	_ = parser // parser still used elsewhere; keep import
-	_ = kind
 	if err != nil {
 		return fmt.Errorf("failed to parse dk.yaml: %w", err)
 	}
@@ -120,7 +117,7 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Target: %s\n\n", reference)
 
 	// Step 1: Build artifact
-	fmt.Println("Step 1/4: Building artifact...")
+	fmt.Println("Step 1/3: Building artifact...")
 	bundler := registry.NewBundler(Version)
 
 	gitInfo := getGitInfo(absDir)
@@ -136,29 +133,8 @@ func runPublish(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("✓ Artifact built")
 
-	// Step 2: Generate Helm chart (if not already in dist/)
-	fmt.Println("\nStep 2/4: Preparing Helm chart...")
-	chartPath := findHelmChart(absDir, m.GetName())
-	if chartPath == "" {
-		// Generate chart on the fly
-		chartResult, chartErr := registry.GenerateHelmChart(registry.HelmChartOptions{
-			PackageDir: absDir,
-			GitCommit:  gitInfo.commit,
-			GitBranch:  gitInfo.branch,
-			GitTag:     gitInfo.tag,
-			Version:    version,
-		})
-		if chartErr != nil {
-			return fmt.Errorf("failed to generate Helm chart: %w", chartErr)
-		}
-		chartPath = chartResult.ChartPath
-		fmt.Printf("✓ Helm chart generated: %s\n", chartPath)
-	} else {
-		fmt.Printf("✓ Using existing chart: %s\n", chartPath)
-	}
-
-	// Step 3: Check immutability
-	fmt.Println("\nStep 3/4: Checking tag availability...")
+	// Step 2: Check immutability
+	fmt.Println("\nStep 2/3: Checking tag availability...")
 
 	client, err := registry.NewOrasClient(registry.ClientConfig{
 		Registry:  reg,
@@ -189,12 +165,11 @@ func runPublish(cmd *cobra.Command, args []string) error {
 		fmt.Println("\nDry run complete - artifact not pushed")
 		fmt.Printf("\nWould publish:\n")
 		fmt.Printf("  OCI artifact: %s\n", reference)
-		fmt.Printf("  Helm chart:   oci://%s/%s/%s\n", reg, m.GetNamespace(), m.GetName())
 		return nil
 	}
 
-	// Step 4: Push to registry
-	fmt.Println("\nStep 4/4: Pushing to registry...")
+	// Step 3: Push to registry
+	fmt.Println("\nStep 3/3: Pushing to registry...")
 
 	// Push OCI artifact
 	result, err := client.Push(ctx, reference, artifact)
@@ -203,61 +178,16 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("✓ OCI artifact pushed\n")
 
-	// Push Helm chart via helm push
-	helmRef := fmt.Sprintf("oci://%s/%s", reg, m.GetNamespace())
-	helmErr := pushHelmChart(chartPath, helmRef, publishPlainHTTP, publishInsecure)
-	if helmErr != nil {
-		fmt.Printf("⚠ Helm chart push failed: %v\n", helmErr)
-		fmt.Println("  (OCI artifact was pushed successfully)")
-		fmt.Println("  Install helm and run: helm push", chartPath, helmRef)
-	} else {
-		fmt.Printf("✓ Helm chart pushed to %s\n", helmRef)
-	}
-
 	fmt.Printf("\n✓ Published successfully!\n")
 	fmt.Printf("\nArtifact Details:\n")
 	fmt.Printf("  Reference: %s\n", result.Reference)
 	fmt.Printf("  Digest:    %s\n", result.Digest)
 	fmt.Printf("  Size:      %s\n", formatSize(result.Size))
-	fmt.Printf("  Chart:     %s\n", chartPath)
 
 	// Print next steps
 	fmt.Printf("\nNext steps:\n")
 	fmt.Printf("  dk promote %s %s --to dev  # Deploy to dev environment\n",
 		m.GetName(), version)
-	fmt.Printf("  helm install %s oci://%s/%s/%s --version %s --set cell=<cell>  # Deploy to cell\n",
-		m.GetName(), reg, m.GetNamespace(), m.GetName(), version)
 
 	return nil
-}
-
-// findHelmChart looks for an existing Helm chart in dist/ directory.
-func findHelmChart(packageDir, name string) string {
-	distDir := filepath.Join(packageDir, "dist")
-	entries, err := os.ReadDir(distDir)
-	if err != nil {
-		return ""
-	}
-	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), name) && strings.HasSuffix(e.Name(), ".tgz") {
-			return filepath.Join(distDir, e.Name())
-		}
-	}
-	return ""
-}
-
-// pushHelmChart pushes a Helm chart to an OCI registry using the helm CLI.
-func pushHelmChart(chartPath, ociRef string, plainHTTP, insecure bool) error {
-	args := []string{"push", chartPath, ociRef}
-	if plainHTTP {
-		args = append(args, "--plain-http")
-	}
-	if insecure {
-		args = append(args, "--insecure-skip-tls-verify")
-	}
-
-	cmd := exec.Command("helm", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }

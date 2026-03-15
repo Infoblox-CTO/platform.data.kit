@@ -1,0 +1,23 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: PackageDeployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: dk-{{ .Values.cell }}
+spec:
+  package:
+    name: {{ .Release.Name }}
+    version: {{ .Values.appVersion }}
+    registry: {{ .Values.registry | default "ghcr.io/infoblox-cto/dk" }}
+  cell: {{ .Values.cell }}
+  mode: {{ .Values.mode | default "batch" }}
+  {{- if .Values.schedule }}
+  schedule:
+    cron: {{ .Values.schedule | quote }}
+  {{- end }}
+  resources:
+    requests:
+      cpu: {{ .Values.resources.requests.cpu | quote }}
+      memory: {{ .Values.resources.requests.memory | quote }}
+    limits:
+      cpu: {{ .Values.resources.limits.cpu | quote }}
+      memory: {{ .Values.resources.limits.memory | quote }}

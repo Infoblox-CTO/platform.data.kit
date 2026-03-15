@@ -70,7 +70,6 @@ func TestPublishCmd_Args(t *testing.T) {
 }
 
 func TestPublishCmd_DirectoryNotFound(t *testing.T) {
-	// Test that publishing a non-existent directory returns an error
 	tmpDir := t.TempDir()
 	nonExistent := filepath.Join(tmpDir, "does-not-exist")
 
@@ -83,7 +82,6 @@ func TestPublishCmd_DirectoryNotFound(t *testing.T) {
 }
 
 func TestPublishCmd_MissingDkYaml(t *testing.T) {
-	// Test that publishing a directory without dk.yaml returns an error
 	tmpDir := t.TempDir()
 
 	cmd := &cobra.Command{}
@@ -95,7 +93,6 @@ func TestPublishCmd_MissingDkYaml(t *testing.T) {
 }
 
 func TestPublishCmd_DryRun(t *testing.T) {
-	// Test dry-run mode (should build but not push)
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -117,7 +114,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldDryRun := publishDryRun
 	defer func() { publishDryRun = oldDryRun }()
 
@@ -126,14 +122,12 @@ spec:
 	cmd := &cobra.Command{}
 	err := runPublish(cmd, []string{tmpDir})
 
-	// Dry run should succeed for valid package
 	if err != nil {
 		t.Errorf("runPublish() dry-run error = %v, want nil", err)
 	}
 }
 
 func TestPublishCmd_CustomRegistry(t *testing.T) {
-	// Test publishing with a custom registry
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -155,7 +149,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldRegistry := publishRegistry
 	oldDryRun := publishDryRun
 	defer func() {
@@ -175,7 +168,6 @@ spec:
 }
 
 func TestPublishCmd_InvalidPackage(t *testing.T) {
-	// Test publishing an invalid package
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -189,7 +181,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldDryRun := publishDryRun
 	defer func() { publishDryRun = oldDryRun }()
 
@@ -205,7 +196,6 @@ spec:
 }
 
 func TestPublishCmd_CloudQueryPackage(t *testing.T) {
-	// Test that dk publish works for a CloudQuery Transform package in dry-run mode
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -227,7 +217,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldDryRun := publishDryRun
 	defer func() { publishDryRun = oldDryRun }()
 
@@ -236,44 +225,7 @@ spec:
 	cmd := &cobra.Command{}
 	err := runPublish(cmd, []string{tmpDir})
 
-	// Dry run should succeed for a valid CloudQuery package
 	if err != nil {
 		t.Errorf("runPublish() dry-run for CloudQuery package error = %v, want nil", err)
-	}
-}
-
-func TestPublishCmd_CloudQueryInvalidPackage(t *testing.T) {
-	// Test that dk publish handles a CloudQuery Transform package with missing fields
-	// Note: publish does not run validation - it only builds and pushes the OCI artifact.
-	// Validation is the responsibility of dk lint / dk build.
-	tmpDir := t.TempDir()
-
-	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
-kind: Transform
-metadata:
-  name: bad-cq-source
-  namespace: data-team
-  version: 0.1.0
-spec:
-  runtime: cloudquery
-  image: bad-source:latest
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
-		t.Fatalf("failed to write dk.yaml: %v", err)
-	}
-
-	// Save and restore global flags
-	oldDryRun := publishDryRun
-	defer func() { publishDryRun = oldDryRun }()
-
-	publishDryRun = true
-
-	cmd := &cobra.Command{}
-	err := runPublish(cmd, []string{tmpDir})
-
-	// Publish dry-run still succeeds because publish does not validate —
-	// validation is done by dk lint and dk build
-	if err != nil {
-		t.Errorf("runPublish() dry-run error = %v, want nil (publish doesn't validate)", err)
 	}
 }

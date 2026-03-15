@@ -8,12 +8,12 @@ import (
 )
 
 func TestPromoteCmd_Flags(t *testing.T) {
-	// Verify flags are registered correctly
 	tests := []struct {
 		flag     string
 		defValue string
 	}{
 		{"to", ""},
+		{"cell", ""},
 		{"digest", ""},
 		{"registry", ""},
 		{"dry-run", "false"},
@@ -35,32 +35,15 @@ func TestPromoteCmd_Flags(t *testing.T) {
 }
 
 func TestPromoteCmd_Args(t *testing.T) {
-	// Test argument validation - promote requires exactly 2 args
 	tests := []struct {
 		name    string
 		args    []string
 		wantErr bool
 	}{
-		{
-			name:    "two args is valid",
-			args:    []string{"my-package", "v1.0.0"},
-			wantErr: false,
-		},
-		{
-			name:    "no args is invalid",
-			args:    []string{},
-			wantErr: true,
-		},
-		{
-			name:    "one arg is invalid",
-			args:    []string{"my-package"},
-			wantErr: true,
-		},
-		{
-			name:    "three args is invalid",
-			args:    []string{"pkg", "v1", "extra"},
-			wantErr: true,
-		},
+		{"two args is valid", []string{"my-package", "v1.0.0"}, false},
+		{"no args is invalid", []string{}, true},
+		{"one arg is invalid", []string{"my-package"}, true},
+		{"three args is invalid", []string{"pkg", "v1", "extra"}, true},
 	}
 
 	for _, tt := range tests {
@@ -74,8 +57,6 @@ func TestPromoteCmd_Args(t *testing.T) {
 }
 
 func TestPromoteCmd_InvalidEnvironment(t *testing.T) {
-	// Test that an invalid environment returns an error
-	// Save and restore global flags
 	oldToEnv := promoteToEnv
 	oldDryRun := promoteDryRun
 	defer func() {
@@ -88,46 +69,54 @@ func TestPromoteCmd_InvalidEnvironment(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	err := runPromote(cmd, []string{"my-package", "v1.0.0"})
-
 	if err == nil {
 		t.Error("expected error for invalid environment")
 	}
 }
 
-func TestPromoteCmd_ValidEnvironments(t *testing.T) {
-	// Test valid environment values
-	validEnvs := []string{"dev", "int", "prod"}
+func TestPromoteCmd_DryRunDefaultCell(t *testing.T) {
+	oldToEnv := promoteToEnv
+	oldCell := promoteCell
+	oldDryRun := promoteDryRun
+	defer func() {
+		promoteToEnv = oldToEnv
+		promoteCell = oldCell
+		promoteDryRun = oldDryRun
+	}()
 
-	for _, env := range validEnvs {
-		t.Run(env, func(t *testing.T) {
-			// Save and restore global flags
-			oldToEnv := promoteToEnv
-			oldDryRun := promoteDryRun
-			oldToken := os.Getenv("GITHUB_TOKEN")
-			defer func() {
-				promoteToEnv = oldToEnv
-				promoteDryRun = oldDryRun
-				if oldToken != "" {
-					os.Setenv("GITHUB_TOKEN", oldToken)
-				}
-			}()
+	promoteToEnv = "dev"
+	promoteCell = "" // defaults to c0
+	promoteDryRun = true
 
-			promoteToEnv = env
-			promoteDryRun = true
+	cmd := &cobra.Command{}
+	err := runPromote(cmd, []string{"my-package", "v1.0.0"})
+	if err != nil {
+		t.Errorf("dry-run with default cell should succeed, got error: %v", err)
+	}
+}
 
-			cmd := &cobra.Command{}
-			err := runPromote(cmd, []string{"my-package", "v1.0.0"})
+func TestPromoteCmd_DryRunNamedCell(t *testing.T) {
+	oldToEnv := promoteToEnv
+	oldCell := promoteCell
+	oldDryRun := promoteDryRun
+	defer func() {
+		promoteToEnv = oldToEnv
+		promoteCell = oldCell
+		promoteDryRun = oldDryRun
+	}()
 
-			// Dry run should succeed with valid environment
-			// May still fail if other requirements not met
-			_ = err
-		})
+	promoteToEnv = "prod"
+	promoteCell = "canary"
+	promoteDryRun = true
+
+	cmd := &cobra.Command{}
+	err := runPromote(cmd, []string{"my-package", "v1.0.0"})
+	if err != nil {
+		t.Errorf("dry-run with named cell should succeed, got error: %v", err)
 	}
 }
 
 func TestPromoteCmd_MissingGitHubToken(t *testing.T) {
-	// Test that missing GITHUB_TOKEN returns error (non-dry-run)
-	// Save and restore
 	oldToEnv := promoteToEnv
 	oldDryRun := promoteDryRun
 	oldToken := os.Getenv("GITHUB_TOKEN")
@@ -147,40 +136,12 @@ func TestPromoteCmd_MissingGitHubToken(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	err := runPromote(cmd, []string{"my-package", "v1.0.0"})
-
 	if err == nil {
 		t.Error("expected error when GITHUB_TOKEN is missing")
 	}
 }
 
-func TestPromoteCmd_DryRun(t *testing.T) {
-	// Test dry-run mode (should simulate without creating PR)
-	// Save and restore global flags
-	oldToEnv := promoteToEnv
-	oldDryRun := promoteDryRun
-	oldToken := os.Getenv("GITHUB_TOKEN")
-	defer func() {
-		promoteToEnv = oldToEnv
-		promoteDryRun = oldDryRun
-		if oldToken != "" {
-			os.Setenv("GITHUB_TOKEN", oldToken)
-		}
-	}()
-
-	promoteToEnv = "dev"
-	promoteDryRun = true
-
-	cmd := &cobra.Command{}
-	err := runPromote(cmd, []string{"my-package", "v1.0.0"})
-
-	// Dry run should work without GITHUB_TOKEN
-	// May fail for other reasons in test environment
-	_ = err
-}
-
 func TestPromoteCmd_WithDigest(t *testing.T) {
-	// Test promoting with content digest
-	// Save and restore global flags
 	oldToEnv := promoteToEnv
 	oldDryRun := promoteDryRun
 	oldDigest := promoteDigest
@@ -196,13 +157,12 @@ func TestPromoteCmd_WithDigest(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	err := runPromote(cmd, []string{"my-package", "v1.0.0"})
-
-	// Just verify the command handles the digest flag
-	_ = err
+	if err != nil {
+		t.Errorf("dry-run with --digest should succeed, got error: %v", err)
+	}
 }
 
 func TestPromoteCmd_AutoMerge(t *testing.T) {
-	// Test auto-merge flag
 	flag := promoteCmd.Flags().Lookup("auto-merge")
 	if flag == nil {
 		t.Error("auto-merge flag not found")
@@ -210,5 +170,16 @@ func TestPromoteCmd_AutoMerge(t *testing.T) {
 	}
 	if flag.DefValue != "false" {
 		t.Errorf("auto-merge default = %v, want false", flag.DefValue)
+	}
+}
+
+func TestPromoteCmd_CellFlag(t *testing.T) {
+	flag := promoteCmd.Flags().Lookup("cell")
+	if flag == nil {
+		t.Error("cell flag not found")
+		return
+	}
+	if flag.DefValue != "" {
+		t.Errorf("cell default = %v, want empty", flag.DefValue)
 	}
 }

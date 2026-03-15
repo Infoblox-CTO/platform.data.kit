@@ -15,26 +15,30 @@ import (
 var promoteCmd = &cobra.Command{
 	Use:   "promote <package> <version>",
 	Short: "Promote a package to an environment",
-	Long: `Promote a data package to a target environment via GitOps PR workflow.
+	Long: `Promote a data package to a target environment and cell via GitOps PR workflow.
 
-This command creates a pull request that updates the version of a package
-in the target environment's Kustomize overlay. When the PR is merged,
-ArgoCD will automatically deploy the new version.
+This command creates a pull request that updates the appVersion in the
+target cell's values.yaml. When the PR is merged, ArgoCD will
+automatically deploy the new version.
 
 Example:
-  # Promote to dev environment
+  # Promote to dev (default cell c0)
   dk promote kafka-s3-pipeline v1.0.0 --to dev
 
-  # Promote to integration with digest verification
+  # Promote to a specific cell within prod
+  dk promote kafka-s3-pipeline v1.0.0 --to prod --cell canary
+
+  # Promote with digest verification
   dk promote kafka-s3-pipeline v1.0.0 --to int --digest sha256:abc123
 
   # Dry run to see what would happen
-  dk promote kafka-s3-pipeline v1.0.0 --to prod --dry-run`,
+  dk promote kafka-s3-pipeline v1.0.0 --to prod --cell canary --dry-run`,
 	Args: cobra.ExactArgs(2),
 	RunE: runPromote,
 }
 
 var (
+	promoteCell      string
 	promoteToEnv     string
 	promoteDigest    string
 	promoteRegistry  string
@@ -46,6 +50,7 @@ func init() {
 	rootCmd.AddCommand(promoteCmd)
 
 	promoteCmd.Flags().StringVar(&promoteToEnv, "to", "", "Target environment (dev, int, prod)")
+	promoteCmd.Flags().StringVar(&promoteCell, "cell", "", "Target cell within the environment (default: c0)")
 	promoteCmd.Flags().StringVar(&promoteDigest, "digest", "", "Content digest for verification")
 	promoteCmd.Flags().StringVar(&promoteRegistry, "registry", "", "OCI registry URL (default: ghcr.io/infoblox-cto)")
 	promoteCmd.Flags().BoolVar(&promoteDryRun, "dry-run", false, "Simulate the promotion without creating a PR")
@@ -63,6 +68,8 @@ func runPromote(cmd *cobra.Command, args []string) error {
 	if !targetEnv.Valid() {
 		return fmt.Errorf("invalid environment: %s (must be dev, int, or prod)", promoteToEnv)
 	}
+
+	cell := promotion.ResolveCell(promoteCell)
 
 	// Get GitHub token: env var first, then device-flow via githubauth
 	token := os.Getenv("GITHUB_TOKEN")
@@ -98,11 +105,12 @@ func runPromote(cmd *cobra.Command, args []string) error {
 		Digest:    promoteDigest,
 		Registry:  promoteRegistry,
 		TargetEnv: targetEnv,
+		Cell:      promoteCell,
 		DryRun:    promoteDryRun,
 		AutoMerge: promoteAutoMerge,
 	}
 
-	fmt.Printf("Promoting %s to %s...\n", packageName, targetEnv)
+	fmt.Printf("Promoting %s to %s/%s...\n", packageName, targetEnv, cell)
 	fmt.Printf("  Version: %s\n", version)
 	if promoteDigest != "" {
 		fmt.Printf("  Digest:  %s\n", promoteDigest)
@@ -110,8 +118,9 @@ func runPromote(cmd *cobra.Command, args []string) error {
 
 	if promoteDryRun {
 		fmt.Println("\n[DRY RUN] Would create promotion PR with:")
-		fmt.Printf("  Branch: promote/%s/%s/%s/...\n", packageName, targetEnv, version)
-		fmt.Printf("  Title:  Promote %s to %s: %s\n", packageName, targetEnv, version)
+		fmt.Printf("  Branch: promote/%s/%s/%s/%s/...\n", packageName, targetEnv, cell, version)
+		fmt.Printf("  Title:  Promote %s to %s/%s: %s\n", packageName, targetEnv, cell, version)
+		fmt.Printf("  File:   envs/%s/cells/%s/apps/%s/values.yaml\n", targetEnv, cell, packageName)
 		fmt.Println("\nNo changes made.")
 		return nil
 	}
@@ -119,7 +128,12 @@ func runPromote(cmd *cobra.Command, args []string) error {
 	// Create GitHub client
 	ghClient := promotion.NewGitHubClient(token, owner, repo)
 
-	// Create promoter (Kustomize updater not needed for API-only promotion)
+	// Support custom GitHub base URL (for Gitea/GHE testability)
+	if baseURL := os.Getenv("GITHUB_BASE_URL"); baseURL != "" {
+		ghClient.BaseURL = baseURL
+	}
+
+	// Create promoter
 	promoter := &promotion.Promoter{
 		GitHubClient: ghClient,
 		BaseBranch:   "main",

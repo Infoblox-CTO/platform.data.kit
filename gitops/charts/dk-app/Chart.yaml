@@ -1,0 +1,8 @@
+apiVersion: v2
+name: dk-app
+version: 0.1.0
+appVersion: "0.0.0"
+description: Shared Helm chart for DataKit package deployments
+type: application
+annotations:
+  io.infoblox.dk/kind: shared-chart

@@ -1,0 +1,24 @@
+# appVersion is set per-app in cells/{cell}/apps/{pkg}/values.yaml.
+# ArgoCD passes this value when rendering the shared chart.
+appVersion: "0.0.0"
+
+# Cell name — resolved from the directory path by ArgoCD.
+cell: ""
+
+# Resource defaults — override per deployment in the cell values.
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# Replicas (streaming mode only).
+replicas: 1
+
+# Schedule (batch mode only) — cron expression.
+schedule: ""
+
+# OCI registry (default: ghcr.io/infoblox-cto/dk).
+registry: ""

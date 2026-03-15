@@ -129,7 +129,7 @@ dk run --cell us-east --context arn:aws:eks:us-east-1:...:cluster/dk-prod
 
 ## Step 5: Build and Publish
 
-Validate the package and produce a Helm chart:
+Validate the package and create an OCI artifact:
 
 ```bash
 dk build
@@ -138,33 +138,24 @@ dk build
 ```
 Building package: .
 
-Step 1/4: Validating manifests...
+Step 1/3: Validating manifests...
 ✓ Validation passed
 
-Step 2/4: Gathering build info...
+Step 2/3: Gathering build info...
   Git commit: 29aef3c
   Git branch: main
 
-Step 3/4: Creating OCI artifact bundle...
-
-Step 4/4: Generating Helm chart...
-✓ Helm chart: dist/pg-to-s3-1.2.4-g29aef3c.tgz (2.1 KB)
+Step 3/3: Creating OCI artifact bundle...
 ✓ Build complete!
 
 Artifact Info:
   Name:      pg-to-s3
   Version:   1.2.4
-  Chart:     dist/pg-to-s3-1.2.4-g29aef3c.tgz
+  Layers:    2
+  OCI Size:  2.1 KB
 ```
 
-The chart contains:
-
-- `dk.yaml` (Transform manifest)
-- `connector/*.yaml` (Connector definitions)
-- `dataset/*.yaml` (DataSet contracts)
-- `templates/packagedeployment.yaml` (Helm template)
-
-The `store/` directory is **not** included — stores are cell-specific.
+The OCI artifact contains your Transform manifest, Connectors, and DataSets. The `store/` directory is **not** included — stores are cell-specific.
 
 Publish to registry:
 
@@ -173,64 +164,55 @@ dk publish --registry ghcr.io/myorg
 ```
 
 ```
-Step 1/4: Building artifact...
+Step 1/3: Building artifact...
 ✓ Artifact built
 
-Step 2/4: Preparing Helm chart...
-✓ Using existing chart: dist/pg-to-s3-1.2.4-g29aef3c.tgz
-
-Step 3/4: Checking tag availability...
+Step 2/3: Checking tag availability...
 ✓ Tag is available
 
-Step 4/4: Pushing to registry...
+Step 3/3: Pushing to registry...
 ✓ OCI artifact pushed
-✓ Helm chart pushed to oci://ghcr.io/myorg/data-team
 ```
 
 ## Step 6: Deploy to a Cell via GitOps
 
-Add a deployment to your CM repo:
-
-```
-cm-repo/apps/pg-to-s3-canary/
-├── version.txt
-└── values.yaml
-```
-
-```title="version.txt"
-1.2.4-g29aef3c
-```
-
-```yaml title="values.yaml"
-cell: canary
-```
-
-ArgoCD pulls the Helm chart from the OCI registry, renders it with `cell: canary`, and creates a `PackageDeployment` in namespace `dk-canary`.
-
-### Deploy to another cell
-
-To deploy the same package to `stable`:
-
-```
-cm-repo/apps/pg-to-s3-stable/
-├── version.txt    # 1.2.3-gabcdef (maybe an older, proven version)
-└── values.yaml    # cell: stable
-```
-
-### Promote between cells
-
-Update the version in the target cell's directory:
+Promote the package to a cell using the CLI:
 
 ```bash
-echo "1.2.4-g29aef3c" > cm-repo/apps/pg-to-s3-stable/version.txt
-git commit -am "promote pg-to-s3 to stable" && git push
+dk promote pg-to-s3 1.2.4 --to dev --cell canary
 ```
 
-Or use the CLI:
+The `--to` flag specifies the environment (always required). The `--cell` flag is optional and defaults to `c0`.
+
+This creates a PR that writes a `values.yaml` to the environment + cell layout:
+
+```
+envs/dev/cells/canary/apps/pg-to-s3/values.yaml
+```
+
+```yaml title="envs/dev/cells/canary/apps/pg-to-s3/values.yaml"
+appVersion: "1.2.4"
+```
+
+ArgoCD uses a git generator to discover `envs/*/cells/*/apps/*` and renders the shared `dk-app` chart with the per-app `values.yaml`, creating a `PackageDeployment` in namespace `dk-canary`.
+
+### Deploy to another environment
 
 ```bash
-dk promote pg-to-s3 1.2.4 --to stable
+dk promote pg-to-s3 1.2.3 --to prod --cell stable
 ```
+
+This creates `envs/prod/cells/stable/apps/pg-to-s3/values.yaml` with the specified version.
+
+### Promote using the default cell
+
+When `--cell` is omitted, it defaults to `c0`:
+
+```bash
+dk promote pg-to-s3 1.2.4 --to prod
+```
+
+This creates `envs/prod/cells/c0/apps/pg-to-s3/values.yaml`.
 
 ## Summary
 
@@ -239,10 +221,10 @@ dk promote pg-to-s3 1.2.4 --to stable
 | Create | `dk init pg-to-s3 --runtime cloudquery` | Scaffold package with local stores |
 | Dev | `dk run` | Run with `store/` directory |
 | Test | `dk run --cell canary` | Run with cell stores |
-| Build | `dk build` | Produce Helm chart (stores excluded) |
-| Publish | `dk publish --registry ghcr.io/myorg` | Push chart to OCI registry |
-| Deploy | Add `version.txt` + `values.yaml` to CM repo | ArgoCD deploys to cell |
-| Promote | Update `version.txt` in target cell dir | ArgoCD updates deployment |
+| Build | `dk build` | Create OCI artifact (stores excluded) |
+| Publish | `dk publish --registry ghcr.io/myorg` | Push OCI artifact to registry |
+| Deploy | `dk promote pg-to-s3 1.2.4 --to dev --cell canary` | PR updates cell values.yaml, ArgoCD deploys |
+| Promote | `dk promote pg-to-s3 1.2.4 --to prod` | Same — update version in target env (default cell c0) |
 
 !!! tip "Key Insight"
     The package is always the same — it's **immutable**. What changes between environments is which Cell provides the Stores. This separation means your pipeline code never contains connection strings, credentials, or environment-specific configuration.

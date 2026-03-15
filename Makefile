@@ -53,6 +53,16 @@ test-e2e: ## Run E2E tests
 	@cd tests/e2e && go test -v ./...
 	@echo "✓ E2E tests passed"
 
+test-integration: ## Run integration tests (requires Docker)
+	@echo "Running integration tests..."
+	@cd sdk && go test -v -tags integration ./promotion/...
+	@echo "✓ Integration tests passed"
+
+test-e2e-promote: ## Run promotion E2E tests (requires Docker)
+	@echo "Running promotion E2E tests..."
+	@cd tests/e2e && go test -v -run TestPromote ./...
+	@echo "✓ Promotion E2E tests passed"
+
 test-short: ## Run short tests (skip E2E)
 	@echo "Running short tests (skipping E2E)..."
 	@cd contracts && go test -short ./...
@@ -147,6 +157,12 @@ stop-local: ## Stop local dev stack
 	@echo "✓ Local stack stopped"
 
 ##@ Helm
+
+publish-chart: ## Publish shared dk-app chart to OCI registry
+	@echo "Publishing dk-app chart..."
+	@helm package gitops/charts/dk-app -d dist/
+	@helm push dist/dk-app-*.tgz oci://ghcr.io/infoblox-cto/dk/charts
+	@echo "✓ dk-app chart published"
 
 helm-deps: ## Build Helm chart dependencies
 	@echo "Building Helm chart dependencies..."

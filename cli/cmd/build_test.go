@@ -69,7 +69,6 @@ func TestBuildCmd_Args(t *testing.T) {
 }
 
 func TestBuildCmd_DirectoryNotFound(t *testing.T) {
-	// Test that building a non-existent directory returns an error
 	tmpDir := t.TempDir()
 	nonExistent := filepath.Join(tmpDir, "does-not-exist")
 
@@ -82,7 +81,6 @@ func TestBuildCmd_DirectoryNotFound(t *testing.T) {
 }
 
 func TestBuildCmd_MissingDkYaml(t *testing.T) {
-	// Test that building a directory without dk.yaml returns an error
 	tmpDir := t.TempDir()
 
 	cmd := &cobra.Command{}
@@ -94,7 +92,6 @@ func TestBuildCmd_MissingDkYaml(t *testing.T) {
 }
 
 func TestBuildCmd_DryRun(t *testing.T) {
-	// Test dry-run mode
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -114,7 +111,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldDryRun := buildDryRun
 	defer func() { buildDryRun = oldDryRun }()
 
@@ -123,14 +119,12 @@ spec:
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
-	// Dry run should succeed for valid package
 	if err != nil {
 		t.Errorf("runBuild() dry-run error = %v, want nil", err)
 	}
 }
 
 func TestBuildCmd_InvalidPackage(t *testing.T) {
-	// Test building an invalid package (missing required fields)
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -147,14 +141,12 @@ spec:
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
-	// Should return error for invalid package
 	if err == nil {
 		t.Error("expected error for invalid package")
 	}
 }
 
 func TestBuildCmd_CustomTag(t *testing.T) {
-	// Test building with a custom tag
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -174,7 +166,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldTag := buildTag
 	oldDryRun := buildDryRun
 	defer func() {
@@ -194,7 +185,6 @@ spec:
 }
 
 func TestBuildCmd_CloudQueryPackage(t *testing.T) {
-	// Test that dk build works for a CloudQuery package in dry-run mode
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
@@ -214,7 +204,6 @@ spec:
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
-	// Save and restore global flags
 	oldDryRun := buildDryRun
 	defer func() { buildDryRun = oldDryRun }()
 
@@ -223,38 +212,54 @@ spec:
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
-	// Dry run should succeed for a valid CloudQuery package
 	if err != nil {
 		t.Errorf("runBuild() dry-run for CloudQuery package error = %v, want nil", err)
 	}
 }
 
-func TestBuildCmd_CloudQueryPackageValid(t *testing.T) {
-	// Test that dk build accepts a valid CloudQuery Transform package
+func TestBuildCmd_NoHelmChart(t *testing.T) {
+	// Verify build no longer produces a Helm chart
 	tmpDir := t.TempDir()
 
 	dkContent := `apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Transform
 metadata:
-  name: cq-source
+  name: test-pkg
+  version: "1.0.0"
 spec:
-  runtime: cloudquery
-  image: cq-source:latest
+  runtime: generic-go
+  image: myimage:v1
   mode: batch
   inputs:
     - dataset: source-data
   outputs:
-    - dataset: cloud-resources
+    - dataset: output-data
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "dk.yaml"), []byte(dkContent), 0644); err != nil {
 		t.Fatalf("failed to write dk.yaml: %v", err)
 	}
 
+	oldDryRun := buildDryRun
+	defer func() { buildDryRun = oldDryRun }()
+
+	buildDryRun = false
+
 	cmd := &cobra.Command{}
 	err := runBuild(cmd, []string{tmpDir})
 
-	// Should succeed — CloudQuery Transform is valid
 	if err != nil {
-		t.Errorf("runBuild() error = %v, want nil for valid CloudQuery Transform package", err)
+		t.Errorf("runBuild() error = %v, want nil", err)
 	}
+
+	// Verify no .tgz files in dist/
+	distDir := filepath.Join(tmpDir, "dist")
+	entries, err := os.ReadDir(distDir)
+	if err == nil {
+		for _, e := range entries {
+			if filepath.Ext(e.Name()) == ".tgz" {
+				t.Errorf("build should not produce .tgz files, found: %s", e.Name())
+			}
+		}
+	}
+	// dist/ not existing is also acceptable (no chart generated)
 }

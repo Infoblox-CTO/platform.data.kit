@@ -6,16 +6,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Promoter implements the Service interface.
 type Promoter struct {
 	// GitHubClient is the GitHub API client.
 	GitHubClient *GitHubClient
-	// KustomizeUpdater is the Kustomize overlay updater.
-	KustomizeUpdater *FileKustomizeUpdater
 	// BaseBranch is the base branch for PRs (default: main).
 	BaseBranch string
 	// RecordGenerator is the promotion record generator.
@@ -23,29 +19,30 @@ type Promoter struct {
 }
 
 // NewPromoter creates a new Promoter.
-func NewPromoter(ghClient *GitHubClient, kustomizeUpdater *FileKustomizeUpdater) *Promoter {
+func NewPromoter(ghClient *GitHubClient) *Promoter {
 	return &Promoter{
-		GitHubClient:     ghClient,
-		KustomizeUpdater: kustomizeUpdater,
-		BaseBranch:       "main",
-		RecordGenerator:  NewRecordGenerator(),
+		GitHubClient:    ghClient,
+		BaseBranch:      "main",
+		RecordGenerator: NewRecordGenerator(),
 	}
 }
 
-// Promote promotes a package to the target environment.
+// Promote promotes a package to the target environment and cell.
+// TargetEnv is always required. Cell defaults to "c0" if empty.
 func (p *Promoter) Promote(ctx context.Context, req *PromotionRequest) (*PromotionResult, error) {
-	// Validate request
 	if err := p.validateRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
 	}
 
-	// Get current version in target environment
-	currentVersion, err := p.KustomizeUpdater.GetCurrentVersion(ctx, req.TargetEnv, req.Package)
-	if err != nil {
-		return nil, fmt.Errorf("getting current version: %w", err)
+	cell := ResolveCell(req.Cell)
+
+	// Get current version (for record keeping).
+	currentVersion := ""
+	if !req.DryRun && p.GitHubClient != nil {
+		currentVersion, _ = p.GetCurrentVersion(ctx, req.TargetEnv, cell, req.Package)
 	}
 
-	// Generate promotion record
+	// Generate promotion record.
 	record := p.RecordGenerator.Generate(req, currentVersion)
 
 	if req.DryRun {
@@ -56,29 +53,42 @@ func (p *Promoter) Promote(ctx context.Context, req *PromotionRequest) (*Promoti
 		}, nil
 	}
 
-	// Create branch name
-	branchName := p.branchName(req)
+	// Create branch name.
+	branchName := p.branchName(req, cell)
 
-	// Create branch on GitHub
+	// Create branch on GitHub.
 	if err := p.GitHubClient.CreateBranch(ctx, p.BaseBranch, branchName); err != nil {
 		return nil, fmt.Errorf("creating branch: %w", err)
 	}
 
-	// Generate and upload version file
-	versionContent, err := p.generateVersionFile(req)
+	// Update values.yaml.
+	valuesPath := ValuesFilePath(req.TargetEnv, cell, req.Package)
+
+	// Read existing values to preserve overrides.
+	existing, _ := p.getFileContent(ctx, p.BaseBranch, valuesPath)
+
+	var content []byte
+	var err error
+	if len(existing) > 0 {
+		content, err = MergeAppVersion(existing, req.Version)
+	} else {
+		var s string
+		s, err = GenerateValuesContent(req.Version)
+		content = []byte(s)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("generating version file: %w", err)
+		return nil, fmt.Errorf("generating values: %w", err)
 	}
 
-	versionPath := p.versionFilePath(req)
-	commitMsg := fmt.Sprintf("Promote %s to %s at version %s", req.Package, req.TargetEnv, req.Version)
+	encoded := base64.StdEncoding.EncodeToString(content)
+	commitMsg := fmt.Sprintf("Promote %s to %s/%s at version %s", req.Package, req.TargetEnv, cell, req.Version)
 
-	if err := p.GitHubClient.UpdateFile(ctx, branchName, versionPath, versionContent, commitMsg); err != nil {
-		return nil, fmt.Errorf("updating version file: %w", err)
+	if err := p.GitHubClient.UpdateFile(ctx, branchName, valuesPath, encoded, commitMsg); err != nil {
+		return nil, fmt.Errorf("updating values file: %w", err)
 	}
 
-	// Create pull request
-	prReq := p.createPRRequest(req, currentVersion)
+	// Create pull request.
+	prReq := p.createPRRequest(req, cell, currentVersion)
 	prReq.Head = branchName
 	prReq.Base = p.BaseBranch
 
@@ -87,15 +97,14 @@ func (p *Promoter) Promote(ctx context.Context, req *PromotionRequest) (*Promoti
 		return nil, fmt.Errorf("creating pull request: %w", err)
 	}
 
-	// Enable auto-merge if requested
+	// Enable auto-merge if requested.
 	if req.AutoMerge {
 		if err := p.GitHubClient.EnableAutoMerge(ctx, prInfo.Number); err != nil {
-			// Log but don't fail
 			fmt.Printf("Warning: failed to enable auto-merge: %v\n", err)
 		}
 	}
 
-	// Update record with PR info
+	// Update record with PR info.
 	record.PRNumber = prInfo.Number
 	record.PRURL = prInfo.URL
 
@@ -127,8 +136,23 @@ func (p *Promoter) GetStatus(ctx context.Context, prNumber int) (*PromotionStatu
 // ListPromotions lists promotions for a package.
 func (p *Promoter) ListPromotions(ctx context.Context, packageName string, limit int) ([]*PromotionRecord, error) {
 	// In MVP, we don't persist promotion records
-	// This would require a database or file storage
 	return nil, nil
+}
+
+// GetCurrentVersion reads the current appVersion for a package in an env/cell
+// via the GitHub Contents API.
+func (p *Promoter) GetCurrentVersion(ctx context.Context, env Environment, cell, pkg string) (string, error) {
+	path := ValuesFilePath(env, cell, pkg)
+	content, err := p.getFileContent(ctx, p.BaseBranch, path)
+	if err != nil {
+		return "", nil // Not found → no version deployed
+	}
+	return ParseAppVersion(content), nil
+}
+
+// getFileContent reads a file from the repo via GitHub Contents API.
+func (p *Promoter) getFileContent(ctx context.Context, ref, path string) ([]byte, error) {
+	return p.GitHubClient.GetFileContent(ctx, ref, path)
 }
 
 // validateRequest validates a promotion request.
@@ -140,69 +164,28 @@ func (p *Promoter) validateRequest(req *PromotionRequest) error {
 		return fmt.Errorf("version is required")
 	}
 	if !req.TargetEnv.Valid() {
-		return fmt.Errorf("invalid target environment: %s", req.TargetEnv)
+		return fmt.Errorf("--to environment is required (dev, int, prod)")
 	}
 	return nil
 }
 
 // branchName generates the branch name for a promotion.
-func (p *Promoter) branchName(req *PromotionRequest) string {
+func (p *Promoter) branchName(req *PromotionRequest, cell string) string {
 	timestamp := time.Now().Format("20060102-150405")
-	return fmt.Sprintf("promote/%s/%s/%s/%s", req.Package, req.TargetEnv, req.Version, timestamp)
-}
-
-// versionFilePath returns the path to the version file in the repository.
-func (p *Promoter) versionFilePath(req *PromotionRequest) string {
-	return fmt.Sprintf("gitops/environments/%s/packages/%s/version.yaml", req.TargetEnv, req.Package)
-}
-
-// generateVersionFile generates the content of the version file.
-func (p *Promoter) generateVersionFile(req *PromotionRequest) (string, error) {
-	registry := req.Registry
-	if registry == "" {
-		registry = "ghcr.io/infoblox-cto"
-	}
-
-	vf := &VersionFile{
-		APIVersion: "datakit.infoblox.dev/v1alpha1",
-		Kind:       "PackageVersion",
-		Metadata: VersionMeta{
-			Name: req.Package,
-			Labels: map[string]string{
-				"app.kubernetes.io/managed-by":     "dk",
-				"datakit.infoblox.dev/package":     req.Package,
-				"datakit.infoblox.dev/environment": req.TargetEnv.String(),
-			},
-		},
-		Spec: VersionSpec{
-			Package: PackageRef{
-				Name:     req.Package,
-				Version:  req.Version,
-				Registry: registry,
-				Digest:   req.Digest,
-			},
-		},
-	}
-
-	data, err := yaml.Marshal(vf)
-	if err != nil {
-		return "", fmt.Errorf("marshaling version file: %w", err)
-	}
-
-	// Base64 encode for GitHub API
-	return base64.StdEncoding.EncodeToString(data), nil
+	return fmt.Sprintf("promote/%s/%s/%s/%s/%s", req.Package, req.TargetEnv, cell, req.Version, timestamp)
 }
 
 // createPRRequest creates the pull request request.
-func (p *Promoter) createPRRequest(req *PromotionRequest, currentVersion string) *CreatePRRequest {
-	title := fmt.Sprintf("Promote %s to %s: %s", req.Package, req.TargetEnv, req.Version)
+func (p *Promoter) createPRRequest(req *PromotionRequest, cell, currentVersion string) *CreatePRRequest {
+	title := fmt.Sprintf("Promote %s to %s/%s: %s", req.Package, req.TargetEnv, cell, req.Version)
 
 	body := fmt.Sprintf(`## Package Promotion
 
 **Package:** %s
 **Version:** %s
 **Environment:** %s
-`, req.Package, req.Version, req.TargetEnv)
+**Cell:** %s
+`, req.Package, req.Version, req.TargetEnv, cell)
 
 	if currentVersion != "" {
 		body += fmt.Sprintf("**Previous Version:** %s\n", currentVersion)
@@ -226,6 +209,7 @@ func (p *Promoter) createPRRequest(req *PromotionRequest, currentVersion string)
 	labels := []string{
 		"promotion",
 		fmt.Sprintf("env:%s", req.TargetEnv),
+		fmt.Sprintf("cell:%s", cell),
 		fmt.Sprintf("package:%s", req.Package),
 	}
 

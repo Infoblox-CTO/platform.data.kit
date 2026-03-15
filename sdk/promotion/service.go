@@ -44,8 +44,10 @@ type PromotionRequest struct {
 	Digest string
 	// Registry is the OCI registry URL.
 	Registry string
-	// TargetEnv is the environment to promote to.
+	// TargetEnv is the target environment (e.g., dev, int, prod). Required.
 	TargetEnv Environment
+	// Cell is the target cell within the environment (e.g., "canary", "c0"). Defaults to "c0".
+	Cell string
 	// DryRun if true, only simulate the promotion.
 	DryRun bool
 	// AutoMerge if true, enable auto-merge on the PR.
@@ -138,26 +140,6 @@ type CheckStatus struct {
 	Status string
 	// Conclusion is the check conclusion.
 	Conclusion string
-}
-
-// KustomizeUpdater updates Kustomize overlays for promotion.
-type KustomizeUpdater interface {
-	// UpdateVersion updates the version in the environment overlay.
-	UpdateVersion(ctx context.Context, env Environment, pkg, version, digest string) error
-	// GetCurrentVersion returns the current version in the environment.
-	GetCurrentVersion(ctx context.Context, env Environment, pkg string) (string, error)
-}
-
-// GitClient provides Git operations for promotion.
-type GitClient interface {
-	// Clone clones the repository to a local directory.
-	Clone(ctx context.Context, url, dir string) error
-	// CreateBranch creates a new branch.
-	CreateBranch(ctx context.Context, name string) error
-	// Commit commits changes with the given message.
-	Commit(ctx context.Context, message string) error
-	// Push pushes the branch to the remote.
-	Push(ctx context.Context, branch string) error
 }
 
 // PRClient provides pull request operations.

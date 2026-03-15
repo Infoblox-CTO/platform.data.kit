@@ -3,27 +3,23 @@ title: Environments
 description: Understanding deployment environments and the promotion workflow
 ---
 
-# Environments
+# Environments & Cells
 
-DataKit uses a structured environment model for promoting data packages from development to production using GitOps principles.
+DataKit uses a cell-based deployment model. Environments (dev, int, prod) are logical groupings of cells. Promotions target **cells** — named infrastructure instances where packages run.
 
-## Environment Model
+## Cell-Based Model
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Environment Pipeline                         │
+│                     Promotion Pipeline                           │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│   ┌─────────┐      ┌─────────┐      ┌─────────┐                │
-│   │   dev   │─────▶│   int   │─────▶│  prod   │                │
-│   │         │      │         │      │         │                │
-│   └─────────┘      └─────────┘      └─────────┘                │
-│        │                │                │                      │
-│        ▼                ▼                ▼                      │
-│   ┌─────────┐      ┌─────────┐      ┌─────────┐                │
-│   │ develop │      │ staging │      │ product │                │
-│   │ cluster │      │ cluster │      │ cluster │                │
-│   └─────────┘      └─────────┘      └─────────┘                │
+│   ┌───────────┐    ┌───────────┐    ┌───────────┐              │
+│   │    dev    │───▶│    int    │───▶│   prod    │              │
+│   │  (c0)    │    │  (c0)    │    │  (c0)    │              │
+│   └───────────┘    └───────────┘    └───────────┘              │
+│                                                                 │
+│   Layout: envs/{env}/cells/{cell}/apps/{pkg}/values.yaml       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -45,7 +41,7 @@ DataKit uses a structured environment model for promoting data packages from dev
 
 ```bash
 dk promote my-package v1.0.0 --to dev
-# Creates PR, auto-merges after CI passes
+# Creates PR updating envs/dev/cells/c0/apps/my-package/values.yaml
 ```
 
 ### int (Integration)
@@ -84,31 +80,24 @@ dk build --version v1.0.0
 dk publish
 ```
 
-### 2. Promote to Environment
+### 2. Promote to a Cell
 
-Request promotion to an environment:
+Request promotion to a cell:
 
 ```bash
 dk promote my-package v1.0.0 --to dev
 ```
 
-This creates a GitOps PR in the deployment repository:
+This creates a GitOps PR that updates the cell's values.yaml:
 
 ```
-PR: Promote my-package v1.0.0 to dev
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PR: Promote my-package to dev/c0: v1.0.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Changes:
-  environments/dev/my-package.yaml
+  envs/dev/cells/c0/apps/my-package/values.yaml
 
-+apiVersion: datakit.infoblox.dev/v1alpha1
-+kind: DeployedPackage
-+metadata:
-+  name: my-package
-+  namespace: dev
-+spec:
-+  version: v1.0.0
-+  artifact: ghcr.io/org/my-package:v1.0.0
++appVersion: v1.0.0
 ```
 
 ### 3. Approval and Merge
@@ -130,17 +119,17 @@ After merge, ArgoCD syncs the changes:
 │                                                              │
 │  Git Repository ────▶ ArgoCD ────▶ Kubernetes Cluster       │
 │                                                              │
-│  1. Detect change in environments/dev/my-package.yaml       │
-│  2. Pull OCI artifact ghcr.io/org/my-package:v1.0.0        │
-│  3. Apply Kubernetes manifests                              │
-│  4. Verify deployment health                                │
+│  1. Git generator discovers envs/dev/cells/c0/apps/my-package │
+│  2. Renders dk-app chart with appVersion from values.yaml     │
+│  3. Applies PackageDeployment to dk-c0 namespace              │
+│  4. Controller deploys the package                          │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Environment Stores
+## Cell Stores
 
-Packages use Store manifests to reference infrastructure. Store configurations differ per environment:
+Packages reference Stores by name. Each cell provides its own Store instances with cell-specific connection details:
 
 ### Package Manifest
 
@@ -149,33 +138,35 @@ spec:
   store: events-store  # References a Store by name
 ```
 
-### Environment-Specific Stores
+### Cell-Specific Stores
 
-```yaml title="environments/dev/stores/events-store.yaml"
+```yaml title="envs/dev/cells/c0/stores/events-store.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: events-store
+  namespace: dk-c0
 spec:
-  type: kafka-topic
+  connector: kafka
   connection:
     brokers: dev-kafka:9092
     topic: user-events-dev
 ```
 
-```yaml title="environments/prod/stores/events-store.yaml"
+```yaml title="envs/prod/cells/c0/stores/events-store.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
   name: events-store
+  namespace: dk-c0
 spec:
-  type: kafka-topic
+  connector: kafka
   connection:
     brokers: prod-kafka:9092
     topic: user-events
 ```
 
-Same package, different infrastructure per environment.
+Same package, different infrastructure per cell.
 
 ## Checking Status
 
@@ -223,74 +214,36 @@ ml-training          v3.0.0    Synced    Healthy
 If a deployment causes issues, rollback to a previous version:
 
 ```bash
-dk promote my-package v0.9.0 --to dev --rollback
+dk rollback my-package --to dev --to-version v0.9.0
 ```
 
-The `--rollback` flag:
+## GitOps Layout
 
-1. Skips some validation checks
-2. Uses expedited approval (if configured)
-3. Adds rollback annotation to deployment
+Cells and their apps are laid out as directories in the GitOps repository:
 
-## Environment Configuration
-
-### Environment Definition
-
-Environments are defined in the deployment repository:
-
-```yaml title="config/environments.yaml"
-environments:
-  dev:
-    cluster: dev-cluster
-    namespace: dev
-    approval:
-      required: false
-      auto_merge: true
-    stores: environments/dev/stores/
-    
-  int:
-    cluster: staging-cluster
-    namespace: int
-    approval:
-      required: true
-      approvers: ["@team-leads"]
-    stores: environments/int/stores/
-    
-  prod:
-    cluster: prod-cluster
-    namespace: production
-    approval:
-      required: true
-      approvers: ["@team-leads", "@security"]
-      count: 2
-    stores: environments/prod/stores/
+```
+envs/
+├── dev/
+│   └── cells/
+│       └── c0/
+│           ├── stores/          # Cell-specific Store CRDs
+│           │   └── warehouse.yaml
+│           └── apps/            # Per-package values.yaml (managed by dk promote)
+│               └── my-package/
+│                   └── values.yaml   # appVersion: v1.0.0
+├── int/
+│   └── cells/
+│       └── c0/
+│           ├── stores/
+│           └── apps/
+└── prod/
+    └── cells/
+        └── c0/
+            ├── stores/
+            └── apps/
 ```
 
-### Custom Environments
-
-Add custom environments for specific needs:
-
-```yaml
-environments:
-  # Performance testing environment
-  perf:
-    cluster: perf-cluster
-    namespace: perf-test
-    approval:
-      required: true
-      approvers: ["@perf-team"]
-    stores: environments/perf/stores/
-    
-  # Disaster recovery environment
-  dr:
-    cluster: dr-cluster
-    namespace: production
-    approval:
-      required: true
-      approvers: ["@platform-team", "@security"]
-      count: 2
-    stores: environments/dr/stores/
-```
+ArgoCD uses a git generator on `envs/*/cells/*/apps/*` to discover applications automatically.
 
 ## Best Practices
 

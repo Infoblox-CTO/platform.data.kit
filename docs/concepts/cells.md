@@ -127,25 +127,36 @@ dk dev up --cell dev-dgarcia
 
 ### Creating cells in production (GitOps)
 
+Cells are laid out under `gitops/envs/{env}/cells/` in the GitOps repository. Each cell has `stores/` (infrastructure) and `apps/` (deployed packages):
+
 ```
-platform-repo/
-├── cells/
-│   ├── canary/
-│   │   ├── cell.yaml              # kind: Cell (cluster-scoped)
-│   │   └── stores/
-│   │       ├── warehouse.yaml     # kind: Store (namespace: dk-canary)
-│   │       └── lake-raw.yaml
-│   ├── stable/
-│   │   ├── cell.yaml
-│   │   └── stores/
-│   └── us-east/
-│       ├── cell.yaml
-│       └── stores/
+gitops/envs/
+├── dev/
+│   └── cells/
+│       └── c0/
+│           ├── stores/
+│           │   ├── warehouse.yaml         # kind: Store (namespace: dk-c0)
+│           │   └── lake-raw.yaml
+│           └── apps/                      # Per-package values.yaml (managed by dk promote)
+│               └── my-pipeline/
+│                   └── values.yaml        # appVersion: v1.0.0
+├── int/
+│   └── cells/
+│       └── c0/
+│           ├── stores/
+│           └── apps/
+└── prod/
+    └── cells/
+        └── c0/
+            ├── stores/
+            └── apps/
 ```
 
-Apply to cluster:
+ArgoCD discovers apps via a git generator on `envs/*/cells/*/apps/*` and renders the shared `dk-app` chart with each app's `values.yaml`.
+
+Promote a package to an environment (default cell `c0`):
 ```bash
-kubectl apply -f cells/canary/
+dk promote my-pipeline v1.0.0 --to dev
 ```
 
 ### Cells across clusters
@@ -177,29 +188,30 @@ dk cell list --context arn:aws:eks:us-east-1:...:cluster/dk-prod
 
 ### What ships in the package
 
-When you `dk build` and `dk publish`, the package becomes an immutable Helm chart in an OCI registry. The chart contains:
+When you `dk build` and `dk publish`, the package becomes an immutable OCI artifact in the registry. The artifact contains:
 
 | Included | Excluded |
 |----------|----------|
 | `dk.yaml` (Transform) | `store/` directory |
 | `connector/*.yaml` | `src/` (baked into image) |
 | `dataset/*.yaml` | `tests/` |
-| `templates/packagedeployment.yaml` | |
 
 The `store/` directory is intentionally excluded — stores are cell-specific and resolved at deploy time.
 
+A shared `dk-app` Helm chart (in `gitops/charts/dk-app/`) is used for all deployments. There is no per-package chart.
+
 ### Deploying to a cell
 
-To deploy `pg-to-s3:1.2.4` to cell `canary`, add to your CM repo:
+To deploy `pg-to-s3:1.2.4` to the `canary` cell in dev:
 
-```
-cm-repo/apps/pg-to-s3-canary/
-├── version.txt    # 1.2.4-g29aef
-└── values.yaml    # cell: canary
+```bash
+dk promote pg-to-s3 1.2.4 --to dev --cell canary
 ```
 
-```yaml title="values.yaml"
-cell: canary
+This creates a PR that writes `envs/dev/cells/canary/apps/pg-to-s3/values.yaml`:
+
+```yaml title="envs/dev/cells/canary/apps/pg-to-s3/values.yaml"
+appVersion: "1.2.4"
 # Optional overrides:
 # resources:
 #   requests:
@@ -208,7 +220,7 @@ cell: canary
 # schedule: "0 */6 * * *"
 ```
 
-ArgoCD pulls the chart from the OCI registry, renders it with `cell: canary`, and applies the `PackageDeployment` CR to `dk-canary` namespace.
+ArgoCD discovers the app via git generator, renders the shared `dk-app` chart with the cell and appVersion, and applies the `PackageDeployment` CR to `dk-canary` namespace.
 
 ### Cross-cell transforms
 

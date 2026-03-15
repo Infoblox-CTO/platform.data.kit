@@ -3,6 +3,7 @@ package promotion
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -340,4 +341,46 @@ func (c *GitHubClient) getFileSHA(ctx context.Context, branch, path string) (str
 	}
 
 	return content.SHA, nil
+}
+
+// GetFileContent reads a file's content from the repo via the GitHub Contents API.
+// Returns the decoded content or an error if the file does not exist.
+func (c *GitHubClient) GetFileContent(ctx context.Context, ref, path string) ([]byte, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/contents/%s?ref=%s", c.BaseURL, c.Owner, c.Repo, path, ref)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+
+	c.setHeaders(req)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("making request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("file not found: %s (status %d)", path, resp.StatusCode)
+	}
+
+	var file struct {
+		Content  string `json:"content"`
+		Encoding string `json:"encoding"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&file); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+
+	if file.Encoding != "base64" {
+		return nil, fmt.Errorf("unsupported encoding: %s", file.Encoding)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(strings.ReplaceAll(file.Content, "\n", ""))
+	if err != nil {
+		return nil, fmt.Errorf("decoding base64 content: %w", err)
+	}
+
+	return decoded, nil
 }

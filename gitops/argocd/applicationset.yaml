@@ -1,53 +1,52 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: dk-environments
+  name: dk-apps
   namespace: argocd
 spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
   generators:
-    - list:
-        elements:
-          - environment: dev
-            cluster: in-cluster
-            namespace: dk-dev
-            autoSync: true
-            selfHeal: true
-          - environment: int
-            cluster: in-cluster
-            namespace: dk-int
-            autoSync: true
-            selfHeal: true
-          - environment: prod
-            cluster: in-cluster
-            namespace: dk-prod
-            autoSync: false
-            selfHeal: false
+    - git:
+        repoURL: https://github.com/Infoblox-CTO/platform.data.kit.git
+        revision: main
+        directories:
+          - path: envs/*/cells/*/apps/*
   template:
     metadata:
-      name: dk-{{environment}}
+      # Name: {env}-{cell}-{app}
+      name: "{{ index .path.segments 1 }}-{{ index .path.segments 3 }}-{{ .path.basename }}"
       namespace: argocd
       labels:
-        app.kubernetes.io/name: dp
-        app.kubernetes.io/component: platform
-        app.kubernetes.io/part-of: dp
-        datakit.infoblox.dev/environment: "{{environment}}"
+        app.kubernetes.io/name: "{{ .path.basename }}"
+        app.kubernetes.io/component: package
+        app.kubernetes.io/part-of: dk
+        datakit.infoblox.dev/environment: "{{ index .path.segments 1 }}"
+        datakit.infoblox.dev/cell: "{{ index .path.segments 3 }}"
       annotations:
         notifications.argoproj.io/subscribe.on-sync-succeeded.slack: dk-alerts
         notifications.argoproj.io/subscribe.on-sync-failed.slack: dk-alerts
         notifications.argoproj.io/subscribe.on-health-degraded.slack: dk-alerts
     spec:
-      project: default
+      project: dk
       source:
         repoURL: https://github.com/Infoblox-CTO/platform.data.kit.git
         targetRevision: main
-        path: gitops/environments/{{environment}}
+        path: gitops/charts/dk-app
+        helm:
+          releaseName: "{{ .path.basename }}"
+          valueFiles:
+            - "../../../{{ .path.path }}/values.yaml"
+          parameters:
+            - name: cell
+              value: "{{ index .path.segments 3 }}"
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{namespace}}"
+        namespace: "dk-{{ index .path.segments 1 }}-{{ index .path.segments 3 }}"
       syncPolicy:
         automated:
-          prune: "{{autoSync}}"
-          selfHeal: "{{selfHeal}}"
+          prune: true
+          selfHeal: true
           allowEmpty: false
         syncOptions:
           - CreateNamespace=true
@@ -74,7 +73,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: dp
+  name: dk
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io

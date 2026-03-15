@@ -18,45 +18,49 @@ var rollbackCmd = &cobra.Command{
 	Long: `Rollback a data package to a previous version in an environment.
 
 Rollback is implemented as a promotion of the previous version,
-creating a PR to update the environment overlay.
+creating a PR to update the cell's values.yaml.
 
 Example:
-  # Rollback to previous version in prod
-  dk rollback kafka-s3-pipeline --environment prod
+  # Rollback to a specific version in dev (default cell c0)
+  dk rollback kafka-s3-pipeline --to dev --to-version v1.0.0
 
-  # Rollback to a specific version
-  dk rollback kafka-s3-pipeline --environment prod --to-version v1.0.0
+  # Rollback a specific cell within prod
+  dk rollback kafka-s3-pipeline --to prod --cell canary --to-version v1.0.0
 
   # Dry run to see what would happen
-  dk rollback kafka-s3-pipeline --environment prod --dry-run`,
+  dk rollback kafka-s3-pipeline --to prod --to-version v1.0.0 --dry-run`,
 	Args: cobra.ExactArgs(1),
 	RunE: runRollback,
 }
 
 var (
-	rollbackEnvironment string
-	rollbackToVersion   string
-	rollbackDryRun      bool
+	rollbackCell      string
+	rollbackToEnv     string
+	rollbackToVersion string
+	rollbackDryRun    bool
 )
 
 func init() {
 	rootCmd.AddCommand(rollbackCmd)
 
-	rollbackCmd.Flags().StringVarP(&rollbackEnvironment, "environment", "e", "", "Target environment (dev, int, prod)")
+	rollbackCmd.Flags().StringVar(&rollbackToEnv, "to", "", "Target environment (dev, int, prod)")
+	rollbackCmd.Flags().StringVar(&rollbackCell, "cell", "", "Target cell within the environment (default: c0)")
 	rollbackCmd.Flags().StringVar(&rollbackToVersion, "to-version", "", "Specific version to rollback to")
 	rollbackCmd.Flags().BoolVar(&rollbackDryRun, "dry-run", false, "Simulate the rollback without creating a PR")
 
-	rollbackCmd.MarkFlagRequired("environment")
+	rollbackCmd.MarkFlagRequired("to")
 }
 
 func runRollback(cmd *cobra.Command, args []string) error {
 	packageName := args[0]
 
 	// Validate environment
-	targetEnv := promotion.Environment(rollbackEnvironment)
+	targetEnv := promotion.Environment(rollbackToEnv)
 	if !targetEnv.Valid() {
-		return fmt.Errorf("invalid environment: %s (must be dev, int, or prod)", rollbackEnvironment)
+		return fmt.Errorf("invalid environment: %s (must be dev, int, or prod)", rollbackToEnv)
 	}
+
+	cell := promotion.ResolveCell(rollbackCell)
 
 	// Get GitHub token: env var first, then device-flow via githubauth
 	token := os.Getenv("GITHUB_TOKEN")
@@ -78,19 +82,18 @@ func runRollback(cmd *cobra.Command, args []string) error {
 	// Determine the version to rollback to
 	rollbackVersion := rollbackToVersion
 	if rollbackVersion == "" {
-		// Get previous version from deployment history
-		// For MVP, we'll require explicit version
 		return fmt.Errorf("--to-version is required (automatic previous version detection coming soon)")
 	}
 
-	fmt.Printf("Rolling back %s in %s to %s...\n", packageName, targetEnv, rollbackVersion)
+	fmt.Printf("Rolling back %s in %s/%s to %s...\n", packageName, targetEnv, cell, rollbackVersion)
 
 	if rollbackDryRun {
 		fmt.Println("\n[DRY RUN] Would create rollback PR with:")
 		fmt.Printf("  Package:     %s\n", packageName)
 		fmt.Printf("  Environment: %s\n", targetEnv)
+		fmt.Printf("  Cell:        %s\n", cell)
 		fmt.Printf("  Version:     %s\n", rollbackVersion)
-		fmt.Printf("  Branch:      rollback/%s/%s/%s/...\n", packageName, targetEnv, rollbackVersion)
+		fmt.Printf("  File:        envs/%s/cells/%s/apps/%s/values.yaml\n", targetEnv, cell, packageName)
 		fmt.Println("\nNo changes made.")
 		return nil
 	}
@@ -108,11 +111,17 @@ func runRollback(cmd *cobra.Command, args []string) error {
 	// Create GitHub client
 	ghClient := promotion.NewGitHubClient(token, owner, repo)
 
+	// Support custom GitHub base URL
+	if baseURL := os.Getenv("GITHUB_BASE_URL"); baseURL != "" {
+		ghClient.BaseURL = baseURL
+	}
+
 	// Create promotion request (rollback is just a promotion to an older version)
 	req := &promotion.PromotionRequest{
 		Package:   packageName,
 		Version:   rollbackVersion,
 		TargetEnv: targetEnv,
+		Cell:      rollbackCell,
 		DryRun:    rollbackDryRun,
 	}
 
@@ -140,25 +149,4 @@ func runRollback(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-// getPreviousVersion would query the deployment history to find the previous version.
-// For MVP, this is not implemented - users must specify --to-version.
-func getPreviousVersion(ctx context.Context, packageName string, env promotion.Environment) (string, error) {
-	// This would:
-	// 1. Query the run history for the environment
-	// 2. Find the previous successful deployment
-	// 3. Return that version
-	//
-	// For MVP, we require explicit version specification
-	return "", fmt.Errorf("automatic previous version detection not yet implemented")
-}
-
-// listAvailableVersions would list all available versions for rollback.
-func listAvailableVersions(ctx context.Context, packageName string, env promotion.Environment) ([]string, error) {
-	// This would:
-	// 1. Query the OCI registry for available versions
-	// 2. Filter to versions that have been previously deployed
-	// 3. Return the list
-	return nil, fmt.Errorf("not yet implemented")
 }

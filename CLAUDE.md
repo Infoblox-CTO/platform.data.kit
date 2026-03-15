@@ -57,10 +57,11 @@ dk run --dry-run                         # validate without executing
 dk test <package-dir>                    # run tests
 
 # Build & deploy
-dk build <package-dir>                   # build OCI artifact + Helm chart
+dk build <package-dir>                   # build OCI artifact
 dk build --dry-run                       # validate build without producing artifact
-dk publish <package-dir>                 # push to OCI registry
-dk promote <name> <version> --to <env>   # promote via GitOps
+dk publish <package-dir>                 # push OCI artifact to registry
+dk promote <name> <version> --to <env>              # promote to env (default cell c0)
+dk promote <name> <version> --to <env> --cell <c>  # promote to specific cell in env
 ```
 
 ### Manifest Kinds
