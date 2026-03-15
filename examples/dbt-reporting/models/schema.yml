@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: example_summary
+    description: Summary of example_table — one row per name with count and first_seen
+    columns:
+      - name: name
+        description: User name
+        tests:
+          - not_null
+          - unique
+      - name: first_seen
+        description: Earliest created_at for this name
+        tests:
+          - not_null
+      - name: row_count
+        description: Number of rows for this name
+        tests:
+          - not_null

@@ -1,0 +1,9 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: DataSet
+metadata:
+  name: example-source
+  namespace: data-team
+spec:
+  store: warehouse
+  table: public.example_table
+  classification: internal

@@ -1,0 +1,24 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Connector
+metadata:
+  name: postgres
+spec:
+  provider: postgres
+  connectionSchema:
+    host:
+      type: string
+      required: true
+    port:
+      type: integer
+      default: 5432
+    dbname:
+      type: string
+      required: true
+    user:
+      type: string
+      required: true
+      secret: true
+    password:
+      type: string
+      required: true
+      secret: true

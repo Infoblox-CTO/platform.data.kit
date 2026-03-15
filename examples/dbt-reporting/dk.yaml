@@ -1,0 +1,20 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Transform
+metadata:
+  name: dbt-reporting
+  namespace: data-team
+  version: 0.1.0
+  labels:
+    team: platform
+spec:
+  runtime: dbt
+  mode: batch
+  image: ghcr.io/infoblox-cto/dbt-reporting:${VERSION}
+
+  inputs:
+    - dataset: example-source
+
+  outputs:
+    - dataset: example-summary
+
+  timeout: 10m

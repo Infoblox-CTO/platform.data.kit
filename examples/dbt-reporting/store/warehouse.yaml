@@ -1,0 +1,8 @@
+apiVersion: datakit.infoblox.dev/v1alpha1
+kind: Store
+metadata:
+  name: warehouse
+spec:
+  connector: postgres
+  connection:
+    connection_string: "postgresql://dkuser:dkpassword@localhost:5432/datakit?sslmode=disable"

@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: public
+    schema: public
+    tables:
+      - name: example_table
+        description: Seeded example data from dk dev up
+        columns:
+          - name: id
+            description: Primary key
+          - name: name
+            description: User name
+          - name: created_at
+            description: Creation timestamp
