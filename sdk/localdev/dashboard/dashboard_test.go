@@ -55,7 +55,7 @@ func TestNew(t *testing.T) {
 		t.Error("expected non-zero port")
 	}
 
-	if !strings.HasPrefix(s.URL(), "http://localtest.me:") {
+	if !strings.HasPrefix(s.URL(), "http://console.localtest.me:") {
 		t.Errorf("unexpected URL: %s", s.URL())
 	}
 }
