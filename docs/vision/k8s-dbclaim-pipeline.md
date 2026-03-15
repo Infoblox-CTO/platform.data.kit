@@ -148,8 +148,8 @@ kind: Connector
 metadata:
   name: k8s-cluster
 spec:
+  provider: kubernetes
   type: kubernetes
-  protocol: kubernetes
   capabilities: [source]
   plugin:
     source: ghcr.io/cloudquery/cq-source-k8s:latest
@@ -162,8 +162,8 @@ kind: Connector
 metadata:
   name: s3-datalake
 spec:
+  provider: s3
   type: s3
-  protocol: s3
   capabilities: [source, destination]
   plugin:
     source: ghcr.io/cloudquery/cq-source-s3:latest
@@ -177,8 +177,8 @@ kind: Connector
 metadata:
   name: postgres-analytics
 spec:
+  provider: postgres
   type: postgres
-  protocol: postgresql
   capabilities: [source, destination]
   plugin:
     source: ghcr.io/cloudquery/cq-source-postgres:latest
@@ -504,10 +504,10 @@ dk promote k8s-collector v0.1.0 --to prod --cell canary
 
 Stores resolve differently per environment via cell-based resolution:
 
-| Store | Dev (local) | Staging | Prod |
-|-------|-------------|---------|------|
-| `s3-raw` | LocalStack `localhost:4566` | `s3://staging-datalake/` | `s3://prod-datalake/` |
-| `pg-warehouse` | Local PG `localhost:5432` | `staging-pg.internal:5432` | `analytics-pg.internal:5432` |
+| Store | Dev (local) | Int | Prod |
+|-------|-------------|-----|------|
+| `s3-raw` | LocalStack `localhost:4566` | `s3://int-datalake/` | `s3://prod-datalake/` |
+| `pg-warehouse` | Local PG `localhost:5432` | `int-pg.internal:5432` | `analytics-pg.internal:5432` |
 
 The pipeline definition never changes between environments. Only Store connection
 details and secrets differ, resolved at deploy time from the target cell's
