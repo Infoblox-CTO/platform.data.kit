@@ -152,7 +152,7 @@ gitops/envs/
             └── apps/
 ```
 
-ArgoCD discovers apps via a git generator on `envs/*/cells/*/apps/*` and renders the shared `dk-app` chart with each app's `values.yaml`.
+ArgoCD discovers apps via a git generator on `gitops/envs/*/cells/*/apps/*` and renders the shared `dk-app` chart with each app's `values.yaml`.
 
 Promote a package to an environment (default cell `c0`):
 ```bash
@@ -208,9 +208,9 @@ To deploy `pg-to-s3:1.2.4` to the `canary` cell in dev:
 dk promote pg-to-s3 1.2.4 --to dev --cell canary
 ```
 
-This creates a PR that writes `envs/dev/cells/canary/apps/pg-to-s3/values.yaml`:
+This creates a PR that writes `gitops/envs/dev/cells/canary/apps/pg-to-s3/values.yaml`:
 
-```yaml title="envs/dev/cells/canary/apps/pg-to-s3/values.yaml"
+```yaml title="gitops/envs/dev/cells/canary/apps/pg-to-s3/values.yaml"
 appVersion: "1.2.4"
 # Optional overrides:
 # resources:

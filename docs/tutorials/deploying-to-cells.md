@@ -187,14 +187,14 @@ The `--to` flag specifies the environment (always required). The `--cell` flag i
 This creates a PR that writes a `values.yaml` to the environment + cell layout:
 
 ```
-envs/dev/cells/canary/apps/pg-to-s3/values.yaml
+gitops/envs/dev/cells/canary/apps/pg-to-s3/values.yaml
 ```
 
-```yaml title="envs/dev/cells/canary/apps/pg-to-s3/values.yaml"
+```yaml title="gitops/envs/dev/cells/canary/apps/pg-to-s3/values.yaml"
 appVersion: "1.2.4"
 ```
 
-ArgoCD uses a git generator to discover `envs/*/cells/*/apps/*` and renders the shared `dk-app` chart with the per-app `values.yaml`, creating a `PackageDeployment` in namespace `dk-canary`.
+ArgoCD uses a git generator to discover `gitops/envs/*/cells/*/apps/*` and renders the shared `dk-app` chart with the per-app `values.yaml`, creating a `PackageDeployment` in namespace `dk-canary`.
 
 ### Deploy to another environment
 
@@ -202,7 +202,7 @@ ArgoCD uses a git generator to discover `envs/*/cells/*/apps/*` and renders the 
 dk promote pg-to-s3 1.2.3 --to prod --cell stable
 ```
 
-This creates `envs/prod/cells/stable/apps/pg-to-s3/values.yaml` with the specified version.
+This creates `gitops/envs/prod/cells/stable/apps/pg-to-s3/values.yaml` with the specified version.
 
 ### Promote using the default cell
 
@@ -212,7 +212,7 @@ When `--cell` is omitted, it defaults to `c0`:
 dk promote pg-to-s3 1.2.4 --to prod
 ```
 
-This creates `envs/prod/cells/c0/apps/pg-to-s3/values.yaml`.
+This creates `gitops/envs/prod/cells/c0/apps/pg-to-s3/values.yaml`.
 
 ## Summary
 

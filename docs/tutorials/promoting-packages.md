@@ -139,7 +139,7 @@ Output:
 Creating PR:
   Repository: github.com/myorg/datakit
   Branch: promote/my-pipeline/dev/c0/v1.0.0/...
-  File: envs/dev/cells/c0/apps/my-pipeline/values.yaml
+  File: gitops/envs/dev/cells/c0/apps/my-pipeline/values.yaml
 
 ✓ Created PR #123
   URL: https://github.com/myorg/datakit/pull/123
@@ -149,11 +149,11 @@ Creating PR:
 
 The PR creates/updates a values.yaml in the environment + cell layout:
 
-```yaml title="envs/dev/cells/c0/apps/my-pipeline/values.yaml"
+```yaml title="gitops/envs/dev/cells/c0/apps/my-pipeline/values.yaml"
 appVersion: v1.0.0
 ```
 
-ArgoCD uses a git generator to discover `envs/*/cells/*/apps/*` directories and renders the shared `dk-app` chart with each app's `values.yaml`.
+ArgoCD uses a git generator to discover `gitops/envs/*/cells/*/apps/*` directories and renders the shared `dk-app` chart with each app's `values.yaml`.
 
 ### Auto-Merge
 

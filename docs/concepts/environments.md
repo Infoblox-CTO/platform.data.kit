@@ -19,7 +19,7 @@ DataKit uses a cell-based deployment model. Environments (dev, int, prod) are lo
 │   │  (c0)    │    │  (c0)    │    │  (c0)    │              │
 │   └───────────┘    └───────────┘    └───────────┘              │
 │                                                                 │
-│   Layout: envs/{env}/cells/{cell}/apps/{pkg}/values.yaml       │
+│   Layout: gitops/envs/{env}/cells/{cell}/apps/{pkg}/values.yaml │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -41,7 +41,7 @@ DataKit uses a cell-based deployment model. Environments (dev, int, prod) are lo
 
 ```bash
 dk promote my-package v1.0.0 --to dev
-# Creates PR updating envs/dev/cells/c0/apps/my-package/values.yaml
+# Creates PR updating gitops/envs/dev/cells/c0/apps/my-package/values.yaml
 ```
 
 ### int (Integration)
@@ -95,7 +95,7 @@ PR: Promote my-package to dev/c0: v1.0.0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Changes:
-  envs/dev/cells/c0/apps/my-package/values.yaml
+  gitops/envs/dev/cells/c0/apps/my-package/values.yaml
 
 +appVersion: v1.0.0
 ```
@@ -119,7 +119,7 @@ After merge, ArgoCD syncs the changes:
 │                                                              │
 │  Git Repository ────▶ ArgoCD ────▶ Kubernetes Cluster       │
 │                                                              │
-│  1. Git generator discovers envs/dev/cells/c0/apps/my-package │
+│  1. Git generator discovers gitops/envs/dev/cells/c0/apps/my-package │
 │  2. Renders dk-app chart with appVersion from values.yaml     │
 │  3. Applies PackageDeployment to dk-c0 namespace              │
 │  4. Controller deploys the package                          │
@@ -140,7 +140,7 @@ spec:
 
 ### Cell-Specific Stores
 
-```yaml title="envs/dev/cells/c0/stores/events-store.yaml"
+```yaml title="gitops/envs/dev/cells/c0/stores/events-store.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
@@ -153,7 +153,7 @@ spec:
     topic: user-events-dev
 ```
 
-```yaml title="envs/prod/cells/c0/stores/events-store.yaml"
+```yaml title="gitops/envs/prod/cells/c0/stores/events-store.yaml"
 apiVersion: datakit.infoblox.dev/v1alpha1
 kind: Store
 metadata:
@@ -222,7 +222,7 @@ dk rollback my-package --to dev --to-version v0.9.0
 Cells and their apps are laid out as directories in the GitOps repository:
 
 ```
-envs/
+gitops/envs/
 ├── dev/
 │   └── cells/
 │       └── c0/
@@ -243,7 +243,7 @@ envs/
             └── apps/
 ```
 
-ArgoCD uses a git generator on `envs/*/cells/*/apps/*` to discover applications automatically.
+ArgoCD uses a git generator on `gitops/envs/*/cells/*/apps/*` to discover applications automatically.
 
 ## Best Practices
 
