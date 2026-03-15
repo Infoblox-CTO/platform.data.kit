@@ -462,7 +462,7 @@ dk pipeline show --scan-dir .
 # Run all transforms in order (future: dk run --project .)
 dk run ./transforms/k8s-collector
 dk run ./transforms/s3-to-postgres
-dk run ./transforms/dbt-reporting
+dk dbt run --dir ./transforms/dbt-reporting
 ```
 
 ### 2. CI Pipeline
@@ -485,17 +485,19 @@ dk publish ./transforms/s3-to-postgres
 dk publish ./transforms/dbt-reporting
 ```
 
-### 3. Promotion (Dev → Staging → Prod)
+### 3. Promotion (Dev → Int → Prod)
 
 ```bash
-# Promote from dev to staging
-dk promote staging              # Creates a PR with staging overrides
+# Promote all transforms to dev
+dk promote k8s-collector v0.1.0 --to dev
+dk promote s3-to-postgres v0.1.0 --to dev
+dk promote dbt-reporting v0.1.0 --to dev
 
-# After staging validation, promote to prod
-dk promote prod                 # Creates a PR with prod overrides
+# After dev validation, promote to int
+dk promote k8s-collector v0.1.0 --to int
 
-# Check deployment status
-dk status --cell us-east-1      # Future: real cluster queries
+# Promote to prod (specific cell)
+dk promote k8s-collector v0.1.0 --to prod --cell canary
 ```
 
 ### 4. Environment Resolution
@@ -511,7 +513,7 @@ The pipeline definition never changes between environments. Only Store connectio
 details and secrets differ, resolved at deploy time from the target cell's
 Kubernetes namespace (`dk-<cellName>`).
 
-## Gap Analysis
+## Status
 
 | Capability | Status | Notes |
 |-----------|--------|-------|
@@ -520,15 +522,18 @@ Kubernetes namespace (`dk-<cellName>`).
 | Schema references (APX) | Done | `schemaRef`, `dk lock`, `dk schema` |
 | Pipeline graph visualization | Done | `dk pipeline show --scan-dir` |
 | Local dev environment | Done | `dk dev up/seed` |
-| Promotion workflow | Done | `dk promote` creates PRs |
-| Cell-based Store resolution | Done | `sdk/cell/resolver.go` |
-| **Project scaffolding** | **Gap** | No `dk project init` for multi-transform projects |
-| **Store/Connector scaffolding** | **Gap** | No `dk store create` or `dk connector create` |
-| **Project-wide lint** | **Gap** | `dk lint` validates one directory at a time |
-| **dbt runtime** | **Implemented** | `dk dbt run/test/debug` with auto store resolution via Python SDK |
-| **Multi-transform run** | **Gap** | `dk run` executes one transform at a time |
-| **Real dk status** | **Gap** | Returns hardcoded data |
-| **On-change triggers** | **Gap** | Types defined, no event system |
+| Cell-based promotion | Done | `dk promote --to {env} --cell {cell}`, shared dk-app chart, ArgoCD git generator |
+| Cell-based Store resolution | Done | `dk run --cell canary`, DSN env vars |
+| dbt runtime | Done | `dk dbt run/test/debug`, Python SDK auto-generates profiles.yml from Store DSN |
+| Store → runtime bridge | Done | `DK_STORE_DSN_*` / `DK_STORE_TYPE_*` env vars for all runtimes |
+| Python SDK | Done | `datakit-sdk` package: `datakit.stores`, `datakit.profiles`, `dk-profiles` CLI |
+| **Project scaffolding** | **Future** | No `dk project init` for multi-transform projects |
+| **Store/Connector scaffolding** | **Future** | No `dk store create` or `dk connector create` |
+| **Project-wide lint** | **Partial** | `dk lint --scan-dir .` exists but doesn't cross-validate across transforms |
+| **Multi-transform run** | **Future** | `dk run` executes one transform at a time |
+| **Real dk status** | **Future** | Returns hardcoded data |
+| **On-change triggers** | **Future** | Types defined, no event system |
+| **Declarative policies** | **Future** | No policy engine yet |
 
 ## dbt Model Examples
 
