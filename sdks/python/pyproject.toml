@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datakit-sdk"
+version = "0.1.0"
+description = "DataKit Python SDK — read Store connection info and generate dbt profiles"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+dk-profiles = "datakit.profiles:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/datakit"]

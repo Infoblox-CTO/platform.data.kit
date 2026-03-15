@@ -771,10 +771,38 @@ func jobSucceeded(ctx context.Context, kubeContext, namespace, jobName string) b
 
 // runDBT executes a dbt pipeline by invoking the dbt CLI directly instead of
 // building a Docker image. dbt packages contain SQL/YAML transformations.
+//
+// Before running, it auto-generates profiles.yml from the Store manifest graph
+// (Transform → DataSet → Store) so dbt gets connection info without manual
+// env var setup.
 func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
 	dbtBin, err := exec.LookPath("dbt")
 	if err != nil {
 		return nil, fmt.Errorf("dbt CLI not found in PATH: install it from https://docs.getdbt.com/docs/core/installation-overview\n  %w", err)
+	}
+
+	// Auto-generate profiles.yml from Store graph.
+	transform, ok := m.(*contracts.Transform)
+	if !ok {
+		return nil, fmt.Errorf("expected Transform manifest for dbt runtime")
+	}
+
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Generating profiles.yml from store graph...\n")
+	}
+
+	var cellRes *CellResolver
+	if opts.Cell != "" {
+		cellRes = NewCellResolver(opts.Cell, opts.KubeContext, nil)
+	}
+
+	profilesPath, profileErr := WriteDBTProfiles(transform, opts.PackageDir, cellRes)
+	if profileErr != nil {
+		return nil, fmt.Errorf("generating dbt profiles: %w", profileErr)
+	}
+
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "✓ Generated %s\n", profilesPath)
 	}
 
 	runID := GenerateRunID(m.GetName())
@@ -791,7 +819,7 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 	if opts.DryRun {
 		result.Status = contracts.RunStatusCompleted
 		if opts.Output != nil {
-			fmt.Fprintf(opts.Output, "Dry run complete. Would run: %s run\n", dbtBin)
+			fmt.Fprintf(opts.Output, "Dry run complete. Would run: %s run --profiles-dir %s\n", dbtBin, opts.PackageDir)
 		}
 		return result, nil
 	}
@@ -806,11 +834,21 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 		defer cancel()
 	}
 
-	cmd := exec.CommandContext(ctx, dbtBin, "run")
+	cmd := exec.CommandContext(ctx, dbtBin, "run", "--profiles-dir", opts.PackageDir)
 	cmd.Dir = opts.PackageDir
 
-	// Merge environment: inherit current env, add opts env vars
+	// Merge environment: inherit current env, add store env vars, add opts env vars
 	cmd.Env = os.Environ()
+
+	// Inject DK_STORE_DSN_* and DK_STORE_TYPE_* for any downstream tools
+	pm, _ := loadPackageManifests(opts.PackageDir)
+	if pm != nil {
+		storeEnvs, _ := BuildStoreEnvVars(transform, pm.Stores, pm.DataSets)
+		for k, v := range StoreEnvsToMap(storeEnvs) {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
 	for k, v := range opts.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
