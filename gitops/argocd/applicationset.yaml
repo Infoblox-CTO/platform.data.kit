@@ -11,18 +11,18 @@ spec:
         repoURL: https://github.com/Infoblox-CTO/platform.data.kit.git
         revision: main
         directories:
-          - path: envs/*/cells/*/apps/*
+          - path: gitops/envs/*/cells/*/apps/*
   template:
     metadata:
-      # Name: {env}-{cell}-{app}
-      name: "{{ index .path.segments 1 }}-{{ index .path.segments 3 }}-{{ .path.basename }}"
+      # Name: {env}-{cell}-{app}  (segments: gitops/envs/{2}/cells/{4}/apps/{basename})
+      name: "{{ index .path.segments 2 }}-{{ index .path.segments 4 }}-{{ .path.basename }}"
       namespace: argocd
       labels:
         app.kubernetes.io/name: "{{ .path.basename }}"
         app.kubernetes.io/component: package
         app.kubernetes.io/part-of: dk
-        datakit.infoblox.dev/environment: "{{ index .path.segments 1 }}"
-        datakit.infoblox.dev/cell: "{{ index .path.segments 3 }}"
+        datakit.infoblox.dev/environment: "{{ index .path.segments 2 }}"
+        datakit.infoblox.dev/cell: "{{ index .path.segments 4 }}"
       annotations:
         notifications.argoproj.io/subscribe.on-sync-succeeded.slack: dk-alerts
         notifications.argoproj.io/subscribe.on-sync-failed.slack: dk-alerts
@@ -36,13 +36,13 @@ spec:
         helm:
           releaseName: "{{ .path.basename }}"
           valueFiles:
-            - "../../../{{ .path.path }}/values.yaml"
+            - "../../envs/{{ index .path.segments 2 }}/cells/{{ index .path.segments 4 }}/apps/{{ .path.basename }}/values.yaml"
           parameters:
             - name: cell
-              value: "{{ index .path.segments 3 }}"
+              value: "{{ index .path.segments 4 }}"
       destination:
         server: https://kubernetes.default.svc
-        namespace: "dk-{{ index .path.segments 1 }}-{{ index .path.segments 3 }}"
+        namespace: "dk-{{ index .path.segments 2 }}-{{ index .path.segments 4 }}"
       syncPolicy:
         automated:
           prune: true

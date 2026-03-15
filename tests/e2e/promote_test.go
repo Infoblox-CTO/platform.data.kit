@@ -23,7 +23,7 @@ func TestPromote_DryRunDefaultCell(t *testing.T) {
 	}
 
 	// Default cell is c0
-	if !strings.Contains(result.Stdout, "envs/dev/cells/c0/apps/my-pkg/values.yaml") {
+	if !strings.Contains(result.Stdout, "gitops/envs/dev/cells/c0/apps/my-pkg/values.yaml") {
 		t.Errorf("output should contain envs/dev/cells/c0 path, got: %s", result.Stdout)
 	}
 }
@@ -40,7 +40,7 @@ func TestPromote_DryRunNamedCell(t *testing.T) {
 		t.Errorf("exit code = %d, want 0\nstderr: %s", result.ExitCode, result.Stderr)
 	}
 
-	if !strings.Contains(result.Stdout, "envs/prod/cells/canary/apps/my-pkg/values.yaml") {
+	if !strings.Contains(result.Stdout, "gitops/envs/prod/cells/canary/apps/my-pkg/values.yaml") {
 		t.Errorf("output should contain envs/prod/cells/canary path, got: %s", result.Stdout)
 	}
 }
@@ -83,7 +83,7 @@ func TestRollback_DryRunNamedCell(t *testing.T) {
 		t.Errorf("exit code = %d, want 0\nstderr: %s", result.ExitCode, result.Stderr)
 	}
 
-	if !strings.Contains(result.Stdout, "envs/prod/cells/canary/apps/my-pkg/values.yaml") {
+	if !strings.Contains(result.Stdout, "gitops/envs/prod/cells/canary/apps/my-pkg/values.yaml") {
 		t.Errorf("output should contain canary cell path, got: %s", result.Stdout)
 	}
 }
@@ -100,7 +100,7 @@ func TestPromote_GiteaIntegration(t *testing.T) {
 
 	// Seed cell layout
 	seedGiteaRepo(t, gi, map[string]string{
-		"envs/dev/cells/c0/apps/.gitkeep": "",
+		"gitops/envs/dev/cells/c0/apps/.gitkeep": "",
 	})
 
 	// Set env vars for dk promote

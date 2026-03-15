@@ -87,7 +87,7 @@ func TestPromoter_PromoteDefaultCell(t *testing.T) {
 		t.Errorf("PRNumber = %d, want 42", result.PRNumber)
 	}
 	// Verify path uses envs/{env}/cells/c0/apps/{pkg}
-	if !strings.Contains(updatedPath, "envs/dev/cells/c0/apps/my-pkg") {
+	if !strings.Contains(updatedPath, "gitops/envs/dev/cells/c0/apps/my-pkg") {
 		t.Errorf("updated path = %q, expected to contain envs/dev/cells/c0/apps/my-pkg", updatedPath)
 	}
 	// Verify branch contains env and cell
@@ -160,7 +160,7 @@ func TestPromoter_PromoteNamedCell(t *testing.T) {
 		t.Error("expected success")
 	}
 	// Verify path uses envs/prod/cells/canary/apps/my-pkg
-	if !strings.Contains(updatedPath, "envs/prod/cells/canary/apps/my-pkg") {
+	if !strings.Contains(updatedPath, "gitops/envs/prod/cells/canary/apps/my-pkg") {
 		t.Errorf("updated path = %q, expected to contain envs/prod/cells/canary/apps/my-pkg", updatedPath)
 	}
 	if !strings.Contains(result.Branch, "promote/my-pkg/prod/canary/v1.0.0") {
@@ -200,7 +200,7 @@ func TestPromoter_GetCurrentVersion(t *testing.T) {
 	valuesContent := "appVersion: v0.9.0\nreplicas: 3\n"
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(valuesContent))
 
-	mux.HandleFunc("GET /repos/test-owner/test-repo/contents/envs/dev/cells/c0/apps/my-pkg/values.yaml", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /repos/test-owner/test-repo/contents/gitops/envs/dev/cells/c0/apps/my-pkg/values.yaml", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"content":  encodedContent,
 			"encoding": "base64",

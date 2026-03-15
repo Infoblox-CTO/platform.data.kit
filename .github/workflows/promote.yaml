@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [closed]
     paths:
-      - 'envs/**'
+      - 'gitops/envs/**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -28,7 +28,7 @@ jobs:
           cell=""
           packages=""
           for file in $changed_files; do
-            if [[ $file =~ envs/([^/]+)/cells/([^/]+)/apps/([^/]+)/ ]]; then
+            if [[ $file =~ gitops/envs/([^/]+)/cells/([^/]+)/apps/([^/]+)/ ]]; then
               env="${BASH_REMATCH[1]}"
               cell="${BASH_REMATCH[2]}"
               pkg="${BASH_REMATCH[3]}"
@@ -53,7 +53,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Package Promotion Merged*\n\nEnvironment: `${{ steps.detect.outputs.environment }}`\nPackages: `${{ steps.detect.outputs.packages }}`\nPR: ${{ github.event.pull_request.html_url }}\n\nArgoCD will sync automatically."
+                    "text": "*Package Promotion Merged*\n\nEnvironment: `${{ steps.detect.outputs.environment }}`\nCell: `${{ steps.detect.outputs.cell }}`\nPackages: `${{ steps.detect.outputs.packages }}`\nPR: ${{ github.event.pull_request.html_url }}\n\nArgoCD will sync automatically."
                   }
                 }
               ]

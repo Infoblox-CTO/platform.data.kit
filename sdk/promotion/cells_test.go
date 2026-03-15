@@ -13,9 +13,9 @@ func TestValuesFilePath(t *testing.T) {
 		pkg  string
 		want string
 	}{
-		{EnvDev, "c0", "kafka-s3-pipeline", "envs/dev/cells/c0/apps/kafka-s3-pipeline/values.yaml"},
-		{EnvProd, "canary", "my-pkg", "envs/prod/cells/canary/apps/my-pkg/values.yaml"},
-		{EnvInt, "group1", "etl", "envs/int/cells/group1/apps/etl/values.yaml"},
+		{EnvDev, "c0", "kafka-s3-pipeline", "gitops/envs/dev/cells/c0/apps/kafka-s3-pipeline/values.yaml"},
+		{EnvProd, "canary", "my-pkg", "gitops/envs/prod/cells/canary/apps/my-pkg/values.yaml"},
+		{EnvInt, "group1", "etl", "gitops/envs/int/cells/group1/apps/etl/values.yaml"},
 	}
 
 	for _, tt := range tests {

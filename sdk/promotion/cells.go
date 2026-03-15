@@ -10,10 +10,10 @@ import (
 // DefaultCell is the default cell name when none is specified.
 const DefaultCell = "c0"
 
-// ValuesFilePath returns the path to the per-app values.yaml.
-// Layout: envs/{env}/cells/{cell}/apps/{pkg}/values.yaml
+// ValuesFilePath returns the repo-root-relative path to the per-app values.yaml.
+// Layout: gitops/envs/{env}/cells/{cell}/apps/{pkg}/values.yaml
 func ValuesFilePath(env Environment, cell, pkg string) string {
-	return fmt.Sprintf("envs/%s/cells/%s/apps/%s/values.yaml", env, cell, pkg)
+	return fmt.Sprintf("gitops/envs/%s/cells/%s/apps/%s/values.yaml", env, cell, pkg)
 }
 
 // GenerateValuesContent produces a minimal values.yaml with appVersion set.

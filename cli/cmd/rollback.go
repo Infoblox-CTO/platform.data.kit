@@ -93,7 +93,7 @@ func runRollback(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Environment: %s\n", targetEnv)
 		fmt.Printf("  Cell:        %s\n", cell)
 		fmt.Printf("  Version:     %s\n", rollbackVersion)
-		fmt.Printf("  File:        envs/%s/cells/%s/apps/%s/values.yaml\n", targetEnv, cell, packageName)
+		fmt.Printf("  File:        gitops/envs/%s/cells/%s/apps/%s/values.yaml\n", targetEnv, cell, packageName)
 		fmt.Println("\nNo changes made.")
 		return nil
 	}

@@ -120,7 +120,7 @@ func runPromote(cmd *cobra.Command, args []string) error {
 		fmt.Println("\n[DRY RUN] Would create promotion PR with:")
 		fmt.Printf("  Branch: promote/%s/%s/%s/%s/...\n", packageName, targetEnv, cell, version)
 		fmt.Printf("  Title:  Promote %s to %s/%s: %s\n", packageName, targetEnv, cell, version)
-		fmt.Printf("  File:   envs/%s/cells/%s/apps/%s/values.yaml\n", targetEnv, cell, packageName)
+		fmt.Printf("  File:   gitops/envs/%s/cells/%s/apps/%s/values.yaml\n", targetEnv, cell, packageName)
 		fmt.Println("\nNo changes made.")
 		return nil
 	}
