@@ -195,7 +195,9 @@ func createToken(t *testing.T, url string) string {
 		t.Fatalf("create token: %v", err)
 	}
 	defer resp.Body.Close()
-	var result struct{ SHA1 string `json:"sha1"` }
+	var result struct {
+		SHA1 string `json:"sha1"`
+	}
 	json.NewDecoder(resp.Body).Decode(&result)
 	return result.SHA1
 }

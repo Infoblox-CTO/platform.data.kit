@@ -47,11 +47,11 @@ func init() {
 
 // CLIReference is the top-level structure for the full CLI reference.
 type CLIReference struct {
-	Version  string           `yaml:"version"`
-	Workflow string           `yaml:"workflow"`
-	Commands []CommandDoc     `yaml:"commands"`
-	Schemas  map[string]any   `yaml:"schemas"`
-	Errors   []ErrorDoc       `yaml:"errors"`
+	Version  string              `yaml:"version"`
+	Workflow string              `yaml:"workflow"`
+	Commands []CommandDoc        `yaml:"commands"`
+	Schemas  map[string]any      `yaml:"schemas"`
+	Errors   []ErrorDoc          `yaml:"errors"`
 	Enums    map[string][]string `yaml:"enums"`
 }
 
