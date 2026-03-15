@@ -4,7 +4,10 @@ on:
   pull_request:
     types: [closed]
     paths:
-      - 'gitops/environments/**'
+      - 'envs/**'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   notify-promotion:
@@ -20,16 +23,20 @@ jobs:
           # Get changed files from the PR
           changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} || echo "")
           
-          # Extract environment and package info
+          # Extract environment, cell, and package info
           env=""
+          cell=""
           packages=""
           for file in $changed_files; do
-            if [[ $file =~ gitops/environments/([^/]+)/packages/([^/]+)/ ]]; then
+            if [[ $file =~ envs/([^/]+)/cells/([^/]+)/apps/([^/]+)/ ]]; then
               env="${BASH_REMATCH[1]}"
-              pkg="${BASH_REMATCH[2]}"
+              cell="${BASH_REMATCH[2]}"
+              pkg="${BASH_REMATCH[3]}"
               packages="${packages} ${pkg}"
             fi
           done
+
+          echo "cell=${cell}" >> $GITHUB_OUTPUT
           
           echo "environment=${env}" >> $GITHUB_OUTPUT
           echo "packages=${packages}" >> $GITHUB_OUTPUT
