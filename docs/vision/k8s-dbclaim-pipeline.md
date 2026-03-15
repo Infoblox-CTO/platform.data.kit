@@ -527,6 +527,9 @@ Kubernetes namespace (`dk-<cellName>`).
 | dbt runtime | Done | `dk dbt run/test/debug`, Python SDK auto-generates profiles.yml from Store DSN |
 | Store → runtime bridge | Done | `DK_STORE_DSN_*` / `DK_STORE_TYPE_*` env vars for all runtimes |
 | Python SDK | Done | `datakit-sdk` package: `datakit.stores`, `datakit.profiles`, `dk-profiles` CLI |
+| **Python SDK publishing** | **Future** | `datakit-sdk` needs to be published to PyPI so dbt Docker images can `pip install datakit-sdk` |
+| **Go SDK for stores** | **Future** | Go equivalent of Python SDK's `stores.get()` — reads `DK_STORE_DSN_*` env vars for generic-go transforms |
+| **`dk test` dbt awareness** | **Future** | `dk test` should detect `runtime: dbt` and run `dk dbt test` automatically |
 | **Project scaffolding** | **Future** | No `dk project init` for multi-transform projects |
 | **Store/Connector scaffolding** | **Future** | No `dk store create` or `dk connector create` |
 | **Project-wide lint** | **Partial** | `dk lint --scan-dir .` exists but doesn't cross-validate across transforms |

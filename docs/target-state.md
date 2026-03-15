@@ -164,9 +164,29 @@ dk dbt run                    # resolves stores → generates profiles.yml → r
 dk dbt test                   # same flow, runs dbt test
 ```
 
+### generic-go transforms (future)
+
+A Go SDK package (`sdk/stores`) will provide the same interface for Go-based transforms:
+
+```go
+import "github.com/Infoblox-CTO/platform.data.kit/sdk/stores"
+
+warehouse := stores.Get("warehouse")  // reads DK_STORE_DSN_WAREHOUSE
+fmt.Println(warehouse.DSN)            // "postgresql://..."
+fmt.Println(warehouse.Type)           // "postgres"
+```
+
+### `dk test` dbt awareness (future)
+
+`dk test` will detect `runtime: dbt` in dk.yaml and automatically run `dk dbt test` instead of the generic test runner. This completes the standard workflow for dbt transforms:
+
+```bash
+dk lint → dk run → dk test → dk build → dk publish → dk promote
+```
+
 ### Production (Kubernetes)
 
-The controller injects `DK_STORE_DSN_*` / `DK_STORE_TYPE_*` env vars from Store CRDs into the Job/Deployment spec. For dbt containers, the Docker entrypoint calls `dk-profiles generate` to create `profiles.yml` before running dbt.
+The controller injects `DK_STORE_DSN_*` / `DK_STORE_TYPE_*` env vars from Store CRDs into the Job/Deployment spec. For dbt containers, the Docker entrypoint calls `dk-profiles generate` to create `profiles.yml` before running dbt. The Python SDK (`datakit-sdk`) will be published to PyPI for use in Docker images.
 
 ---
 
@@ -312,6 +332,9 @@ No extension registry exists today. The current model (all manifests co-located 
 | 013 | Pipeline graph | Done |
 | 014 | Cell-based promotion (replaces env/binding model) | Done |
 | 015 | dbt runtime with Python SDK | Done |
-| 016 | Declarative policies | Future |
-| 017 | Extension registry | Future |
-| 018 | Multi-transform project orchestration | Future |
+| 016 | Publish Python SDK to PyPI (`pip install datakit-sdk`) | Future |
+| 017 | Go SDK for store resolution (`sdk/stores` package for generic-go transforms) | Future |
+| 018 | `dk test` dbt awareness (detect `runtime: dbt`, run `dk dbt test`) | Future |
+| 019 | Declarative policies | Future |
+| 020 | Extension registry | Future |
+| 021 | Multi-transform project orchestration | Future |
