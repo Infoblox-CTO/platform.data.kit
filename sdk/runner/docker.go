@@ -772,38 +772,33 @@ func jobSucceeded(ctx context.Context, kubeContext, namespace, jobName string) b
 // runDBT executes a dbt pipeline by invoking the dbt CLI directly instead of
 // building a Docker image. dbt packages contain SQL/YAML transformations.
 //
-// Before running, it auto-generates profiles.yml from the Store manifest graph
-// (Transform → DataSet → Store) so dbt gets connection info without manual
-// env var setup.
+// Connection flow:
+//  1. Resolve Transform → DataSet → Store graph
+//  2. Inject DK_STORE_DSN_* and DK_STORE_TYPE_* env vars
+//  3. Call `dk-profiles generate` (Python SDK) to write profiles.yml from those env vars
+//  4. Call `dbt run --profiles-dir .`
+//
+// The Python SDK (datakit-sdk) is the single source of truth for profiles.yml
+// generation — the same code runs locally via dk run and in production Docker containers.
 func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.Manifest) (*RunResult, error) {
 	dbtBin, err := exec.LookPath("dbt")
 	if err != nil {
 		return nil, fmt.Errorf("dbt CLI not found in PATH: install it from https://docs.getdbt.com/docs/core/installation-overview\n  %w", err)
 	}
 
-	// Auto-generate profiles.yml from Store graph.
+	dkProfilesBin, err := exec.LookPath("dk-profiles")
+	if err != nil {
+		return nil, fmt.Errorf("dk-profiles not found in PATH: install it with: pip install datakit-sdk\n  %w", err)
+	}
+
+	// Resolve stores from the manifest graph.
 	transform, ok := m.(*contracts.Transform)
 	if !ok {
 		return nil, fmt.Errorf("expected Transform manifest for dbt runtime")
 	}
 
-	if opts.Output != nil {
-		fmt.Fprintf(opts.Output, "Generating profiles.yml from store graph...\n")
-	}
-
-	var cellRes *CellResolver
-	if opts.Cell != "" {
-		cellRes = NewCellResolver(opts.Cell, opts.KubeContext, nil)
-	}
-
-	profilesPath, profileErr := WriteDBTProfiles(transform, opts.PackageDir, cellRes)
-	if profileErr != nil {
-		return nil, fmt.Errorf("generating dbt profiles: %w", profileErr)
-	}
-
-	if opts.Output != nil {
-		fmt.Fprintf(opts.Output, "✓ Generated %s\n", profilesPath)
-	}
+	// Build DK_STORE_* env vars from the Store manifest graph.
+	storeEnv := r.buildStoreEnv(transform, opts)
 
 	runID := GenerateRunID(m.GetName())
 	result := &RunResult{
@@ -819,11 +814,34 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 	if opts.DryRun {
 		result.Status = contracts.RunStatusCompleted
 		if opts.Output != nil {
-			fmt.Fprintf(opts.Output, "Dry run complete. Would run: %s run --profiles-dir %s\n", dbtBin, opts.PackageDir)
+			fmt.Fprintf(opts.Output, "Dry run complete. Would run:\n")
+			fmt.Fprintf(opts.Output, "  1. dk-profiles generate -o %s\n", opts.PackageDir)
+			fmt.Fprintf(opts.Output, "  2. dbt run --profiles-dir %s\n", opts.PackageDir)
+			for k, v := range storeEnv {
+				fmt.Fprintf(opts.Output, "  env: %s=%s\n", k, v)
+			}
 		}
 		return result, nil
 	}
 
+	// Step 1: Generate profiles.yml via Python SDK (dk-profiles).
+	if opts.Output != nil {
+		fmt.Fprintf(opts.Output, "Generating profiles.yml via dk-profiles (Python SDK)...\n")
+	}
+
+	profilesCmd := exec.CommandContext(ctx, dkProfilesBin, "generate", "-o", opts.PackageDir)
+	profilesCmd.Dir = opts.PackageDir
+	profilesCmd.Env = r.buildCmdEnv(storeEnv, opts.Env)
+	if opts.Output != nil {
+		profilesCmd.Stdout = opts.Output
+		profilesCmd.Stderr = opts.Output
+	}
+
+	if err := profilesCmd.Run(); err != nil {
+		return nil, fmt.Errorf("dk-profiles generate failed: %w\n  Ensure datakit-sdk is installed: pip install datakit-sdk", err)
+	}
+
+	// Step 2: Run dbt.
 	if opts.Output != nil {
 		fmt.Fprintf(opts.Output, "Running dbt (%s)...\n", m.GetName())
 	}
@@ -836,22 +854,7 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 
 	cmd := exec.CommandContext(ctx, dbtBin, "run", "--profiles-dir", opts.PackageDir)
 	cmd.Dir = opts.PackageDir
-
-	// Merge environment: inherit current env, add store env vars, add opts env vars
-	cmd.Env = os.Environ()
-
-	// Inject DK_STORE_DSN_* and DK_STORE_TYPE_* for any downstream tools
-	pm, _ := loadPackageManifests(opts.PackageDir)
-	if pm != nil {
-		storeEnvs, _ := BuildStoreEnvVars(transform, pm.Stores, pm.DataSets)
-		for k, v := range StoreEnvsToMap(storeEnvs) {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
-
-	for k, v := range opts.Env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
-	}
+	cmd.Env = r.buildCmdEnv(storeEnv, opts.Env)
 
 	if opts.Output != nil {
 		cmd.Stdout = opts.Output
@@ -875,6 +878,44 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 	}
 
 	return result, runErr
+}
+
+// buildStoreEnv resolves the Transform → DataSet → Store graph and returns
+// DK_STORE_DSN_* and DK_STORE_TYPE_* env vars.
+func (r *DockerRunner) buildStoreEnv(transform *contracts.Transform, opts RunOptions) map[string]string {
+	pm, err := loadPackageManifests(opts.PackageDir)
+	if err != nil || pm == nil {
+		return nil
+	}
+
+	// If running against a cell, resolve stores from the cell.
+	if opts.Cell != "" {
+		cellRes := NewCellResolver(opts.Cell, opts.KubeContext, nil)
+		// Replace package-local stores with cell-resolved ones.
+		for name := range pm.Stores {
+			if s, err := cellRes.ResolveStore(nil, name); err == nil {
+				pm.Stores[name] = s
+			}
+		}
+	}
+
+	storeEnvs, err := BuildStoreEnvVars(transform, pm.Stores, pm.DataSets)
+	if err != nil {
+		return nil
+	}
+	return StoreEnvsToMap(storeEnvs)
+}
+
+// buildCmdEnv builds the full environment for a subprocess: OS env + store env + opts env.
+func (r *DockerRunner) buildCmdEnv(storeEnv, optsEnv map[string]string) []string {
+	env := os.Environ()
+	for k, v := range storeEnv {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	for k, v := range optsEnv {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	return env
 }
 
 // Stop stops a running pipeline.
