@@ -816,7 +816,7 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 		if opts.Output != nil {
 			fmt.Fprintf(opts.Output, "Dry run complete. Would run:\n")
 			fmt.Fprintf(opts.Output, "  1. dk-profiles generate -o %s\n", opts.PackageDir)
-			fmt.Fprintf(opts.Output, "  2. dbt run --profiles-dir %s\n", opts.PackageDir)
+			fmt.Fprintf(opts.Output, "  2. DBT_PROFILES_DIR=%s dbt run\n", opts.PackageDir)
 			for k, v := range storeEnv {
 				fmt.Fprintf(opts.Output, "  env: %s=%s\n", k, v)
 			}
@@ -852,9 +852,11 @@ func (r *DockerRunner) runDBT(ctx context.Context, opts RunOptions, m manifest.M
 		defer cancel()
 	}
 
-	cmd := exec.CommandContext(ctx, dbtBin, "run", "--profiles-dir", opts.PackageDir)
+	cmd := exec.CommandContext(ctx, dbtBin, "run")
 	cmd.Dir = opts.PackageDir
 	cmd.Env = r.buildCmdEnv(storeEnv, opts.Env)
+	// dbt natively reads DBT_PROFILES_DIR — no --profiles-dir flag needed.
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DBT_PROFILES_DIR=%s", opts.PackageDir))
 
 	if opts.Output != nil {
 		cmd.Stdout = opts.Output
