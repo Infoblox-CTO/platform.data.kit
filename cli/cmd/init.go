@@ -101,7 +101,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 		targetDir = cwd
 		name = filepath.Base(cwd)
 	} else {
-		targetDir = name
+		// If a transforms/ directory exists in the cwd, place the new
+		// transform inside it (project context).
+		if info, err := os.Stat("transforms"); err == nil && info.IsDir() {
+			targetDir = filepath.Join("transforms", name)
+		} else {
+			targetDir = name
+		}
 	}
 
 	// Check if directory exists and is not empty

@@ -362,6 +362,47 @@ func TestInitCmd_CurrentDirectory(t *testing.T) {
 	}
 }
 
+func TestInitCmd_ProjectContextTransformsDir(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Simulate a project context by creating a transforms/ directory.
+	if err := os.MkdirAll(filepath.Join(tmpDir, "transforms"), 0755); err != nil {
+		t.Fatalf("failed to create transforms dir: %v", err)
+	}
+
+	saveAndRestoreInitFlags(t)
+	initRuntime = "cloudquery"
+	initMode = "batch"
+	initNamespace = "default"
+	initTeam = "my-team"
+	initOwner = ""
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	t.Cleanup(func() { os.Chdir(oldWd) })
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.Flags().StringVarP(&initRuntime, "runtime", "r", "", "")
+	cmd.Flags().Set("runtime", "cloudquery")
+
+	err := runInit(cmd, []string{"my-transform"})
+	if err != nil {
+		t.Fatalf("runInit() error = %v", err)
+	}
+
+	dkPath := filepath.Join(tmpDir, "transforms", "my-transform", "dk.yaml")
+	if _, err := os.Stat(dkPath); os.IsNotExist(err) {
+		t.Error("dk.yaml should be created under transforms/my-transform/, got created elsewhere")
+	}
+
+	// Should NOT exist at project root
+	rootDkPath := filepath.Join(tmpDir, "my-transform", "dk.yaml")
+	if _, err := os.Stat(rootDkPath); err == nil {
+		t.Error("dk.yaml should not be created at project root when transforms/ dir exists")
+	}
+}
+
 func TestInitCmd_NoNameNonInteractive(t *testing.T) {
 	// When stdin is not a terminal (CI, tests), omitting the name arg should
 	// produce a clear error rather than blocking on a prompt.
